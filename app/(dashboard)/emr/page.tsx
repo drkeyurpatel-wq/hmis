@@ -15,6 +15,7 @@ import {
   type VitalAlert, type DrugInteraction, type DoseAlert, type ICD10Code,
 } from '@/lib/cdss/engine';
 import type { Vitals } from '@/types/database';
+import { SmartComplaintBuilder, generateComplaintText, type ActiveComplaint } from '@/components/emr/smart-complaint-builder';
 
 const MOCK_PATIENT = {
   uhid: 'H1S-000001', name: 'Rajesh Kumar Sharma', age: 58, gender: 'Male',
@@ -52,6 +53,7 @@ export default function EMRPage() {
     general_examination: '', systemic_examination: '', local_examination: '',
     provisional_diagnosis: '', investigations: '', treatment: '', advice: '', followup: '',
   });
+  const [complaints, setComplaints] = useState<ActiveComplaint[]>([]);
   const [cdssOpen, setCdssOpen] = useState(true);
 
   const news2 = useMemo(() => calculateNEWS2(vitals), [vitals]);
@@ -130,7 +132,7 @@ export default function EMRPage() {
             {/* ═══ VITALS STRIP ═══ */}
             <VitalsStrip vitals={vitals} setVitals={setVitals} alerts={vAlerts} />
 
-            {tab === 'note' && <ClinicalNoteEditor note={note} setNote={setNote} dx={dx} setDx={setDx} />}
+            {tab === 'note' && <ClinicalNoteEditor note={note} setNote={setNote} dx={dx} setDx={setDx} complaints={complaints} setComplaints={setComplaints} />}
             {tab === 'orders' && <OrdersPanel rx={rx} setRx={setRx} alerts={dAlerts} />}
             {tab === 'results' && (
               <div className="bg-white border border-gray-200 rounded-xl p-8 text-center">
@@ -256,24 +258,28 @@ type NoteFields = {
   provisional_diagnosis: string; investigations: string; treatment: string; advice: string; followup: string;
 };
 
-function ClinicalNoteEditor({ note, setNote, dx, setDx }: {
+function ClinicalNoteEditor({ note, setNote, dx, setDx, complaints, setComplaints }: {
   note: NoteFields; setNote: (n: NoteFields) => void;
   dx: SelectedDiagnosis[]; setDx: (d: SelectedDiagnosis[]) => void;
+  complaints: ActiveComplaint[]; setComplaints: (c: ActiveComplaint[]) => void;
 }) {
   const [icdQ, setIcdQ] = useState('');
   const icdR = useMemo(() => searchICD10(icdQ), [icdQ]);
-  const [expandedGroup, setExpandedGroup] = useState<string>('history');
+  const [expandedGroup, setExpandedGroup] = useState<string>('complaints');
 
   const groups = [
     {
-      id: 'history', label: 'History', color: 'border-l-blue-500', icon: '📋',
+      id: 'complaints', label: 'Chief Complaints & HPI', color: 'border-l-blue-500', icon: '📋',
+      isSmartBuilder: true,
+      fields: [],
+    },
+    {
+      id: 'history', label: 'Past / Personal / Family History', color: 'border-l-blue-300', icon: '📁',
       fields: [
-        { key: 'chief_complaints', label: 'C/C — Chief Complaints', ph: 'e.g. Chest pain since 2 days, radiating to left arm, associated with sweating and breathlessness', rows: 2 },
-        { key: 'hpi', label: 'H/O Present Illness', ph: 'Duration, onset (sudden/gradual), character, severity (scale 1-10), aggravating/relieving factors, progression, associated symptoms, treatment taken so far...', rows: 4 },
         { key: 'past_history', label: 'Past History', ph: 'Known case of DM/HTN/IHD/BA/TB/Epilepsy — duration, treatment\nPrevious surgeries / hospitalisations\nDrug allergies: Penicillin / Sulfa / NSAID / Contrast', rows: 3 },
-        { key: 'personal_history', label: 'Personal History', ph: 'Diet: Veg / Non-veg / Mixed\nAppetite, Sleep, Bowel, Micturition\nHabits: Smoking (pack-years) / Alcohol (type, quantity, duration) / Tobacco chewing\nOccupation, Socioeconomic status', rows: 3 },
-        { key: 'family_history', label: 'Family History', ph: 'DM / HTN / IHD / Malignancy / Genetic disorders in parents, siblings\nFather — MI at age 55\nMother — Type 2 DM', rows: 2 },
-        { key: 'menstrual_obstetric', label: 'Menstrual / Obstetric History (if applicable)', ph: 'LMP, Cycle regularity, Gravida/Para/Abortion/Living\nContraception, Menopausal status', rows: 2 },
+        { key: 'personal_history', label: 'Personal History', ph: 'Diet: Veg / Non-veg / Mixed\nAppetite, Sleep, Bowel, Micturition\nHabits: Smoking (pack-years) / Alcohol / Tobacco chewing\nOccupation', rows: 3 },
+        { key: 'family_history', label: 'Family History', ph: 'DM / HTN / IHD / Malignancy in parents/siblings', rows: 2 },
+        { key: 'menstrual_obstetric', label: 'Menstrual / Obstetric (if applicable)', ph: 'LMP, Cycle, G/P/A/L, Contraception', rows: 2 },
       ],
     },
     {
@@ -306,7 +312,11 @@ function ClinicalNoteEditor({ note, setNote, dx, setDx }: {
       {/* Collapsible groups */}
       {groups.map(group => {
         const isExpanded = expandedGroup === group.id;
-        const filledCount = group.fields.filter(f => note[f.key as keyof NoteFields].trim()).length;
+        const isSmartBuilder = 'isSmartBuilder' in group && group.isSmartBuilder;
+        const filledCount = isSmartBuilder
+          ? complaints.length
+          : group.fields.filter(f => note[f.key as keyof NoteFields].trim()).length;
+        const totalCount = isSmartBuilder ? complaints.length : group.fields.length;
 
         return (
           <div key={group.id} className={cn('bg-white border border-gray-200 rounded-xl overflow-hidden border-l-4', group.color)}>
@@ -320,15 +330,20 @@ function ClinicalNoteEditor({ note, setNote, dx, setDx }: {
                 <span className="text-sm font-bold text-gray-700">{group.label}</span>
                 {filledCount > 0 && (
                   <span className="text-[10px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full font-medium">
-                    {filledCount}/{group.fields.length} filled
+                    {isSmartBuilder ? `${filledCount} complaint${filledCount > 1 ? 's' : ''}` : `${filledCount}/${totalCount} filled`}
                   </span>
                 )}
               </div>
               <ChevronRight size={16} className={cn('text-gray-400 transition-transform', isExpanded && 'rotate-90')} />
             </button>
 
-            {/* Fields */}
-            {isExpanded && (
+            {/* Fields or SmartComplaintBuilder */}
+            {isExpanded && isSmartBuilder && (
+              <div className="p-4">
+                <SmartComplaintBuilder complaints={complaints} setComplaints={setComplaints} />
+              </div>
+            )}
+            {isExpanded && !isSmartBuilder && (
               <div className="divide-y divide-gray-50">
                 {group.fields.map(field => (
                   <div key={field.key} className="px-4 py-3">
