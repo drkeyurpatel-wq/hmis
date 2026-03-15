@@ -42,11 +42,16 @@ interface SelectedDiagnosis {
 }
 
 export default function EMRPage() {
-  const [tab, setTab] = useState<'soap' | 'orders' | 'results' | 'history'>('soap');
+  const [tab, setTab] = useState<'note' | 'orders' | 'results' | 'history'>('note');
   const [vitals, setVitals] = useState<Partial<Vitals>>({});
   const [rx, setRx] = useState<Prescription[]>([]);
   const [dx, setDx] = useState<SelectedDiagnosis[]>([]);
-  const [soap, setSoap] = useState({ subjective: '', objective: '', assessment: '', plan: '' });
+  const [note, setNote] = useState({
+    chief_complaints: '', hpi: '', past_history: '', personal_history: '',
+    family_history: '', menstrual_obstetric: '',
+    general_examination: '', systemic_examination: '', local_examination: '',
+    provisional_diagnosis: '', investigations: '', treatment: '', advice: '', followup: '',
+  });
   const [cdssOpen, setCdssOpen] = useState(true);
 
   const news2 = useMemo(() => calculateNEWS2(vitals), [vitals]);
@@ -104,7 +109,7 @@ export default function EMRPage() {
           <div className="sticky top-0 z-10 bg-white border-b border-gray-200 px-6">
             <div className="flex gap-0">
               {([
-                { id: 'soap', label: 'SOAP Note', icon: FileText },
+                { id: 'note', label: 'Clinical Note', icon: FileText },
                 { id: 'orders', label: 'Orders & Rx', icon: Pill },
                 { id: 'results', label: 'Results', icon: FlaskConical },
                 { id: 'history', label: 'History', icon: Clock },
@@ -125,7 +130,7 @@ export default function EMRPage() {
             {/* ═══ VITALS STRIP ═══ */}
             <VitalsStrip vitals={vitals} setVitals={setVitals} alerts={vAlerts} />
 
-            {tab === 'soap' && <SOAPEditor soap={soap} setSoap={setSoap} dx={dx} setDx={setDx} />}
+            {tab === 'note' && <ClinicalNoteEditor note={note} setNote={setNote} dx={dx} setDx={setDx} />}
             {tab === 'orders' && <OrdersPanel rx={rx} setRx={setRx} alerts={dAlerts} />}
             {tab === 'results' && (
               <div className="bg-white border border-gray-200 rounded-xl p-8 text-center">
@@ -241,47 +246,120 @@ function VitalsStrip({ vitals, setVitals, alerts }: {
 }
 
 /* ═══════════════════════════════════════════════
-   SOAP EDITOR
+   CLINICAL NOTE — Indian OPD Format
    ═══════════════════════════════════════════════ */
 
-function SOAPEditor({ soap, setSoap, dx, setDx }: {
-  soap: { subjective: string; objective: string; assessment: string; plan: string };
-  setSoap: (s: typeof soap) => void;
+type NoteFields = {
+  chief_complaints: string; hpi: string; past_history: string; personal_history: string;
+  family_history: string; menstrual_obstetric: string;
+  general_examination: string; systemic_examination: string; local_examination: string;
+  provisional_diagnosis: string; investigations: string; treatment: string; advice: string; followup: string;
+};
+
+function ClinicalNoteEditor({ note, setNote, dx, setDx }: {
+  note: NoteFields; setNote: (n: NoteFields) => void;
   dx: SelectedDiagnosis[]; setDx: (d: SelectedDiagnosis[]) => void;
 }) {
   const [icdQ, setIcdQ] = useState('');
   const icdR = useMemo(() => searchICD10(icdQ), [icdQ]);
+  const [expandedGroup, setExpandedGroup] = useState<string>('history');
 
-  const sections = [
-    { key: 'subjective', label: 'S — Subjective', ph: 'Chief complaint, HPI, review of systems, patient\'s words...', rows: 4, color: 'border-l-blue-400' },
-    { key: 'objective', label: 'O — Objective', ph: 'Physical exam findings, vital signs interpretation, general appearance...', rows: 4, color: 'border-l-green-500' },
-    { key: 'assessment', label: 'A — Assessment', ph: 'Clinical impression, differential diagnoses, problem list...', rows: 3, color: 'border-l-amber-500' },
-    { key: 'plan', label: 'P — Plan', ph: 'Investigations, medications, procedures, consults, follow-up, education...', rows: 4, color: 'border-l-purple-500' },
+  const groups = [
+    {
+      id: 'history', label: 'History', color: 'border-l-blue-500', icon: '📋',
+      fields: [
+        { key: 'chief_complaints', label: 'C/C — Chief Complaints', ph: 'e.g. Chest pain since 2 days, radiating to left arm, associated with sweating and breathlessness', rows: 2 },
+        { key: 'hpi', label: 'H/O Present Illness', ph: 'Duration, onset (sudden/gradual), character, severity (scale 1-10), aggravating/relieving factors, progression, associated symptoms, treatment taken so far...', rows: 4 },
+        { key: 'past_history', label: 'Past History', ph: 'Known case of DM/HTN/IHD/BA/TB/Epilepsy — duration, treatment\nPrevious surgeries / hospitalisations\nDrug allergies: Penicillin / Sulfa / NSAID / Contrast', rows: 3 },
+        { key: 'personal_history', label: 'Personal History', ph: 'Diet: Veg / Non-veg / Mixed\nAppetite, Sleep, Bowel, Micturition\nHabits: Smoking (pack-years) / Alcohol (type, quantity, duration) / Tobacco chewing\nOccupation, Socioeconomic status', rows: 3 },
+        { key: 'family_history', label: 'Family History', ph: 'DM / HTN / IHD / Malignancy / Genetic disorders in parents, siblings\nFather — MI at age 55\nMother — Type 2 DM', rows: 2 },
+        { key: 'menstrual_obstetric', label: 'Menstrual / Obstetric History (if applicable)', ph: 'LMP, Cycle regularity, Gravida/Para/Abortion/Living\nContraception, Menopausal status', rows: 2 },
+      ],
+    },
+    {
+      id: 'examination', label: 'Examination', color: 'border-l-green-500', icon: '🩺',
+      fields: [
+        { key: 'general_examination', label: 'General Examination', ph: 'Conscious, oriented, cooperative\nBuilt: Average / Thin / Obese\nNourishment: Well / Under / Over\nPallor / Icterus / Cyanosis / Clubbing / Lymphadenopathy / Oedema\nJVP: Raised / Normal\nVitals: (recorded above in vitals strip)', rows: 4 },
+        { key: 'systemic_examination', label: 'Systemic Examination', ph: 'CVS: S1 S2 heard, No murmur, JVP not raised\nRS: B/L air entry equal, No added sounds / Crepitations in R/L base\nP/A: Soft, non-tender, No organomegaly, BS +\nCNS: Conscious, oriented, Cranial nerves intact, Motor/Sensory — NAD\nMusculoskeletal: Tenderness / Swelling / ROM / Deformity', rows: 5 },
+        { key: 'local_examination', label: 'Local Examination (if applicable)', ph: 'Site, Size, Shape, Surface, Margins, Consistency, Tenderness, Mobility, Skin over swelling\nWound: Clean / Infected / Slough / Granulation\nRange of motion, Special tests', rows: 3 },
+      ],
+    },
+    {
+      id: 'diagnosis', label: 'Diagnosis & Plan', color: 'border-l-amber-500', icon: '🔍',
+      fields: [
+        { key: 'provisional_diagnosis', label: 'Provisional Diagnosis', ph: 'e.g. Acute STEMI — Anterior wall MI\nwith Type 2 DM (uncontrolled)\nwith Hypertension Stage 2', rows: 2 },
+        { key: 'investigations', label: 'Investigations Advised', ph: 'Blood: CBC, ESR, CRP, RBS, HbA1c, RFT, LFT, Lipid profile, Cardiac enzymes (Trop-I/T, CK-MB), PT/INR, Electrolytes\nUrine: R/M, Culture\nImaging: X-ray Chest PA, ECG, 2D Echo, CT/MRI\nSpecial: TMT, Coronary angiography, EEG, NCS/EMG', rows: 4 },
+      ],
+    },
+    {
+      id: 'management', label: 'Treatment & Follow-up', color: 'border-l-purple-500', icon: '💊',
+      fields: [
+        { key: 'treatment', label: 'Treatment / Rx', ph: 'Tab. Ecosprin 75mg OD after food\nTab. Clopidogrel 75mg OD after food\nTab. Atorvastatin 40mg HS\nTab. Metoprolol 25mg BD\nInj. Enoxaparin 0.6ml SC BD\nTab. Pantoprazole 40mg OD before food\n\n(Also add via Orders & Rx tab for CDSS checking)', rows: 5 },
+        { key: 'advice', label: 'Advice / Patient Education', ph: 'Diet: Low salt, low fat, diabetic diet\nActivity: Bed rest / Restricted / As tolerated\nMonitoring: Blood sugar 4 times/day, I/O charting\nPrecautions: Report if chest pain recurs, breathlessness worsens\nLifestyle: Smoking cessation, Regular exercise after recovery', rows: 3 },
+        { key: 'followup', label: 'Follow-up', ph: 'Review after 1 week with reports\nOr SOS if symptoms worsen\nNext appointment: ___', rows: 2 },
+      ],
+    },
   ];
 
   return (
-    <div className="space-y-4">
-      {sections.map(s => (
-        <div key={s.key} className={cn('bg-white border border-gray-200 rounded-xl overflow-hidden border-l-4', s.color)}>
-          <div className="px-4 py-2.5 bg-gray-50 border-b border-gray-100">
-            <label className="text-xs font-bold text-gray-600 uppercase tracking-wider">{s.label}</label>
+    <div className="space-y-3">
+      {/* Collapsible groups */}
+      {groups.map(group => {
+        const isExpanded = expandedGroup === group.id;
+        const filledCount = group.fields.filter(f => note[f.key as keyof NoteFields].trim()).length;
+
+        return (
+          <div key={group.id} className={cn('bg-white border border-gray-200 rounded-xl overflow-hidden border-l-4', group.color)}>
+            {/* Group header — clickable to expand/collapse */}
+            <button
+              onClick={() => setExpandedGroup(isExpanded ? '' : group.id)}
+              className="w-full px-4 py-3 bg-gray-50 border-b border-gray-100 flex items-center justify-between hover:bg-gray-100 transition-colors"
+            >
+              <div className="flex items-center gap-2">
+                <span className="text-sm">{group.icon}</span>
+                <span className="text-sm font-bold text-gray-700">{group.label}</span>
+                {filledCount > 0 && (
+                  <span className="text-[10px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full font-medium">
+                    {filledCount}/{group.fields.length} filled
+                  </span>
+                )}
+              </div>
+              <ChevronRight size={16} className={cn('text-gray-400 transition-transform', isExpanded && 'rotate-90')} />
+            </button>
+
+            {/* Fields */}
+            {isExpanded && (
+              <div className="divide-y divide-gray-50">
+                {group.fields.map(field => (
+                  <div key={field.key} className="px-4 py-3">
+                    <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
+                      {field.label}
+                    </label>
+                    <textarea
+                      value={note[field.key as keyof NoteFields]}
+                      onChange={e => setNote({ ...note, [field.key]: e.target.value })}
+                      rows={field.rows}
+                      placeholder={field.ph}
+                      className="w-full px-3 py-2 text-sm text-gray-800 placeholder:text-gray-300 border border-gray-200 rounded-lg resize-none outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 leading-relaxed"
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
-          <textarea value={soap[s.key as keyof typeof soap]} onChange={e => setSoap({ ...soap, [s.key]: e.target.value })}
-            rows={s.rows} placeholder={s.ph}
-            className="w-full px-4 py-3 text-sm text-gray-800 placeholder:text-gray-300 resize-none outline-none leading-relaxed" />
-        </div>
-      ))}
+        );
+      })}
 
       {/* ICD-10 Diagnoses */}
       <div className="bg-white border border-gray-200 rounded-xl overflow-hidden border-l-4 border-l-red-400">
         <div className="px-4 py-2.5 bg-gray-50 border-b border-gray-100 flex items-center justify-between">
-          <label className="text-xs font-bold text-gray-600 uppercase tracking-wider">Diagnoses (ICD-10)</label>
+          <label className="text-xs font-bold text-gray-600 uppercase tracking-wider">Diagnoses — ICD-10 Coding</label>
           <span className="text-xs text-gray-400">{dx.length} active</span>
         </div>
         <div className="p-4">
           <div className="relative mb-3">
             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-            <input value={icdQ} onChange={e => setIcdQ(e.target.value)} placeholder="Search ICD-10 code or description..."
+            <input value={icdQ} onChange={e => setIcdQ(e.target.value)} placeholder="Search ICD-10 — type diagnosis name or code (e.g. STEMI, I21, diabetes, E11)..."
               className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-brand-500" />
             {icdR.length > 0 && (
               <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-20 max-h-48 overflow-y-auto">
@@ -296,7 +374,7 @@ function SOAPEditor({ soap, setSoap, dx, setDx }: {
               </div>
             )}
           </div>
-          {dx.length === 0 ? <p className="text-xs text-gray-400 py-2">No diagnoses yet</p> : (
+          {dx.length === 0 ? <p className="text-xs text-gray-400 py-2">No diagnoses coded yet — search above to add ICD-10</p> : (
             <div className="space-y-2">
               {dx.map((d, i) => (
                 <div key={d.code} className="flex items-center gap-3 bg-gray-50 rounded-lg px-3 py-2">
@@ -315,6 +393,7 @@ function SOAPEditor({ soap, setSoap, dx, setDx }: {
         </div>
       </div>
 
+      {/* Actions */}
       <div className="flex justify-end gap-3">
         <button className="px-4 py-2.5 text-sm font-medium text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center gap-2"><Save size={14} /> Save draft</button>
         <button className="px-5 py-2.5 text-sm font-medium bg-health1-teal text-white rounded-lg hover:bg-teal-700 flex items-center gap-2"><Send size={14} /> Sign &amp; finalize</button>
