@@ -1,236 +1,190 @@
 'use client';
 
+import { useState } from 'react';
 import {
-  Users, BedDouble, Calendar, CreditCard, TrendingUp, Activity,
-  Clock, AlertCircle, ArrowUpRight, ArrowDownRight, Stethoscope,
-  Bell, ChevronRight, Circle, Pill, FlaskConical, Scissors,
+  BedDouble, Calendar, CreditCard, TrendingUp, TrendingDown,
+  Activity, Clock, AlertTriangle, CheckCircle2, ArrowRight,
+  Stethoscope, Pill, FlaskConical, Shield, ChevronRight,
 } from 'lucide-react';
 import { cn, formatCurrency } from '@/lib/utils';
 
-const STATS = [
-  { label: 'OPD today', value: '127', change: '+12%', up: true, icon: Calendar, color: 'bg-blue-50 text-blue-600' },
-  { label: 'IPD active', value: '83', change: '+3', up: true, icon: BedDouble, color: 'bg-teal-50 text-teal-600' },
-  { label: 'Revenue today', value: formatCurrency(1247000), change: '+8.2%', up: true, icon: CreditCard, color: 'bg-emerald-50 text-emerald-600' },
-  { label: 'Bed occupancy', value: '79%', change: '-2%', up: false, icon: Activity, color: 'bg-amber-50 text-amber-600' },
+const stats = [
+  { label: 'OPD today', value: 47, prev: 42, icon: Calendar, color: 'text-brand-600', bg: 'bg-brand-50', ring: 'ring-brand-100' },
+  { label: 'IPD active', value: 83, prev: 79, icon: BedDouble, color: 'text-teal-600', bg: 'bg-teal-50', ring: 'ring-teal-100' },
+  { label: 'Revenue today', value: 847000, prev: 792000, icon: CreditCard, color: 'text-emerald-600', bg: 'bg-emerald-50', ring: 'ring-emerald-100', isCurrency: true },
+  { label: 'Bed occupancy', value: 79, prev: 74, icon: Activity, color: 'text-amber-600', bg: 'bg-amber-50', ring: 'ring-amber-100', isPercent: true },
 ];
 
-const BED_SUMMARY = [
-  { ward: 'General', total: 40, occupied: 32, available: 6, maintenance: 2, color: 'bg-blue-500' },
-  { ward: 'ICU', total: 18, occupied: 16, available: 1, maintenance: 1, color: 'bg-red-500' },
-  { ward: 'Transplant ICU', total: 5, occupied: 5, available: 0, maintenance: 0, color: 'bg-red-600' },
-  { ward: 'Private', total: 20, occupied: 14, available: 5, maintenance: 1, color: 'bg-purple-500' },
-  { ward: 'Semi-private', total: 15, occupied: 11, available: 3, maintenance: 1, color: 'bg-indigo-500' },
-  { ward: 'Emergency', total: 5, occupied: 3, available: 2, maintenance: 0, color: 'bg-orange-500' },
+const bedBoard = [
+  { ward: 'General', total: 40, occupied: 32 },
+  { ward: 'ICU', total: 18, occupied: 17 },
+  { ward: 'Transplant ICU', total: 5, occupied: 4 },
+  { ward: 'Private', total: 20, occupied: 14 },
+  { ward: 'Semi-private', total: 15, occupied: 12 },
+  { ward: 'Emergency', total: 5, occupied: 3 },
+  { ward: 'NICU', total: 2, occupied: 1 },
 ];
 
-const OPD_QUEUE = [
-  { token: 'T-042', patient: 'Rajesh Sharma', age: 58, doctor: 'Dr. Sunil Gurmukhani', dept: 'Cardiology', status: 'with_doctor', time: '10:15 AM' },
-  { token: 'T-043', patient: 'Priya Desai', age: 34, doctor: 'Dr. Jignesh Patel', dept: 'Cardiology', status: 'waiting', time: '10:30 AM' },
-  { token: 'T-044', patient: 'Amit Thakur', age: 45, doctor: 'Dr. Sunil Gurmukhani', dept: 'Cardiology', status: 'waiting', time: '10:45 AM' },
-  { token: 'T-045', patient: 'Meera Patel', age: 62, doctor: 'Dr. Nidhi Shukla', dept: 'Neurology', status: 'with_doctor', time: '10:20 AM' },
-  { token: 'T-046', patient: 'Kiran Joshi', age: 29, doctor: 'Dr. Nidhi Shukla', dept: 'Neurology', status: 'waiting', time: '10:50 AM' },
-  { token: 'T-047', patient: 'Dinesh Modi', age: 71, doctor: 'Dr. Amit Patanvadiya', dept: 'Internal Medicine', status: 'checked_in', time: '11:00 AM' },
+const opdQueue = [
+  { doctor: 'Dr. Sunil Gurmukhani', dept: 'Cardiology', waiting: 8, current: 'Ramesh Patel', avgWait: '22 min' },
+  { doctor: 'Dr. Jignesh Patel', dept: 'Cardiology', waiting: 5, current: 'Meena Shah', avgWait: '18 min' },
+  { doctor: 'Dr. Amit Patanvadiya', dept: 'Neurology', waiting: 6, current: 'Suresh Joshi', avgWait: '25 min' },
+  { doctor: 'Dr. Karmay Shah', dept: 'Orthopaedics', waiting: 4, current: 'Bhavna Modi', avgWait: '15 min' },
+  { doctor: 'Dr. Nidhi Shukla', dept: 'Internal Med', waiting: 7, current: 'Dinesh Trivedi', avgWait: '20 min' },
 ];
 
-const RECENT_ADMISSIONS = [
-  { ipd: 'SHI-I-000412', patient: 'Harshad Mehta', age: 55, dept: 'Cardiology', doctor: 'Dr. Sunil Gurmukhani', payor: 'Star Health', type: 'elective', time: '2h ago' },
-  { ipd: 'SHI-I-000411', patient: 'Sunita Verma', age: 48, dept: 'Orthopaedics', doctor: 'Dr. Karmay Shah', payor: 'Self-pay', type: 'emergency', time: '4h ago' },
-  { ipd: 'SHI-I-000410', patient: 'Prakash Chauhan', age: 67, dept: 'Nephrology', doctor: 'Dr. Amit Patanvadiya', payor: 'PMJAY', type: 'elective', time: '6h ago' },
+const recentAdmissions = [
+  { name: 'Rajesh Kumar', uhid: 'H1S-000234', dept: 'Cardiology', type: 'emergency', time: '35 min ago', doctor: 'Dr. Sunil G.', payor: 'PMJAY' },
+  { name: 'Priya Sharma', uhid: 'H1S-000235', dept: 'Orthopaedics', type: 'elective', time: '1h ago', doctor: 'Dr. Karmay S.', payor: 'Star Health' },
+  { name: 'Amit Desai', uhid: 'H1S-000236', dept: 'Neurology', type: 'emergency', time: '2h ago', doctor: 'Dr. Amit P.', payor: 'Self' },
+  { name: 'Kavita Patel', uhid: 'H1S-000237', dept: 'General Surgery', type: 'elective', time: '3h ago', doctor: 'Dr. R. Mehta', payor: 'ICICI Lombard' },
 ];
 
-const PENDING_ACTIONS = [
-  { text: '3 pre-auth requests pending TPA response', severity: 'warning', icon: AlertCircle },
-  { text: '7 critical lab results awaiting validation', severity: 'critical', icon: FlaskConical },
-  { text: '12 drugs below reorder level', severity: 'warning', icon: Pill },
-  { text: '5 patients with discharge orders pending billing', severity: 'info', icon: Clock },
-  { text: '2 OT bookings tomorrow need anaesthetist assignment', severity: 'warning', icon: Scissors },
+const pendingActions = [
+  { label: 'Pre-auth awaiting response', count: 6, icon: Shield, color: 'text-amber-600 bg-amber-50', urgent: true },
+  { label: 'Lab results to validate', count: 12, icon: FlaskConical, color: 'text-blue-600 bg-blue-50', urgent: false },
+  { label: 'Discharge summaries pending', count: 4, icon: CheckCircle2, color: 'text-teal-600 bg-teal-50', urgent: false },
+  { label: 'Pharmacy orders to fill', count: 9, icon: Pill, color: 'text-purple-600 bg-purple-50', urgent: false },
+  { label: 'OT bookings tomorrow', count: 3, icon: Stethoscope, color: 'text-pink-600 bg-pink-50', urgent: false },
 ];
 
-const REVENUE_HOURS = [
-  { hour: '8AM', amount: 85000 }, { hour: '9AM', amount: 192000 }, { hour: '10AM', amount: 347000 },
-  { hour: '11AM', amount: 520000 }, { hour: '12PM', amount: 680000 }, { hour: '1PM', amount: 790000 },
-  { hour: '2PM', amount: 940000 }, { hour: '3PM', amount: 1080000 }, { hour: '4PM', amount: 1247000 },
+const revenueByDept = [
+  { dept: 'Cardiology', amount: 285000, pct: 33.6 },
+  { dept: 'Orthopaedics', amount: 178000, pct: 21.0 },
+  { dept: 'Neurology', amount: 142000, pct: 16.8 },
+  { dept: 'General Surgery', amount: 98000, pct: 11.6 },
+  { dept: 'Internal Medicine', amount: 87000, pct: 10.3 },
+  { dept: 'Others', amount: 57000, pct: 6.7 },
 ];
-
-const DEPT_REVENUE = [
-  { dept: 'Cardiology', amount: 412000, pct: 33 },
-  { dept: 'Orthopaedics', amount: 287000, pct: 23 },
-  { dept: 'Internal Medicine', amount: 198000, pct: 16 },
-  { dept: 'Nephrology', amount: 156000, pct: 13 },
-  { dept: 'Neurology', amount: 112000, pct: 9 },
-  { dept: 'Others', amount: 82000, pct: 6 },
-];
-
-const statusColors: Record<string, string> = { with_doctor: 'bg-green-100 text-green-700', waiting: 'bg-amber-100 text-amber-700', checked_in: 'bg-blue-100 text-blue-700' };
-const statusLabels: Record<string, string> = { with_doctor: 'In consultation', waiting: 'Waiting', checked_in: 'Checked in' };
-const severityStyles: Record<string, string> = { critical: 'bg-red-50 border-red-200 text-red-800', warning: 'bg-amber-50 border-amber-200 text-amber-800', info: 'bg-blue-50 border-blue-200 text-blue-800' };
 
 export default function DashboardPage() {
-  const maxRevenue = Math.max(...REVENUE_HOURS.map((r) => r.amount));
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="page-title">Dashboard</h1>
-          <p className="text-sm text-gray-500 mt-0.5">Shilaj · Monday, 16 March 2026 · 4:15 PM</p>
+          <h1 className="text-xl font-display font-bold text-gray-900">Dashboard</h1>
+          <p className="text-sm text-gray-500 mt-0.5">{new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })} &middot; Shilaj</p>
         </div>
-        <button className="relative p-2 rounded-lg hover:bg-gray-100 transition-colors">
-          <Bell size={18} className="text-gray-500" />
-          <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-red-500" />
-        </button>
+        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-200">
+          <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+          <span className="text-xs font-semibold text-emerald-700">Systems operational</span>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {STATS.map((s) => { const I = s.icon; return (
-          <div key={s.label} className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm hover:shadow-md transition-shadow">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-sm font-medium text-gray-500">{s.label}</span>
-              <div className={cn('w-9 h-9 rounded-lg flex items-center justify-center', s.color)}><I size={18} /></div>
+        {stats.map((s) => {
+          const Icon = s.icon;
+          const chg = ((s.value - s.prev) / s.prev * 100).toFixed(1);
+          const up = Number(chg) >= 0;
+          return (
+            <div key={s.label} className="bg-white rounded-xl border border-gray-200/80 p-5 shadow-sm hover:shadow-md transition-shadow">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-500">{s.label}</p>
+                  <p className="text-2xl font-display font-bold text-gray-900 mt-1">{s.isCurrency ? formatCurrency(s.value) : s.isPercent ? `${s.value}%` : s.value}</p>
+                </div>
+                <div className={cn('w-10 h-10 rounded-xl flex items-center justify-center ring-1', s.bg, s.ring)}><Icon size={20} className={s.color} /></div>
+              </div>
+              <div className="flex items-center gap-1 mt-3">
+                {up ? <TrendingUp size={14} className="text-emerald-500" /> : <TrendingDown size={14} className="text-red-500" />}
+                <span className={cn('text-xs font-semibold', up ? 'text-emerald-600' : 'text-red-600')}>{up ? '+' : ''}{chg}%</span>
+                <span className="text-xs text-gray-400 ml-1">vs yesterday</span>
+              </div>
             </div>
-            <div className="flex items-end justify-between">
-              <p className="text-2xl font-display font-bold text-gray-900">{s.value}</p>
-              <span className={cn('flex items-center gap-0.5 text-xs font-medium', s.up ? 'text-emerald-600' : 'text-red-500')}>
-                {s.up ? <ArrowUpRight size={12} /> : <ArrowDownRight size={12} />}{s.change}
-              </span>
-            </div>
-          </div>
-        );})}
+          );
+        })}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-        <div className="lg:col-span-3 bg-white rounded-xl border border-gray-200 shadow-sm">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2 bg-white rounded-xl border border-gray-200/80 shadow-sm">
           <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-gray-900 flex items-center gap-2"><BedDouble size={16} className="text-gray-400" />Bed occupancy — Shilaj</h2>
-            <span className="text-xs text-gray-500">105 beds operational</span>
+            <div className="flex items-center gap-2"><BedDouble size={16} className="text-gray-400" /><h2 className="text-sm font-semibold text-gray-900">Bed occupancy board</h2></div>
+            <span className="text-xs font-medium text-gray-500">105 total &middot; 83 occupied &middot; 22 available</span>
           </div>
           <div className="p-5 space-y-3">
-            {BED_SUMMARY.map((w) => { const pct = Math.round((w.occupied / w.total) * 100); return (
-              <div key={w.ward}>
-                <div className="flex items-center justify-between mb-1.5">
-                  <span className="text-sm font-medium text-gray-700">{w.ward}</span>
-                  <div className="flex items-center gap-3 text-xs">
-                    <span className="text-gray-500">{w.occupied}/{w.total}</span>
-                    <span className={cn('font-semibold', pct >= 90 ? 'text-red-600' : pct >= 75 ? 'text-amber-600' : 'text-emerald-600')}>{pct}%</span>
+            {bedBoard.map((w) => {
+              const pct = Math.round((w.occupied / w.total) * 100);
+              const avail = w.total - w.occupied;
+              return (
+                <div key={w.ward} className="flex items-center gap-4">
+                  <div className="w-28 flex-shrink-0"><p className="text-sm font-medium text-gray-700">{w.ward}</p><p className="text-xs text-gray-400">{w.occupied}/{w.total}</p></div>
+                  <div className="flex-1 h-6 bg-gray-100 rounded-full overflow-hidden relative">
+                    <div className={cn('h-full rounded-full transition-all', pct >= 90 ? 'bg-red-500' : pct >= 75 ? 'bg-amber-500' : 'bg-emerald-500')} style={{ width: `${pct}%` }} />
+                    <span className="absolute inset-0 flex items-center justify-center text-xs font-bold text-gray-700">{pct}%</span>
                   </div>
+                  <div className={cn('w-16 text-center text-xs font-bold rounded-md py-1', avail === 0 ? 'bg-red-50 text-red-700' : avail <= 2 ? 'bg-amber-50 text-amber-700' : 'bg-emerald-50 text-emerald-700')}>{avail === 0 ? 'FULL' : `${avail} free`}</div>
                 </div>
-                <div className="h-2.5 bg-gray-100 rounded-full overflow-hidden flex">
-                  <div className={cn('rounded-full', w.color)} style={{ width: `${(w.occupied / w.total) * 100}%` }} />
-                  {w.maintenance > 0 && <div className="bg-gray-300 rounded-full ml-0.5" style={{ width: `${(w.maintenance / w.total) * 100}%` }} />}
-                </div>
-                <div className="flex gap-4 mt-1 text-[10px] text-gray-400">
-                  <span className="flex items-center gap-1"><Circle size={6} className="fill-green-400 text-green-400" />{w.available} available</span>
-                  {w.maintenance > 0 && <span className="flex items-center gap-1"><Circle size={6} className="fill-gray-300 text-gray-300" />{w.maintenance} maintenance</span>}
-                </div>
-              </div>
-            );})}
+              );
+            })}
           </div>
         </div>
 
-        <div className="lg:col-span-2 bg-white rounded-xl border border-gray-200 shadow-sm">
+        <div className="bg-white rounded-xl border border-gray-200/80 shadow-sm">
           <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-gray-900 flex items-center gap-2"><Stethoscope size={16} className="text-gray-400" />OPD queue</h2>
-            <span className="text-xs font-medium text-brand-600">{OPD_QUEUE.length} in queue</span>
+            <div className="flex items-center gap-2"><AlertTriangle size={16} className="text-amber-500" /><h2 className="text-sm font-semibold text-gray-900">Pending actions</h2></div>
+            <span className="text-xs font-bold text-gray-900 bg-gray-100 rounded-full px-2 py-0.5">{pendingActions.reduce((a, b) => a + b.count, 0)}</span>
           </div>
           <div className="divide-y divide-gray-50">
-            {OPD_QUEUE.map((q) => (
-              <div key={q.token} className="px-5 py-3 hover:bg-gray-50 transition-colors cursor-pointer">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <span className="text-xs font-mono font-bold text-gray-900 bg-gray-100 px-2 py-1 rounded">{q.token}</span>
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">{q.patient} <span className="text-gray-400 font-normal">· {q.age}y</span></p>
-                      <p className="text-xs text-gray-500">{q.doctor} · {q.dept}</p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <span className={cn('text-[10px] font-semibold px-2 py-0.5 rounded-full uppercase', statusColors[q.status])}>{statusLabels[q.status]}</span>
-                    <p className="text-[10px] text-gray-400 mt-1">{q.time}</p>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-          <div className="px-5 py-3 border-t border-gray-100">
-            <button className="text-xs font-medium text-brand-600 hover:text-brand-700 flex items-center gap-1">View full queue <ChevronRight size={12} /></button>
+            {pendingActions.map((item) => { const Icon = item.icon; return (
+              <button key={item.label} className="w-full flex items-center gap-3 px-5 py-3.5 hover:bg-gray-50 transition-colors text-left">
+                <div className={cn('w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0', item.color)}><Icon size={15} /></div>
+                <p className="text-sm text-gray-700 flex-1 truncate">{item.label}</p>
+                <div className="flex items-center gap-2">{item.urgent && <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />}<span className="text-sm font-bold text-gray-900">{item.count}</span><ChevronRight size={14} className="text-gray-300" /></div>
+              </button>
+            ); })}
           </div>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 bg-white rounded-xl border border-gray-200 shadow-sm">
+        <div className="lg:col-span-2 bg-white rounded-xl border border-gray-200/80 shadow-sm">
           <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-gray-900 flex items-center gap-2"><TrendingUp size={16} className="text-gray-400" />Revenue today</h2>
-            <span className="text-lg font-display font-bold text-emerald-600">{formatCurrency(1247000)}</span>
+            <div className="flex items-center gap-2"><Calendar size={16} className="text-gray-400" /><h2 className="text-sm font-semibold text-gray-900">OPD queue &mdash; live</h2><div className="flex items-center gap-1.5 ml-2"><div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" /><span className="text-xs text-gray-400">Real-time</span></div></div>
           </div>
-          <div className="p-5">
-            <div className="flex items-end gap-2 h-32 mb-3">
-              {REVENUE_HOURS.map((r) => (
-                <div key={r.hour} className="flex-1 flex flex-col items-center gap-1">
-                  <div className="w-full bg-emerald-100 hover:bg-emerald-200 rounded-t transition-colors cursor-pointer relative group" style={{ height: `${(r.amount / maxRevenue) * 100}%`, minHeight: 4 }}>
-                    <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-[9px] px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">{formatCurrency(r.amount)}</div>
-                  </div>
-                  <span className="text-[9px] text-gray-400">{r.hour}</span>
-                </div>
-              ))}
-            </div>
-            <div className="border-t border-gray-100 pt-3 space-y-2">
-              <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">By department</p>
-              {DEPT_REVENUE.map((d) => (
-                <div key={d.dept} className="flex items-center gap-3">
-                  <span className="text-xs text-gray-600 w-28 truncate">{d.dept}</span>
-                  <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden"><div className="h-full bg-emerald-400 rounded-full" style={{ width: `${d.pct}%` }} /></div>
-                  <span className="text-xs font-medium text-gray-700 w-16 text-right">{formatCurrency(d.amount)}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
-          <div className="px-5 py-4 border-b border-gray-100">
-            <h2 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
-              <AlertCircle size={16} className="text-gray-400" />Pending actions
-              <span className="ml-auto text-xs font-medium bg-red-100 text-red-700 px-2 py-0.5 rounded-full">{PENDING_ACTIONS.length}</span>
-            </h2>
-          </div>
-          <div className="p-3 space-y-2">
-            {PENDING_ACTIONS.map((a, i) => { const I = a.icon; return (
-              <div key={i} className={cn('flex items-start gap-3 px-3 py-2.5 rounded-lg border cursor-pointer hover:shadow-sm transition-shadow', severityStyles[a.severity])}>
-                <I size={14} className="mt-0.5 flex-shrink-0" />
-                <span className="text-xs leading-relaxed">{a.text}</span>
-              </div>
-            );})}
-          </div>
-        </div>
-      </div>
-
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
-        <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-gray-900 flex items-center gap-2"><Clock size={16} className="text-gray-400" />Recent admissions</h2>
-          <button className="text-xs font-medium text-brand-600 hover:text-brand-700 flex items-center gap-1">View all <ChevronRight size={12} /></button>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead><tr className="border-b border-gray-100">
-              {['IPD #','Patient','Department','Doctor','Payor','Type','When'].map((h,i) => (
-                <th key={h} className={cn('px-5 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider', i === 6 ? 'text-right' : 'text-left')}>{h}</th>
-              ))}
-            </tr></thead>
+          <table className="w-full">
+            <thead><tr className="border-b border-gray-100"><th className="px-5 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Doctor</th><th className="px-3 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Dept</th><th className="px-3 py-2.5 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Waiting</th><th className="px-3 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Current patient</th><th className="px-3 py-2.5 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Avg wait</th></tr></thead>
             <tbody className="divide-y divide-gray-50">
-              {RECENT_ADMISSIONS.map((a) => (
-                <tr key={a.ipd} className="hover:bg-gray-50 cursor-pointer transition-colors">
-                  <td className="px-5 py-3 font-mono text-xs font-medium text-gray-900">{a.ipd}</td>
-                  <td className="px-5 py-3"><span className="font-medium text-gray-900">{a.patient}</span><span className="text-gray-400 ml-1">· {a.age}y</span></td>
-                  <td className="px-5 py-3 text-gray-600">{a.dept}</td>
-                  <td className="px-5 py-3 text-gray-600">{a.doctor}</td>
-                  <td className="px-5 py-3"><span className={cn('text-xs font-medium px-2 py-0.5 rounded-full', a.payor === 'Self-pay' ? 'bg-gray-100 text-gray-600' : a.payor === 'PMJAY' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700')}>{a.payor}</span></td>
-                  <td className="px-5 py-3"><span className={cn('text-xs font-medium px-2 py-0.5 rounded-full', a.type === 'emergency' ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-600')}>{a.type}</span></td>
-                  <td className="px-5 py-3 text-right text-xs text-gray-500">{a.time}</td>
+              {opdQueue.map((q) => (
+                <tr key={q.doctor} className="hover:bg-gray-50/50">
+                  <td className="px-5 py-3 text-sm font-medium text-gray-900">{q.doctor}</td>
+                  <td className="px-3 py-3"><span className="text-xs font-medium bg-gray-100 text-gray-600 rounded-md px-2 py-0.5">{q.dept}</span></td>
+                  <td className="px-3 py-3 text-center"><span className={cn('inline-flex items-center justify-center w-7 h-7 rounded-full text-xs font-bold', q.waiting >= 7 ? 'bg-red-50 text-red-700' : q.waiting >= 5 ? 'bg-amber-50 text-amber-700' : 'bg-emerald-50 text-emerald-700')}>{q.waiting}</span></td>
+                  <td className="px-3 py-3"><div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" /><span className="text-sm text-gray-700">{q.current}</span></div></td>
+                  <td className="px-3 py-3 text-right text-sm text-gray-500">{q.avgWait}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
+
+        <div className="bg-white rounded-xl border border-gray-200/80 shadow-sm">
+          <div className="px-5 py-4 border-b border-gray-100"><div className="flex items-center gap-2"><CreditCard size={16} className="text-gray-400" /><h2 className="text-sm font-semibold text-gray-900">Revenue by department</h2></div><p className="text-xs text-gray-400 mt-0.5">Today &middot; {formatCurrency(847000)}</p></div>
+          <div className="p-5 space-y-3">
+            {revenueByDept.map((d, i) => { const colors = ['bg-brand-500', 'bg-teal-500', 'bg-purple-500', 'bg-amber-500', 'bg-pink-500', 'bg-gray-400']; return (
+              <div key={d.dept} className="flex items-center gap-3"><div className={cn('w-2.5 h-2.5 rounded-full flex-shrink-0', colors[i])} /><div className="flex-1"><div className="flex items-center justify-between"><span className="text-sm text-gray-700">{d.dept}</span><span className="text-sm font-semibold text-gray-900">{formatCurrency(d.amount)}</span></div><div className="h-1.5 bg-gray-100 rounded-full mt-1.5 overflow-hidden"><div className={cn('h-full rounded-full', colors[i])} style={{ width: `${d.pct}%` }} /></div></div></div>
+            ); })}
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-xl border border-gray-200/80 shadow-sm">
+        <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between"><div className="flex items-center gap-2"><Clock size={16} className="text-gray-400" /><h2 className="text-sm font-semibold text-gray-900">Recent admissions</h2></div><button className="text-xs font-medium text-brand-600 hover:text-brand-700 flex items-center gap-1">View all IPD <ArrowRight size={12} /></button></div>
+        <table className="w-full">
+          <thead><tr className="border-b border-gray-100"><th className="px-5 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Patient</th><th className="px-3 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">UHID</th><th className="px-3 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Department</th><th className="px-3 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Doctor</th><th className="px-3 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Type</th><th className="px-3 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Payor</th><th className="px-3 py-2.5 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">When</th></tr></thead>
+          <tbody className="divide-y divide-gray-50">
+            {recentAdmissions.map((a) => (
+              <tr key={a.uhid} className="hover:bg-gray-50/50 cursor-pointer">
+                <td className="px-5 py-3 text-sm font-medium text-gray-900">{a.name}</td>
+                <td className="px-3 py-3"><span className="text-xs font-mono bg-gray-100 text-gray-600 rounded px-1.5 py-0.5">{a.uhid}</span></td>
+                <td className="px-3 py-3 text-sm text-gray-600">{a.dept}</td>
+                <td className="px-3 py-3 text-sm text-gray-600">{a.doctor}</td>
+                <td className="px-3 py-3"><span className={cn('text-xs font-semibold px-2 py-0.5 rounded-full', a.type === 'emergency' ? 'bg-red-50 text-red-700' : 'bg-blue-50 text-blue-700')}>{a.type}</span></td>
+                <td className="px-3 py-3"><span className={cn('text-xs font-medium px-2 py-0.5 rounded-md', a.payor === 'Self' ? 'bg-gray-100 text-gray-600' : a.payor === 'PMJAY' ? 'bg-emerald-50 text-emerald-700' : 'bg-purple-50 text-purple-700')}>{a.payor}</span></td>
+                <td className="px-3 py-3 text-right text-xs text-gray-500">{a.time}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     </div>
   );
