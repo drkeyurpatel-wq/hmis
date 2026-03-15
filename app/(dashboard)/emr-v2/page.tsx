@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef, useCallback, useMemo } from 'react';
+import React, { useState, useRef, useCallback, useMemo, useEffect } from 'react';
 import { DIAGNOSES, searchDiagnoses } from '@/lib/cdss/diagnoses';
 import { MEDICATIONS, searchMedications, checkInteractions } from '@/lib/cdss/medications';
 import { COMPLAINT_TEMPLATES, searchComplaints } from '@/lib/cdss/complaints';
@@ -9,6 +9,7 @@ import { MED_SETS } from '@/lib/cdss/med-sets';
 import { calculateNEWS2, fahToCel } from '@/lib/cdss/news2';
 import { COMMON_ALLERGENS, checkAllergyConflict } from '@/lib/cdss/allergies';
 import { H1_CENTRES } from '@/lib/cdss/centres';
+import { useEMR } from '@/lib/emr/use-emr';
 
 // Types
 interface Patient { id:string; name:string; age:string; gender:string; uhid:string; phone:string; allergies:string[]; bloodGroup:string; }
@@ -66,7 +67,41 @@ const Sec = ({n,title,icon,children}:{n:number;title:string;icon:string;children
 
 // MAIN PAGE
 export default function EMRv3Page() {
+  // Supabase + Offline hooks
+  const emr = useEMR();
+
+  // Sync patient from URL: /emr-v2?patient=UUID
+  const [urlLoaded, setUrlLoaded] = useState(false);
+  useEffect(() => {
+    if (urlLoaded) return;
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    const pid = params.get('patient');
+    if (pid) { emr.selectPatient(pid); }
+    setUrlLoaded(true);
+  }, [urlLoaded, emr]);
+
+  // Sync EMR patient → local patient state
   const [patient, setPatient] = useState<Patient>({id:'',name:'Patient Name',age:'--',gender:'--',uhid:'H1-00000',phone:'',allergies:[],bloodGroup:''});
+  useEffect(() => {
+    if (emr.patient) {
+      setPatient({
+        id: emr.patient.id,
+        name: emr.patient.name,
+        age: emr.patient.age,
+        gender: emr.patient.gender,
+        uhid: emr.patient.uhid,
+        phone: emr.patient.phone,
+        allergies: emr.patient.allergies,
+        bloodGroup: emr.patient.bloodGroup,
+      });
+    }
+  }, [emr.patient]);
+
+  // Patient search state
+  const [patientSearchQ, setPatientSearchQ] = useState('');
+  const [showPatientSearch, setShowPatientSearch] = useState(false);
+
   const [allergyInput, setAllergyInput] = useState('');
   const [activeCentre, setActiveCentre] = useState('shilaj');
   const [vitals, setVitals] = useState<VitalValues>({systolic:'',diastolic:'',heartRate:'',spo2:'',temperature:'',weight:'',height:'',respiratoryRate:'',isAlert:true,onO2:false});
@@ -113,19 +148,49 @@ export default function EMRv3Page() {
 
   const generateRxPDF=()=>{const centre=H1_CENTRES.find(c=>c.id===activeCentre)||H1_CENTRES[0];const w=window.open('','_blank');if(!w)return;const advHtml=followUp.advice.map(a=>{const g=showGujarati?(GUJARATI[a]||''):'';return '<li>'+a+(g?'<br/><span style="color:#666;font-size:8px">'+g+'</span>':'')+'</li>';}).join('');const n2=news2?'NEWS2: '+news2.total+' ('+news2.label+')':'';w.document.write('<!DOCTYPE html><html><head><title>Rx</title><style>@page{size:A5;margin:10mm}*{margin:0;padding:0;box-sizing:border-box;font-family:Segoe UI,sans-serif}body{padding:8mm;color:#1a1a1a;font-size:10px}.hdr{display:flex;justify-content:space-between;border-bottom:2px solid #1e40af;padding-bottom:8px;margin-bottom:10px}.logo{width:60px;height:60px;border:1px dashed #ccc;display:flex;align-items:center;justify-content:center;font-size:7px;color:#999}.hn{font-size:15px;font-weight:700;color:#1e40af}.hs{font-size:8px;color:#666}.pr{display:flex;gap:12px;margin-bottom:4px;font-size:10px}.pr b{color:#1e40af}.st{font-size:11px;font-weight:700;color:#1e40af;margin:8px 0 3px;border-bottom:1px solid #e5e7eb;padding-bottom:2px}table{width:100%;border-collapse:collapse;font-size:9px}th{background:#eff6ff;color:#1e40af;text-align:left;padding:3px 4px;border-bottom:1px solid #1e40af}td{padding:3px 4px;border-bottom:1px solid #e5e7eb}.al{list-style:none;padding:0}.al li{padding:2px 0;font-size:9px}.al li::before{content:"\2022 ";color:#1e40af;font-weight:700}.ft{margin-top:16px;text-align:right;border-top:1px solid #e5e7eb;padding-top:8px}.sl{width:120px;border-bottom:1px solid #333;margin-left:auto;margin-bottom:4px}.warn{background:#fef2f2;border:1px solid #fca5a5;border-radius:4px;padding:4px 8px;margin:4px 0;font-size:8px;color:#991b1b}@media print{body{padding:0}}</style></head><body>'+'<div class="hdr"><div style="display:flex;gap:10px;align-items:center"><div class="logo">LOGO</div><div><div class="hn">'+centre.name+'</div><div class="hs">'+centre.address+' | '+centre.phone+'</div><div class="hs">'+centre.tagline+'</div></div></div><div style="text-align:right;font-size:9px;color:#666">Date: '+new Date().toLocaleDateString('en-IN')+'<br/>Time: '+new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})+'</div></div>'+'<div class="pr"><b>Name:</b> '+patient.name+' <b>Age/Sex:</b> '+patient.age+'/'+patient.gender+' <b>UHID:</b> '+patient.uhid+'</div>'+(patient.allergies.length?'<div class="warn">ALLERGIES: '+patient.allergies.join(', ')+'</div>':'')+(vitals.systolic?'<div class="pr"><b>Vitals:</b> BP '+vitals.systolic+'/'+vitals.diastolic+' HR '+vitals.heartRate+'/min SpO2 '+vitals.spo2+'% Temp '+vitals.temperature+'F Wt '+vitals.weight+'kg'+(n2?' <b>'+n2+'</b>':'')+'</div>':'')+(diagnoses.length?'<div class="st">Diagnosis</div><div style="font-size:10px">'+diagnoses.map(d=>d.code+' - '+d.label+' ('+d.type+')').join('<br/>')+'</div>':'')+(prescriptions.length?'<div class="st">Rx Prescription</div><table><tr><th>#</th><th>Medication</th><th>Dose</th><th>Freq</th><th>Duration</th><th>Instructions</th></tr>'+prescriptions.map((p,i)=>'<tr><td>'+(i+1)+'</td><td><b>'+p.brand+'</b> ('+p.generic+') '+p.strength+'</td><td>'+p.dose+'</td><td>'+p.frequency+'</td><td>'+p.duration+'</td><td>'+p.instructions+'</td></tr>').join('')+'</table>':'')+(investigations.length?'<div class="st">Investigations</div><div style="font-size:9px">'+investigations.map(i=>i.name+(i.urgency!=='routine'?' ['+i.urgency.toUpperCase()+']':'')).join(', ')+'</div>':'')+(followUp.advice.length?'<div class="st">Advice</div><ul class="al">'+advHtml+'</ul>':'')+(followUp.date?'<div style="margin-top:4px;font-size:9px"><b>Follow-up:</b> '+followUp.date+(followUp.notes?' - '+followUp.notes:'')+'</div>':'')+(referral.department?'<div class="st">Referral</div><div style="font-size:9px"><b>To:</b> '+referral.department+' <b>Reason:</b> '+referral.reason+' <b>'+referral.urgency.toUpperCase()+'</b></div>':'')+'<div class="ft"><div class="sl"></div><div style="font-size:9px;color:#666">Doctor Signature & Stamp</div></div></body></html>');w.document.close();setTimeout(()=>w.print(),300);};
 
+  // Auto-save draft every 5s of inactivity
+  useEffect(() => {
+    if (!patient.id && !complaints.length && !diagnoses.length) return;
+    emr.autoSaveDraft({ vitals, complaints, examFindings: examEntries, diagnoses, investigations, prescriptions, advice: followUp.advice, followUp: { date: followUp.date, notes: followUp.notes }, referral: referral.department ? referral : null });
+  }, [vitals, complaints, examEntries, diagnoses, investigations, prescriptions, followUp, referral]);
+
   const sidebarOpen=showHistory||showCopilot||showAnalytics;
 
   return (<div className="min-h-screen bg-gray-50">
     <div className="sticky top-0 z-50 bg-white border-b shadow-sm px-4 py-2"><div className="max-w-5xl mx-auto flex items-center justify-between">
-      <div className="flex items-center gap-3"><div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold text-sm">{patient.name.charAt(0)}</div>
-        <div><div className="font-semibold text-gray-900 text-sm">{patient.name}</div><div className="text-xs text-gray-500">{patient.age}/{patient.gender} | {patient.uhid}</div></div></div>
+      <div className="flex items-center gap-3">
+        <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold text-sm cursor-pointer" onClick={()=>setShowPatientSearch(!showPatientSearch)}>{patient.name.charAt(0)}</div>
+        <div className="relative">
+          <div className="font-semibold text-gray-900 text-sm cursor-pointer" onClick={()=>setShowPatientSearch(!showPatientSearch)}>{patient.name} {emr.patientLoading&&<span className="text-xs text-gray-400">loading...</span>}</div>
+          <div className="text-xs text-gray-500">{patient.age}/{patient.gender} | {patient.uhid}{emr.patient?.lastVisit?` | Last: ${emr.patient.lastVisit}`:''}</div>
+          {showPatientSearch&&<div className="absolute top-full left-0 mt-2 w-80 bg-white border rounded-lg shadow-xl z-50 p-3">
+            <input type="text" placeholder="Search UHID, name, or phone..." value={patientSearchQ} onChange={e=>{setPatientSearchQ(e.target.value);emr.searchPatient(e.target.value);}} autoFocus
+              className="w-full px-3 py-2 border rounded-lg text-sm mb-2 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            {emr.todayQueue.length>0&&<div className="mb-2"><div className="text-xs font-medium text-gray-500 mb-1">Today's Queue ({emr.todayQueue.length})</div>
+              {emr.todayQueue.slice(0,5).map((q:any)=><button key={q.id} onClick={()=>{emr.selectPatient(q.patient.id);setShowPatientSearch(false);setPatientSearchQ('');}}
+                className="w-full text-left px-2 py-1.5 text-xs hover:bg-blue-50 rounded flex justify-between items-center">
+                <span><span className="font-medium">{q.patient.first_name} {q.patient.last_name}</span> <span className="text-gray-400">#{q.token_number}</span></span>
+                <span className={`px-1.5 py-0.5 rounded text-xs ${q.status==='waiting'?'bg-yellow-100 text-yellow-700':q.status==='with_doctor'?'bg-blue-100 text-blue-700':'bg-green-100 text-green-700'}`}>{q.status}</span>
+              </button>)}</div>}
+            {emr.searchResults.length>0&&<div><div className="text-xs font-medium text-gray-500 mb-1">Search Results</div>
+              {emr.searchResults.map((p:any)=><button key={p.id} onClick={()=>{emr.selectPatient(p.id);setShowPatientSearch(false);setPatientSearchQ('');}}
+                className="w-full text-left px-2 py-1.5 text-xs hover:bg-blue-50 rounded">
+                <span className="font-medium">{p.first_name} {p.last_name}</span> <span className="text-gray-400">{p.uhid} | {p.age_years}/{p.gender} | {p.phone_primary}</span>
+              </button>)}</div>}
+            {patientSearchQ.length>=2&&emr.searchResults.length===0&&<div className="text-xs text-gray-400 text-center py-2">No patients found</div>}
+          </div>}
+        </div>
+        {emr.todayQueue.length>0&&<span className="bg-blue-100 text-blue-700 text-xs px-2 py-0.5 rounded-full">{emr.todayQueue.length} in queue</span>}
+      </div>
       <div className="flex gap-1.5 flex-wrap">
         <select value={activeCentre} onChange={e=>setActiveCentre(e.target.value)} className="text-xs border rounded px-2 py-1.5">{H1_CENTRES.map(c=><option key={c.id} value={c.id}>{c.shortName}</option>)}</select>
         <button onClick={()=>setShowHistory(!showHistory)} className={`px-3 py-1.5 text-xs rounded ${showHistory?'bg-blue-100 text-blue-700':'bg-gray-100'}`}>History</button>
         <button onClick={()=>setShowCopilot(!showCopilot)} className={`px-3 py-1.5 text-xs rounded ${showCopilot?'bg-purple-100 text-purple-700':'bg-gray-100'}`}>AI Copilot</button>
         <button onClick={()=>setShowAnalytics(!showAnalytics)} className={`px-3 py-1.5 text-xs rounded ${showAnalytics?'bg-orange-100 text-orange-700':'bg-gray-100'}`}>Analytics</button>
         <button onClick={generateRxPDF} className="px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded hover:bg-blue-700">Print Rx</button>
-        <button className="px-3 py-1.5 bg-green-600 text-white text-xs font-medium rounded hover:bg-green-700">Save</button>
+        <button onClick={async()=>{const result=await emr.saveEncounter({vitals,complaints,examFindings:examEntries,diagnoses,investigations,prescriptions,advice:followUp.advice,followUp:{date:followUp.date,notes:followUp.notes},referral:referral.department?referral:null});if(result.success)flash(result.offline?'Saved offline — will sync when online':'Saved to server');else flash('Save failed');}} className="px-3 py-1.5 bg-green-600 text-white text-xs font-medium rounded hover:bg-green-700">Save</button>
+        {!emr.online&&<span className="px-2 py-1 bg-red-100 text-red-700 text-xs rounded animate-pulse">OFFLINE</span>}
+        {emr.pendingSyncs>0&&<span className="px-2 py-1 bg-yellow-100 text-yellow-700 text-xs rounded">{emr.pendingSyncs} pending</span>}
       </div></div></div>
 
     {toast&&<div className="fixed top-14 left-1/2 -translate-x-1/2 z-[60] bg-green-600 text-white px-4 py-2 rounded-lg shadow-lg text-sm font-medium">{toast}</div>}
@@ -252,7 +317,15 @@ export default function EMRv3Page() {
     </div>
 
     {sidebarOpen&&<div className="w-80 shrink-0 space-y-4">
-      {showHistory&&<div className="bg-white rounded-xl shadow-sm border p-4 sticky top-[60px]"><div className="flex items-center justify-between mb-3"><h3 className="font-semibold text-sm">Past Encounters</h3><button onClick={()=>setShowHistory(false)} className="text-gray-400 text-xs">x</button></div><div className="text-center py-6 text-gray-400 text-sm"><p>Connect Supabase for history</p></div></div>}
+      {showHistory&&<div className="bg-white rounded-xl shadow-sm border p-4 sticky top-[60px]"><div className="flex items-center justify-between mb-3"><h3 className="font-semibold text-sm">Past Encounters</h3><button onClick={()=>setShowHistory(false)} className="text-gray-400 text-xs">x</button></div>
+        {emr.encountersLoading?<div className="text-center py-4 text-gray-400 text-xs">Loading...</div>:
+        emr.pastEncounters.length===0?<div className="text-center py-6 text-gray-400 text-sm"><p>{patient.id?'No past encounters':'Select a patient to see history'}</p></div>:
+        <div className="space-y-2 max-h-[60vh] overflow-y-auto">{emr.pastEncounters.map(e=><div key={e.id} className="border rounded-lg p-2 hover:bg-blue-50 cursor-pointer" onClick={async()=>{const data=await emr.cloneEncounter(e.id);if(data){setVitals({systolic:data.vitals.systolic||'',diastolic:data.vitals.diastolic||'',heartRate:data.vitals.heartRate||'',spo2:data.vitals.spo2||'',temperature:data.vitals.temperature||'',weight:data.vitals.weight||'',height:data.vitals.height||'',respiratoryRate:data.vitals.respiratoryRate||'',isAlert:true,onO2:false});setComplaints(data.complaints||[]);setExamEntries(data.examFindings||[]);setDiagnoses(data.diagnoses||[]);setInvestigations((data.investigations||[]).map((i:any)=>({...i,result:'',isAbnormal:false})));setPrescriptions(data.prescriptions||[]);setFollowUp({date:'',notes:'',advice:data.advice||[]});flash('Encounter cloned — modify as needed');}}}>
+          <div className="flex items-center justify-between"><span className="text-xs font-medium">{e.date}</span><span className={`text-xs px-1.5 py-0.5 rounded ${e.status==='signed'?'bg-green-100 text-green-700':'bg-yellow-100 text-yellow-700'}`}>{e.status}</span></div>
+          {e.primaryDx&&<div className="text-xs text-gray-600 mt-1"><span className="font-mono text-blue-600">{e.primaryDxCode}</span> {e.primaryDx}</div>}
+          <div className="text-xs text-gray-400 mt-1">{e.prescriptionCount} meds, {e.investigationCount} labs</div>
+          <div className="text-xs text-blue-600 mt-1">Click to clone</div>
+        </div>)}</div>}</div>}
       {showCopilot&&<div className="bg-white rounded-xl shadow-sm border p-4 sticky top-[60px]"><div className="flex items-center justify-between mb-3"><h3 className="font-semibold text-sm">AI Copilot</h3><button onClick={()=>setShowCopilot(false)} className="text-gray-400 text-xs">x</button></div>
         <p className="text-xs text-gray-500 mb-3">AI differentials from current data.</p>
         <button onClick={runCopilot} disabled={copilotLoading} className="w-full px-3 py-2 bg-purple-600 text-white text-sm rounded-lg hover:bg-purple-700 disabled:opacity-50 mb-3">{copilotLoading?'Analyzing...':'Generate Differentials'}</button>
