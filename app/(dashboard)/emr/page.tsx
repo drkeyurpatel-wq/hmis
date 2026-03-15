@@ -16,6 +16,8 @@ import {
 } from '@/lib/cdss/engine';
 import type { Vitals } from '@/types/database';
 import { SmartComplaintBuilder, generateComplaintText, type ActiveComplaint } from '@/components/emr/smart-complaint-builder';
+import { SmartExamBuilder, type ExamFindings } from '@/components/emr/smart-exam-builder';
+import { searchDrugs, MEDICATION_SETS, DRUG_DATABASE, type DrugSuggestion } from '@/lib/cdss/medications';
 
 const MOCK_PATIENT = {
   uhid: 'H1S-000001', name: 'Rajesh Kumar Sharma', age: 58, gender: 'Male',
@@ -54,6 +56,7 @@ export default function EMRPage() {
     provisional_diagnosis: '', investigations: '', treatment: '', advice: '', followup: '',
   });
   const [complaints, setComplaints] = useState<ActiveComplaint[]>([]);
+  const [examFindings, setExamFindings] = useState<ExamFindings>({});
   const [cdssOpen, setCdssOpen] = useState(true);
 
   const news2 = useMemo(() => calculateNEWS2(vitals), [vitals]);
@@ -132,7 +135,7 @@ export default function EMRPage() {
             {/* ═══ VITALS STRIP ═══ */}
             <VitalsStrip vitals={vitals} setVitals={setVitals} alerts={vAlerts} />
 
-            {tab === 'note' && <ClinicalNoteEditor note={note} setNote={setNote} dx={dx} setDx={setDx} complaints={complaints} setComplaints={setComplaints} />}
+            {tab === 'note' && <ClinicalNoteEditor note={note} setNote={setNote} dx={dx} setDx={setDx} complaints={complaints} setComplaints={setComplaints} examFindings={examFindings} setExamFindings={setExamFindings} />}
             {tab === 'orders' && <OrdersPanel rx={rx} setRx={setRx} alerts={dAlerts} />}
             {tab === 'results' && (
               <div className="bg-white border border-gray-200 rounded-xl p-8 text-center">
@@ -258,10 +261,11 @@ type NoteFields = {
   provisional_diagnosis: string; investigations: string; treatment: string; advice: string; followup: string;
 };
 
-function ClinicalNoteEditor({ note, setNote, dx, setDx, complaints, setComplaints }: {
+function ClinicalNoteEditor({ note, setNote, dx, setDx, complaints, setComplaints, examFindings, setExamFindings }: {
   note: NoteFields; setNote: (n: NoteFields) => void;
   dx: SelectedDiagnosis[]; setDx: (d: SelectedDiagnosis[]) => void;
   complaints: ActiveComplaint[]; setComplaints: (c: ActiveComplaint[]) => void;
+  examFindings: ExamFindings; setExamFindings: (f: ExamFindings) => void;
 }) {
   const [icdQ, setIcdQ] = useState('');
   const icdR = useMemo(() => searchICD10(icdQ), [icdQ]);
@@ -284,11 +288,9 @@ function ClinicalNoteEditor({ note, setNote, dx, setDx, complaints, setComplaint
     },
     {
       id: 'examination', label: 'Examination', color: 'border-l-green-500', icon: '🩺',
-      fields: [
-        { key: 'general_examination', label: 'General Examination', ph: 'Conscious, oriented, cooperative\nBuilt: Average / Thin / Obese\nNourishment: Well / Under / Over\nPallor / Icterus / Cyanosis / Clubbing / Lymphadenopathy / Oedema\nJVP: Raised / Normal\nVitals: (recorded above in vitals strip)', rows: 4 },
-        { key: 'systemic_examination', label: 'Systemic Examination', ph: 'CVS: S1 S2 heard, No murmur, JVP not raised\nRS: B/L air entry equal, No added sounds / Crepitations in R/L base\nP/A: Soft, non-tender, No organomegaly, BS +\nCNS: Conscious, oriented, Cranial nerves intact, Motor/Sensory — NAD\nMusculoskeletal: Tenderness / Swelling / ROM / Deformity', rows: 5 },
-        { key: 'local_examination', label: 'Local Examination (if applicable)', ph: 'Site, Size, Shape, Surface, Margins, Consistency, Tenderness, Mobility, Skin over swelling\nWound: Clean / Infected / Slough / Granulation\nRange of motion, Special tests', rows: 3 },
-      ],
+      isSmartBuilder: true,
+      builderType: 'exam',
+      fields: [],
     },
     {
       id: 'diagnosis', label: 'Diagnosis & Plan', color: 'border-l-amber-500', icon: '🔍',
@@ -313,10 +315,11 @@ function ClinicalNoteEditor({ note, setNote, dx, setDx, complaints, setComplaint
       {groups.map(group => {
         const isExpanded = expandedGroup === group.id;
         const isSmartBuilder = 'isSmartBuilder' in group && group.isSmartBuilder;
+        const builderType = 'builderType' in group ? (group as any).builderType : 'complaints';
         const filledCount = isSmartBuilder
-          ? complaints.length
+          ? (builderType === 'exam' ? Object.keys(examFindings).length : complaints.length)
           : group.fields.filter(f => note[f.key as keyof NoteFields].trim()).length;
-        const totalCount = isSmartBuilder ? complaints.length : group.fields.length;
+        const totalCount = isSmartBuilder ? filledCount : group.fields.length;
 
         return (
           <div key={group.id} className={cn('bg-white border border-gray-200 rounded-xl overflow-hidden border-l-4', group.color)}>
@@ -330,7 +333,11 @@ function ClinicalNoteEditor({ note, setNote, dx, setDx, complaints, setComplaint
                 <span className="text-sm font-bold text-gray-700">{group.label}</span>
                 {filledCount > 0 && (
                   <span className="text-[10px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full font-medium">
-                    {isSmartBuilder ? `${filledCount} complaint${filledCount > 1 ? 's' : ''}` : `${filledCount}/${totalCount} filled`}
+                    {isSmartBuilder
+                      ? builderType === 'exam'
+                        ? `${filledCount} system${filledCount !== 1 ? 's' : ''}`
+                        : `${filledCount} complaint${filledCount !== 1 ? 's' : ''}`
+                      : `${filledCount}/${totalCount} filled`}
                   </span>
                 )}
               </div>
@@ -338,9 +345,14 @@ function ClinicalNoteEditor({ note, setNote, dx, setDx, complaints, setComplaint
             </button>
 
             {/* Fields or SmartComplaintBuilder */}
-            {isExpanded && isSmartBuilder && (
+            {isExpanded && isSmartBuilder && builderType === 'complaints' && (
               <div className="p-4">
                 <SmartComplaintBuilder complaints={complaints} setComplaints={setComplaints} />
+              </div>
+            )}
+            {isExpanded && isSmartBuilder && builderType === 'exam' && (
+              <div className="p-4">
+                <SmartExamBuilder findings={examFindings} setFindings={setExamFindings} />
               </div>
             )}
             {isExpanded && !isSmartBuilder && (
@@ -425,8 +437,16 @@ function OrdersPanel({ rx, setRx, alerts }: {
   rx: Prescription[]; setRx: (p: Prescription[]) => void; alerts: DoseAlert[];
 }) {
   const [show, setShow] = useState(false);
+  const [drugQ, setDrugQ] = useState('');
   const [n, setN] = useState({ drug_name: '', dose: '', route: 'oral', frequency: 'BD', duration: '5', instructions: '' });
   const fm: Record<string, number> = { OD: 1, BD: 2, TDS: 3, QID: 4, SOS: 1, STAT: 1, HS: 1 };
+  const drugResults = useMemo(() => searchDrugs(drugQ), [drugQ]);
+  const [showSets, setShowSets] = useState(false);
+
+  function addFromDrug(drug: DrugSuggestion) {
+    setN({ drug_name: drug.name, dose: drug.default_dose, route: drug.default_route, frequency: drug.default_frequency, duration: drug.default_duration, instructions: drug.instructions });
+    setDrugQ('');
+  }
 
   function add() {
     if (!n.drug_name || !n.dose) return;
@@ -435,9 +455,29 @@ function OrdersPanel({ rx, setRx, alerts }: {
     setShow(false);
   }
 
+  function applyMedSet(setId: string) {
+    const medSet = MEDICATION_SETS.find(s => s.id === setId);
+    if (!medSet) return;
+    const newRx: Prescription[] = [];
+    for (const drugName of medSet.drugs) {
+      if (rx.some(r => r.drug_name === drugName)) continue;
+      const drug = DRUG_DATABASE.find(d => d.name === drugName);
+      if (!drug) continue;
+      newRx.push({
+        id: crypto.randomUUID(), drug_name: drug.name, dose_mg: parseFloat(drug.default_dose) || 0,
+        dose_label: drug.default_dose + 'mg', route: drug.default_route, frequency: drug.default_frequency,
+        frequency_num: fm[drug.default_frequency] || 1, duration_days: parseInt(drug.default_duration) || 5,
+        instructions: drug.instructions,
+      });
+    }
+    setRx([...rx, ...newRx]);
+    setShowSets(false);
+  }
+
   return (
     <div className="space-y-4">
-      <div className="flex gap-2">
+      {/* Quick actions */}
+      <div className="flex gap-2 flex-wrap">
         {[{ l: 'Lab order', i: FlaskConical, c: 'text-purple-600 bg-purple-50 border-purple-200 hover:bg-purple-100' },
           { l: 'Radiology', i: ScanLine, c: 'text-blue-600 bg-blue-50 border-blue-200 hover:bg-blue-100' },
           { l: 'Prescription', i: Pill, c: 'text-health1-teal bg-teal-50 border-teal-200 hover:bg-teal-100' },
@@ -448,21 +488,57 @@ function OrdersPanel({ rx, setRx, alerts }: {
             <I size={15} />{b.l}
           </button>
         ); })}
+        <button onClick={() => setShowSets(!showSets)}
+          className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-lg border bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-100 transition-colors">
+          <FileText size={15} /> Medication Sets
+        </button>
       </div>
 
+      {/* Medication Sets Panel */}
+      {showSets && (
+        <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+          <div className="px-4 py-3 bg-amber-50 border-b border-amber-100 flex items-center justify-between">
+            <h3 className="text-xs font-bold text-amber-700 uppercase tracking-wider">Quick-apply medication sets</h3>
+            <button onClick={() => setShowSets(false)} className="text-amber-400 hover:text-amber-600 text-lg">&times;</button>
+          </div>
+          <div className="grid grid-cols-2 gap-2 p-3">
+            {MEDICATION_SETS.map(set => (
+              <button key={set.id} onClick={() => applyMedSet(set.id)}
+                className="text-left p-3 rounded-lg border border-gray-200 hover:border-brand-300 hover:bg-brand-50 transition-colors">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-xs font-bold text-gray-800">{set.name}</span>
+                  <span className="text-[10px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded">{set.category}</span>
+                </div>
+                <p className="text-[11px] text-gray-500 mb-2">{set.description}</p>
+                <div className="flex flex-wrap gap-1">
+                  {set.drugs.map(d => (
+                    <span key={d} className={cn('text-[10px] px-1.5 py-0.5 rounded',
+                      rx.some(r => r.drug_name === d) ? 'bg-green-100 text-green-600 line-through' : 'bg-gray-100 text-gray-600')}>
+                      {d.replace('Tab. ', '').replace('Inj. ', '').replace('Neb. ', '')}
+                    </span>
+                  ))}
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Active prescriptions */}
       <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
         <div className="px-4 py-3 bg-gray-50 border-b border-gray-100 flex items-center justify-between">
-          <h3 className="text-xs font-bold text-gray-600 uppercase tracking-wider flex items-center gap-2"><Pill size={14} className="text-health1-teal" /> Active prescriptions</h3>
+          <h3 className="text-xs font-bold text-gray-600 uppercase tracking-wider flex items-center gap-2"><Pill size={14} className="text-health1-teal" /> Active prescriptions ({rx.length})</h3>
           <button onClick={() => setShow(true)} className="text-xs font-medium text-health1-teal hover:underline flex items-center gap-1"><Plus size={12} /> Add drug</button>
         </div>
         {rx.length === 0 ? (
-          <div className="p-8 text-center text-sm text-gray-400">No prescriptions yet</div>
+          <div className="p-8 text-center text-sm text-gray-400">No prescriptions yet — use Medication Sets above or add individually</div>
         ) : (
           <div className="divide-y divide-gray-100">
-            {rx.map(p => {
-              const al = alerts.find(a => a.drug.toLowerCase() === p.drug_name.toLowerCase() && a.severity !== 'info');
+            {rx.map((p, idx) => {
+              const al = alerts.find(a => a.drug.toLowerCase().includes(p.drug_name.split(' ')[1]?.toLowerCase() || '___') && a.severity !== 'info');
               return (
-                <div key={p.id} className={cn('px-4 py-3 flex items-start gap-4', al?.severity === 'critical' && 'bg-red-50')}>
+                <div key={p.id} className={cn('px-4 py-3 flex items-start gap-3', al?.severity === 'critical' && 'bg-red-50')}>
+                  <span className="text-xs font-bold text-gray-400 w-5 mt-0.5">{idx + 1}.</span>
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-semibold text-gray-900">{p.drug_name}</span>
@@ -479,6 +555,7 @@ function OrdersPanel({ rx, setRx, alerts }: {
         )}
       </div>
 
+      {/* Add prescription modal with drug autocomplete */}
       {show && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4">
@@ -487,11 +564,36 @@ function OrdersPanel({ rx, setRx, alerts }: {
               <button onClick={() => setShow(false)} className="text-gray-400 hover:text-gray-600 text-xl">&times;</button>
             </div>
             <div className="p-5 space-y-3">
-              <div>
+              {/* Drug search with autocomplete */}
+              <div className="relative">
                 <label className="block text-xs font-medium text-gray-600 mb-1">Drug name *</label>
-                <input value={n.drug_name} onChange={e => setN({ ...n, drug_name: e.target.value })} placeholder="e.g. Atorvastatin, Paracetamol..."
+                <input value={n.drug_name || drugQ} onChange={e => { setDrugQ(e.target.value); setN({ ...n, drug_name: '' }); }}
+                  placeholder="Start typing — e.g. Ator, Panto, Ceftri, Metfor..."
                   className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-health1-teal" />
+                {drugResults.length > 0 && !n.drug_name && (
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-20 max-h-52 overflow-y-auto">
+                    {drugResults.map(d => (
+                      <button key={d.name} onClick={() => addFromDrug(d)}
+                        className="w-full text-left px-3 py-2.5 hover:bg-gray-50 border-b border-gray-50 last:border-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium text-gray-800">{d.name}</span>
+                          <span className="text-[10px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded">{d.category}</span>
+                        </div>
+                        <p className="text-[11px] text-gray-400 mt-0.5">
+                          {d.default_dose}mg · {d.default_route} · {d.default_frequency} · {d.default_duration}d
+                          {d.instructions && ` · ${d.instructions}`}
+                        </p>
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {n.drug_name && (
+                  <div className="mt-1 text-[11px] text-green-600 flex items-center gap-1">
+                    <CheckCircle size={12} /> Selected: {n.drug_name} — fields auto-filled below
+                  </div>
+                )}
               </div>
+
               <div className="grid grid-cols-3 gap-3">
                 <div>
                   <label className="block text-xs font-medium text-gray-600 mb-1">Dose (mg) *</label>
@@ -527,7 +629,7 @@ function OrdersPanel({ rx, setRx, alerts }: {
               </div>
             </div>
             <div className="flex justify-end gap-2 px-5 py-4 border-t border-gray-100">
-              <button onClick={() => setShow(false)} className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg">Cancel</button>
+              <button onClick={() => { setShow(false); setDrugQ(''); }} className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg">Cancel</button>
               <button onClick={add} className="px-5 py-2 text-sm font-medium bg-health1-teal text-white rounded-lg hover:bg-teal-700">Add to prescriptions</button>
             </div>
           </div>

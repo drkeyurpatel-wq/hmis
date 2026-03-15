@@ -319,6 +319,18 @@ export function SmartComplaintBuilder({ complaints, setComplaints }: {
                     <p className="text-xs text-blue-800 mt-1 leading-relaxed">{summary}</p>
                   </div>
                 )}
+
+                {/* Free text for anything chips don't cover */}
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 mb-1.5">Additional notes (free text)</label>
+                  <textarea
+                    value={typeof complaint.values._freetext === 'string' ? complaint.values._freetext : ''}
+                    onChange={e => updateValue(complaint.id, '_freetext', e.target.value)}
+                    rows={2}
+                    placeholder="Anything not covered by the options above..."
+                    className="w-full px-3 py-2 text-xs text-gray-800 placeholder:text-gray-300 border border-gray-200 rounded-lg resize-none outline-none focus:ring-2 focus:ring-brand-500 leading-relaxed"
+                  />
+                </div>
               </div>
             )}
           </div>
