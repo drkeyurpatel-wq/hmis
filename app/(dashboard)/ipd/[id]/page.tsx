@@ -9,6 +9,7 @@ import VitalsTrendChart from '@/components/ipd/vitals-trend-chart';
 import SmartRounds from '@/components/ipd/smart-rounds';
 import DischargeEngine from '@/components/ipd/discharge-engine';
 import ConsentBuilder from '@/components/ipd/consent-builder';
+import SmartProcedures from '@/components/ipd/smart-procedures';
 import Link from 'next/link';
 
 let _sb: any = null;
@@ -52,8 +53,6 @@ export default function IPDClinicalPage() {
   const [ioForm, setIoForm] = useState({ shift: 'morning', oral_intake_ml: 0, iv_fluid_ml: 0, blood_products_ml: 0, ryles_tube_ml: 0, other_intake_ml: 0, urine_ml: 0, drain_1_ml: 0, drain_2_ml: 0, ryles_aspirate_ml: 0, vomit_ml: 0, stool_count: 0, other_output_ml: 0 });
   // Meds
   const [medForm, setMedForm] = useState({ drugName: '', genericName: '', dose: '', route: 'oral', frequency: 'OD', isStat: false, isPrn: false, specialInstructions: '' });
-  // Procedure
-  const [procForm, setProcForm] = useState({ procedureType: 'central_line', procedureName: '', indication: '', site: '', laterality: 'na', technique: '', findings: '', complications: '' });
   // Score
   const [scoreForm, setScoreForm] = useState({ scoreType: 'gcs', scoreValue: 0, interpretation: '' });
 
@@ -313,53 +312,8 @@ export default function IPDClinicalPage() {
       {/* ===== CONSENTS (Builder) ===== */}
       {tab === 'consents' && <ConsentBuilder consents={consents.consents} patientId={pt.id} patientName={patientName} admissionId={admissionId} admissionDx={admission.provisional_diagnosis || ''} staffId={staffId} onSave={async (c: any, sid: string) => { await consents.addConsent(c, sid); }} onFlash={flash} />}
 
-      {/* ===== PROCEDURES ===== */}
-      {tab === 'procedures' && <div>
-        <div className="flex justify-between items-center mb-3">
-          <h2 className="font-semibold text-sm">Procedural Notes</h2>
-          <button onClick={() => setShowForm(!showForm)} className="px-3 py-1.5 bg-blue-600 text-white text-xs rounded-lg">{showForm ? 'Cancel' : '+ New Procedure'}</button>
-        </div>
-        {showForm && <div className="bg-white rounded-xl border p-5 mb-4 space-y-3">
-          <div className="grid grid-cols-2 gap-3">
-            <div><label className="text-xs text-gray-500">Procedure type *</label>
-              <select value={procForm.procedureType} onChange={e => setProcForm(f => ({...f, procedureType: e.target.value}))} className="w-full px-3 py-2 border rounded-lg text-sm">
-                {['central_line','arterial_line','intubation','tracheostomy','chest_tube','lumbar_puncture','paracentesis','thoracentesis','bone_marrow','foley_catheter','ng_tube','picc_line','dialysis_catheter','pericardiocentesis','cardioversion','other'].map(t =>
-                  <option key={t} value={t}>{t.replace(/_/g,' ')}</option>)}</select></div>
-            <div><label className="text-xs text-gray-500">Procedure name *</label>
-              <input type="text" value={procForm.procedureName} onChange={e => setProcForm(f => ({...f, procedureName: e.target.value}))} className="w-full px-3 py-2 border rounded-lg text-sm" /></div>
-          </div>
-          <div><label className="text-xs text-gray-500">Indication *</label>
-            <input type="text" value={procForm.indication} onChange={e => setProcForm(f => ({...f, indication: e.target.value}))} className="w-full px-3 py-2 border rounded-lg text-sm" /></div>
-          <div className="grid grid-cols-2 gap-3">
-            <div><label className="text-xs text-gray-500">Site</label>
-              <input type="text" value={procForm.site} onChange={e => setProcForm(f => ({...f, site: e.target.value}))} className="w-full px-3 py-2 border rounded-lg text-sm" placeholder="e.g., Right IJV, Left radial..." /></div>
-            <div><label className="text-xs text-gray-500">Laterality</label>
-              <select value={procForm.laterality} onChange={e => setProcForm(f => ({...f, laterality: e.target.value}))} className="w-full px-3 py-2 border rounded-lg text-sm">
-                {['na','left','right','bilateral','midline'].map(l => <option key={l}>{l}</option>)}</select></div>
-          </div>
-          <div><label className="text-xs text-gray-500">Technique</label>
-            <textarea value={procForm.technique} onChange={e => setProcForm(f => ({...f, technique: e.target.value}))} rows={3} className="w-full px-3 py-2 border rounded-lg text-sm" placeholder="Describe the procedure technique..." /></div>
-          <div className="grid grid-cols-2 gap-3">
-            <div><label className="text-xs text-gray-500">Findings</label>
-              <textarea value={procForm.findings} onChange={e => setProcForm(f => ({...f, findings: e.target.value}))} rows={2} className="w-full px-3 py-2 border rounded-lg text-sm" /></div>
-            <div><label className="text-xs text-gray-500">Complications</label>
-              <textarea value={procForm.complications} onChange={e => setProcForm(f => ({...f, complications: e.target.value}))} rows={2} className="w-full px-3 py-2 border rounded-lg text-sm" placeholder="None / describe..." /></div>
-          </div>
-          <button onClick={async () => { if (!procForm.procedureName || !procForm.indication) return; await procedures.addNote(procForm, staffId); setShowForm(false); flash('Procedure note saved'); }}
-            className="px-4 py-2 bg-green-600 text-white text-sm rounded-lg">Save Procedure Note</button>
-        </div>}
-        {procedures.notes.length === 0 ? <div className="text-center py-8 bg-white rounded-xl border text-gray-400 text-sm">No procedural notes</div> :
-        <div className="space-y-2">{procedures.notes.map((n: any) => (
-          <div key={n.id} className="bg-white rounded-lg border p-3">
-            <div className="flex items-center gap-2 mb-1"><span className="font-medium text-sm">{n.procedure_name}</span>
-              <span className="bg-gray-100 text-gray-600 text-[10px] px-1.5 py-0.5 rounded">{n.procedure_type.replace(/_/g,' ')}</span></div>
-            <div className="text-xs text-gray-600"><span className="font-medium">Indication:</span> {n.indication}</div>
-            {n.technique && <div className="text-xs text-gray-500 mt-1">{n.technique}</div>}
-            {n.complications && <div className="text-xs text-red-600 mt-1">Complications: {n.complications}</div>}
-            <div className="text-[10px] text-gray-400 mt-1">{new Date(n.procedure_date).toLocaleString('en-IN')} | Dr. {n.doctor?.full_name}</div>
-          </div>
-        ))}</div>}
-      </div>}
+      {/* ===== PROCEDURES (Smart) ===== */}
+      {tab === 'procedures' && <SmartProcedures procedures={procedures.notes} admissionId={admissionId} staffId={staffId} onSave={async (proc: any, sid: string) => { await procedures.addNote(proc, sid); }} onFlash={flash} />}
 
       {/* ===== VITALS TREND ===== */}
       {tab === 'trends' && <div>

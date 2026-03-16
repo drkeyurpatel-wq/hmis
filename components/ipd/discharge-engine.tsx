@@ -28,6 +28,7 @@ const FOLLOWUP_OPTIONS = ['1 week','2 weeks','1 month','6 weeks','3 months','6 m
 export default function DischargeEngine({ admissionId, patientId, staffId, admission, onFlash }: Props) {
   const [journey, setJourney] = useState<JourneyData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [summarizing, setSummarizing] = useState(false);
   const [step, setStep] = useState(1); // 1=Review Journey, 2=Edit Summary, 3=Preview & Print
 
   // Discharge summary form (auto-populated)
@@ -85,29 +86,32 @@ export default function DischargeEngine({ admissionId, patientId, staffId, admis
     const admDx = admission?.provisional_diagnosis || '';
     const finalDx = admission?.final_diagnosis || rounds[rounds.length - 1]?.assessment || admDx;
 
-    // Build hospital course from rounds
-    const courseLines = rounds.map((r: any) => {
-      const date = new Date(r.round_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
-      return `${date} (${r.round_type}): ${r.assessment || ''} ${r.plan ? '→ ' + r.plan : ''}`;
-    });
-
-    // Build investigation summary
+    // Build investigation summary — RELEVANT ONLY (abnormal + critical)
     const labSummary = (labsRes.data || []).filter((l: any) => l.results?.length > 0).map((l: any) => {
       const abnormal = l.results.filter((r: any) => r.is_abnormal || r.is_critical);
+      if (abnormal.length === 0) return null; // Skip normal results entirely
       const date = new Date(l.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
-      if (abnormal.length === 0) return `${l.test?.test_name} (${date}): WNL`;
-      return `${l.test?.test_name} (${date}): ${abnormal.map((r: any) => `${r.parameter_name} ${r.result_value}${r.is_critical ? ' !!!' : '*'}`).join(', ')}`;
-    });
+      return `${l.test?.test_name} (${date}): ${abnormal.map((r: any) => `${r.parameter_name} ${r.result_value} ${r.unit || ''}${r.is_critical ? ' [CRITICAL]' : ''}`).join(', ')}`;
+    }).filter(Boolean);
 
-    const radSummary = (radRes.data || []).map((r: any) => {
+    // Add a one-liner for normal results
+    const normalCount = (labsRes.data || []).filter((l: any) => l.results?.length > 0 && l.results.every((r: any) => !r.is_abnormal && !r.is_critical)).length;
+
+    const radSummary = (radRes.data || []).filter((r: any) => r.findings || r.impression).map((r: any) => {
       const date = new Date(r.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
-      return `${r.test?.test_name} (${date}): ${r.findings || r.impression || 'Done'}`;
+      return `${r.test?.test_name} (${date}): ${r.findings || r.impression}`;
     });
 
     const procSummary = (procsRes.data || []).map((p: any) => {
       const date = new Date(p.procedure_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
-      return `${p.procedure_name} (${date}) — ${p.findings || 'Uneventful'}${p.complications ? ' | Complications: ' + p.complications : ''}`;
+      return `${p.procedure_name} (${date})${p.findings ? ' — ' + p.findings : ''}${p.complications && p.complications !== 'None' ? ' | Complications: ' + p.complications : ''}`;
     });
+
+    const investigationLines = [
+      ...labSummary,
+      ...(normalCount > 0 ? [`${normalCount} other investigation(s) within normal limits.`] : []),
+      ...radSummary,
+    ];
 
     // Build discharge meds from active meds
     const dMeds = activeMeds.map((m: any) => ({
@@ -115,20 +119,95 @@ export default function DischargeEngine({ admissionId, patientId, staffId, admis
       duration: '7 days', instructions: m.prn_instruction || '',
     }));
 
+    // Build raw course data for AI summarization
+    const rawCourseData = rounds.map((r: any) => {
+      const date = new Date(r.round_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
+      return `[${date}, ${r.round_type}] S: ${r.subjective || ''} | O: ${r.objective || ''} | A: ${r.assessment || ''} | P: ${r.plan || ''}`;
+    }).join('\n');
+
     setDS(prev => ({
       ...prev,
       admissionDate: admission?.admission_date ? new Date(admission.admission_date).toLocaleDateString('en-IN') : '',
       admittingDiagnosis: admDx,
       finalDiagnosis: finalDx,
-      hospitalCourse: courseLines.join('\n'),
-      proceduresDone: procSummary.join('\n') || 'None',
-      investigationSummary: [...labSummary, ...radSummary].join('\n') || 'Routine investigations done',
+      hospitalCourse: '', // Will be AI-generated
+      proceduresDone: procSummary.join('\n') || 'No procedures performed during this admission.',
+      investigationSummary: investigationLines.join('\n') || 'Routine investigations within normal limits.',
       dischargeMeds: dMeds,
       warningSignsToWatch: getWarningSignsForDiagnosis(admDx),
-    }));
+      _rawCourseData: rawCourseData,
+      _patientAge: pt?.age_years,
+      _patientGender: pt?.gender,
+    } as any));
 
     setLoading(false);
+
+    // Auto-trigger AI summarization
+    if (rounds.length > 0) {
+      summarizeHospitalCourse(rawCourseData, admDx, finalDx, procSummary.join('; '), dMeds, pt);
+    }
   }, [admissionId, patientId, admission]);
+
+  // AI Hospital Course Summarizer
+  const summarizeHospitalCourse = async (rawData: string, admDx: string, finalDx: string, procs: string, meds: any[], pt: any) => {
+    setSummarizing(true);
+    try {
+      const res = await fetch('/api/cdss', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'copilot',
+          prompt: `You are a senior hospital physician writing the "Hospital Course" section of a discharge summary. Write a concise, professional narrative paragraph (NOT bullet points, NOT daily notes) summarizing this patient's hospital stay.
+
+Patient: ${pt?.age_years}yr ${pt?.gender}, admitted with ${admDx}
+Final diagnosis: ${finalDx}
+Procedures: ${procs || 'None'}
+Discharge medications: ${meds.map(m => m.drug + ' ' + m.dose).join(', ')}
+
+Daily round notes (chronological):
+${rawData}
+
+RULES:
+- Write 1-3 concise paragraphs in third person past tense
+- Start with reason for admission and initial presentation
+- Cover key events, interventions, and response to treatment
+- Mention significant lab/imaging findings only if noted in rounds
+- End with patient's condition at time of discharge planning
+- Use standard medical discharge summary language
+- Do NOT list daily notes verbatim
+- Do NOT use bullet points or numbered lists
+- Keep it under 200 words
+- Indian English medical style`,
+        }),
+      });
+      const data = await res.json();
+      if (data.result) {
+        setDS(prev => ({ ...prev, hospitalCourse: data.result }));
+      }
+    } catch (e) {
+      // Fallback: condensed version from rounds
+      const fallback = generateFallbackCourse(rawData);
+      setDS(prev => ({ ...prev, hospitalCourse: fallback }));
+    }
+    setSummarizing(false);
+  };
+
+  // Fallback if AI is unavailable
+  const generateFallbackCourse = (rawData: string): string => {
+    const lines = rawData.split('\n').filter(Boolean);
+    if (lines.length === 0) return 'Patient was admitted, managed conservatively, and improved.';
+    const first = lines[0]; const last = lines[lines.length - 1];
+    return `Patient was admitted on ${first.match(/\[(.*?),/)?.[1] || 'admission'}. ${first.split('A:')[1]?.split('|')[0]?.trim() || ''} Treatment was initiated as per plan. ${lines.length > 2 ? `Over the course of ${lines.length} days, patient showed clinical improvement. ` : ''}${last.split('A:')[1]?.split('|')[0]?.trim() || 'Patient is now stable for discharge.'}`;
+  };
+
+  // Regenerate AI summary
+  const regenerateSummary = () => {
+    const raw = (ds as any)._rawCourseData;
+    if (raw) {
+      const pt = admission?.patient;
+      summarizeHospitalCourse(raw, ds.admittingDiagnosis, ds.finalDiagnosis, ds.proceduresDone, ds.dischargeMeds, pt);
+    }
+  };
 
   useEffect(() => { loadJourney(); }, [loadJourney]);
 
@@ -273,12 +352,15 @@ export default function DischargeEngine({ admissionId, patientId, staffId, admis
           </div>
           <div><label className="text-xs text-gray-500 font-medium">Final Diagnosis</label>
             <textarea value={ds.finalDiagnosis} onChange={e => setDS(p => ({...p, finalDiagnosis: e.target.value}))} rows={2} className="w-full px-3 py-2 border rounded-lg text-sm" /></div>
-          <div><label className="text-xs text-gray-500 font-medium">Hospital Course (auto-generated from rounds — edit as needed)</label>
-            <textarea value={ds.hospitalCourse} onChange={e => setDS(p => ({...p, hospitalCourse: e.target.value}))} rows={6} className="w-full px-3 py-2 border rounded-lg text-sm font-mono text-xs" /></div>
+          <div><label className="text-xs text-gray-500 font-medium flex items-center justify-between">
+              <span>Hospital Course {summarizing && <span className="text-blue-500 animate-pulse ml-2">AI summarizing...</span>}</span>
+              <button onClick={regenerateSummary} disabled={summarizing} className="text-[10px] text-blue-600 hover:text-blue-800 disabled:text-gray-400">Regenerate with AI</button>
+            </label>
+            <textarea value={ds.hospitalCourse} onChange={e => setDS(p => ({...p, hospitalCourse: e.target.value}))} rows={6} className="w-full px-3 py-2 border rounded-lg text-sm" placeholder={summarizing ? 'AI is generating a narrative summary...' : 'Hospital course narrative...'} /></div>
           <div><label className="text-xs text-gray-500 font-medium">Procedures Performed</label>
             <textarea value={ds.proceduresDone} onChange={e => setDS(p => ({...p, proceduresDone: e.target.value}))} rows={2} className="w-full px-3 py-2 border rounded-lg text-sm" /></div>
-          <div><label className="text-xs text-gray-500 font-medium">Investigation Summary</label>
-            <textarea value={ds.investigationSummary} onChange={e => setDS(p => ({...p, investigationSummary: e.target.value}))} rows={4} className="w-full px-3 py-2 border rounded-lg text-sm font-mono text-xs" /></div>
+          <div><label className="text-xs text-gray-500 font-medium">Investigation Summary (abnormal/significant only)</label>
+            <textarea value={ds.investigationSummary} onChange={e => setDS(p => ({...p, investigationSummary: e.target.value}))} rows={4} className="w-full px-3 py-2 border rounded-lg text-sm" /></div>
         </div>
 
         {/* Condition */}
