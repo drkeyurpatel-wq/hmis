@@ -4,6 +4,7 @@ import { useParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { useAuthStore } from '@/lib/store/auth';
 import { useWHOChecklist, useOTNotes } from '@/lib/ipd/clinical-hooks';
+import AnaesthesiaForm from '@/components/ot/anaesthesia-form';
 import Link from 'next/link';
 
 let _sb: any = null;
@@ -24,19 +25,12 @@ export default function OTClinicalPage() {
   const who = useWHOChecklist(bookingId);
   const otNotes = useOTNotes(bookingId);
 
-  // Anaesthesia record state
-  const [anaesRecord, setAnaesRecord] = useState<any>(null);
-  const [anaesForm, setAnaesForm] = useState<any>({ anaesthesia_type: 'general', pre_op_assessment: '', drugs_used: '', vitals_timeline: '', complications: '' });
-
   useEffect(() => {
     if (!bookingId || !sb()) return;
     sb().from('hmis_ot_bookings')
       .select('*, admission:hmis_admissions!inner(ipd_number, patient:hmis_patients!inner(id, uhid, first_name, last_name, age_years, gender, blood_group)), ot_room:hmis_ot_rooms!inner(name), surgeon:hmis_staff!hmis_ot_bookings_surgeon_id_fkey(full_name), anaesthetist:hmis_staff!hmis_ot_bookings_anaesthetist_id_fkey(full_name)')
       .eq('id', bookingId).single()
       .then(({ data }: any) => setBooking(data));
-    // Load anaesthesia record
-    sb().from('hmis_anaesthesia_records').select('*').eq('ot_booking_id', bookingId).single()
-      .then(({ data }: any) => { if (data) { setAnaesRecord(data); setAnaesForm({ anaesthesia_type: data.anaesthesia_type, pre_op_assessment: JSON.stringify(data.pre_op_assessment || {}), drugs_used: JSON.stringify(data.drugs_used || []), vitals_timeline: JSON.stringify(data.vitals_timeline || []), complications: data.complications || '' }); } });
   }, [bookingId]);
 
   // WHO checklist local state
@@ -60,27 +54,6 @@ export default function OTClinicalPage() {
     setNoteForm({});
     flash(noteType.replace('_', ' ') + ' note saved');
   };
-
-  // Save anaesthesia
-  const saveAnaes = async () => {
-    if (!sb() || !bookingId) return;
-    const payload = {
-      ot_booking_id: bookingId, anaesthetist_id: staffId,
-      anaesthesia_type: anaesForm.anaesthesia_type,
-      pre_op_assessment: tryParse(anaesForm.pre_op_assessment),
-      drugs_used: tryParse(anaesForm.drugs_used),
-      vitals_timeline: tryParse(anaesForm.vitals_timeline),
-      complications: anaesForm.complications,
-    };
-    if (anaesRecord?.id) {
-      await sb().from('hmis_anaesthesia_records').update(payload).eq('id', anaesRecord.id);
-    } else {
-      await sb().from('hmis_anaesthesia_records').insert(payload);
-    }
-    flash('Anaesthesia record saved');
-  };
-
-  function tryParse(s: string) { try { return JSON.parse(s); } catch { return s; } }
 
   if (!booking) return <div className="text-center py-12 text-gray-400">Loading OT booking...</div>;
   const pt = booking.admission?.patient;
@@ -309,24 +282,7 @@ export default function OTClinicalPage() {
       </div>}
 
       {/* ===== ANAESTHESIA RECORD ===== */}
-      {tab === 'anaesthesia' && <div className="bg-white rounded-xl border p-5">
-        <h3 className="font-semibold text-sm mb-3">Anaesthesia Record</h3>
-        <div className="space-y-3">
-          <div><label className="text-xs text-gray-500">Anaesthesia type *</label>
-            <select value={anaesForm.anaesthesia_type} onChange={e => setAnaesForm((f: any) => ({...f, anaesthesia_type: e.target.value}))} className="w-full px-3 py-2 border rounded-lg text-sm">
-              {['general','spinal','epidural','combined_spinal_epidural','regional','local','sedation','mac'].map(t =>
-                <option key={t} value={t}>{t.replace(/_/g,' ').toUpperCase()}</option>)}</select></div>
-          <div><label className="text-xs text-gray-500">Pre-op assessment (JSON or text)</label>
-            <textarea value={anaesForm.pre_op_assessment} onChange={e => setAnaesForm((f: any) => ({...f, pre_op_assessment: e.target.value}))} rows={3} className="w-full px-3 py-2 border rounded-lg text-sm font-mono text-xs" placeholder='{"asa_grade": 2, "airway": "Mallampati II", "fasting_hours": 8, "allergies": "NKDA"}' /></div>
-          <div><label className="text-xs text-gray-500">Drugs used (JSON or text)</label>
-            <textarea value={anaesForm.drugs_used} onChange={e => setAnaesForm((f: any) => ({...f, drugs_used: e.target.value}))} rows={3} className="w-full px-3 py-2 border rounded-lg text-sm font-mono text-xs" placeholder='[{"drug": "Propofol", "dose": "150mg", "time": "09:15"}, {"drug": "Fentanyl", "dose": "100mcg", "time": "09:10"}]' /></div>
-          <div><label className="text-xs text-gray-500">Vitals timeline (JSON or text)</label>
-            <textarea value={anaesForm.vitals_timeline} onChange={e => setAnaesForm((f: any) => ({...f, vitals_timeline: e.target.value}))} rows={3} className="w-full px-3 py-2 border rounded-lg text-sm font-mono text-xs" placeholder='[{"time": "09:00", "hr": 78, "bp": "120/80", "spo2": 99}, ...]' /></div>
-          <div><label className="text-xs text-gray-500">Complications</label>
-            <textarea value={anaesForm.complications} onChange={e => setAnaesForm((f: any) => ({...f, complications: e.target.value}))} rows={2} className="w-full px-3 py-2 border rounded-lg text-sm" placeholder="None / describe..." /></div>
-          <button onClick={saveAnaes} className="px-4 py-2 bg-green-600 text-white text-sm rounded-lg">Save Anaesthesia Record</button>
-        </div>
-      </div>}
+      {tab === 'anaesthesia' && <AnaesthesiaForm bookingId={bookingId} staffId={staffId} patientName={patientName} onFlash={flash} />}
     </div>
   );
 }

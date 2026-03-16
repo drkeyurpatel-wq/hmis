@@ -4,12 +4,14 @@ import { useParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { useAuthStore } from '@/lib/store/auth';
 import { useDoctorRounds, useICUChart, useICUScores, useIOChart, useMedicationOrders, useMAR, useConsents, useProceduralNotes } from '@/lib/ipd/clinical-hooks';
+import NursingShiftNotes from '@/components/ipd/nursing-shift-notes';
+import VitalsTrendChart from '@/components/ipd/vitals-trend-chart';
 import Link from 'next/link';
 
 let _sb: any = null;
 function sb() { if (typeof window === 'undefined') return null as any; if (!_sb) { try { _sb = createClient(); } catch { return null; } } return _sb; }
 
-type ClinicalTab = 'rounds' | 'icu' | 'io' | 'meds' | 'mar' | 'scores' | 'consents' | 'procedures' | 'nursing';
+type ClinicalTab = 'rounds' | 'icu' | 'trends' | 'io' | 'meds' | 'mar' | 'scores' | 'consents' | 'procedures' | 'nursing';
 
 export default function IPDClinicalPage() {
   const { id } = useParams();
@@ -65,7 +67,7 @@ export default function IPDClinicalPage() {
   const daysSince = Math.ceil((Date.now() - new Date(admission.admission_date).getTime()) / 86400000);
 
   const tabs: [ClinicalTab, string][] = [
-    ['rounds', 'Rounds'], ['icu', 'ICU Chart'], ['io', 'I/O Chart'], ['meds', 'Med Orders'],
+    ['rounds', 'Rounds'], ['icu', 'ICU Chart'], ['trends', 'Vitals Trend'], ['io', 'I/O Chart'], ['meds', 'Med Orders'],
     ['mar', 'MAR'], ['scores', 'ICU Scores'], ['consents', 'Consents'], ['procedures', 'Procedures'], ['nursing', 'Nursing']
   ];
 
@@ -443,13 +445,14 @@ export default function IPDClinicalPage() {
         ))}</div>}
       </div>}
 
-      {/* ===== NURSING NOTES ===== */}
-      {tab === 'nursing' && <div>
-        <h2 className="font-semibold text-sm mb-3">Nursing Notes</h2>
-        <div className="text-center py-8 bg-white rounded-xl border text-gray-400 text-sm">
-          Nursing notes are captured in ICU Chart (nursing_note field) and I/O entries. Full shift-wise nursing documentation coming in next update.
-        </div>
+      {/* ===== VITALS TREND ===== */}
+      {tab === 'trends' && <div>
+        <h2 className="font-semibold text-sm mb-3">Vitals Trend Chart</h2>
+        <VitalsTrendChart entries={icu.entries} hoursBack={24} />
       </div>}
+
+      {/* ===== NURSING NOTES ===== */}
+      {tab === 'nursing' && <NursingShiftNotes admissionId={admissionId} staffId={staffId} patientName={patientName} onFlash={flash} />}
     </div>
   );
 }
