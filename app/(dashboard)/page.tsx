@@ -178,6 +178,27 @@ export default function DashboardPage() {
           ))}</div>}
         </div>
       </div>
+
+      {/* Pending Actions */}
+      {(stats.rxPending > 0 || stats.billsPending > 0 || stats.opdWaiting > 0) && (
+        <div className="mt-6 bg-white rounded-xl border p-5">
+          <h2 className="font-semibold text-sm mb-3">Pending actions</h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {stats.opdWaiting > 0 && <Link href="/opd" className="flex items-center gap-3 p-3 bg-yellow-50 rounded-lg hover:bg-yellow-100 transition-colors">
+              <span className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse" />
+              <div><div className="text-sm font-medium text-yellow-800">{stats.opdWaiting} patients waiting</div><div className="text-xs text-yellow-600">OPD Queue</div></div>
+            </Link>}
+            {stats.rxPending > 0 && <Link href="/pharmacy" className="flex items-center gap-3 p-3 bg-orange-50 rounded-lg hover:bg-orange-100 transition-colors">
+              <span className="w-2 h-2 bg-orange-500 rounded-full animate-pulse" />
+              <div><div className="text-sm font-medium text-orange-800">{stats.rxPending} prescriptions pending</div><div className="text-xs text-orange-600">Pharmacy</div></div>
+            </Link>}
+            {stats.billsPending > 0 && <Link href="/billing" className="flex items-center gap-3 p-3 bg-red-50 rounded-lg hover:bg-red-100 transition-colors">
+              <span className="w-2 h-2 bg-red-500 rounded-full" />
+              <div><div className="text-sm font-medium text-red-800">{stats.billsPending} bills unpaid</div><div className="text-xs text-red-600">Billing</div></div>
+            </Link>}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

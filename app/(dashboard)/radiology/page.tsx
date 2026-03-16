@@ -37,6 +37,9 @@ function RadiologyPageInner() {
         status: inv.result ? 'completed' : 'pending', date: e.encounter_date, _inv: inv, _allInvs: e.investigations,
       }));
     });
+    // Sort: STAT first, then urgent, then routine
+    const urgencyOrder: Record<string, number> = { stat: 0, urgent: 1, routine: 2 };
+    mapped.sort((a: any, b: any) => (urgencyOrder[a.urgency] || 2) - (urgencyOrder[b.urgency] || 2));
     setOrders(statusFilter === 'all' ? mapped : mapped.filter((o: any) => o.status === statusFilter));
     setLoading(false);
   }, [centreId, statusFilter]);
