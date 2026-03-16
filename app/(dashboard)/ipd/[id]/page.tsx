@@ -10,6 +10,8 @@ import SmartRounds from '@/components/ipd/smart-rounds';
 import DischargeEngine from '@/components/ipd/discharge-engine';
 import ConsentBuilder from '@/components/ipd/consent-builder';
 import SmartProcedures from '@/components/ipd/smart-procedures';
+import SmartMedOrders from '@/components/ipd/smart-med-orders';
+import AutoICUScores from '@/components/ipd/auto-icu-scores';
 import Link from 'next/link';
 
 let _sb: any = null;
@@ -53,10 +55,6 @@ export default function IPDClinicalPage() {
   const [icuForm, setIcuForm] = useState<any>({ hr: '', bp_sys: '', bp_dia: '', rr: '', spo2: '', temp: '', ventilator_mode: '', fio2: '', peep: '', gcs_eye: '', gcs_verbal: '', gcs_motor: '', rass: '', nursing_note: '' });
   // I/O
   const [ioForm, setIoForm] = useState({ shift: 'morning', oral_intake_ml: 0, iv_fluid_ml: 0, blood_products_ml: 0, ryles_tube_ml: 0, other_intake_ml: 0, urine_ml: 0, drain_1_ml: 0, drain_2_ml: 0, ryles_aspirate_ml: 0, vomit_ml: 0, stool_count: 0, other_output_ml: 0 });
-  // Meds
-  const [medForm, setMedForm] = useState({ drugName: '', genericName: '', dose: '', route: 'oral', frequency: 'OD', isStat: false, isPrn: false, specialInstructions: '' });
-  // Score
-  const [scoreForm, setScoreForm] = useState({ scoreType: 'gcs', scoreValue: 0, interpretation: '' });
 
   // Show forms
   const [showForm, setShowForm] = useState(false);
@@ -212,55 +210,8 @@ export default function IPDClinicalPage() {
       </div>}
 
       {/* ===== MEDICATION ORDERS ===== */}
-      {tab === 'meds' && <div>
-        <div className="flex justify-between items-center mb-3">
-          <h2 className="font-semibold text-sm">Medication Orders</h2>
-          <button onClick={() => setShowForm(!showForm)} className="px-3 py-1.5 bg-blue-600 text-white text-xs rounded-lg">{showForm ? 'Cancel' : '+ New Order'}</button>
-        </div>
-        {showForm && <div className="bg-white rounded-xl border p-5 mb-4 space-y-3">
-          <div className="grid grid-cols-2 gap-3">
-            <div><label className="text-xs text-gray-500">Drug name *</label>
-              <input type="text" value={medForm.drugName} onChange={e => setMedForm(f => ({...f, drugName: e.target.value}))} className="w-full px-3 py-2 border rounded-lg text-sm" placeholder="e.g., Inj. Ceftriaxone" /></div>
-            <div><label className="text-xs text-gray-500">Generic name</label>
-              <input type="text" value={medForm.genericName} onChange={e => setMedForm(f => ({...f, genericName: e.target.value}))} className="w-full px-3 py-2 border rounded-lg text-sm" /></div>
-          </div>
-          <div className="grid grid-cols-3 gap-3">
-            <div><label className="text-xs text-gray-500">Dose *</label>
-              <input type="text" value={medForm.dose} onChange={e => setMedForm(f => ({...f, dose: e.target.value}))} className="w-full px-3 py-2 border rounded-lg text-sm" placeholder="e.g., 1g" /></div>
-            <div><label className="text-xs text-gray-500">Route *</label>
-              <select value={medForm.route} onChange={e => setMedForm(f => ({...f, route: e.target.value}))} className="w-full px-3 py-2 border rounded-lg text-sm">
-                {['oral','iv','im','sc','sl','pr','topical','inhalation','nasal','intrathecal','epidural'].map(r => <option key={r}>{r.toUpperCase()}</option>)}</select></div>
-            <div><label className="text-xs text-gray-500">Frequency *</label>
-              <select value={medForm.frequency} onChange={e => setMedForm(f => ({...f, frequency: e.target.value}))} className="w-full px-3 py-2 border rounded-lg text-sm">
-                {['OD','BD','TDS','QID','Q6H','Q8H','Q12H','HS','SOS','STAT','Weekly'].map(f => <option key={f}>{f}</option>)}</select></div>
-          </div>
-          <div className="flex gap-4 items-center">
-            <label className="flex items-center gap-1.5 text-xs"><input type="checkbox" checked={medForm.isStat} onChange={e => setMedForm(f => ({...f, isStat: e.target.checked}))} /><span className="text-red-600 font-medium">STAT</span></label>
-            <label className="flex items-center gap-1.5 text-xs"><input type="checkbox" checked={medForm.isPrn} onChange={e => setMedForm(f => ({...f, isPrn: e.target.checked}))} /><span>PRN</span></label>
-          </div>
-          <div><label className="text-xs text-gray-500">Special instructions</label>
-            <input type="text" value={medForm.specialInstructions} onChange={e => setMedForm(f => ({...f, specialInstructions: e.target.value}))} className="w-full px-3 py-2 border rounded-lg text-sm" placeholder="e.g., Infuse over 30 min, monitor for rash..." /></div>
-          <button onClick={async () => { if (!medForm.drugName || !medForm.dose) return; await meds.addOrder(medForm, staffId); setShowForm(false); flash('Order placed'); setMedForm({ drugName: '', genericName: '', dose: '', route: 'oral', frequency: 'OD', isStat: false, isPrn: false, specialInstructions: '' }); }}
-            className="px-4 py-2 bg-green-600 text-white text-sm rounded-lg">Place Order</button>
-        </div>}
-        {meds.orders.length === 0 ? <div className="text-center py-8 bg-white rounded-xl border text-gray-400 text-sm">No medication orders</div> :
-        <div className="space-y-2">{meds.orders.map((o: any) => (
-          <div key={o.id} className={`bg-white rounded-lg border p-3 ${o.status === 'discontinued' ? 'opacity-50' : ''} ${o.is_stat ? 'border-red-300' : ''}`}>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="font-medium text-sm">{o.drug_name}</span>
-                {o.is_stat && <span className="bg-red-100 text-red-700 text-[10px] px-1.5 py-0.5 rounded font-bold">STAT</span>}
-                {o.is_prn && <span className="bg-orange-100 text-orange-700 text-[10px] px-1.5 py-0.5 rounded">PRN</span>}
-                <span className={`text-[10px] px-1.5 py-0.5 rounded ${o.status === 'active' ? 'bg-green-100 text-green-700' : o.status === 'discontinued' ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-600'}`}>{o.status}</span>
-              </div>
-              {o.status === 'active' && <button onClick={() => { const r = prompt('Reason for discontinuation:'); if (r) meds.discontinue(o.id, staffId, r); }} className="text-xs text-red-500 hover:text-red-700">D/C</button>}
-            </div>
-            <div className="text-xs text-gray-500 mt-1">{o.dose} | {o.route.toUpperCase()} | {o.frequency} | {o.generic_name || ''}</div>
-            {o.special_instructions && <div className="text-xs text-blue-600 mt-0.5">{o.special_instructions}</div>}
-            <div className="text-[10px] text-gray-400 mt-0.5">Ordered by: {o.doctor?.full_name} | {new Date(o.created_at).toLocaleDateString('en-IN')}</div>
-          </div>
-        ))}</div>}
-      </div>}
+      {/* ===== MED ORDERS (Smart) ===== */}
+      {tab === 'meds' && <SmartMedOrders meds={meds.orders} admissionId={admissionId} staffId={staffId} admissionDx={admission.provisional_diagnosis || ''} onAdd={async (med: any) => { await meds.addOrder(med, staffId); }} onDiscontinue={async (id: string, reason: string) => { await meds.discontinue(id, staffId, reason); }} onFlash={flash} />}
 
       {/* ===== MAR ===== */}
       {tab === 'mar' && <div>
@@ -281,35 +232,8 @@ export default function IPDClinicalPage() {
         ))}</tbody></table></div>}
       </div>}
 
-      {/* ===== ICU SCORES ===== */}
-      {tab === 'scores' && <div>
-        <div className="flex justify-between items-center mb-3">
-          <h2 className="font-semibold text-sm">ICU Scores & Scales</h2>
-          <button onClick={() => setShowForm(!showForm)} className="px-3 py-1.5 bg-blue-600 text-white text-xs rounded-lg">{showForm ? 'Cancel' : '+ Record Score'}</button>
-        </div>
-        {showForm && <div className="bg-white rounded-xl border p-5 mb-4 space-y-3">
-          <div className="grid grid-cols-3 gap-3">
-            <div><label className="text-xs text-gray-500">Score type</label>
-              <select value={scoreForm.scoreType} onChange={e => setScoreForm(f => ({...f, scoreType: e.target.value}))} className="w-full px-3 py-2 border rounded-lg text-sm">
-                {[['gcs','GCS (3-15)'],['sofa','SOFA (0-24)'],['apache2','APACHE II (0-71)'],['rass','RASS (-5 to +4)'],['news2','NEWS2 (0-20)'],['braden','Braden (6-23)'],['morse_fall','Morse Fall (0-125)'],['qsofa','qSOFA (0-3)'],['curb65','CURB-65 (0-5)']].map(([k,l]) =>
-                  <option key={k} value={k}>{l}</option>)}</select></div>
-            <div><label className="text-xs text-gray-500">Score value *</label>
-              <input type="number" value={scoreForm.scoreValue} onChange={e => setScoreForm(f => ({...f, scoreValue: parseInt(e.target.value)||0}))} className="w-full px-3 py-2 border rounded-lg text-sm" /></div>
-            <div><label className="text-xs text-gray-500">Interpretation</label>
-              <input type="text" value={scoreForm.interpretation} onChange={e => setScoreForm(f => ({...f, interpretation: e.target.value}))} className="w-full px-3 py-2 border rounded-lg text-sm" placeholder="e.g., Moderate risk" /></div>
-          </div>
-          <button onClick={async () => { await scores.addScore(scoreForm.scoreType, scoreForm.scoreValue, {}, scoreForm.interpretation, staffId); setShowForm(false); flash('Score recorded'); }}
-            className="px-4 py-2 bg-green-600 text-white text-sm rounded-lg">Save Score</button>
-        </div>}
-        {scores.scores.length === 0 ? <div className="text-center py-8 bg-white rounded-xl border text-gray-400 text-sm">No scores recorded</div> :
-        <div className="grid grid-cols-2 gap-3">{scores.scores.map((s: any) => (
-          <div key={s.id} className="bg-white rounded-lg border p-3">
-            <div className="flex items-center justify-between mb-1"><span className="font-medium text-sm uppercase">{s.score_type}</span><span className="text-2xl font-bold">{s.score_value}</span></div>
-            {s.interpretation && <div className="text-xs text-gray-500">{s.interpretation}</div>}
-            <div className="text-[10px] text-gray-400 mt-1">{new Date(s.created_at).toLocaleDateString('en-IN')} | {s.scorer?.full_name}</div>
-          </div>
-        ))}</div>}
-      </div>}
+      {/* ===== ICU SCORES (Auto-calculating) ===== */}
+      {tab === 'scores' && <AutoICUScores scores={scores.scores} admissionId={admissionId} staffId={staffId} onSave={async (score: any, sid: string) => { await scores.addScore(score.scoreType, score.scoreValue, {}, score.interpretation, sid); }} onFlash={flash} />}
 
       {/* ===== CONSENTS (Builder) ===== */}
       {tab === 'consents' && <ConsentBuilder consents={consents.consents} patientId={pt.id} patientName={patientName} admissionId={admissionId} admissionDx={admission.provisional_diagnosis || ''} staffId={staffId} onSave={async (c: any, sid: string) => { await consents.addConsent(c, sid); }} onFlash={flash} />}
