@@ -18,6 +18,8 @@ interface CopilotProps {
   prescriptions: any[];
   advice: string[];
   followUp: string;
+  isOpen: boolean;
+  onClose: () => void;
   onAddDiagnosis?: (dx: { code: string; label: string }) => void;
   onAddInvestigation?: (name: string) => void;
 }
@@ -27,6 +29,7 @@ type Tab = 'ddx' | 'rx' | 'copilot';
 export default function AICopilot({
   patient, vitals, complaints, examFindings, diagnoses,
   investigations, prescriptions, advice, followUp,
+  isOpen, onClose,
   onAddDiagnosis, onAddInvestigation,
 }: CopilotProps) {
   const [tab, setTab] = useState<Tab>('copilot');
@@ -35,7 +38,6 @@ export default function AICopilot({
   const [copilotResult, setCopilotResult] = useState<CopilotResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [isOpen, setIsOpen] = useState(false);
 
   const runDDx = useCallback(async () => {
     setLoading(true); setError(''); setTab('ddx');
@@ -90,19 +92,7 @@ export default function AICopilot({
   // Portal mount — ensures we render to document.body so fixed positioning isn't clipped
   const [mounted, setMounted] = useState(false);
   useEffect(() => { setMounted(true); }, []);
-  if (!mounted) return null;
-
-  if (!isOpen) {
-    return createPortal(
-      <button onClick={() => { setIsOpen(true); if (!copilotResult && !ddxResult && !rxResult) runCopilot(); }}
-        className="fixed bottom-6 right-6 z-[9999] w-14 h-14 bg-gradient-to-br from-purple-600 to-blue-600 text-white rounded-full shadow-xl flex items-center justify-center hover:scale-110 transition-transform cursor-pointer"
-        title="AI Clinical Copilot"
-        style={{ boxShadow: '0 4px 20px rgba(124, 58, 237, 0.4)' }}>
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2a5 5 0 0 1 5 5v3a5 5 0 0 1-10 0V7a5 5 0 0 1 5-5z"/><path d="M7 13a7 7 0 0 0 10 0"/><circle cx="12" cy="20" r="2"/><path d="M12 16v2"/></svg>
-      </button>,
-      document.body
-    );
-  }
+  if (!mounted || !isOpen) return null;
 
   return createPortal(
     <div className="fixed right-0 top-0 h-screen w-[380px] bg-white border-l border-gray-200 z-[9999] flex flex-col shadow-2xl">
@@ -117,7 +107,7 @@ export default function AICopilot({
             <span className="text-[10px] text-gray-400 ml-1.5">Claude Sonnet</span>
           </div>
         </div>
-        <button onClick={() => setIsOpen(false)} className="w-7 h-7 rounded-lg hover:bg-gray-100 flex items-center justify-center text-gray-400">
+        <button onClick={onClose} className="w-7 h-7 rounded-lg hover:bg-gray-100 flex items-center justify-center text-gray-400">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
         </button>
       </div>

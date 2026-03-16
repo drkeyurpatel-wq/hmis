@@ -123,6 +123,7 @@ export default function EMRv3Page() {
   const [showMedSets,setShowMedSets]=useState(false);const [showReferral,setShowReferral]=useState(false);
   const [referral,setReferral]=useState<ReferralData>({department:'',doctor:'',reason:'',urgency:'routine'});
   const [showHistory,setShowHistory]=useState(false);
+  const [showAICopilot,setShowAICopilot]=useState(false);
   const [showAnalytics,setShowAnalytics]=useState(false);const [showGujarati,setShowGujarati]=useState(false);
   const [toast,setToast]=useState('');const [savedTemplates,setSavedTemplates]=useState<SavedTemplate[]>([]);
   const [templateName,setTemplateName]=useState('');const [showTemplateSave,setShowTemplateSave]=useState(false);
@@ -157,7 +158,7 @@ export default function EMRv3Page() {
     emr.autoSaveDraft({ vitals, complaints, examFindings: examEntries, diagnoses, investigations, prescriptions, advice: followUp.advice, followUp: { date: followUp.date, notes: followUp.notes }, referral: referral.department ? referral : null });
   }, [vitals, complaints, examEntries, diagnoses, investigations, prescriptions, followUp, referral]);
 
-  const sidebarOpen=showHistory||showAnalytics;
+  const sidebarOpen=showHistory||showAICopilot||showAnalytics;
 
   return (<div className="min-h-screen bg-gray-50">
     <div className="sticky top-0 z-50 bg-white border-b shadow-sm px-4 py-2"><div className="max-w-5xl mx-auto flex items-center justify-between">
@@ -188,6 +189,7 @@ export default function EMRv3Page() {
       <div className="flex gap-1.5 flex-wrap">
         <select value={activeCentre} onChange={e=>setActiveCentre(e.target.value)} className="text-xs border rounded px-2 py-1.5">{H1_CENTRES.map(c=><option key={c.id} value={c.id}>{c.shortName}</option>)}</select>
         <button onClick={()=>setShowHistory(!showHistory)} className={`px-3 py-1.5 text-xs rounded ${showHistory?'bg-blue-100 text-blue-700':'bg-gray-100'}`}>History</button>
+        <button onClick={()=>setShowAICopilot(!showAICopilot)} className={`px-3 py-1.5 text-xs rounded font-medium ${showAICopilot?'bg-purple-600 text-white':'bg-purple-100 text-purple-700'}`}>AI Copilot</button>
         <button onClick={()=>setShowAnalytics(!showAnalytics)} className={`px-3 py-1.5 text-xs rounded ${showAnalytics?'bg-orange-100 text-orange-700':'bg-gray-100'}`}>Analytics</button>
         <button onClick={generateRxPDF} className="px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded hover:bg-blue-700">Print Rx</button>
         <button onClick={() => {
@@ -357,6 +359,7 @@ export default function EMRv3Page() {
       vitals={vitals} complaints={complaints.map((c: any) => c.text || c.complaint || c.name || String(c))} examFindings={examEntries}
       diagnoses={diagnoses} investigations={investigations}
       prescriptions={prescriptions} advice={followUp.advice} followUp={followUp.date || ''}
+      isOpen={showAICopilot} onClose={() => setShowAICopilot(false)}
       onAddDiagnosis={(dx) => { if (!diagnoses.find((d: any) => d.code === dx.code)) setDiagnoses((prev: any) => [...prev, { ...dx, type: 'primary' }]); }}
       onAddInvestigation={(name) => { if (!investigations.find((i: any) => i.name === name)) setInvestigations((prev: any) => [...prev, { name, urgency: 'routine' }]); }}
     />
