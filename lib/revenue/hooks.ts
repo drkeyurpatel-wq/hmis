@@ -172,6 +172,16 @@ export function useBilling(centreId: string | null) {
 
   useEffect(() => { loadBills(); }, [loadBills]);
 
+  // Real-time billing updates
+  useEffect(() => {
+    if (!centreId || !sb()) return;
+    const channel = sb().channel('billing-live')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'hmis_bills', filter: `centre_id=eq.${centreId}` }, () => loadBills())
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'hmis_payments' }, () => loadBills())
+      .subscribe();
+    return () => { sb().removeChannel(channel); };
+  }, [centreId, loadBills]);
+
   // Load tariff master
   useEffect(() => {
     if (!centreId || !sb()) return;

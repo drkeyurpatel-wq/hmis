@@ -25,6 +25,11 @@ function OPDPageInner() {
   const [creating, setCreating] = useState(false);
   const [filter, setFilter] = useState('all');
   const [doctorFilter, setDoctorFilter] = useState('all');
+
+  // Auto-filter for doctor login
+  useEffect(() => {
+    if (staff?.staff_type === 'doctor' && staff?.id) setDoctorFilter(staff.id);
+  }, [staff]);
   const [showQuickReg, setShowQuickReg] = useState(false);
   const [regForm, setRegForm] = useState({ first_name: '', last_name: '', phone: '', gender: 'male', age: '' });
 
@@ -104,7 +109,10 @@ function OPDPageInner() {
                   <td className="p-3"><div className="text-sm">{v.doctor.name}</div><div className="text-xs text-gray-400">{v.doctor.department}</div></td>
                   <td className="p-3 text-xs text-gray-600 max-w-[200px] truncate">{v.chiefComplaint || '—'}</td>
                   <td className="p-3"><span className={`px-2 py-1 rounded-full text-xs font-medium ${statusColor(v.status)}`}>{v.status.replace('_', ' ')}</span></td>
-                  <td className="p-3 text-xs text-gray-400">{v.checkInTime ? new Date(v.checkInTime).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : '—'}</td>
+                  <td className="p-3 text-xs text-gray-400">{v.checkInTime ? <>
+                    {new Date(v.checkInTime).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
+                    {v.status === 'waiting' && <span className="ml-1 text-orange-500">({Math.round((Date.now() - new Date(v.checkInTime).getTime()) / 60000)}m)</span>}
+                  </> : '—'}</td>
                   <td className="p-3">
                     <div className="flex gap-1">
                       {v.status === 'waiting' && <button onClick={() => updateStatus(v.id, 'with_doctor')} className="px-2 py-1 bg-blue-50 text-blue-700 text-xs rounded hover:bg-blue-100">Start</button>}
