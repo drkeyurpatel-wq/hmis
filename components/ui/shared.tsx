@@ -480,3 +480,89 @@ ${data.referral ? `<div style="margin-top:4px;font-size:10px"><b>Referral:</b> $
 <div class="ft"><div class="sig"></div><div style="font-size:9px;color:#666">${data.doctorName}</div></div>
   `, 'Encounter Summary — ' + data.uhid);
 }
+
+// ============================================================
+// Print Lab Report
+// ============================================================
+export function printLabReport(data: {
+  patientName: string; uhid: string; age: string | number; gender: string;
+  testName: string; testCode: string; barcode?: string;
+  orderedBy: string; collectedAt?: string; reportedAt?: string; verifiedBy?: string;
+  results: { parameterName: string; value: string; unit: string; refRange: string; flag: string }[];
+  centreName?: string; centreAddress?: string; centrePhone?: string;
+}) {
+  const now = new Date();
+  const flagColor = (f: string) => f === 'CRITICAL' ? 'color:#dc2626;font-weight:900' : f === 'ABN' || f === 'HIGH' || f === 'LOW' ? 'color:#d97706;font-weight:700' : '';
+  const valStyle = (f: string) => f === 'CRITICAL' ? 'color:#dc2626;font-weight:900;font-size:11px' : f === 'ABN' || f === 'HIGH' || f === 'LOW' ? 'color:#d97706;font-weight:700' : '';
+  const resultsHtml = data.results.map(r => `<tr>
+    <td style="padding:4px 8px;border-bottom:1px solid #e5e7eb;font-size:10px">${r.parameterName}</td>
+    <td style="padding:4px 8px;border-bottom:1px solid #e5e7eb;text-align:center;${valStyle(r.flag)}">${r.value}</td>
+    <td style="padding:4px 8px;border-bottom:1px solid #e5e7eb;text-align:center;font-size:9px;color:#666">${r.unit || ''}</td>
+    <td style="padding:4px 8px;border-bottom:1px solid #e5e7eb;text-align:center;font-size:9px;color:#888">${r.refRange || '—'}</td>
+    <td style="padding:4px 8px;border-bottom:1px solid #e5e7eb;text-align:center;${flagColor(r.flag)};font-size:9px">${r.flag || ''}</td>
+  </tr>`).join('');
+
+  openPrintWindow(`
+<div style="max-width:700px;margin:0 auto;font-family:Segoe UI,Arial,sans-serif;color:#1a1a1a">
+  <!-- Header -->
+  <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid #1e40af;padding-bottom:10px;margin-bottom:12px">
+    <div>
+      <div style="font-size:18px;font-weight:700;color:#1e40af">${data.centreName || 'Health1 Super Speciality Hospital'}</div>
+      <div style="font-size:8px;color:#666">${data.centreAddress || 'Shilaj, Ahmedabad'} | ${data.centrePhone || ''}</div>
+    </div>
+    <div style="text-align:right;font-size:9px;color:#666">
+      <div style="font-size:12px;font-weight:700;color:#1e40af">LABORATORY REPORT</div>
+      Date: ${now.toLocaleDateString('en-IN')}<br/>
+      Time: ${now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
+    </div>
+  </div>
+
+  <!-- Patient Info -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:10px;margin-bottom:12px;padding:8px;background:#f8fafc;border-radius:6px">
+    <div><b>Patient:</b> ${data.patientName}</div>
+    <div><b>UHID:</b> ${data.uhid}</div>
+    <div><b>Age/Sex:</b> ${data.age} / ${data.gender}</div>
+    <div><b>Barcode:</b> ${data.barcode || '—'}</div>
+    <div><b>Referred by:</b> Dr. ${data.orderedBy}</div>
+    <div><b>Collected:</b> ${data.collectedAt || '—'}</div>
+  </div>
+
+  <!-- Test Name -->
+  <div style="font-size:13px;font-weight:700;color:#1e40af;border-bottom:1px solid #1e40af;padding-bottom:4px;margin-bottom:8px">${data.testName} (${data.testCode})</div>
+
+  <!-- Results Table -->
+  <table style="width:100%;border-collapse:collapse;margin-bottom:16px">
+    <thead><tr style="background:#eff6ff">
+      <th style="padding:5px 8px;text-align:left;font-size:10px;color:#1e40af;border-bottom:2px solid #1e40af">Parameter</th>
+      <th style="padding:5px 8px;text-align:center;font-size:10px;color:#1e40af;border-bottom:2px solid #1e40af">Result</th>
+      <th style="padding:5px 8px;text-align:center;font-size:10px;color:#1e40af;border-bottom:2px solid #1e40af">Unit</th>
+      <th style="padding:5px 8px;text-align:center;font-size:10px;color:#1e40af;border-bottom:2px solid #1e40af">Reference Range</th>
+      <th style="padding:5px 8px;text-align:center;font-size:10px;color:#1e40af;border-bottom:2px solid #1e40af">Flag</th>
+    </tr></thead>
+    <tbody>${resultsHtml}</tbody>
+  </table>
+
+  <!-- Interpretation Key -->
+  <div style="font-size:8px;color:#888;margin-bottom:16px">
+    <b>Flag Key:</b> CRITICAL = Value requires immediate clinical attention | ABN = Outside reference range | Δ = Significant change from previous result
+  </div>
+
+  <!-- Signatures -->
+  <div style="display:flex;justify-content:space-between;margin-top:24px;padding-top:12px;border-top:1px solid #e5e7eb">
+    <div style="text-align:center;font-size:9px;color:#666">
+      <div style="width:140px;border-bottom:1px solid #333;margin-bottom:4px"></div>
+      Lab Technician
+    </div>
+    <div style="text-align:center;font-size:9px;color:#666">
+      <div style="width:140px;border-bottom:1px solid #333;margin-bottom:4px"></div>
+      ${data.verifiedBy ? 'Verified by: ' + data.verifiedBy : 'Pathologist'}
+    </div>
+  </div>
+
+  <div style="margin-top:16px;font-size:7px;color:#aaa;text-align:center">
+    This is a computer-generated report. ${data.reportedAt ? 'Reported: ' + data.reportedAt : ''}<br/>
+    Health1 Super Speciality Hospital — Quality Healthcare for All
+  </div>
+</div>
+  `, 'Lab Report — ' + data.uhid + ' — ' + data.testCode);
+}

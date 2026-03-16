@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useEffect, useCallback } from 'react';
-import { RoleGuard, TableSkeleton, StatusBadge } from '@/components/ui/shared';
+import { RoleGuard, TableSkeleton, StatusBadge, printLabReport } from '@/components/ui/shared';
 import { useAuthStore } from '@/lib/store/auth';
 import { useLabWorklist, useSamples, useResultEntry, useCriticalAlerts, useOutsourcedLab, type LabOrder } from '@/lib/lab/lims-hooks';
 
@@ -83,10 +83,17 @@ function LabPageInner() {
               new Date(o.tatDeadline) < new Date() && o.status !== 'completed' ? <span className="text-red-600 font-bold text-[10px]">BREACHED</span> : <span className="text-green-600 text-[10px]">OK</span>
             ) : <span className="text-gray-300">—</span>}</td>
             <td className="p-2.5 text-center">
-              <div className="flex gap-1 justify-center">
+              <div className="flex gap-1 justify-center flex-wrap">
                 {o.status === 'ordered' && <button onClick={async () => { const r = await samples.collectSample(o.id, 'blood', staffId, o.testCode); if (r?.barcode) flash('Sample collected: ' + r.barcode); load(statusFilter, dateFilter); }} className="px-2 py-0.5 bg-blue-50 text-blue-700 rounded text-[10px] hover:bg-blue-100">Collect</button>}
-                {(o.status === 'sample_collected' || o.status === 'processing') && <button onClick={() => { setSelectedOrder(o); setTab('results'); }} className="px-2 py-0.5 bg-purple-50 text-purple-700 rounded text-[10px] hover:bg-purple-100">Enter Results</button>}
+                {(o.status === 'sample_collected' || o.status === 'processing') && <button onClick={() => { setSelectedOrder(o); setTab('results'); }} className="px-2 py-0.5 bg-purple-50 text-purple-700 rounded text-[10px] hover:bg-purple-100">Results</button>}
                 {o.status === 'processing' && <button onClick={() => { setSelectedOrder(o); setTab('verify'); }} className="px-2 py-0.5 bg-green-50 text-green-700 rounded text-[10px] hover:bg-green-100">Verify</button>}
+                {o.status === 'completed' && <button onClick={() => { setSelectedOrder(o); setTab('verify'); }} className="px-2 py-0.5 bg-blue-50 text-blue-700 rounded text-[10px] hover:bg-blue-100">Print</button>}
+                {o.status === 'ordered' && <button onClick={async () => {
+                  const lab = prompt('External lab name:'); if (!lab) return;
+                  const exp = prompt('Expected return date (YYYY-MM-DD):') || '';
+                  await outsourced.dispatch(o.id, lab, exp);
+                  flash('Dispatched to ' + lab); load(statusFilter, dateFilter);
+                }} className="px-2 py-0.5 bg-orange-50 text-orange-700 rounded text-[10px] hover:bg-orange-100">Outsource</button>}
               </div>
             </td>
           </tr>
@@ -98,19 +105,49 @@ function LabPageInner() {
         <h2 className="font-semibold text-sm mb-3">Pending Sample Collection</h2>
         {(() => { const pending = orders.filter(o => o.status === 'ordered'); return pending.length === 0 ? <div className="text-center py-12 bg-white rounded-xl border text-gray-400 text-sm">All samples collected</div> :
         <div className="space-y-2">{pending.map(o => (
-          <div key={o.id} className={`bg-white rounded-lg border p-3 flex items-center justify-between ${o.priority === 'stat' ? 'border-red-300 bg-red-50/30' : ''}`}>
-            <div>
-              <div className="font-medium text-sm">{o.patientName} <span className="text-gray-400 text-xs">({o.patientUhid})</span></div>
-              <div className="text-xs text-gray-500">{o.testName} ({o.testCode}) | Dr. {o.orderedBy}</div>
-              {o.clinicalInfo && <div className="text-[10px] text-blue-600 mt-0.5">Clinical: {o.clinicalInfo}</div>}
+          <div key={o.id} className={`bg-white rounded-lg border p-3 ${o.priority === 'stat' ? 'border-red-300 bg-red-50/30' : ''}`}>
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="font-medium text-sm">{o.patientName} <span className="text-gray-400 text-xs">({o.patientUhid})</span></div>
+                <div className="text-xs text-gray-500">{o.testName} ({o.testCode}) | Dr. {o.orderedBy}</div>
+                {o.clinicalInfo && <div className="text-[10px] text-blue-600 mt-0.5">Clinical: {o.clinicalInfo}</div>}
+              </div>
+              <div className="flex items-center gap-2">
+                <span className={`px-2 py-0.5 rounded text-[10px] ${priorityColor(o.priority)}`}>{o.priority.toUpperCase()}</span>
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              <span className={`px-2 py-0.5 rounded text-[10px] ${priorityColor(o.priority)}`}>{o.priority.toUpperCase()}</span>
-              <button onClick={async () => { const r = await samples.collectSample(o.id, 'blood', staffId, o.testCode); if (r?.barcode) { flash('Collected! Barcode: ' + r.barcode); load(statusFilter, dateFilter); } }}
-                className="px-3 py-1.5 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700">Collect & Label</button>
+            <div className="flex items-center gap-2 mt-2">
+              <select id={`st-${o.id}`} defaultValue="blood" className="text-xs border rounded px-2 py-1">
+                {['blood','serum','plasma','urine','stool','csf','sputum','swab','fluid','tissue'].map(t => <option key={t}>{t}</option>)}
+              </select>
+              <button onClick={async () => {
+                const sType = (document.getElementById(`st-${o.id}`) as HTMLSelectElement)?.value || 'blood';
+                const r = await samples.collectSample(o.id, sType, staffId, o.testCode);
+                if (r?.barcode) { flash('Collected! Barcode: ' + r.barcode); load(statusFilter, dateFilter); }
+              }} className="px-3 py-1.5 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700">Collect & Label</button>
+              <button onClick={async () => {
+                const reason = prompt('Rejection reason:\n1. Hemolyzed\n2. Clotted\n3. Lipemic\n4. Insufficient quantity\n5. Wrong container\n6. Patient ID mismatch\n7. Unlabeled\n\nEnter reason:');
+                if (reason) { await samples.rejectSample('', o.id, reason, staffId); flash('Sample rejected'); load(statusFilter, dateFilter); }
+              }} className="px-3 py-1.5 bg-red-50 text-red-600 text-xs rounded-lg hover:bg-red-100">Reject</button>
             </div>
           </div>
         ))}</div>; })()}
+
+        {/* Recently collected */}
+        {(() => { const collected = orders.filter(o => o.status === 'sample_collected'); return collected.length > 0 && <>
+          <h3 className="font-semibold text-xs text-gray-500 mt-6 mb-2">Recently Collected ({collected.length})</h3>
+          <div className="bg-white rounded-xl border overflow-hidden"><table className="w-full text-xs"><thead><tr className="bg-gray-50 border-b">
+            <th className="text-left p-2">Patient</th><th className="text-left p-2">Test</th><th className="p-2">Barcode</th><th className="p-2">Priority</th><th className="p-2">Status</th>
+          </tr></thead><tbody>{collected.map(o => (
+            <tr key={o.id} className="border-b hover:bg-gray-50">
+              <td className="p-2">{o.patientName} <span className="text-gray-400">({o.patientUhid})</span></td>
+              <td className="p-2">{o.testName}</td>
+              <td className="p-2 text-center font-mono text-blue-600">{o.sampleBarcode || '—'}</td>
+              <td className="p-2 text-center"><span className={`px-1.5 py-0.5 rounded text-[10px] ${priorityColor(o.priority)}`}>{o.priority}</span></td>
+              <td className="p-2 text-center"><span className="bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded text-[10px]">Collected</span></td>
+            </tr>
+          ))}</tbody></table></div>
+        </>; })()}
       </>}
 
       {/* ===== RESULT ENTRY ===== */}
@@ -294,6 +331,17 @@ function ResultEntryPanel({ order, staffId, onFlash, onDone, onSelectOrder, orde
 
             <div className="flex gap-2">
               <button onClick={handleSave} className="px-4 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700">Save Results</button>
+              <button onClick={() => {
+                if (!order) return;
+                const resultsForPrint = entry.parameters.filter((p: any) => p.is_reportable && values[p.id]).map((p: any) => {
+                  const val = values[p.id]; const v = entry.validateResult(p.id, val, order.patientAge, order.patientGender);
+                  return { parameterName: p.parameter_name, value: val, unit: p.unit || '',
+                    refRange: p.ref_range_min != null && p.ref_range_max != null ? `${p.ref_range_min} — ${p.ref_range_max}` : p.ref_range_text || '—',
+                    flag: v?.isCritical ? 'CRITICAL' : v?.isAbnormal ? 'ABN' : '' };
+                });
+                printLabReport({ patientName: order.patientName, uhid: order.patientUhid || '', age: order.patientAge || '', gender: order.patientGender || '',
+                  testName: order.testName, testCode: order.testCode || '', barcode: order.sampleBarcode || '', orderedBy: order.orderedBy || '', results: resultsForPrint });
+              }} className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700">Print Report</button>
               <button onClick={onDone} className="px-4 py-2 bg-gray-100 text-gray-600 text-sm rounded-lg">Back to Worklist</button>
             </div>
           </div>
@@ -357,6 +405,20 @@ function VerifyPanel({ order, staffId, onFlash, onDone, onSelectOrder, orders }:
             <div className="flex gap-2">
               <button onClick={async () => { await entry.verifyResults(staffId); onFlash('Results verified & reported'); onDone(); }}
                 className="px-4 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 font-medium">Verify & Report</button>
+              <button onClick={() => {
+                if (!order) return;
+                printLabReport({
+                  patientName: order.patientName, uhid: order.patientUhid || '',
+                  age: order.patientAge || '', gender: order.patientGender || '',
+                  testName: order.testName, testCode: order.testCode || '',
+                  barcode: order.sampleBarcode || '', orderedBy: order.orderedBy || '',
+                  results: entry.results.map((r: any) => ({
+                    parameterName: r.parameter_name, value: r.result_value, unit: r.unit || '',
+                    refRange: r.normal_range_min != null && r.normal_range_max != null ? `${r.normal_range_min} — ${r.normal_range_max}` : '—',
+                    flag: r.is_critical ? 'CRITICAL' : r.is_abnormal ? 'ABN' : '',
+                  })),
+                });
+              }} className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700">Print Report</button>
               <button onClick={onDone} className="px-4 py-2 bg-gray-100 text-gray-600 text-sm rounded-lg">Back</button>
             </div>
           </div>
