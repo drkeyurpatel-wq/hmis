@@ -3,6 +3,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { RoleGuard, TableSkeleton, StatusBadge, printLabReport } from '@/components/ui/shared';
 import { useAuthStore } from '@/lib/store/auth';
 import { useLabWorklist, useSamples, useResultEntry, useCriticalAlerts, useOutsourcedLab, type LabOrder } from '@/lib/lab/lims-hooks';
+import { printBarcodeLabel } from '@/components/lab/barcode-label';
+import { printBiochemReport, printCultureReport, sendLabReportWhatsApp, generateResultSummary } from '@/lib/lab/report-templates';
 import MicrobiologyPanel from '@/components/lab/microbiology-panel';
 import QCPanel from '@/components/lab/qc-panel';
 import HistopathologyPanel from '@/components/lab/histopathology-panel';
@@ -94,6 +96,10 @@ function LabPageInner() {
                 {(o.status === 'sample_collected' || o.status === 'processing') && <button onClick={() => { setSelectedOrder(o); setTab('results'); }} className="px-2 py-0.5 bg-purple-50 text-purple-700 rounded text-[10px] hover:bg-purple-100">Results</button>}
                 {o.status === 'processing' && <button onClick={() => { setSelectedOrder(o); setTab('verify'); }} className="px-2 py-0.5 bg-green-50 text-green-700 rounded text-[10px] hover:bg-green-100">Verify</button>}
                 {o.status === 'completed' && <button onClick={() => { setSelectedOrder(o); setTab('verify'); }} className="px-2 py-0.5 bg-blue-50 text-blue-700 rounded text-[10px] hover:bg-blue-100">Print</button>}
+                {o.status === 'completed' && <button onClick={() => {
+                  const phone = prompt('Patient phone number for WhatsApp:');
+                  if (phone) sendLabReportWhatsApp(phone, { patientName: o.patientName, uhid: o.patientUhid, testName: o.testName, resultSummary: 'Your lab report is ready. Please collect from Health1 Hospital.' });
+                }} className="px-2 py-0.5 bg-green-50 text-green-700 rounded text-[10px] hover:bg-green-100">WhatsApp</button>}
                 {o.status === 'ordered' && <button onClick={async () => {
                   const lab = prompt('External lab name:'); if (!lab) return;
                   const exp = prompt('Expected return date (YYYY-MM-DD):') || '';
@@ -129,7 +135,16 @@ function LabPageInner() {
               <button onClick={async () => {
                 const sType = (document.getElementById(`st-${o.id}`) as HTMLSelectElement)?.value || 'blood';
                 const r = await samples.collectSample(o.id, sType, staffId, o.testCode);
-                if (r?.barcode) { flash('Collected! Barcode: ' + r.barcode); load(statusFilter, dateFilter); }
+                if (r?.barcode) {
+                  flash('Collected! Barcode: ' + r.barcode);
+                  printBarcodeLabel({
+                    barcode: r.barcode, patientName: o.patientName, uhid: o.patientUhid || '',
+                    age: o.patientAge || '', gender: o.patientGender || '', testName: o.testName,
+                    testCode: o.testCode || '', sampleType: sType, priority: o.priority,
+                    collectedAt: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
+                  });
+                  load(statusFilter, dateFilter);
+                }
               }} className="px-3 py-1.5 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700">Collect & Label</button>
               <button onClick={async () => {
                 const reason = prompt('Rejection reason:\n1. Hemolyzed\n2. Clotted\n3. Lipemic\n4. Insufficient quantity\n5. Wrong container\n6. Patient ID mismatch\n7. Unlabeled\n\nEnter reason:');
@@ -496,6 +511,16 @@ function VerifyPanel({ order, staffId, onFlash, onDone, onSelectOrder, orders }:
                   })),
                 });
               }} className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700">Print Report</button>
+              <button onClick={() => {
+                if (!order) return;
+                const phone = prompt('Patient phone number for WhatsApp:');
+                if (!phone) return;
+                const results = entry.results.map((r: any) => ({ parameterName: r.parameter_name, value: r.result_value, unit: r.unit || '', flag: r.is_critical ? 'CRITICAL' : r.is_abnormal ? 'ABN' : '' }));
+                const summary = generateResultSummary(results);
+                sendLabReportWhatsApp(phone, { patientName: order.patientName, uhid: order.patientUhid, testName: order.testName, resultSummary: summary });
+              }} className="px-4 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 flex items-center gap-1">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 2C6.477 2 2 6.477 2 12c0 1.89.525 3.66 1.438 5.168L2 22l4.832-1.438A9.955 9.955 0 0012 22c5.523 0 10-4.477 10-10S17.523 2 12 2z"/></svg>
+                WhatsApp</button>
               <button onClick={onDone} className="px-4 py-2 bg-gray-100 text-gray-600 text-sm rounded-lg">Back</button>
             </div>
           </div>
