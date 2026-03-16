@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useReports } from '@/lib/revenue/phase2-hooks';
 import { RoleGuard, TableSkeleton, StatusBadge } from '@/components/ui/shared';
 import { useAuthStore } from '@/lib/store/auth';
+import { exportToCSV } from '@/lib/utils/csv-export';
 
 function ReportsPageInner() {
   const { activeCentreId } = useAuthStore();
@@ -44,6 +45,13 @@ function ReportsPageInner() {
           <span className="text-gray-400 text-sm">to</span>
           <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className="text-sm border rounded-lg px-2 py-1.5" />
           <button onClick={() => loadReport(activeReport)} className="px-3 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700">Generate</button>
+          {data && <button onClick={() => {
+            if (activeReport === 'revenue') exportToCSV(data.daily, 'revenue_report', [{key:'date',label:'Date'},{key:'gross',label:'Gross'},{key:'collected',label:'Collected'},{key:'discount',label:'Discount'},{key:'count',label:'Bills'}]);
+            else if (activeReport === 'opd') exportToCSV(data.byDoctor, 'opd_report', [{key:'doctor',label:'Doctor'},{key:'count',label:'Visits'}]);
+            else if (activeReport === 'pharmacy') exportToCSV(data.orders, 'pharmacy_report', [{key:'name',label:'Patient'},{key:'date',label:'Date'},{key:'amount',label:'Amount'},{key:'status',label:'Status'}]);
+            else if (activeReport === 'lab') exportToCSV(data.encounters, 'lab_report', [{key:'patient',label:'Patient'},{key:'doctor',label:'Doctor'},{key:'date',label:'Date'},{key:'tests',label:'Tests'},{key:'done',label:'Done'}]);
+            else if (activeReport === 'ipd') exportToCSV(data.admissions, 'ipd_report', [{key:'patient',label:'Patient'},{key:'dept',label:'Dept'},{key:'type',label:'Type'},{key:'payor',label:'Payor'},{key:'date',label:'Date'},{key:'status',label:'Status'}]);
+          }} className="px-3 py-1.5 bg-gray-100 text-gray-600 text-sm rounded-lg hover:bg-gray-200">Export CSV</button>}
         </div>
       </div>
 

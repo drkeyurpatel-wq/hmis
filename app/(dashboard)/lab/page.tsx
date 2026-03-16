@@ -3,6 +3,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { RoleGuard, TableSkeleton } from '@/components/ui/shared';
 import { useAuthStore } from '@/lib/store/auth';
 import { createClient } from '@/lib/supabase/client';
+import { sendLabResultsReady } from '@/lib/notifications/whatsapp';
 
 let _sb: any = null;
 function sb() { if (typeof window === 'undefined') return null as any; if (!_sb) { try { _sb = createClient(); } catch { return null; } } return _sb; }
@@ -92,6 +93,14 @@ function LabPageInner() {
       .eq('id', selectedOrder.encounterId);
     if (!error) {
       flash('Results saved — visible to doctor in EMR');
+      // WhatsApp: notify patient that lab results are ready
+      try {
+        const { data: pt } = await sb().from('hmis_patients').select('phone_primary, first_name').eq('id', selectedOrder.patientId).single();
+        if (pt?.phone_primary) {
+          const testNames = resultEntries.filter(r => r.result.trim()).map(r => r.name).join(', ');
+          sendLabResultsReady(pt.phone_primary, pt.first_name || 'Patient', testNames, 'Health1 Lab Counter');
+        }
+      } catch { /* non-blocking */ }
       loadOrders();
       setSelectedOrder(null);
     } else {

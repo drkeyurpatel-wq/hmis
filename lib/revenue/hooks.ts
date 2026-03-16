@@ -290,7 +290,17 @@ export function useBilling(centreId: string | null) {
     loadBills();
   }, [bills, loadBills]);
 
-  return { bills, loading, tariffs, loadBills, createBillFromEncounter, loadBillItems, addBillItem, collectPayment, finalizeBill, applyDiscount };
+  // Load payments for a bill
+  const loadPayments = useCallback(async (billId: string) => {
+    if (!sb()) return [];
+    const { data } = await sb().from('hmis_payments').select('*').eq('bill_id', billId).order('created_at', { ascending: false });
+    return (data || []).map((p: any) => ({
+      id: p.id, amount: p.amount, mode: p.payment_mode,
+      receipt: p.receipt_number, date: p.payment_date, createdAt: p.created_at,
+    }));
+  }, []);
+
+  return { bills, loading, tariffs, loadBills, createBillFromEncounter, loadBillItems, addBillItem, collectPayment, finalizeBill, applyDiscount, loadPayments };
 }
 
 // ============================================================
