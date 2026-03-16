@@ -10,6 +10,7 @@ import { calculateNEWS2, fahToCel } from '@/lib/cdss/news2';
 import { COMMON_ALLERGENS, checkAllergyConflict } from '@/lib/cdss/allergies';
 import { H1_CENTRES } from '@/lib/cdss/centres';
 import { useEMR } from '@/lib/emr/use-emr';
+import { usePharmacy } from '@/lib/revenue/hooks';
 
 // Types
 interface Patient { id:string; name:string; age:string; gender:string; uhid:string; phone:string; allergies:string[]; bloodGroup:string; }
@@ -69,6 +70,7 @@ const Sec = ({n,title,icon,children}:{n:number;title:string;icon:string;children
 export default function EMRv3Page() {
   // Supabase + Offline hooks
   const emr = useEMR();
+  const { createFromEncounter: createPharmacyOrder } = usePharmacy(emr.centreId || null);
 
   // Sync patient from URL: /emr-v2?patient=UUID
   const [urlLoaded, setUrlLoaded] = useState(false);
@@ -188,7 +190,7 @@ export default function EMRv3Page() {
         <button onClick={()=>setShowCopilot(!showCopilot)} className={`px-3 py-1.5 text-xs rounded ${showCopilot?'bg-purple-100 text-purple-700':'bg-gray-100'}`}>AI Copilot</button>
         <button onClick={()=>setShowAnalytics(!showAnalytics)} className={`px-3 py-1.5 text-xs rounded ${showAnalytics?'bg-orange-100 text-orange-700':'bg-gray-100'}`}>Analytics</button>
         <button onClick={generateRxPDF} className="px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded hover:bg-blue-700">Print Rx</button>
-        <button onClick={async()=>{const result=await emr.saveEncounter({vitals,complaints,examFindings:examEntries,diagnoses,investigations,prescriptions,advice:followUp.advice,followUp:{date:followUp.date,notes:followUp.notes},referral:referral.department?referral:null});if(result.success)flash(result.offline?'Saved offline — will sync when online':'Saved to server');else flash('Save failed');}} className="px-3 py-1.5 bg-green-600 text-white text-xs font-medium rounded hover:bg-green-700">Save</button>
+        <button onClick={async()=>{const result=await emr.saveEncounter({vitals,complaints,examFindings:examEntries,diagnoses,investigations,prescriptions,advice:followUp.advice,followUp:{date:followUp.date,notes:followUp.notes},referral:referral.department?referral:null});if(result.success){flash(result.offline?'Saved offline':'Saved to server');if(prescriptions.length>0&&result.id&&patient.id){await createPharmacyOrder(patient.id,result.id,prescriptions);flash('Saved + Rx sent to pharmacy');}}else flash('Save failed');}} className="px-3 py-1.5 bg-green-600 text-white text-xs font-medium rounded hover:bg-green-700">Save</button>
         {!emr.online&&<span className="px-2 py-1 bg-red-100 text-red-700 text-xs rounded animate-pulse">OFFLINE</span>}
         {emr.pendingSyncs>0&&<span className="px-2 py-1 bg-yellow-100 text-yellow-700 text-xs rounded">{emr.pendingSyncs} pending</span>}
       </div></div></div>

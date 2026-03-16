@@ -1,205 +1,178 @@
 'use client';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useOPDQueue, useDoctors, type OPDVisit } from '@/lib/revenue/hooks';
+import { useAuthStore } from '@/lib/store/auth';
+import { createClient } from '@/lib/supabase/client';
 
-import { useState } from 'react';
-import { cn, formatDate } from '@/lib/utils';
-import {
-  Calendar, Plus, Search, Clock, User, ChevronRight, Phone,
-  Filter, Stethoscope, Check, X, AlertCircle, Timer, ArrowRight,
-} from 'lucide-react';
-
-const DOCTORS = [
-  { id: '1', name: 'Dr. Sunil Gurmukhani', dept: 'Cardiology', slots: 4, seen: 12, total: 18 },
-  { id: '2', name: 'Dr. Jignesh Patel', dept: 'Cardiology', slots: 2, seen: 8, total: 14 },
-  { id: '3', name: 'Dr. Nidhi Shukla', dept: 'Neurology', slots: 6, seen: 5, total: 12 },
-  { id: '4', name: 'Dr. Amit Patanvadiya', dept: 'Internal Medicine', slots: 8, seen: 10, total: 20 },
-  { id: '5', name: 'Dr. Karmay Shah', dept: 'Orthopaedics', slots: 3, seen: 7, total: 12 },
-];
-
-type Appt = { id: string; token: string; time: string; patient: string; age: number; gender: string; phone: string; type: string; doctor: string; dept: string; status: string; chief: string; };
-const APPOINTMENTS: Appt[] = [
-  { id: '1', token: 'T-042', time: '10:15', patient: 'Rajesh Sharma', age: 58, gender: 'M', phone: '9876543210', type: 'followup', doctor: 'Dr. Sunil Gurmukhani', dept: 'Cardiology', status: 'with_doctor', chief: 'Chest pain on exertion, follow-up after angiography' },
-  { id: '2', token: 'T-043', time: '10:30', patient: 'Priya Desai', age: 34, gender: 'F', phone: '9823456789', type: 'new', doctor: 'Dr. Jignesh Patel', dept: 'Cardiology', status: 'waiting', chief: 'Palpitations and breathlessness for 2 weeks' },
-  { id: '3', token: 'T-044', time: '10:45', patient: 'Amit Thakur', age: 45, gender: 'M', phone: '9812345678', type: 'new', doctor: 'Dr. Sunil Gurmukhani', dept: 'Cardiology', status: 'waiting', chief: 'Referred from GP for ECG abnormality' },
-  { id: '4', token: 'T-045', time: '10:20', patient: 'Meera Patel', age: 62, gender: 'F', phone: '9834567890', type: 'followup', doctor: 'Dr. Nidhi Shukla', dept: 'Neurology', status: 'with_doctor', chief: 'Epilepsy medication review' },
-  { id: '5', token: 'T-046', time: '10:50', patient: 'Kiran Joshi', age: 29, gender: 'M', phone: '9845678901', type: 'new', doctor: 'Dr. Nidhi Shukla', dept: 'Neurology', status: 'waiting', chief: 'Recurrent headaches and visual disturbance' },
-  { id: '6', token: 'T-047', time: '11:00', patient: 'Dinesh Modi', age: 71, gender: 'M', phone: '9856789012', type: 'new', doctor: 'Dr. Amit Patanvadiya', dept: 'Internal Medicine', status: 'checked_in', chief: 'Uncontrolled diabetes, HbA1c 9.2%' },
-  { id: '7', token: 'T-048', time: '11:15', patient: 'Sonal Bhatt', age: 43, gender: 'F', phone: '9867890123', type: 'followup', doctor: 'Dr. Amit Patanvadiya', dept: 'Internal Medicine', status: 'scheduled', chief: 'Thyroid medication adjustment' },
-  { id: '8', token: 'T-049', time: '11:30', patient: 'Vijay Rathod', age: 55, gender: 'M', phone: '9878901234', type: 'new', doctor: 'Dr. Karmay Shah', dept: 'Orthopaedics', status: 'scheduled', chief: 'Right knee pain, difficulty climbing stairs' },
-  { id: '9', token: 'T-050', time: '11:45', patient: 'Geeta Chauhan', age: 68, gender: 'F', phone: '9889012345', type: 'emergency', doctor: 'Dr. Nidhi Shukla', dept: 'Neurology', status: 'scheduled', chief: 'Sudden onset slurred speech (resolved in 20 min)' },
-  { id: '10', token: 'T-051', time: '12:00', patient: 'Ramesh Yadav', age: 50, gender: 'M', phone: '9890123456', type: 'new', doctor: 'Dr. Sunil Gurmukhani', dept: 'Cardiology', status: 'scheduled', chief: 'Pre-operative cardiac clearance for hernia surgery' },
-];
-
-const statusConfig: Record<string, { label: string; color: string; bg: string }> = {
-  scheduled: { label: 'Scheduled', color: 'text-gray-600', bg: 'bg-gray-100' },
-  checked_in: { label: 'Checked in', color: 'text-blue-700', bg: 'bg-blue-100' },
-  waiting: { label: 'Waiting', color: 'text-amber-700', bg: 'bg-amber-100' },
-  with_doctor: { label: 'With doctor', color: 'text-green-700', bg: 'bg-green-100' },
-  completed: { label: 'Completed', color: 'text-gray-500', bg: 'bg-gray-50' },
-  no_show: { label: 'No show', color: 'text-red-600', bg: 'bg-red-50' },
-};
-const typeConfig: Record<string, { label: string; color: string }> = {
-  new: { label: 'New', color: 'bg-blue-100 text-blue-700' },
-  followup: { label: 'Follow-up', color: 'bg-purple-100 text-purple-700' },
-  referral: { label: 'Referral', color: 'bg-teal-100 text-teal-700' },
-  emergency: { label: 'Emergency', color: 'bg-red-100 text-red-700' },
-};
+let _sb: any = null;
+function sb() { if (typeof window === 'undefined') return null as any; if (!_sb) { try { _sb = createClient(); } catch { return null; } } return _sb; }
 
 export default function OPDPage() {
-  const [view, setView] = useState<'queue' | 'appointments'>('queue');
-  const [selectedDoctor, setSelectedDoctor] = useState<string>('all');
-  const [search, setSearch] = useState('');
-  const [showBooking, setShowBooking] = useState(false);
-  const [selectedAppt, setSelectedAppt] = useState<Appt | null>(null);
+  const { staff, activeCentreId } = useAuthStore();
+  const centreId = activeCentreId || '';
+  const { visits, loading, stats, createVisit, updateStatus } = useOPDQueue(centreId);
+  const doctors = useDoctors(centreId);
 
-  const filtered = APPOINTMENTS.filter((a) => {
-    if (selectedDoctor !== 'all' && a.doctor !== DOCTORS.find((d) => d.id === selectedDoctor)?.name) return false;
-    if (search && !a.patient.toLowerCase().includes(search.toLowerCase()) && !a.token.toLowerCase().includes(search.toLowerCase())) return false;
+  // New visit form
+  const [showNew, setShowNew] = useState(false);
+  const [searchQ, setSearchQ] = useState('');
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [selectedPatient, setSelectedPatient] = useState<any>(null);
+  const [selectedDoctor, setSelectedDoctor] = useState('');
+  const [visitType, setVisitType] = useState('new');
+  const [complaint, setComplaint] = useState('');
+  const [creating, setCreating] = useState(false);
+  const [filter, setFilter] = useState('all');
+  const [doctorFilter, setDoctorFilter] = useState('all');
+
+  // Patient search
+  useEffect(() => {
+    if (searchQ.length < 2 || !sb()) { setSearchResults([]); return; }
+    const timer = setTimeout(async () => {
+      const { data } = await sb().from('hmis_patients').select('id, uhid, first_name, last_name, age_years, gender, phone_primary')
+        .or(`uhid.ilike.%${searchQ}%,first_name.ilike.%${searchQ}%,last_name.ilike.%${searchQ}%,phone_primary.ilike.%${searchQ}%`)
+        .eq('is_active', true).limit(8);
+      setSearchResults(data || []);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQ]);
+
+  const handleCreateVisit = async () => {
+    if (!selectedPatient || !selectedDoctor) return;
+    setCreating(true);
+    await createVisit(selectedPatient.id, selectedDoctor, visitType, complaint);
+    setShowNew(false); setSelectedPatient(null); setSelectedDoctor(''); setComplaint(''); setSearchQ('');
+    setCreating(false);
+  };
+
+  const filtered = visits.filter(v => {
+    if (filter !== 'all' && v.status !== filter) return false;
+    if (doctorFilter !== 'all' && v.doctor.id !== doctorFilter) return false;
     return true;
   });
 
-  const queueOrder = ['with_doctor', 'waiting', 'checked_in', 'scheduled'];
-  const sortedQueue = [...filtered].sort((a, b) => queueOrder.indexOf(a.status) - queueOrder.indexOf(b.status));
+  const statusColor = (s: string) => s === 'waiting' ? 'bg-yellow-100 text-yellow-800' : s === 'with_doctor' ? 'bg-blue-100 text-blue-800' : s === 'completed' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-700';
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="page-title">OPD</h1>
-          <p className="text-sm text-gray-500 mt-0.5">Today · {APPOINTMENTS.length} appointments · {APPOINTMENTS.filter((a) => a.status === 'with_doctor' || a.status === 'completed').length} seen</p>
-        </div>
-        <button onClick={() => setShowBooking(true)} className="flex items-center gap-2 px-4 py-2.5 bg-health1-teal text-white text-sm font-medium rounded-lg hover:bg-teal-700 transition-colors shadow-sm">
-          <Plus size={16} />Book appointment
-        </button>
+    <div className="max-w-6xl mx-auto">
+      <div className="flex items-center justify-between mb-6">
+        <div><h1 className="text-2xl font-bold text-gray-900">OPD Queue</h1><p className="text-sm text-gray-500">{new Date().toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p></div>
+        <button onClick={() => setShowNew(true)} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700">+ New Visit</button>
       </div>
 
-      {/* Doctor cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
-        {DOCTORS.map((d) => (
-          <button key={d.id} onClick={() => setSelectedDoctor(selectedDoctor === d.id ? 'all' : d.id)}
-            className={cn('bg-white rounded-xl border p-4 text-left transition-all hover:shadow-md',
-              selectedDoctor === d.id ? 'border-brand-300 ring-2 ring-brand-100 shadow-md' : 'border-gray-200')}>
-            <p className="text-sm font-semibold text-gray-900 truncate">{d.name}</p>
-            <p className="text-xs text-gray-500">{d.dept}</p>
-            <div className="flex items-center justify-between mt-3">
-              <div className="flex items-center gap-1">
-                <div className="h-1.5 w-full bg-gray-100 rounded-full overflow-hidden" style={{ width: 60 }}>
-                  <div className="h-full bg-emerald-400 rounded-full" style={{ width: `${(d.seen / d.total) * 100}%` }} />
-                </div>
-                <span className="text-xs text-gray-500 ml-1">{d.seen}/{d.total}</span>
-              </div>
-              <span className={cn('text-xs font-medium px-1.5 py-0.5 rounded', d.slots <= 2 ? 'bg-red-100 text-red-700' : d.slots <= 5 ? 'bg-amber-100 text-amber-700' : 'bg-green-100 text-green-700')}>
-                {d.slots} slots
-              </span>
-            </div>
-          </button>
+      {/* Stats */}
+      <div className="grid grid-cols-4 gap-4 mb-6">
+        {[['Total', stats.total, 'bg-gray-50'], ['Waiting', stats.waiting, 'bg-yellow-50'], ['With Doctor', stats.withDoctor, 'bg-blue-50'], ['Completed', stats.completed, 'bg-green-50']].map(([label, val, bg]) => (
+          <div key={label as string} className={`${bg} rounded-xl p-4`}><div className="text-xs text-gray-500">{label as string}</div><div className="text-2xl font-bold">{val as number}</div></div>
         ))}
       </div>
 
-      {/* Controls */}
-      <div className="flex items-center gap-3">
-        <div className="flex bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm">
-          <button onClick={() => setView('queue')} className={cn('px-4 py-2 text-xs font-medium transition-colors flex items-center gap-1.5', view === 'queue' ? 'bg-brand-600 text-white' : 'text-gray-600 hover:bg-gray-50')}>
-            <Timer size={13} />Live queue
-          </button>
-          <button onClick={() => setView('appointments')} className={cn('px-4 py-2 text-xs font-medium transition-colors flex items-center gap-1.5', view === 'appointments' ? 'bg-brand-600 text-white' : 'text-gray-600 hover:bg-gray-50')}>
-            <Calendar size={13} />All appointments
-          </button>
-        </div>
-        <div className="relative flex-1">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-          <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search patient or token..." className="w-full pl-9 pr-4 py-2 rounded-lg border border-gray-200 bg-white text-sm outline-none focus:ring-2 focus:ring-brand-500 shadow-sm" />
-        </div>
+      {/* Filters */}
+      <div className="flex gap-2 mb-4 flex-wrap">
+        {[['all','All'],['waiting','Waiting'],['with_doctor','With Doctor'],['completed','Completed']].map(([k,l]) => (
+          <button key={k} onClick={() => setFilter(k)} className={`px-3 py-1.5 text-xs rounded-lg border ${filter === k ? 'bg-blue-600 text-white border-blue-600' : 'bg-white border-gray-200 text-gray-600 hover:border-blue-400'}`}>{l}</button>
+        ))}
+        <select value={doctorFilter} onChange={e => setDoctorFilter(e.target.value)} className="text-xs border rounded-lg px-3 py-1.5 ml-auto">
+          <option value="all">All Doctors</option>
+          {doctors.map(d => <option key={d.id} value={d.id}>{d.full_name}</option>)}
+        </select>
       </div>
 
-      {/* Queue / Appointments */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2">
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-            <div className="divide-y divide-gray-50">
-              {sortedQueue.map((a) => {
-                const st = statusConfig[a.status]; const tp = typeConfig[a.type];
-                return (
-                  <div key={a.id} onClick={() => setSelectedAppt(a)} className={cn('px-5 py-4 hover:bg-gray-50 cursor-pointer transition-colors', selectedAppt?.id === a.id && 'bg-brand-50/50')}>
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-start gap-4">
-                        <div className="text-center flex-shrink-0 w-12">
-                          <span className="text-xs font-mono font-bold text-gray-900 bg-gray-100 px-2 py-1 rounded block">{a.token}</span>
-                          <span className="text-[10px] text-gray-400 mt-1 block">{a.time}</span>
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <p className="text-sm font-semibold text-gray-900">{a.patient}</p>
-                            <span className="text-xs text-gray-400">{a.age}y/{a.gender}</span>
-                            <span className={cn('text-[10px] font-semibold px-1.5 py-0.5 rounded-full uppercase', tp.color)}>{tp.label}</span>
-                          </div>
-                          <p className="text-xs text-gray-500 mt-0.5">{a.doctor} · {a.dept}</p>
-                          <p className="text-xs text-gray-400 mt-1 italic">{a.chief}</p>
-                        </div>
-                      </div>
-                      <span className={cn('text-[10px] font-semibold px-2.5 py-1 rounded-full uppercase whitespace-nowrap', st.bg, st.color)}>{st.label}</span>
+      {/* Queue Table */}
+      {loading ? <div className="text-center py-8 text-gray-400">Loading queue...</div> : filtered.length === 0 ? (
+        <div className="text-center py-12 bg-white rounded-xl border"><p className="text-gray-400">No visits today</p><p className="text-xs text-gray-300 mt-1">Click "+ New Visit" to register a patient</p></div>
+      ) : (
+        <div className="bg-white rounded-xl border overflow-hidden">
+          <table className="w-full text-sm">
+            <thead><tr className="bg-gray-50 border-b">
+              <th className="text-left p-3 font-medium text-gray-500">Token</th>
+              <th className="text-left p-3 font-medium text-gray-500">Patient</th>
+              <th className="text-left p-3 font-medium text-gray-500">Doctor</th>
+              <th className="text-left p-3 font-medium text-gray-500">Chief Complaint</th>
+              <th className="text-left p-3 font-medium text-gray-500">Status</th>
+              <th className="text-left p-3 font-medium text-gray-500">Time</th>
+              <th className="p-3 font-medium text-gray-500">Actions</th>
+            </tr></thead>
+            <tbody>
+              {filtered.map(v => (
+                <tr key={v.id} className="border-b hover:bg-gray-50">
+                  <td className="p-3"><span className="bg-blue-100 text-blue-800 px-2.5 py-1 rounded-full text-xs font-bold">T-{String(v.tokenNumber).padStart(3, '0')}</span></td>
+                  <td className="p-3"><div className="font-medium">{v.patient.name}</div><div className="text-xs text-gray-400">{v.patient.uhid} | {v.patient.age}/{v.patient.gender}</div></td>
+                  <td className="p-3"><div className="text-sm">{v.doctor.name}</div><div className="text-xs text-gray-400">{v.doctor.department}</div></td>
+                  <td className="p-3 text-xs text-gray-600 max-w-[200px] truncate">{v.chiefComplaint || '—'}</td>
+                  <td className="p-3"><span className={`px-2 py-1 rounded-full text-xs font-medium ${statusColor(v.status)}`}>{v.status.replace('_', ' ')}</span></td>
+                  <td className="p-3 text-xs text-gray-400">{v.checkInTime ? new Date(v.checkInTime).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : '—'}</td>
+                  <td className="p-3">
+                    <div className="flex gap-1">
+                      {v.status === 'waiting' && <button onClick={() => updateStatus(v.id, 'with_doctor')} className="px-2 py-1 bg-blue-50 text-blue-700 text-xs rounded hover:bg-blue-100">Start</button>}
+                      {v.status === 'with_doctor' && <>
+                        <a href={`/emr-v2?patient=${v.patient.id}`} className="px-2 py-1 bg-green-50 text-green-700 text-xs rounded hover:bg-green-100">EMR</a>
+                        <button onClick={() => updateStatus(v.id, 'completed')} className="px-2 py-1 bg-gray-50 text-gray-600 text-xs rounded hover:bg-gray-100">Done</button>
+                      </>}
+                      {v.status === 'completed' && <a href={`/billing?patient=${v.patient.id}`} className="px-2 py-1 bg-purple-50 text-purple-700 text-xs rounded hover:bg-purple-100">Bill</a>}
                     </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* New Visit Modal */}
+      {showNew && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center" onClick={() => setShowNew(false)}>
+          <div className="bg-white rounded-xl p-6 w-full max-w-lg shadow-xl" onClick={e => e.stopPropagation()}>
+            <h2 className="text-lg font-semibold mb-4">New OPD Visit</h2>
+            <div className="space-y-4">
+              {/* Patient search */}
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1">Patient *</label>
+                {selectedPatient ? (
+                  <div className="flex items-center justify-between bg-blue-50 rounded-lg p-3">
+                    <div><div className="font-medium text-sm">{selectedPatient.first_name} {selectedPatient.last_name}</div>
+                    <div className="text-xs text-gray-500">{selectedPatient.uhid} | {selectedPatient.age_years}/{selectedPatient.gender}</div></div>
+                    <button onClick={() => setSelectedPatient(null)} className="text-xs text-red-500">Change</button>
                   </div>
-                );
-              })}
+                ) : (
+                  <div className="relative">
+                    <input type="text" placeholder="Search by UHID, name, or phone..." value={searchQ} onChange={e => setSearchQ(e.target.value)} autoFocus
+                      className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                    {searchResults.length > 0 && <div className="absolute top-full left-0 right-0 mt-1 bg-white border rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto">
+                      {searchResults.map(p => <button key={p.id} onClick={() => { setSelectedPatient(p); setSearchResults([]); setSearchQ(''); }}
+                        className="w-full text-left px-3 py-2 text-sm hover:bg-blue-50 border-b last:border-0">
+                        <span className="font-medium">{p.first_name} {p.last_name}</span> <span className="text-gray-400">{p.uhid} | {p.age_years}/{p.gender} | {p.phone_primary}</span>
+                      </button>)}</div>}
+                  </div>
+                )}
+              </div>
+              {/* Doctor */}
+              <div><label className="block text-xs font-medium text-gray-500 mb-1">Doctor *</label>
+                <select value={selectedDoctor} onChange={e => setSelectedDoctor(e.target.value)} className="w-full px-3 py-2 border rounded-lg text-sm">
+                  <option value="">Select doctor...</option>
+                  {doctors.map(d => <option key={d.id} value={d.id}>{d.full_name} — {d.specialisation || d.designation}</option>)}
+                </select>
+              </div>
+              {/* Type */}
+              <div className="grid grid-cols-2 gap-4">
+                <div><label className="block text-xs font-medium text-gray-500 mb-1">Visit Type</label>
+                  <select value={visitType} onChange={e => setVisitType(e.target.value)} className="w-full px-3 py-2 border rounded-lg text-sm">
+                    <option value="new">New</option><option value="followup">Follow-up</option><option value="referral">Referral</option><option value="emergency">Emergency</option>
+                  </select></div>
+              </div>
+              {/* Complaint */}
+              <div><label className="block text-xs font-medium text-gray-500 mb-1">Chief Complaint</label>
+                <input type="text" placeholder="Brief complaint..." value={complaint} onChange={e => setComplaint(e.target.value)} className="w-full px-3 py-2 border rounded-lg text-sm" /></div>
+              {/* Actions */}
+              <div className="flex gap-2 pt-2">
+                <button onClick={handleCreateVisit} disabled={!selectedPatient || !selectedDoctor || creating}
+                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50">{creating ? 'Creating...' : 'Create Visit & Assign Token'}</button>
+                <button onClick={() => setShowNew(false)} className="px-4 py-2 bg-gray-100 text-gray-600 rounded-lg text-sm">Cancel</button>
+              </div>
             </div>
           </div>
         </div>
-
-        {/* Right panel: selected appointment details */}
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
-          {selectedAppt ? (
-            <div>
-              <div className="px-5 py-4 border-b border-gray-100">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-semibold text-gray-900">{selectedAppt.patient}</h3>
-                  <span className={cn('text-[10px] font-semibold px-2 py-0.5 rounded-full uppercase', statusConfig[selectedAppt.status].bg, statusConfig[selectedAppt.status].color)}>{statusConfig[selectedAppt.status].label}</span>
-                </div>
-                <p className="text-xs text-gray-500 mt-0.5">{selectedAppt.age}y / {selectedAppt.gender} · Token {selectedAppt.token}</p>
-              </div>
-              <div className="px-5 py-4 space-y-4">
-                <div>
-                  <p className="text-[10px] font-medium text-gray-500 uppercase tracking-wider mb-1">Chief complaint</p>
-                  <p className="text-sm text-gray-800">{selectedAppt.chief}</p>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div><p className="text-[10px] font-medium text-gray-500 uppercase tracking-wider mb-1">Doctor</p><p className="text-sm text-gray-800">{selectedAppt.doctor}</p></div>
-                  <div><p className="text-[10px] font-medium text-gray-500 uppercase tracking-wider mb-1">Department</p><p className="text-sm text-gray-800">{selectedAppt.dept}</p></div>
-                  <div><p className="text-[10px] font-medium text-gray-500 uppercase tracking-wider mb-1">Time</p><p className="text-sm text-gray-800">{selectedAppt.time}</p></div>
-                  <div><p className="text-[10px] font-medium text-gray-500 uppercase tracking-wider mb-1">Type</p><p className="text-sm text-gray-800 capitalize">{selectedAppt.type}</p></div>
-                </div>
-                <div className="flex items-center gap-2 text-xs text-gray-500">
-                  <Phone size={12} />{selectedAppt.phone}
-                </div>
-              </div>
-              <div className="px-5 py-4 border-t border-gray-100 space-y-2">
-                {selectedAppt.status === 'scheduled' && (
-                  <button className="w-full py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2">
-                    <Check size={14} />Check in
-                  </button>
-                )}
-                {(selectedAppt.status === 'checked_in' || selectedAppt.status === 'waiting') && (
-                  <button className="w-full py-2 bg-health1-teal text-white text-sm font-medium rounded-lg hover:bg-teal-700 transition-colors flex items-center justify-center gap-2">
-                    <Stethoscope size={14} />Start consultation
-                  </button>
-                )}
-                {selectedAppt.status === 'with_doctor' && (
-                  <button className="w-full py-2 bg-brand-600 text-white text-sm font-medium rounded-lg hover:bg-brand-700 transition-colors flex items-center justify-center gap-2">
-                    <ArrowRight size={14} />Open EMR
-                  </button>
-                )}
-                <button className="w-full py-2 border border-gray-200 text-gray-600 text-sm font-medium rounded-lg hover:bg-gray-50 transition-colors flex items-center justify-center gap-2">
-                  <X size={14} />Cancel appointment
-                </button>
-              </div>
-            </div>
-          ) : (
-            <div className="flex flex-col items-center justify-center h-80 text-gray-400">
-              <Stethoscope size={32} className="mb-2 text-gray-300" />
-              <p className="text-sm">Select a patient to see details</p>
-            </div>
-          )}
-        </div>
-      </div>
+      )}
     </div>
   );
 }
