@@ -73,6 +73,48 @@ function IPDPageInner() {
         <div className={`rounded-xl p-4 ${occupancy > 85 ? 'bg-red-50' : 'bg-gray-50'}`}><div className="text-xs text-gray-500">Occupancy</div><div className={`text-2xl font-bold ${occupancy > 85 ? 'text-red-700' : 'text-gray-700'}`}>{occupancy}%</div></div>
       </div>
 
+      {/* Visual Bed Board */}
+      {beds.length > 0 && (
+        <div className="bg-white rounded-xl border p-5 mb-6">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="font-semibold text-sm">Bed board</h2>
+            <div className="flex gap-3 text-xs text-gray-500">
+              <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-green-100 border border-green-300 inline-block" /> Available</span>
+              <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-red-100 border border-red-300 inline-block" /> Occupied</span>
+              <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-yellow-100 border border-yellow-300 inline-block" /> Reserved</span>
+              <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-gray-100 border border-gray-300 inline-block" /> Maintenance</span>
+            </div>
+          </div>
+          {(() => {
+            const wards: Record<string, any[]> = {};
+            beds.forEach((b: any) => {
+              const ward = b.room?.ward?.name || 'General';
+              if (!wards[ward]) wards[ward] = [];
+              wards[ward].push(b);
+            });
+            return Object.entries(wards).map(([ward, wardBeds]) => (
+              <div key={ward} className="mb-3">
+                <div className="text-xs font-medium text-gray-500 mb-1.5">{ward} ({wardBeds.filter((b: any) => b.status === 'available').length}/{wardBeds.length} available)</div>
+                <div className="flex flex-wrap gap-1.5">
+                  {wardBeds.map((b: any) => {
+                    const color = b.status === 'available' ? 'bg-green-50 border-green-300 text-green-700' :
+                      b.status === 'occupied' ? 'bg-red-50 border-red-300 text-red-700' :
+                      b.status === 'reserved' ? 'bg-yellow-50 border-yellow-300 text-yellow-700' :
+                      'bg-gray-50 border-gray-300 text-gray-500';
+                    return (
+                      <div key={b.id} className={`w-12 h-10 rounded border text-center flex flex-col items-center justify-center ${color}`} title={`${b.bed_number} — ${b.status}`}>
+                        <span className="text-[10px] font-bold leading-none">{b.bed_number}</span>
+                        <span className="text-[8px] leading-none mt-0.5">{b.room?.name || ''}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ));
+          })()}
+        </div>
+      )}
+
       <div className="flex gap-2 mb-4">{[['active','Active'],['discharge_initiated','Discharge Init'],['discharged','Discharged'],['all','All']].map(([k,l]) =>
         <button key={k} onClick={() => setStatusFilter(k)} className={`px-3 py-1.5 text-xs rounded-lg border ${statusFilter === k ? 'bg-blue-600 text-white border-blue-600' : 'bg-white border-gray-200'}`}>{l}</button>
       )}</div>

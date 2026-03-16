@@ -8,10 +8,11 @@ function BillingPageInner() {
   const { staff, activeCentreId } = useAuthStore();
   const centreId = activeCentreId || '';
   const staffId = staff?.id || '';
-  const { bills, loading, tariffs, loadBills, createBillFromEncounter, loadBillItems, addBillItem, collectPayment, finalizeBill, applyDiscount } = useBilling(centreId);
+  const { bills, loading, tariffs, loadBills, createBillFromEncounter, loadBillItems, addBillItem, collectPayment, finalizeBill, applyDiscount, loadPayments } = useBilling(centreId);
 
   const [selectedBill, setSelectedBill] = useState<Bill | null>(null);
   const [billItems, setBillItems] = useState<BillItem[]>([]);
+  const [payments, setPayments] = useState<any[]>([]);
   const [showPayment, setShowPayment] = useState(false);
   const [payAmount, setPayAmount] = useState('');
   const [payMode, setPayMode] = useState('cash');
@@ -25,8 +26,9 @@ function BillingPageInner() {
   useEffect(() => {
     if (selectedBill) {
       loadBillItems(selectedBill.id).then(items => setBillItems(items));
+      loadPayments(selectedBill.id).then(p => setPayments(p));
     }
-  }, [selectedBill, loadBillItems]);
+  }, [selectedBill, loadBillItems, loadPayments]);
 
   useEffect(() => { loadBills(dateFilter); }, [dateFilter, loadBills]);
 
@@ -50,8 +52,10 @@ function BillingPageInner() {
     if (!selectedBill || !payAmount) return;
     await collectPayment(selectedBill.id, parseFloat(payAmount), payMode, staffId);
     setShowPayment(false); setPayAmount('');
+    // Reload bill and payments
     const updated = bills.find(b => b.id === selectedBill.id);
     if (updated) setSelectedBill(updated);
+    loadPayments(selectedBill.id).then(p => setPayments(p));
   };
 
   const handleAddItem = async (tariff: any) => {
@@ -158,6 +162,19 @@ function BillingPageInner() {
                 {selectedBill.balanceAmount > 0 && <div className="flex justify-between text-red-600 font-semibold"><span>Balance due</span><span>Rs.{selectedBill.balanceAmount.toLocaleString('en-IN')}</span></div>}
               </div>
 
+              {/* Payment History */}
+              {payments.length > 0 && (
+                <div className="border rounded-lg overflow-hidden mb-4">
+                  <div className="bg-gray-50 px-3 py-1.5 text-xs font-medium text-gray-500">Payment history</div>
+                  {payments.map((p: any) => (
+                    <div key={p.id} className="flex items-center justify-between px-3 py-2 border-t text-xs">
+                      <div><span className="font-mono text-blue-600">{p.receipt}</span><span className="text-gray-400 ml-2">{p.date}</span></div>
+                      <div><span className="bg-gray-100 px-1.5 py-0.5 rounded text-gray-600">{p.mode.toUpperCase()}</span><span className="font-medium ml-2">Rs.{p.amount.toLocaleString('en-IN')}</span></div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
               {/* Actions */}
               <div className="flex gap-2 mt-4">
                 {selectedBill.status === 'draft' && <button onClick={() => finalizeBill(selectedBill.id)} className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700">Finalize Bill</button>}
@@ -171,7 +188,7 @@ function BillingPageInner() {
                     items: billItems.map(i => ({ description: i.description, quantity: i.quantity, rate: i.unitRate, amount: i.netAmount })),
                     grossAmount: selectedBill.grossAmount, discountAmount: selectedBill.discountAmount,
                     netAmount: selectedBill.netAmount, paidAmount: selectedBill.paidAmount, balanceAmount: selectedBill.balanceAmount,
-                    payments: [],
+                    payments: payments.map((p: any) => ({ mode: p.mode, amount: p.amount, receipt: p.receipt, date: p.date })),
                   }, { name: 'Health1 Super Speciality Hospital', address: 'Shilaj, Ahmedabad', phone: '+91 79 6190 1111', tagline: '330 Beds' });
                 }}>Print Bill</button>
               </div>

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Sidebar } from '@/components/layout/sidebar';
+import { GlobalHeader } from '@/components/layout/header';
 import { ToastProvider } from '@/components/ui/shared';
 import { ErrorBoundary } from '@/components/ui/error-boundary';
 import { useAuthStore } from '@/lib/store/auth';
@@ -64,6 +65,7 @@ export default function DashboardLayout({
         <main
           className="transition-all duration-200 min-h-screen md:ml-[260px]"
         >
+          <GlobalHeader />
           <div className="px-4 sm:px-6 py-4 sm:py-6 max-w-full overflow-x-hidden">
             <ErrorBoundary>{children}</ErrorBoundary>
           </div>
