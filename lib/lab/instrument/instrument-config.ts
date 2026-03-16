@@ -94,7 +94,7 @@ export const INSTRUMENT_TEMPLATES: Record<string, Partial<InstrumentConfig>> = {
       // Only apply if analyzer sends ratio format:
       // 'HCT': { factor: 100, targetUnit: '%' },
     },
-    testMap: { 'CBC': 'CBC', 'CBC+DIFF': 'CBC', '00001': 'CBC' },
+    testMap: { 'CBC': 'CBC', 'CBC+DIFF': 'CBC', '00001': 'CBC', 'Automated Count': 'CBC' },
   },
 
   // Mindray BC-6800/5390 (kept for reference)

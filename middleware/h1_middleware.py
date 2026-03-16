@@ -347,13 +347,20 @@ class SerialListener(threading.Thread):
 # TCP LISTENER
 # ============================================================
 class TCPListener(threading.Thread):
-    """Listens on TCP for HL7/ASTM data from network-connected analyzers."""
+    """Listens on TCP for HL7/ASTM data from network-connected analyzers.
+    Supports MLLP framing (VT + message + FS CR) used by Mindray BC-5000 and others."""
+    
+    # MLLP control characters
+    VT = b'\x0b'   # Vertical Tab — message start
+    FS = b'\x1c'   # File Separator — message end  
+    MLLP_END = b'\x1c\x0d'  # FS + CR — end of MLLP frame
     
     def __init__(self, config: dict):
         super().__init__(daemon=True)
         self.config = config
         self.name = f"TCP-{config['id']}"
         self.running = True
+        self.use_mllp = config.get('mllp', True)  # Default to MLLP for HL7
     
     def run(self):
         host = self.config.get('host', '0.0.0.0')
@@ -383,8 +390,13 @@ class TCPListener(threading.Thread):
                 time.sleep(10)
     
     def _handle_connection(self, conn: socket.socket):
-        conn.settimeout(30)
+        conn.settimeout(60)  # Longer timeout for analyzers
         buffer = b''
+        use_mllp = self.config.get('mllp', True) or self.config.get('framing') == 'mllp'
+        
+        # MLLP framing chars (used by Mindray BC-5000 and most HL7-over-TCP analyzers)
+        MLLP_START = b'\x0b'  # VT (Vertical Tab)
+        MLLP_END = b'\x1c\x0d'  # FS + CR
         
         try:
             while True:
@@ -394,27 +406,43 @@ class TCPListener(threading.Thread):
                 
                 buffer += data
                 
-                # For HL7: look for message end (last segment + CR)
-                # For ASTM: look for EOT
-                if EOT in data or (b'\rMSA|' in buffer) or (len(buffer) > 100 and not data):
+                # MLLP: message ends with 0x1C 0x0D
+                if use_mllp and MLLP_END in buffer:
+                    break
+                # Standard: look for EOT or complete message
+                elif not use_mllp and (EOT in data or (len(buffer) > 100 and b'\r' in data)):
                     break
             
             if buffer:
-                raw = buffer.decode('ascii', errors='ignore')
-                logger.info(f"{self.config['id']}: Received {len(raw)} bytes via TCP")
+                # Strip MLLP framing
+                if use_mllp:
+                    buffer = buffer.replace(MLLP_START, b'').replace(b'\x1c', b'').rstrip(b'\r\n')
                 
-                param_map = self.config.get('parameter_map', {})
+                raw = buffer.decode('utf-8', errors='ignore')
+                logger.info(f"{self.config['id']}: Received {len(raw)} bytes via TCP" + (' (MLLP)' if use_mllp else ''))
+                
+                # Save raw data for debugging
+                try:
+                    with open(f"raw_{self.config['id']}_{int(time.time())}.hl7", 'w') as f:
+                        f.write(raw)
+                except: pass
+                
+                param_map = {k: v for k, v in self.config.get('parameter_map', {}).items() if not k.startswith('_')}
                 
                 if self.config.get('protocol') == 'hl7':
                     results = parse_hl7(raw, param_map)
-                    # Send ACK
+                    # Send HL7 ACK wrapped in MLLP if needed
                     msg_id = ''
                     for line in raw.split('\r'):
                         if line.startswith('MSH'):
                             parts = line.split('|')
                             msg_id = parts[9] if len(parts) > 9 else ''
                     if msg_id:
-                        conn.sendall(generate_hl7_ack(msg_id).encode())
+                        ack = generate_hl7_ack(msg_id)
+                        if use_mllp:
+                            conn.sendall(MLLP_START + ack.encode() + MLLP_END)
+                        else:
+                            conn.sendall(ack.encode())
                 else:
                     results = parse_astm(raw, param_map)
                     conn.sendall(ACK)

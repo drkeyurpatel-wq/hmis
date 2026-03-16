@@ -1,0 +1,61 @@
+[
+  {
+    "id": "shilaj_hematology_bc5000",
+    "name": "Mindray BC-5000 (Shilaj Hematology)",
+    "protocol": "hl7",
+    "connection": "tcp",
+    "host": "0.0.0.0",
+    "port": 5100,
+    "_comment_host": "0.0.0.0 means listen on all interfaces. The BC-5000 connects TO this middleware PC.",
+    "_comment_port": "5100 is the default Mindray HL7 port. Match this in BC-5000 settings: Setup > Communication > LIS > Port",
+    "_setup_steps": [
+      "1. On BC-5000: Menu > Setup > Communication > LIS",
+      "2. Set IP to the middleware PC IP address (e.g., 192.168.1.50)",
+      "3. Set Port to 5100",
+      "4. Set Protocol to HL7",
+      "5. Enable 'Auto Send' to send results automatically after analysis",
+      "6. Enable 'Send Graph Data' if you want scattergrams (optional)",
+      "7. On middleware PC: Run python h1_middleware.py --config instruments_shilaj.json"
+    ],
+    "parameter_map": {
+      "WBC":     "WBC",
+      "Neu%":    "NEUT",
+      "Lym%":    "LYMPH",
+      "Mon%":    "MONO",
+      "Eos%":    "EOS",
+      "Bas%":    "BASO",
+      "Neu#":    "NEUT_ABS",
+      "Lym#":    "LYMPH_ABS",
+      "Mon#":    "MONO_ABS",
+      "Eos#":    "EOS_ABS",
+      "Bas#":    "BASO_ABS",
+      "RBC":     "RBC",
+      "HGB":     "HB",
+      "HCT":     "PCV",
+      "MCV":     "MCV",
+      "MCH":     "MCH",
+      "MCHC":    "MCHC",
+      "RDW-CV":  "RDW",
+      "RDW-SD":  "RDW_SD",
+      "PLT":     "PLT",
+      "MPV":     "MPV",
+      "PDW":     "PDW",
+      "PCT":     "PCT",
+      "P-LCR":   "PLCR",
+      "P-LCC":   "PLCC",
+
+      "_alternate_codes_some_firmware": {
+        "NEUT%": "NEUT",
+        "LYMPH%": "LYMPH",
+        "MONO%": "MONO",
+        "EOS%": "EOS",
+        "BASO%": "BASO",
+        "NEUT#": "NEUT_ABS",
+        "LYMPH#": "LYMPH_ABS"
+      }
+    },
+    "lims_url": "https://hmis-brown.vercel.app/api/instrument",
+    "mllp": true,
+    "_comment_mllp": "BC-5000 uses MLLP framing: VT(0x0B) + HL7 message + FS(0x1C) + CR(0x0D)"
+  }
+]

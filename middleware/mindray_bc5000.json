@@ -1,0 +1,138 @@
+{
+  "instruments": [
+    {
+      "id": "hematology_shilaj_bc5000",
+      "name": "Mindray BC-5000",
+      "manufacturer": "Mindray",
+      "model": "BC-5000",
+      "department": "Hematology",
+      "centre": "Shilaj",
+      "protocol": "hl7",
+      "hl7_version": "2.3.1",
+      "connection": "tcp",
+      "host": "0.0.0.0",
+      "port": 5100,
+      "encoding": "UTF-8",
+      "framing": "mllp",
+      "bidirectional": true,
+      "coding_system": "99MRC",
+      
+      "_comment_hl7_format": "MSH|^~\\&|BC-5000|Mindray|||20260317|...|ORU^R01|...|P|2.3.1||||||UNICODE",
+      "_comment_obx_format": "OBX|seq|NM|code^name^99MRC||value|unit|ref_range|flag|...|F",
+      
+      "parameter_map": {
+        "__comment": "Mindray BC-5000 OBX-3 codes (99MRC) → Health1 LIMS parameter codes",
+        
+        "06001": "WBC",
+        "06002": "NEUT",
+        "06003": "LYMPH",
+        "06004": "MONO",
+        "06005": "EOS",
+        "06006": "BASO",
+        "06007": "NEUT_ABS",
+        "06008": "LYMPH_ABS",
+        "06009": "MONO_ABS",
+        "06010": "EOS_ABS",
+        "06011": "BASO_ABS",
+        "06012": "RBC",
+        "06013": "HB",
+        "06014": "PCV",
+        "06015": "MCV",
+        "06016": "MCH",
+        "06017": "MCHC",
+        "06018": "RDW",
+        "06019": "RDW_SD",
+        "06020": "PLT",
+        "06021": "MPV",
+        "06022": "PDW",
+        "06023": "PCT",
+        "06024": "PLCR",
+        "06025": "PLCC",
+
+        "WBC": "WBC",
+        "Neu%": "NEUT",
+        "Lym%": "LYMPH",
+        "Mon%": "MONO",
+        "Eos%": "EOS",
+        "Bas%": "BASO",
+        "Neu#": "NEUT_ABS",
+        "Lym#": "LYMPH_ABS",
+        "Mon#": "MONO_ABS",
+        "Eos#": "EOS_ABS",
+        "Bas#": "BASO_ABS",
+        "RBC": "RBC",
+        "HGB": "HB",
+        "HCT": "PCV",
+        "MCV": "MCV",
+        "MCH": "MCH",
+        "MCHC": "MCHC",
+        "RDW-CV": "RDW",
+        "RDW-SD": "RDW_SD",
+        "PLT": "PLT",
+        "MPV": "MPV",
+        "PDW": "PDW",
+        "PCT": "PCT",
+        "P-LCR": "PLCR",
+        "P-LCC": "PLCC"
+      },
+      
+      "test_map": {
+        "00001": "CBC",
+        "Automated Count": "CBC",
+        "CBC": "CBC",
+        "CBC+DIFF": "CBC"
+      },
+
+      "unit_map": {
+        "__comment": "BC-5000 units → LIMS expected units",
+        "WBC": "x10^3/uL",
+        "RBC": "million/cumm",
+        "HGB": "g/dL",
+        "HCT": "%",
+        "PLT": "x10^3/uL",
+        "MCV": "fL",
+        "MCH": "pg",
+        "MCHC": "g/dL",
+        "RDW-CV": "%",
+        "MPV": "fL"
+      },
+
+      "flags_map": {
+        "H": "HIGH",
+        "L": "LOW",
+        "HH": "CRITICAL_HIGH",
+        "LL": "CRITICAL_LOW",
+        "A": "ABN",
+        "N": ""
+      },
+
+      "sample_hl7_message": "MSH|^~\\&|BC-5000|Mindray|||20260317143943||ORU^R01|1|P|2.3.1||||||UNICODE\rPID|1||H1-00001^^^^MR||Patel^Keyur||19830903000000|Male\rPV1|1||LAB^^001\rOBR|1||20260317001|00001^Automated Count^99MRC||20260317140600|20260317141200|||Dr. Shah||||20260317141200||||||||||HM||||||||Mindray\rOBX|1|IS|08001^Take Mode^99MRC||O||||||F\rOBX|2|IS|08002^Blood Mode^99MRC||W||||||F\rOBX|3|IS|08003^Test Mode^99MRC||CBC||||||F\rOBX|4|NM|06001^WBC^99MRC||8.5|10*3/uL|4.0-11.0|N|||||F\rOBX|5|NM|06012^RBC^99MRC||4.8|10*6/uL|4.0-5.5|N|||||F\rOBX|6|NM|06013^HGB^99MRC||14.2|g/dL|12.0-16.0|N|||||F\rOBX|7|NM|06014^HCT^99MRC||42.5|%|36-48|N|||||F\rOBX|8|NM|06015^MCV^99MRC||88.5|fL|80-100|N|||||F\rOBX|9|NM|06016^MCH^99MRC||29.6|pg|27-32|N|||||F\rOBX|10|NM|06017^MCHC^99MRC||33.4|g/dL|32-36|N|||||F\rOBX|11|NM|06018^RDW-CV^99MRC||13.2|%|11.5-14.5|N|||||F\rOBX|12|NM|06002^Neu%^99MRC||62.5|%|40-70|N|||||F\rOBX|13|NM|06003^Lym%^99MRC||28.3|%|20-40|N|||||F\rOBX|14|NM|06004^Mon%^99MRC||5.2|%|2-8|N|||||F\rOBX|15|NM|06005^Eos%^99MRC||3.1|%|1-6|N|||||F\rOBX|16|NM|06006^Bas%^99MRC||0.9|%|0-1|N|||||F\rOBX|17|NM|06020^PLT^99MRC||245|10*3/uL|150-400|N|||||F\rOBX|18|NM|06021^MPV^99MRC||9.2|fL|7.4-10.4|N|||||F\rOBX|19|NM|06025^P-LCC^99MRC||58|10*3/uL||N|||||F\r",
+
+      "lims_url": "https://hmis-brown.vercel.app/api/instrument",
+
+      "notes": [
+        "BC-5000 uses MLLP framing: 0x0B (VT) start, 0x1C (FS) + 0x0D (CR) end",
+        "Default analyzer IP port is 5100 (configurable in Service menu)",
+        "Service password: Se s700 (capital S, space between Se and s700)",
+        "Supports bidirectional: can receive worklist from LIS",
+        "OBX-3 uses Mindray private coding system 99MRC",
+        "First 3 OBX segments are metadata (Take Mode, Blood Mode, Test Mode) - skip",
+        "Parameters start from OBX-4 onwards with NM (numeric) data type",
+        "Flag field: H=High, L=Low, HH=Critical High, LL=Critical Low, N=Normal",
+        "Encoding: UTF-8 (specified in MSH-18 as UNICODE)",
+        "Check network: analyzer must be on same subnet as middleware PC",
+        "Middleware PC listens as TCP server, analyzer connects as client"
+      ]
+    }
+  ],
+
+  "deployment_checklist": {
+    "1_network": "Verify BC-5000 and middleware PC are on same network segment",
+    "2_analyzer_config": "On BC-5000: Setup > Communication > set LIS IP to middleware PC IP, port 5100",
+    "3_middleware_pc": "Install Python 3.8+, pip install requests (pyserial not needed for TCP)",
+    "4_run_test": "python h1_middleware.py --test (parses sample BC-5000 HL7 message)",
+    "5_run_live": "python h1_middleware.py --config mindray_bc5000.json",
+    "6_verify": "Run a sample on BC-5000, check LIMS at /lab for auto-populated results",
+    "7_vercel_env": "Set SUPABASE_SERVICE_ROLE_KEY in Vercel environment variables"
+  }
+}

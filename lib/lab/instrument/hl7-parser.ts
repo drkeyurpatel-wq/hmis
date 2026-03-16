@@ -120,6 +120,11 @@ export function parseHL7Message(raw: string): HL7Message {
 
       case 'OBX': // Observation Result
         const result = parseOBX(fields);
+        // Skip metadata OBX (Mindray BC-5000 sends Take Mode, Blood Mode, Test Mode as IS type)
+        // Only process NM (numeric), ST (string), TX (text) — skip IS (coded), CE (coded element)
+        if (result.valueType === 'IS' || result.valueType === 'CE') break;
+        // Skip OBX where observation ID starts with 08 (Mindray metadata range)
+        if (result.observationId.startsWith('08')) break;
         if (currentOrder) {
           currentOrder.results.push(result);
         } else {
