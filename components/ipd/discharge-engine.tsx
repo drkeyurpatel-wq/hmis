@@ -278,20 +278,33 @@ RULES:
     if (admission?.bed_id) {
       await sb().from('hmis_beds').update({ status: 'housekeeping', current_admission_id: null }).eq('id', admission.bed_id);
     }
+    // Discontinue all active meds
+    await sb().from('hmis_ipd_medication_orders').update({ status: 'completed', end_date: new Date().toISOString().split('T')[0] }).eq('admission_id', admissionId).eq('status', 'active');
     onFlash('Patient discharged successfully');
+    setStep(6); // done
   };
+
+  // Clearance state
+  const [clearances, setClearances] = useState({
+    summaryApproved: false,
+    billingCleared: false, billingNotes: '',
+    pharmacyCleared: false, medsDispensed: false,
+    nursingCleared: false, belongingsReturned: false, patientEducationDone: false,
+    finalVitals: { bp: '', hr: '', temp: '', spo2: '' },
+  });
 
   if (loading) return <div className="text-center py-12 text-gray-400">Loading patient journey...</div>;
 
   return (
     <div className="space-y-4">
       {/* Step indicator */}
-      <div className="flex items-center gap-2 mb-4">
-        {[['1','Review Journey'],['2','Edit Summary'],['3','Preview & Print']].map(([n, l]) => (
-          <button key={n} onClick={() => setStep(parseInt(n))} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium ${step === parseInt(n) ? 'bg-blue-600 text-white' : step > parseInt(n) ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
-            <span className="w-5 h-5 rounded-full border-2 flex items-center justify-center text-[10px] font-bold">{step > parseInt(n) ? '✓' : n}</span>{l}
+      <div className="flex items-center gap-1.5 mb-4 overflow-x-auto">
+        {[['1','Review Journey'],['2','Edit Summary'],['3','Preview & Approve'],['4','Clearances'],['5','Final Discharge']].map(([n, l]) => (
+          <button key={n} onClick={() => parseInt(n) <= step ? setStep(parseInt(n)) : null} className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-medium whitespace-nowrap ${step === parseInt(n) ? 'bg-blue-600 text-white' : step > parseInt(n) ? 'bg-green-100 text-green-700 cursor-pointer' : 'bg-gray-100 text-gray-400'}`}>
+            <span className="w-4 h-4 rounded-full border flex items-center justify-center text-[9px] font-bold">{step > parseInt(n) ? '✓' : n}</span>{l}
           </button>
         ))}
+        {step === 6 && <span className="px-3 py-1.5 bg-green-600 text-white rounded-lg text-xs font-bold">DISCHARGED ✓</span>}
       </div>
 
       {/* ===== STEP 1: REVIEW JOURNEY ===== */}
@@ -478,7 +491,155 @@ RULES:
         <div className="flex gap-2">
           <button onClick={() => setStep(2)} className="px-4 py-2.5 bg-gray-100 text-gray-600 rounded-xl text-sm">← Edit</button>
           <button onClick={printDischargeSummary} className="flex-1 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-medium">Print Discharge Summary</button>
-          <button onClick={saveAndDischarge} className="px-6 py-2.5 bg-green-600 text-white rounded-xl text-sm font-medium">Discharge Patient ✓</button>
+          <button onClick={() => { setClearances(c => ({...c, summaryApproved: true})); setStep(4); }} className="px-6 py-2.5 bg-green-600 text-white rounded-xl text-sm font-medium">Approve Summary →</button>
+        </div>
+      </div>}
+
+      {/* ===== STEP 4: CLEARANCES ===== */}
+      {step === 4 && <div className="space-y-3">
+        {/* Billing Clearance */}
+        <div className={`bg-white rounded-xl border p-4 ${clearances.billingCleared ? 'border-green-300' : 'border-orange-300'}`}>
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-sm font-semibold flex items-center gap-2">
+              <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs ${clearances.billingCleared ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`}>{clearances.billingCleared ? '✓' : '₹'}</span>
+              Billing Clearance
+            </h3>
+            <button onClick={() => setClearances(c => ({...c, billingCleared: !c.billingCleared}))}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium ${clearances.billingCleared ? 'bg-green-600 text-white' : 'bg-orange-100 text-orange-700'}`}>
+              {clearances.billingCleared ? 'Cleared ✓' : 'Mark as Cleared'}
+            </button>
+          </div>
+          <div className="text-xs text-gray-500 space-y-1">
+            <div>• Verify all charges are entered (room, OT, meds, labs, consumables)</div>
+            <div>• Check insurance pre-auth / cashless settlement status</div>
+            <div>• Collect balance payment from patient/attendant</div>
+            <div>• Generate final bill</div>
+          </div>
+          <input type="text" value={clearances.billingNotes} onChange={e => setClearances(c => ({...c, billingNotes: e.target.value}))}
+            className="w-full mt-2 px-3 py-1.5 border rounded-lg text-xs" placeholder="Billing notes (outstanding amount, payment mode, etc.)..." />
+          <a href={`/billing?patient=${patientId}`} target="_blank" className="inline-block mt-2 px-3 py-1 bg-blue-50 text-blue-700 text-xs rounded-lg">Open Billing →</a>
+        </div>
+
+        {/* Pharmacy Clearance */}
+        <div className={`bg-white rounded-xl border p-4 ${clearances.pharmacyCleared ? 'border-green-300' : 'border-orange-300'}`}>
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-sm font-semibold flex items-center gap-2">
+              <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs ${clearances.pharmacyCleared ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`}>{clearances.pharmacyCleared ? '✓' : '💊'}</span>
+              Pharmacy Clearance
+            </h3>
+            <button onClick={() => setClearances(c => ({...c, pharmacyCleared: !c.pharmacyCleared}))}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium ${clearances.pharmacyCleared ? 'bg-green-600 text-white' : 'bg-orange-100 text-orange-700'}`}>
+              {clearances.pharmacyCleared ? 'Cleared ✓' : 'Mark as Cleared'}
+            </button>
+          </div>
+          <div className="text-xs text-gray-500 mb-2">Discharge medications ({ds.dischargeMeds.length})</div>
+          <div className="space-y-1">{ds.dischargeMeds.map((m, i) => (
+            <div key={i} className="text-xs flex items-center gap-2 py-0.5">
+              <span className="font-medium">{m.drug} {m.dose}</span>
+              <span className="text-gray-400">{m.route} {m.frequency} × {m.duration}</span>
+            </div>
+          ))}</div>
+          <label className="flex items-center gap-2 mt-2 text-xs cursor-pointer">
+            <input type="checkbox" checked={clearances.medsDispensed} onChange={e => setClearances(c => ({...c, medsDispensed: e.target.checked}))} className="w-4 h-4 rounded" />
+            <span className={clearances.medsDispensed ? 'text-green-700 font-medium' : 'text-gray-600'}>All discharge medications dispensed to patient</span>
+          </label>
+        </div>
+
+        {/* Nursing Clearance */}
+        <div className={`bg-white rounded-xl border p-4 ${clearances.nursingCleared ? 'border-green-300' : 'border-orange-300'}`}>
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-sm font-semibold flex items-center gap-2">
+              <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs ${clearances.nursingCleared ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`}>{clearances.nursingCleared ? '✓' : '🏥'}</span>
+              Nursing Clearance
+            </h3>
+            <button onClick={() => setClearances(c => ({...c, nursingCleared: !c.nursingCleared}))}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium ${clearances.nursingCleared ? 'bg-green-600 text-white' : 'bg-orange-100 text-orange-700'}`}>
+              {clearances.nursingCleared ? 'Cleared ✓' : 'Mark as Cleared'}
+            </button>
+          </div>
+          <div className="space-y-2">
+            <div className="text-xs text-gray-500 font-medium">Final vitals before discharge</div>
+            <div className="grid grid-cols-4 gap-2">
+              {[['bp','BP (sys/dia)'],['hr','HR'],['temp','Temp °F'],['spo2','SpO2 %']].map(([k,l]) => (
+                <div key={k}><label className="text-[10px] text-gray-500">{l}</label>
+                  <input type="text" value={(clearances.finalVitals as any)[k]} onChange={e => setClearances(c => ({...c, finalVitals: {...c.finalVitals, [k]: e.target.value}}))}
+                    className="w-full px-2 py-1.5 border rounded text-sm" /></div>
+              ))}
+            </div>
+            <div className="space-y-1 mt-2">
+              {[['belongingsReturned', 'Patient belongings returned'],['patientEducationDone', 'Discharge instructions explained to patient/family']].map(([k, l]) => (
+                <label key={k} className="flex items-center gap-2 text-xs cursor-pointer">
+                  <input type="checkbox" checked={(clearances as any)[k]} onChange={e => setClearances(c => ({...c, [k]: e.target.checked}))} className="w-4 h-4 rounded" />
+                  <span className={(clearances as any)[k] ? 'text-green-700 font-medium' : 'text-gray-600'}>{l}</span>
+                </label>
+              ))}
+            </div>
+            {/* Remove lines/drains checklist */}
+            <div className="text-xs text-gray-500 mt-2 space-y-0.5">
+              <div className="font-medium">Lines/Drains removed:</div>
+              <div>• IV cannula removed ☐</div>
+              <div>• Foley catheter removed ☐</div>
+              <div>• Any drains removed ☐</div>
+              <div>• Central line removed (if applicable) ☐</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Summary of clearances */}
+        <div className={`rounded-xl p-3 text-sm font-medium text-center ${clearances.billingCleared && clearances.pharmacyCleared && clearances.nursingCleared ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-orange-50 text-orange-700 border border-orange-200'}`}>
+          {clearances.billingCleared && clearances.pharmacyCleared && clearances.nursingCleared
+            ? 'All clearances complete — ready for final discharge'
+            : `${[!clearances.billingCleared && 'Billing', !clearances.pharmacyCleared && 'Pharmacy', !clearances.nursingCleared && 'Nursing'].filter(Boolean).join(', ')} clearance pending`}
+        </div>
+
+        <div className="flex gap-2">
+          <button onClick={() => setStep(3)} className="px-4 py-2.5 bg-gray-100 text-gray-600 rounded-xl text-sm">← Back to Summary</button>
+          <button onClick={() => setStep(5)} disabled={!clearances.billingCleared || !clearances.pharmacyCleared || !clearances.nursingCleared}
+            className="flex-1 py-2.5 bg-green-600 text-white rounded-xl text-sm font-medium disabled:opacity-40 disabled:cursor-not-allowed">
+            Proceed to Final Discharge →
+          </button>
+        </div>
+      </div>}
+
+      {/* ===== STEP 5: FINAL DISCHARGE ===== */}
+      {step === 5 && <div className="space-y-4">
+        <div className="bg-white rounded-xl border p-6 text-center">
+          <div className="w-16 h-16 mx-auto mb-4 bg-green-100 rounded-full flex items-center justify-center text-3xl">🏥</div>
+          <h2 className="text-lg font-bold text-gray-900 mb-1">Ready to Discharge</h2>
+          <p className="text-sm text-gray-500 mb-4">{pt?.first_name} {pt?.last_name} ({admission?.ipd_number})</p>
+
+          <div className="grid grid-cols-3 gap-3 text-xs mb-6 max-w-md mx-auto">
+            <div className="bg-green-50 rounded-lg p-2"><div className="font-medium text-green-700">Summary</div><div className="text-green-600">Approved ✓</div></div>
+            <div className="bg-green-50 rounded-lg p-2"><div className="font-medium text-green-700">Billing</div><div className="text-green-600">Cleared ✓</div></div>
+            <div className="bg-green-50 rounded-lg p-2"><div className="font-medium text-green-700">Pharmacy</div><div className="text-green-600">Cleared ✓</div></div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3 text-left text-xs bg-gray-50 p-4 rounded-lg mb-4 max-w-md mx-auto">
+            <div><b>Discharge type:</b> {ds.dischargeType}</div>
+            <div><b>Condition:</b> {ds.conditionAtDischarge}</div>
+            <div><b>Discharge date:</b> {ds.dischargeDate}</div>
+            <div><b>Meds dispensed:</b> {clearances.medsDispensed ? 'Yes' : 'No'}</div>
+          </div>
+
+          <div className="flex gap-2 justify-center">
+            <button onClick={() => setStep(4)} className="px-4 py-2.5 bg-gray-100 text-gray-600 rounded-xl text-sm">← Back</button>
+            <button onClick={printDischargeSummary} className="px-4 py-2.5 bg-blue-600 text-white rounded-xl text-sm">Print Summary</button>
+            <button onClick={saveAndDischarge}
+              className="px-8 py-2.5 bg-green-600 text-white rounded-xl text-sm font-bold hover:bg-green-700 transition-colors">
+              Discharge Patient ✓
+            </button>
+          </div>
+        </div>
+      </div>}
+
+      {/* ===== STEP 6: DONE ===== */}
+      {step === 6 && <div className="text-center py-12">
+        <div className="w-20 h-20 mx-auto mb-4 bg-green-100 rounded-full flex items-center justify-center text-4xl">✓</div>
+        <h2 className="text-xl font-bold text-green-700 mb-2">Patient Discharged Successfully</h2>
+        <p className="text-sm text-gray-500 mb-6">{pt?.first_name} {pt?.last_name} | {admission?.ipd_number} | Bed freed</p>
+        <div className="flex gap-3 justify-center">
+          <button onClick={printDischargeSummary} className="px-4 py-2.5 bg-blue-600 text-white rounded-xl text-sm">Print Summary Again</button>
+          <a href="/ipd" className="px-4 py-2.5 bg-gray-100 text-gray-600 rounded-xl text-sm">Back to IPD List</a>
         </div>
       </div>}
     </div>

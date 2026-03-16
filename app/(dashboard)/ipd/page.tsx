@@ -3,7 +3,6 @@ import React, { useState, useEffect } from 'react';
 import { useIPD, type Admission } from '@/lib/revenue/phase2-hooks';
 import { useDoctors } from '@/lib/revenue/hooks';
 import { RoleGuard, TableSkeleton, ConfirmModal } from '@/components/ui/shared';
-import DischargeForm from '@/components/emr-v2/discharge-form';
 import { useAuthStore } from '@/lib/store/auth';
 import { createClient } from '@/lib/supabase/client';
 
@@ -17,8 +16,6 @@ function IPDPageInner() {
   const doctors = useDoctors(centreId);
   const [statusFilter, setStatusFilter] = useState('active');
   const [showAdmit, setShowAdmit] = useState(false);
-  const [selectedAdm, setSelectedAdm] = useState<Admission | null>(null);
-  const [showDischarge, setShowDischarge] = useState(false);
   const [departments, setDepartments] = useState<any[]>([]);
 
   // Form state
@@ -138,7 +135,7 @@ function IPDPageInner() {
           <td className="p-3"><span className={`px-2 py-0.5 rounded-full text-xs ${stColor(a.status)}`}>{a.status.replace('_', ' ')}</span></td>
           <td className="p-3"><div className="flex gap-1">
             {a.status === 'active' && <button onClick={() => initiateDischarge(a.id)} className="px-2 py-1 bg-orange-50 text-orange-700 text-xs rounded hover:bg-orange-100">Init Discharge</button>}
-            {a.status === 'discharge_initiated' && <button onClick={() => setSelectedAdm(a)} className="px-2 py-1 bg-green-50 text-green-700 text-xs rounded hover:bg-green-100">Discharge</button>}
+            {a.status === 'discharge_initiated' && <a href={`/ipd/${a.id}?tab=discharge`} className="px-2 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700 font-medium">Discharge</a>}
             <a href={`/ipd/${a.id}`} className="px-2 py-1 bg-purple-50 text-purple-700 text-xs rounded hover:bg-purple-100 font-medium">Clinical</a>
             <a href={`/emr-v2?patient=${a.patientId}`} className="px-2 py-1 bg-blue-50 text-blue-700 text-xs rounded hover:bg-blue-100">EMR</a>
           </div></td>
@@ -198,15 +195,6 @@ function IPDPageInner() {
         </div>
       </div>}
 
-      {/* Discharge Summary Form */}
-      {selectedAdm && selectedAdm.status === 'discharge_initiated' && (
-        <DischargeForm
-          admission={selectedAdm}
-          centreId={centreId}
-          onClose={() => setSelectedAdm(null)}
-          onDischarge={(id, type, dx) => { dischargePatient(id, type, dx); setSelectedAdm(null); }}
-        />
-      )}
     </div>
   );
 }

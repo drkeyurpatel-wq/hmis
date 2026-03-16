@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { useAuthStore } from '@/lib/store/auth';
 import { useDoctorRounds, useICUChart, useICUScores, useIOChart, useMedicationOrders, useMAR, useConsents, useProceduralNotes } from '@/lib/ipd/clinical-hooks';
@@ -19,11 +19,13 @@ type ClinicalTab = 'rounds' | 'icu' | 'trends' | 'io' | 'meds' | 'mar' | 'scores
 
 export default function IPDClinicalPage() {
   const { id } = useParams();
+  const searchParams = useSearchParams();
   const admissionId = id as string;
   const { staff } = useAuthStore();
   const staffId = staff?.id || '';
   const [admission, setAdmission] = useState<any>(null);
-  const [tab, setTab] = useState<ClinicalTab>('rounds');
+  const initialTab = (searchParams.get('tab') as ClinicalTab) || 'rounds';
+  const [tab, setTab] = useState<ClinicalTab>(initialTab);
   const [toast, setToast] = useState('');
   const flash = (m: string) => { setToast(m); setTimeout(() => setToast(''), 2500); };
 
