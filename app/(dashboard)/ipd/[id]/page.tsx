@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { useAuthStore } from '@/lib/store/auth';
@@ -7,11 +7,14 @@ import { useDoctorRounds, useICUChart, useICUScores, useIOChart, useMedicationOr
 import NursingShiftNotes from '@/components/ipd/nursing-shift-notes';
 import VitalsTrendChart from '@/components/ipd/vitals-trend-chart';
 import SmartRounds from '@/components/ipd/smart-rounds';
+import SmartICUChart from '@/components/ipd/smart-icu-chart';
+import SmartIOChart from '@/components/ipd/smart-io-chart';
+import SmartMedOrders from '@/components/ipd/smart-med-orders';
+import SmartMAR from '@/components/ipd/smart-mar';
+import AutoICUScores from '@/components/ipd/auto-icu-scores';
 import DischargeEngine from '@/components/ipd/discharge-engine';
 import ConsentBuilder from '@/components/ipd/consent-builder';
 import SmartProcedures from '@/components/ipd/smart-procedures';
-import SmartMedOrders from '@/components/ipd/smart-med-orders';
-import AutoICUScores from '@/components/ipd/auto-icu-scores';
 import Link from 'next/link';
 
 let _sb: any = null;
@@ -19,7 +22,7 @@ function sb() { if (typeof window === 'undefined') return null as any; if (!_sb)
 
 type ClinicalTab = 'rounds' | 'icu' | 'trends' | 'io' | 'meds' | 'mar' | 'scores' | 'consents' | 'procedures' | 'nursing' | 'discharge';
 
-export default function IPDClinicalPage() {
+function IPDClinicalInner() {
   const { id } = useParams();
   const searchParams = useSearchParams();
   const admissionId = id as string;
@@ -31,16 +34,14 @@ export default function IPDClinicalPage() {
   const [toast, setToast] = useState('');
   const flash = (m: string) => { setToast(m); setTimeout(() => setToast(''), 2500); };
 
-  // Load admission details
   useEffect(() => {
     if (!admissionId || !sb()) return;
     sb().from('hmis_admissions')
-      .select('*, patient:hmis_patients!inner(id, uhid, first_name, last_name, age_years, gender, blood_group, phone_primary), department:hmis_departments!inner(name), doctor:hmis_staff!hmis_admissions_primary_doctor_id_fkey(full_name)')
+      .select('*, patient:hmis_patients!inner(id, uhid, first_name, last_name, age_years, gender, blood_group, phone_primary, date_of_birth), department:hmis_departments!inner(name), doctor:hmis_staff!hmis_admissions_primary_doctor_id_fkey(full_name, specialisation)')
       .eq('id', admissionId).single()
       .then(({ data }: any) => setAdmission(data));
   }, [admissionId]);
 
-  // Hooks
   const rounds = useDoctorRounds(admissionId);
   const icu = useICUChart(admissionId);
   const scores = useICUScores(admissionId);
@@ -50,208 +51,93 @@ export default function IPDClinicalPage() {
   const consents = useConsents(admissionId, admission?.patient?.id);
   const procedures = useProceduralNotes(admissionId);
 
-  // ===== FORM STATES =====
-  // ICU
-  const [icuForm, setIcuForm] = useState<any>({ hr: '', bp_sys: '', bp_dia: '', rr: '', spo2: '', temp: '', ventilator_mode: '', fio2: '', peep: '', gcs_eye: '', gcs_verbal: '', gcs_motor: '', rass: '', nursing_note: '' });
-  // I/O
-  const [ioForm, setIoForm] = useState({ shift: 'morning', oral_intake_ml: 0, iv_fluid_ml: 0, blood_products_ml: 0, ryles_tube_ml: 0, other_intake_ml: 0, urine_ml: 0, drain_1_ml: 0, drain_2_ml: 0, ryles_aspirate_ml: 0, vomit_ml: 0, stool_count: 0, other_output_ml: 0 });
-
-  // Show forms
-  const [showForm, setShowForm] = useState(false);
-
   if (!admission) return <div className="text-center py-12 text-gray-400">Loading admission...</div>;
   const pt = admission.patient;
   const patientName = pt.first_name + ' ' + (pt.last_name || '');
   const daysSince = Math.ceil((Date.now() - new Date(admission.admission_date).getTime()) / 86400000);
+  const admDx = admission.provisional_diagnosis || '';
+  const latestVitals = icu.entries.length > 0 ? icu.entries[0] : null;
 
-  const tabs: [ClinicalTab, string][] = [
-    ['rounds', 'Rounds'], ['icu', 'ICU Chart'], ['trends', 'Vitals Trend'], ['io', 'I/O Chart'], ['meds', 'Med Orders'],
-    ['mar', 'MAR'], ['scores', 'ICU Scores'], ['consents', 'Consents'], ['procedures', 'Procedures'], ['nursing', 'Nursing'], ['discharge', 'Discharge']
+  const tabs: [ClinicalTab, string, string][] = [
+    ['rounds', 'Rounds', `${rounds.rounds.length}`],
+    ['icu', 'ICU Chart', `${icu.entries.length}`],
+    ['trends', 'Trends', ''],
+    ['io', 'I/O', `${io.entries.length}`],
+    ['meds', 'Meds', `${meds.orders.filter((m: any) => m.status === 'active').length}`],
+    ['mar', 'MAR', `${mar.records.filter((r: any) => r.status === 'scheduled').length}`],
+    ['scores', 'Scores', `${scores.scores.length}`],
+    ['consents', 'Consents', `${consents.consents.length}`],
+    ['procedures', 'Procedures', `${procedures.notes.length}`],
+    ['nursing', 'Nursing', ''],
+    ['discharge', 'Discharge', ''],
   ];
 
   return (
     <div className="max-w-6xl mx-auto">
       {toast && <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-green-600 text-white px-4 py-2 rounded-lg shadow-lg text-sm">{toast}</div>}
 
-      {/* Patient header */}
+      {/* ===== PATIENT HEADER ===== */}
       <div className="bg-white rounded-xl border p-4 mb-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold">{pt.first_name?.charAt(0)}{pt.last_name?.charAt(0)}</div>
+            <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold text-lg">{pt.first_name?.charAt(0)}{pt.last_name?.charAt(0)}</div>
             <div>
               <h1 className="text-xl font-bold">{patientName}</h1>
-              <div className="flex items-center gap-2 text-xs text-gray-500">
+              <div className="flex items-center gap-2 text-xs text-gray-500 flex-wrap">
                 <span className="font-mono bg-gray-100 px-1.5 py-0.5 rounded">{admission.ipd_number}</span>
-                <span>{pt.uhid}</span><span>{pt.age_years}yr/{pt.gender?.charAt(0).toUpperCase()}</span>
-                {pt.blood_group && <span className="bg-red-50 text-red-700 px-1.5 py-0.5 rounded">{pt.blood_group}</span>}
-                <span>Day {daysSince}</span>
+                <span>{pt.uhid}</span>
+                <span>{pt.age_years}yr/{pt.gender?.charAt(0).toUpperCase()}</span>
+                {pt.blood_group && <span className="bg-red-50 text-red-700 px-1.5 py-0.5 rounded font-bold">{pt.blood_group}</span>}
+                <span className="bg-orange-50 text-orange-700 px-1.5 py-0.5 rounded font-bold">Day {daysSince}</span>
                 <span className="bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded">{admission.department?.name}</span>
                 <span>Dr. {admission.doctor?.full_name}</span>
-                <span className={`px-1.5 py-0.5 rounded ${admission.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-gray-100'}`}>{admission.status}</span>
+                <span className={`px-1.5 py-0.5 rounded font-medium ${admission.status === 'active' ? 'bg-green-100 text-green-700' : admission.status === 'discharge_initiated' ? 'bg-orange-100 text-orange-700' : 'bg-gray-100 text-gray-500'}`}>{admission.status.replace('_', ' ')}</span>
               </div>
-              {admission.provisional_diagnosis && <div className="text-xs text-gray-600 mt-1 max-w-[600px] truncate"><span className="font-medium">Dx:</span> {admission.provisional_diagnosis}</div>}
+              {admDx && <div className="text-xs text-gray-600 mt-1 max-w-[600px]"><span className="font-medium">Dx:</span> {admDx}</div>}
             </div>
           </div>
-          <div className="flex gap-2">
-            {admission.status === 'active' && <button onClick={() => setTab('discharge')} className="px-3 py-1.5 bg-green-600 text-white text-xs rounded-lg hover:bg-green-700 font-medium">Discharge</button>}
-            <Link href={`/emr-v2?patient=${pt.id}`} className="px-3 py-1.5 bg-blue-50 text-blue-700 text-xs rounded-lg hover:bg-blue-100">EMR</Link>
-            <Link href="/ipd" className="px-3 py-1.5 bg-gray-100 text-gray-600 text-xs rounded-lg hover:bg-gray-200">Back to IPD</Link>
+          <div className="flex flex-col gap-1.5 items-end">
+            {latestVitals && <div className="flex gap-2 text-[10px]">
+              {latestVitals.hr && <span className="bg-gray-50 px-1.5 py-0.5 rounded">HR <b>{latestVitals.hr}</b></span>}
+              {latestVitals.bp_sys && <span className="bg-gray-50 px-1.5 py-0.5 rounded">BP <b>{latestVitals.bp_sys}/{latestVitals.bp_dia}</b></span>}
+              {latestVitals.spo2 && <span className="bg-gray-50 px-1.5 py-0.5 rounded">SpO2 <b>{latestVitals.spo2}%</b></span>}
+              {latestVitals.temp && <span className="bg-gray-50 px-1.5 py-0.5 rounded">T <b>{latestVitals.temp}°F</b></span>}
+            </div>}
+            <div className="flex gap-2">
+              {(admission.status === 'active' || admission.status === 'discharge_initiated') && <button onClick={() => setTab('discharge')} className="px-3 py-1.5 bg-green-600 text-white text-xs rounded-lg hover:bg-green-700 font-medium">Discharge</button>}
+              <Link href={`/emr-v2?patient=${pt.id}`} className="px-3 py-1.5 bg-blue-50 text-blue-700 text-xs rounded-lg hover:bg-blue-100">EMR</Link>
+              <Link href="/ipd" className="px-3 py-1.5 bg-gray-100 text-gray-600 text-xs rounded-lg hover:bg-gray-200">Back</Link>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Tabs */}
-      <div className="flex gap-1 mb-4 overflow-x-auto border-b pb-px">
-        {tabs.map(([k, l]) => <button key={k} onClick={() => { setTab(k); setShowForm(false); }}
-          className={`px-3 py-2 text-xs font-medium whitespace-nowrap border-b-2 -mb-px ${tab === k ? 'border-blue-600 text-blue-700' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>{l}</button>)}
+      {/* ===== TABS ===== */}
+      <div className="flex gap-0.5 mb-4 overflow-x-auto border-b pb-px">
+        {tabs.map(([k, l, count]) => (
+          <button key={k} onClick={() => setTab(k)}
+            className={`px-2.5 py-2 text-[11px] font-medium whitespace-nowrap border-b-2 -mb-px flex items-center gap-1 ${tab === k ? 'border-blue-600 text-blue-700' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
+            {l}{count && <span className={`text-[9px] px-1 rounded-full ${tab === k ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-400'}`}>{count}</span>}
+          </button>
+        ))}
       </div>
 
-      {/* ===== ROUNDS (Smart) ===== */}
-      {tab === 'rounds' && <SmartRounds rounds={rounds.rounds} admissionDx={admission.provisional_diagnosis || ''} staffId={staffId} loading={rounds.loading} onSave={async (round: any) => { await rounds.addRound(round); }} onFlash={flash} />}
-
-      {/* ===== ICU CHART ===== */}
-      {tab === 'icu' && <div>
-        <div className="flex justify-between items-center mb-3">
-          <h2 className="font-semibold text-sm">ICU Monitoring Chart</h2>
-          <button onClick={() => setShowForm(!showForm)} className="px-3 py-1.5 bg-blue-600 text-white text-xs rounded-lg">{showForm ? 'Cancel' : '+ Record Vitals'}</button>
-        </div>
-        {showForm && <div className="bg-white rounded-xl border p-5 mb-4">
-          <div className="grid grid-cols-4 gap-3 mb-3">
-            {[['hr','HR (bpm)'],['bp_sys','SBP'],['bp_dia','DBP'],['rr','RR'],['spo2','SpO2 %'],['temp','Temp °F'],['fio2','FiO2 %'],['peep','PEEP']].map(([k,l]) =>
-              <div key={k}><label className="text-[10px] text-gray-500">{l}</label>
-                <input type="number" value={icuForm[k]||''} onChange={e => setIcuForm((f: any) => ({...f, [k]: e.target.value ? parseFloat(e.target.value) : ''}))} className="w-full px-2 py-1.5 border rounded text-sm" /></div>
-            )}
-          </div>
-          <div className="grid grid-cols-4 gap-3 mb-3">
-            <div><label className="text-[10px] text-gray-500">Vent mode</label>
-              <select value={icuForm.ventilator_mode||''} onChange={e => setIcuForm((f: any) => ({...f, ventilator_mode: e.target.value}))} className="w-full px-2 py-1.5 border rounded text-sm">
-                <option value="">None</option>{['CMV','SIMV','PSV','CPAP','BiPAP','PRVC','APRV','HFNC','Room Air'].map(m => <option key={m}>{m}</option>)}</select></div>
-            <div><label className="text-[10px] text-gray-500">GCS Eye (1-4)</label>
-              <input type="number" min="1" max="4" value={icuForm.gcs_eye||''} onChange={e => setIcuForm((f: any) => ({...f, gcs_eye: parseInt(e.target.value)||''}))} className="w-full px-2 py-1.5 border rounded text-sm" /></div>
-            <div><label className="text-[10px] text-gray-500">GCS Verbal (1-5)</label>
-              <input type="number" min="1" max="5" value={icuForm.gcs_verbal||''} onChange={e => setIcuForm((f: any) => ({...f, gcs_verbal: parseInt(e.target.value)||''}))} className="w-full px-2 py-1.5 border rounded text-sm" /></div>
-            <div><label className="text-[10px] text-gray-500">GCS Motor (1-6)</label>
-              <input type="number" min="1" max="6" value={icuForm.gcs_motor||''} onChange={e => setIcuForm((f: any) => ({...f, gcs_motor: parseInt(e.target.value)||''}))} className="w-full px-2 py-1.5 border rounded text-sm" /></div>
-          </div>
-          <div className="grid grid-cols-2 gap-3 mb-3">
-            <div><label className="text-[10px] text-gray-500">RASS (-5 to +4)</label>
-              <input type="number" min="-5" max="4" value={icuForm.rass||''} onChange={e => setIcuForm((f: any) => ({...f, rass: parseInt(e.target.value)||''}))} className="w-full px-2 py-1.5 border rounded text-sm" /></div>
-            <div><label className="text-[10px] text-gray-500">Nursing note</label>
-              <input type="text" value={icuForm.nursing_note||''} onChange={e => setIcuForm((f: any) => ({...f, nursing_note: e.target.value}))} className="w-full px-2 py-1.5 border rounded text-sm" placeholder="Brief note..." /></div>
-          </div>
-          <button onClick={async () => { const clean: any = {}; Object.entries(icuForm).forEach(([k,v]) => { if (v !== '' && v !== null) clean[k] = v; }); await icu.addEntry(clean, staffId); setShowForm(false); flash('ICU entry saved'); }}
-            className="px-4 py-2 bg-green-600 text-white text-sm rounded-lg">Save Entry</button>
-        </div>}
-        {icu.entries.length === 0 ? <div className="text-center py-8 bg-white rounded-xl border text-gray-400 text-sm">No ICU chart entries</div> :
-        <div className="bg-white rounded-xl border overflow-x-auto"><table className="w-full text-xs whitespace-nowrap"><thead><tr className="bg-gray-50 border-b">
-          <th className="p-2 text-left text-gray-500">Time</th><th className="p-2">HR</th><th className="p-2">BP</th><th className="p-2">RR</th><th className="p-2">SpO2</th><th className="p-2">Temp</th><th className="p-2">Vent</th><th className="p-2">FiO2</th><th className="p-2">GCS</th><th className="p-2">RASS</th><th className="p-2 text-left">Note</th>
-        </tr></thead><tbody>{icu.entries.map((e: any) => (
-          <tr key={e.id} className="border-b hover:bg-gray-50">
-            <td className="p-2 text-gray-500">{new Date(e.recorded_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</td>
-            <td className="p-2 text-center">{e.hr || '—'}</td>
-            <td className="p-2 text-center">{e.bp_sys && e.bp_dia ? `${e.bp_sys}/${e.bp_dia}` : '—'}</td>
-            <td className="p-2 text-center">{e.rr || '—'}</td>
-            <td className="p-2 text-center">{e.spo2 || '—'}</td>
-            <td className="p-2 text-center">{e.temp || '—'}</td>
-            <td className="p-2 text-center">{e.ventilator_mode || '—'}</td>
-            <td className="p-2 text-center">{e.fio2 || '—'}</td>
-            <td className="p-2 text-center font-bold">{e.gcs_total || '—'}</td>
-            <td className="p-2 text-center">{e.rass ?? '—'}</td>
-            <td className="p-2 text-gray-600 max-w-[200px] truncate">{e.nursing_note || ''}</td>
-          </tr>
-        ))}</tbody></table></div>}
-      </div>}
-
-      {/* ===== I/O CHART ===== */}
-      {tab === 'io' && <div>
-        <div className="flex justify-between items-center mb-3">
-          <h2 className="font-semibold text-sm">Intake / Output Chart</h2>
-          <button onClick={() => setShowForm(!showForm)} className="px-3 py-1.5 bg-blue-600 text-white text-xs rounded-lg">{showForm ? 'Cancel' : '+ Record I/O'}</button>
-        </div>
-        {showForm && <div className="bg-white rounded-xl border p-5 mb-4">
-          <div className="mb-3"><label className="text-xs text-gray-500">Shift</label>
-            <select value={ioForm.shift} onChange={e => setIoForm(f => ({...f, shift: e.target.value}))} className="w-full px-3 py-2 border rounded-lg text-sm">
-              {['morning','evening','night'].map(s => <option key={s}>{s}</option>)}</select></div>
-          <div className="grid grid-cols-2 gap-4">
-            <div><h3 className="text-xs font-medium text-green-600 mb-2">INTAKE (ml)</h3>
-              {[['oral_intake_ml','Oral'],['iv_fluid_ml','IV Fluids'],['blood_products_ml','Blood Products'],['ryles_tube_ml','Ryles Tube'],['other_intake_ml','Other']].map(([k,l]) =>
-                <div key={k} className="flex items-center gap-2 mb-1.5"><label className="text-xs text-gray-500 w-24">{l}</label>
-                  <input type="number" value={(ioForm as any)[k]||0} onChange={e => setIoForm(f => ({...f, [k]: parseInt(e.target.value)||0}))} className="flex-1 px-2 py-1 border rounded text-sm text-right" min="0" /></div>
-              )}
-              <div className="text-xs font-bold text-green-700 mt-2">Total: {ioForm.oral_intake_ml+ioForm.iv_fluid_ml+ioForm.blood_products_ml+ioForm.ryles_tube_ml+ioForm.other_intake_ml} ml</div>
-            </div>
-            <div><h3 className="text-xs font-medium text-red-600 mb-2">OUTPUT (ml)</h3>
-              {[['urine_ml','Urine'],['drain_1_ml','Drain 1'],['drain_2_ml','Drain 2'],['ryles_aspirate_ml','Ryles Aspirate'],['vomit_ml','Vomit'],['other_output_ml','Other']].map(([k,l]) =>
-                <div key={k} className="flex items-center gap-2 mb-1.5"><label className="text-xs text-gray-500 w-24">{l}</label>
-                  <input type="number" value={(ioForm as any)[k]||0} onChange={e => setIoForm(f => ({...f, [k]: parseInt(e.target.value)||0}))} className="flex-1 px-2 py-1 border rounded text-sm text-right" min="0" /></div>
-              )}
-              <div className="flex items-center gap-2 mb-1.5"><label className="text-xs text-gray-500 w-24">Stool (count)</label>
-                <input type="number" value={ioForm.stool_count||0} onChange={e => setIoForm(f => ({...f, stool_count: parseInt(e.target.value)||0}))} className="flex-1 px-2 py-1 border rounded text-sm text-right" min="0" /></div>
-              <div className="text-xs font-bold text-red-700 mt-2">Total: {ioForm.urine_ml+ioForm.drain_1_ml+ioForm.drain_2_ml+ioForm.ryles_aspirate_ml+ioForm.vomit_ml+ioForm.other_output_ml} ml</div>
-            </div>
-          </div>
-          <div className={`text-sm font-bold mt-3 p-2 rounded ${(ioForm.oral_intake_ml+ioForm.iv_fluid_ml+ioForm.blood_products_ml+ioForm.ryles_tube_ml+ioForm.other_intake_ml)-(ioForm.urine_ml+ioForm.drain_1_ml+ioForm.drain_2_ml+ioForm.ryles_aspirate_ml+ioForm.vomit_ml+ioForm.other_output_ml) > 0 ? 'bg-blue-50 text-blue-700' : 'bg-orange-50 text-orange-700'}`}>
-            Balance: {(ioForm.oral_intake_ml+ioForm.iv_fluid_ml+ioForm.blood_products_ml+ioForm.ryles_tube_ml+ioForm.other_intake_ml)-(ioForm.urine_ml+ioForm.drain_1_ml+ioForm.drain_2_ml+ioForm.ryles_aspirate_ml+ioForm.vomit_ml+ioForm.other_output_ml)} ml
-          </div>
-          <button onClick={async () => { await io.addEntry(ioForm, staffId); setShowForm(false); flash('I/O recorded'); }}
-            className="mt-3 px-4 py-2 bg-green-600 text-white text-sm rounded-lg">Save I/O Entry</button>
-        </div>}
-        {io.entries.length === 0 ? <div className="text-center py-8 bg-white rounded-xl border text-gray-400 text-sm">No I/O records</div> :
-        <div className="bg-white rounded-xl border overflow-hidden"><table className="w-full text-xs"><thead><tr className="bg-gray-50 border-b">
-          <th className="p-2 text-left">Date</th><th className="p-2">Shift</th><th className="p-2 text-green-600">Intake (ml)</th><th className="p-2 text-red-600">Output (ml)</th><th className="p-2">Balance</th><th className="p-2">Urine</th>
-        </tr></thead><tbody>{io.entries.map((e: any) => (
-          <tr key={e.id} className="border-b"><td className="p-2">{e.io_date}</td><td className="p-2 text-center">{e.shift}</td>
-            <td className="p-2 text-center text-green-600 font-medium">{e.total_intake_ml}</td>
-            <td className="p-2 text-center text-red-600 font-medium">{e.total_output_ml}</td>
-            <td className={`p-2 text-center font-bold ${e.total_intake_ml - e.total_output_ml >= 0 ? 'text-blue-600' : 'text-orange-600'}`}>{e.total_intake_ml - e.total_output_ml}</td>
-            <td className="p-2 text-center">{e.urine_ml}</td>
-          </tr>
-        ))}</tbody></table></div>}
-      </div>}
-
-      {/* ===== MEDICATION ORDERS ===== */}
-      {/* ===== MED ORDERS (Smart) ===== */}
-      {tab === 'meds' && <SmartMedOrders meds={meds.orders} admissionId={admissionId} staffId={staffId} admissionDx={admission.provisional_diagnosis || ''} onAdd={async (med: any) => { await meds.addOrder(med, staffId); }} onDiscontinue={async (id: string, reason: string) => { await meds.discontinue(id, staffId, reason); }} onFlash={flash} />}
-
-      {/* ===== MAR ===== */}
-      {tab === 'mar' && <div>
-        <h2 className="font-semibold text-sm mb-3">Medication Administration Record</h2>
-        {mar.records.length === 0 ? <div className="text-center py-8 bg-white rounded-xl border text-gray-400 text-sm">No scheduled medications for today. Add medication orders first, then MAR entries will appear.</div> :
-        <div className="bg-white rounded-xl border overflow-hidden"><table className="w-full text-xs"><thead><tr className="bg-gray-50 border-b">
-          <th className="p-2 text-left">Time</th><th className="p-2 text-left">Medication</th><th className="p-2">Dose</th><th className="p-2">Route</th><th className="p-2">Status</th><th className="p-2">Actions</th>
-        </tr></thead><tbody>{mar.records.map((r: any) => (
-          <tr key={r.id} className="border-b"><td className="p-2">{new Date(r.scheduled_time).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})}</td>
-            <td className="p-2 font-medium">{r.medication?.drug_name}</td><td className="p-2 text-center">{r.medication?.dose}</td>
-            <td className="p-2 text-center">{r.medication?.route?.toUpperCase()}</td>
-            <td className="p-2 text-center"><span className={`px-1.5 py-0.5 rounded text-[10px] ${r.status === 'given' ? 'bg-green-100 text-green-700' : r.status === 'held' ? 'bg-yellow-100 text-yellow-700' : r.status === 'missed' ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-600'}`}>{r.status}</span></td>
-            <td className="p-2 text-center">{r.status === 'scheduled' && <div className="flex gap-1 justify-center">
-              <button onClick={() => mar.administer(r.id, staffId)} className="px-2 py-0.5 bg-green-50 text-green-700 rounded text-[10px]">Give</button>
-              <button onClick={() => { const reason = prompt('Hold reason:'); if (reason) mar.holdDose(r.id, reason); }} className="px-2 py-0.5 bg-yellow-50 text-yellow-700 rounded text-[10px]">Hold</button>
-            </div>}</td>
-          </tr>
-        ))}</tbody></table></div>}
-      </div>}
-
-      {/* ===== ICU SCORES (Auto-calculating) ===== */}
+      {/* ===== TAB CONTENT ===== */}
+      {tab === 'rounds' && <SmartRounds rounds={rounds.rounds} admissionDx={admDx} staffId={staffId} loading={rounds.loading} onSave={async (round: any) => { await rounds.addRound(round); }} onFlash={flash} />}
+      {tab === 'icu' && <SmartICUChart entries={icu.entries} admissionId={admissionId} staffId={staffId} loading={false} onSave={async (entry: any, sid: string) => { await icu.addEntry(entry, sid); }} onFlash={flash} />}
+      {tab === 'trends' && <VitalsTrendChart entries={icu.entries} hoursBack={48} />}
+      {tab === 'io' && <SmartIOChart entries={io.entries} admissionId={admissionId} staffId={staffId} onSave={async (entry: any, sid: string) => { await io.addEntry(entry, sid); }} onFlash={flash} />}
+      {tab === 'meds' && <SmartMedOrders meds={meds.orders} admissionId={admissionId} staffId={staffId} admissionDx={admDx} onAdd={async (med: any) => { await meds.addOrder(med, staffId); }} onDiscontinue={async (id: string, reason: string) => { await meds.discontinue(id, staffId, reason); }} onFlash={flash} />}
+      {tab === 'mar' && <SmartMAR records={mar.records} meds={meds.orders} admissionId={admissionId} staffId={staffId} onAdminister={async (id: string, sid: string) => { await mar.administer(id, sid); }} onHold={async (id: string, reason: string) => { await mar.holdDose(id, reason); }} onFlash={flash} />}
       {tab === 'scores' && <AutoICUScores scores={scores.scores} admissionId={admissionId} staffId={staffId} onSave={async (score: any, sid: string) => { await scores.addScore(score.scoreType, score.scoreValue, {}, score.interpretation, sid); }} onFlash={flash} />}
-
-      {/* ===== CONSENTS (Builder) ===== */}
-      {tab === 'consents' && <ConsentBuilder consents={consents.consents} patientId={pt.id} patientName={patientName} admissionId={admissionId} admissionDx={admission.provisional_diagnosis || ''} staffId={staffId} onSave={async (c: any, sid: string) => { await consents.addConsent(c, sid); }} onFlash={flash} />}
-
-      {/* ===== PROCEDURES (Smart) ===== */}
+      {tab === 'consents' && <ConsentBuilder consents={consents.consents} patientId={pt.id} patientName={patientName} admissionId={admissionId} admissionDx={admDx} staffId={staffId} onSave={async (c: any, sid: string) => { await consents.addConsent(c, sid); }} onFlash={flash} />}
       {tab === 'procedures' && <SmartProcedures procedures={procedures.notes} admissionId={admissionId} staffId={staffId} onSave={async (proc: any, sid: string) => { await procedures.addNote(proc, sid); }} onFlash={flash} />}
-
-      {/* ===== VITALS TREND ===== */}
-      {tab === 'trends' && <div>
-        <h2 className="font-semibold text-sm mb-3">Vitals Trend Chart</h2>
-        <VitalsTrendChart entries={icu.entries} hoursBack={24} />
-      </div>}
-
-      {/* ===== NURSING NOTES ===== */}
       {tab === 'nursing' && <NursingShiftNotes admissionId={admissionId} staffId={staffId} patientName={patientName} onFlash={flash} />}
-
-      {/* ===== DISCHARGE ENGINE ===== */}
       {tab === 'discharge' && <DischargeEngine admissionId={admissionId} patientId={pt.id} staffId={staffId} admission={admission} onFlash={flash} />}
     </div>
   );
+}
+
+export default function IPDClinicalPage() {
+  return <Suspense fallback={<div className="text-center py-12 text-gray-400">Loading...</div>}><IPDClinicalInner /></Suspense>;
 }
