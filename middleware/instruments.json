@@ -1,0 +1,52 @@
+[
+  {
+    "id": "shilaj_hematology_bc5000",
+    "name": "Mindray BC-5000 (Hematology)",
+    "protocol": "hl7",
+    "connection": "tcp",
+    "host": "0.0.0.0",
+    "port": 6000,
+    "_note_host": "0.0.0.0 means listen on all interfaces. The BC-5000 PUSHES data to this PC. Set the middleware PC's IP address in the BC-5000 communication settings.",
+    "_note_port": "Match this to the port configured in BC-5000 > Service > Communication > LIS. Default is usually 6000 but can be any port.",
+    "_setup_steps": [
+      "1. On BC-5000: Service menu > Communication > Host Settings",
+      "2. Set Connection Type: TCP/IP",
+      "3. Set Host IP: [IP address of the PC running this middleware]",
+      "4. Set Host Port: 6000 (or whatever port you choose)",
+      "5. Set Protocol: HL7",
+      "6. Enable Auto-send results: ON",
+      "7. Enable Sample ID barcode: ON",
+      "8. On middleware PC: Ensure port 6000 is open in Windows Firewall",
+      "9. On middleware PC: Run this middleware, it will listen for incoming data"
+    ],
+    "parameter_map": {
+      "WBC": "WBC",
+      "RBC": "RBC",
+      "HGB": "HB",
+      "HCT": "PCV",
+      "MCV": "MCV",
+      "MCH": "MCH",
+      "MCHC": "MCHC",
+      "PLT": "PLT",
+      "RDW-CV": "RDW",
+      "MPV": "MPV",
+      "Neu%": "NEUT",
+      "Lym%": "LYMPH",
+      "Mon%": "MONO",
+      "Eos%": "EOS",
+      "Bas%": "BASO",
+      "Neu#": "NEUT_ABS",
+      "Lym#": "LYMPH_ABS",
+      "Mon#": "MONO_ABS",
+      "Eos#": "EOS_ABS",
+      "Bas#": "BASO_ABS",
+      "PDW": "PDW",
+      "PCT": "PCT",
+      "P-LCR": "PLCR"
+    },
+    "unit_conversions": {
+      "HGB": { "factor": 0.1, "note": "BC-5000 sends g/L, LIMS expects g/dL. If your BC-5000 already sends g/dL, remove this." }
+    },
+    "lims_url": "https://hmis-brown.vercel.app/api/instrument"
+  }
+]

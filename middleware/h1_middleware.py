@@ -185,6 +185,22 @@ def parse_hl7(raw_data: str, param_map: dict) -> list:
     return results
 
 
+def apply_unit_conversions(results: list, conversions: dict) -> list:
+    """Apply unit conversions from config (e.g., HGB g/L → g/dL)."""
+    if not conversions:
+        return results
+    for r in results:
+        conv = conversions.get(r.get('instrumentParameterCode'))
+        if conv and 'factor' in conv:
+            try:
+                val = float(r['value'])
+                r['value'] = str(round(val * conv['factor'], 2))
+                logger.debug(f"  Unit conversion: {r['instrumentParameterCode']} {val} → {r['value']}")
+            except (ValueError, TypeError):
+                pass
+    return results
+
+
 def generate_hl7_ack(msg_control_id: str) -> str:
     """Generate HL7 ACK response."""
     ts = datetime.now().strftime('%Y%m%d%H%M%S')
@@ -303,6 +319,9 @@ class SerialListener(threading.Thread):
         else:
             results = parse_astm(raw, param_map)
         
+        # Apply unit conversions
+        results = apply_unit_conversions(results, self.config.get('unit_conversions', {}))
+        
         if not results:
             logger.warning(f"{self.config['id']}: No mappable results in data")
             return
@@ -399,6 +418,9 @@ class TCPListener(threading.Thread):
                 else:
                     results = parse_astm(raw, param_map)
                     conn.sendall(ACK)
+                
+                # Apply unit conversions
+                results = apply_unit_conversions(results, self.config.get('unit_conversions', {}))
                 
                 if results:
                     barcode = results[0].get('sampleId', '')

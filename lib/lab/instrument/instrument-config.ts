@@ -51,7 +51,53 @@ export const INSTRUMENT_TEMPLATES: Record<string, Partial<InstrumentConfig>> = {
     testMap: { 'CBC': 'CBC', '00400': 'CBC', 'CBC+DIFF': 'CBC' },
   },
 
-  // Mindray BC-series (Hematology)
+  // Mindray BC-5000 (Hematology — 5-part differential)
+  // Interface: HL7 v2.3.1 over TCP/IP
+  // Default port: 6000 (configurable in Service > Communication on analyzer)
+  // Connection: RJ45 Ethernet on back panel
+  mindray_bc5000: {
+    manufacturer: 'Mindray', model: 'BC-5000', department: 'Hematology',
+    protocol: 'hl7', connectionType: 'tcp', port: 6000,
+    parameterMap: {
+      // CBC parameters — BC-5000 OBX observation IDs
+      'WBC': 'WBC',           // x10^9/L → x10^3/uL (same numeric, diff unit label)
+      'RBC': 'RBC',           // x10^12/L → million/cumm
+      'HGB': 'HB',            // g/L → g/dL (divide by 10)
+      'HCT': 'PCV',           // L/L → % (multiply by 100) or already in %
+      'MCV': 'MCV',           // fL
+      'MCH': 'MCH',           // pg
+      'MCHC': 'MCHC',         // g/L → g/dL
+      'PLT': 'PLT',           // x10^9/L → x10^3/uL
+      'RDW-CV': 'RDW',        // %
+      'RDW-SD': 'RDW',        // fL (alternate)
+      'MPV': 'MPV',           // fL
+      'PDW': 'PDW',           // fL (not in LIMS but captured)
+      'PCT': 'PCT',           // % plateletcrit
+      'P-LCR': 'PLCR',       // % large platelets
+      // 5-part differential (%)
+      'Neu%': 'NEUT',         // Neutrophil %
+      'Lym%': 'LYMPH',        // Lymphocyte %
+      'Mon%': 'MONO',         // Monocyte %
+      'Eos%': 'EOS',          // Eosinophil %
+      'Bas%': 'BASO',         // Basophil %
+      // 5-part differential (absolute) — BC-5000 also sends these
+      'Neu#': 'NEUT_ABS',
+      'Lym#': 'LYMPH_ABS',
+      'Mon#': 'MONO_ABS',
+      'Eos#': 'EOS_ABS',
+      'Bas#': 'BASO_ABS',
+    },
+    unitConversions: {
+      // BC-5000 reports HGB in g/L, LIMS expects g/dL
+      'HGB': { factor: 0.1, targetUnit: 'g/dL' },
+      // BC-5000 may report HCT as ratio (0.45), LIMS expects % (45)
+      // Only apply if analyzer sends ratio format:
+      // 'HCT': { factor: 100, targetUnit: '%' },
+    },
+    testMap: { 'CBC': 'CBC', 'CBC+DIFF': 'CBC', '00001': 'CBC' },
+  },
+
+  // Mindray BC-6800/5390 (kept for reference)
   mindray_bc: {
     manufacturer: 'Mindray', model: 'BC-6800/5390', department: 'Hematology',
     protocol: 'hl7', connectionType: 'tcp', port: 6000,
