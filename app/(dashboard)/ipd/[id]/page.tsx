@@ -6,12 +6,15 @@ import { useAuthStore } from '@/lib/store/auth';
 import { useDoctorRounds, useICUChart, useICUScores, useIOChart, useMedicationOrders, useMAR, useConsents, useProceduralNotes } from '@/lib/ipd/clinical-hooks';
 import NursingShiftNotes from '@/components/ipd/nursing-shift-notes';
 import VitalsTrendChart from '@/components/ipd/vitals-trend-chart';
+import SmartRounds from '@/components/ipd/smart-rounds';
+import DischargeEngine from '@/components/ipd/discharge-engine';
+import ConsentBuilder from '@/components/ipd/consent-builder';
 import Link from 'next/link';
 
 let _sb: any = null;
 function sb() { if (typeof window === 'undefined') return null as any; if (!_sb) { try { _sb = createClient(); } catch { return null; } } return _sb; }
 
-type ClinicalTab = 'rounds' | 'icu' | 'trends' | 'io' | 'meds' | 'mar' | 'scores' | 'consents' | 'procedures' | 'nursing';
+type ClinicalTab = 'rounds' | 'icu' | 'trends' | 'io' | 'meds' | 'mar' | 'scores' | 'consents' | 'procedures' | 'nursing' | 'discharge';
 
 export default function IPDClinicalPage() {
   const { id } = useParams();
@@ -43,16 +46,12 @@ export default function IPDClinicalPage() {
   const procedures = useProceduralNotes(admissionId);
 
   // ===== FORM STATES =====
-  // Rounds
-  const [rForm, setRForm] = useState({ roundType: 'routine', subjective: '', objective: '', assessment: '', plan: '', dietInstruction: '', activityLevel: '', codeStatus: '' });
   // ICU
   const [icuForm, setIcuForm] = useState<any>({ hr: '', bp_sys: '', bp_dia: '', rr: '', spo2: '', temp: '', ventilator_mode: '', fio2: '', peep: '', gcs_eye: '', gcs_verbal: '', gcs_motor: '', rass: '', nursing_note: '' });
   // I/O
   const [ioForm, setIoForm] = useState({ shift: 'morning', oral_intake_ml: 0, iv_fluid_ml: 0, blood_products_ml: 0, ryles_tube_ml: 0, other_intake_ml: 0, urine_ml: 0, drain_1_ml: 0, drain_2_ml: 0, ryles_aspirate_ml: 0, vomit_ml: 0, stool_count: 0, other_output_ml: 0 });
   // Meds
   const [medForm, setMedForm] = useState({ drugName: '', genericName: '', dose: '', route: 'oral', frequency: 'OD', isStat: false, isPrn: false, specialInstructions: '' });
-  // Consent
-  const [conForm, setConForm] = useState({ consentType: 'general', procedureName: '', risksExplained: '', witnessName: '', witnessRelation: '' });
   // Procedure
   const [procForm, setProcForm] = useState({ procedureType: 'central_line', procedureName: '', indication: '', site: '', laterality: 'na', technique: '', findings: '', complications: '' });
   // Score
@@ -68,7 +67,7 @@ export default function IPDClinicalPage() {
 
   const tabs: [ClinicalTab, string][] = [
     ['rounds', 'Rounds'], ['icu', 'ICU Chart'], ['trends', 'Vitals Trend'], ['io', 'I/O Chart'], ['meds', 'Med Orders'],
-    ['mar', 'MAR'], ['scores', 'ICU Scores'], ['consents', 'Consents'], ['procedures', 'Procedures'], ['nursing', 'Nursing']
+    ['mar', 'MAR'], ['scores', 'ICU Scores'], ['consents', 'Consents'], ['procedures', 'Procedures'], ['nursing', 'Nursing'], ['discharge', 'Discharge']
   ];
 
   return (
@@ -91,9 +90,11 @@ export default function IPDClinicalPage() {
                 <span>Dr. {admission.doctor?.full_name}</span>
                 <span className={`px-1.5 py-0.5 rounded ${admission.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-gray-100'}`}>{admission.status}</span>
               </div>
+              {admission.provisional_diagnosis && <div className="text-xs text-gray-600 mt-1 max-w-[600px] truncate"><span className="font-medium">Dx:</span> {admission.provisional_diagnosis}</div>}
             </div>
           </div>
           <div className="flex gap-2">
+            {admission.status === 'active' && <button onClick={() => setTab('discharge')} className="px-3 py-1.5 bg-green-600 text-white text-xs rounded-lg hover:bg-green-700 font-medium">Discharge</button>}
             <Link href={`/emr-v2?patient=${pt.id}`} className="px-3 py-1.5 bg-blue-50 text-blue-700 text-xs rounded-lg hover:bg-blue-100">EMR</Link>
             <Link href="/ipd" className="px-3 py-1.5 bg-gray-100 text-gray-600 text-xs rounded-lg hover:bg-gray-200">Back to IPD</Link>
           </div>
@@ -106,59 +107,8 @@ export default function IPDClinicalPage() {
           className={`px-3 py-2 text-xs font-medium whitespace-nowrap border-b-2 -mb-px ${tab === k ? 'border-blue-600 text-blue-700' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>{l}</button>)}
       </div>
 
-      {/* ===== ROUNDS ===== */}
-      {tab === 'rounds' && <div>
-        <div className="flex justify-between items-center mb-3">
-          <h2 className="font-semibold text-sm">Doctor Rounds / Progress Notes</h2>
-          <button onClick={() => setShowForm(!showForm)} className="px-3 py-1.5 bg-blue-600 text-white text-xs rounded-lg">{showForm ? 'Cancel' : '+ New Round'}</button>
-        </div>
-        {showForm && <div className="bg-white rounded-xl border p-5 mb-4 space-y-3">
-          <div className="grid grid-cols-3 gap-3">
-            <div><label className="text-xs text-gray-500">Round type</label>
-              <select value={rForm.roundType} onChange={e => setRForm(f => ({...f, roundType: e.target.value}))} className="w-full px-3 py-2 border rounded-lg text-sm">
-                {['admission','routine','consultant','shift_handover','discharge'].map(t => <option key={t}>{t}</option>)}</select></div>
-            <div><label className="text-xs text-gray-500">Activity level</label>
-              <select value={rForm.activityLevel} onChange={e => setRForm(f => ({...f, activityLevel: e.target.value}))} className="w-full px-3 py-2 border rounded-lg text-sm">
-                <option value="">Select...</option>{['bed_rest','bed_rest_bsc','chair','ambulate','oob','rehab'].map(t => <option key={t}>{t.replace('_',' ')}</option>)}</select></div>
-            <div><label className="text-xs text-gray-500">Code status</label>
-              <select value={rForm.codeStatus} onChange={e => setRForm(f => ({...f, codeStatus: e.target.value}))} className="w-full px-3 py-2 border rounded-lg text-sm">
-                <option value="">Select...</option>{['full_code','dnr','dni','comfort_only'].map(t => <option key={t}>{t.replace('_',' ').toUpperCase()}</option>)}</select></div>
-          </div>
-          <div><label className="text-xs text-gray-500">Subjective (patient says)</label>
-            <textarea value={rForm.subjective} onChange={e => setRForm(f => ({...f, subjective: e.target.value}))} rows={2} className="w-full px-3 py-2 border rounded-lg text-sm" placeholder="Patient complaints, symptoms, sleep quality, pain level..." /></div>
-          <div><label className="text-xs text-gray-500">Objective (doctor finds)</label>
-            <textarea value={rForm.objective} onChange={e => setRForm(f => ({...f, objective: e.target.value}))} rows={2} className="w-full px-3 py-2 border rounded-lg text-sm" placeholder="Exam findings, vitals summary, labs summary..." /></div>
-          <div><label className="text-xs text-gray-500">Assessment</label>
-            <textarea value={rForm.assessment} onChange={e => setRForm(f => ({...f, assessment: e.target.value}))} rows={2} className="w-full px-3 py-2 border rounded-lg text-sm" placeholder="Working diagnosis, clinical status, response to treatment..." /></div>
-          <div><label className="text-xs text-gray-500">Plan</label>
-            <textarea value={rForm.plan} onChange={e => setRForm(f => ({...f, plan: e.target.value}))} rows={2} className="w-full px-3 py-2 border rounded-lg text-sm" placeholder="Continue meds, add investigation, change dose, plan for discharge..." /></div>
-          <div><label className="text-xs text-gray-500">Diet instruction</label>
-            <input type="text" value={rForm.dietInstruction} onChange={e => setRForm(f => ({...f, dietInstruction: e.target.value}))} className="w-full px-3 py-2 border rounded-lg text-sm" placeholder="e.g., Soft diet, low salt, NPO, clear liquids..." /></div>
-          <button onClick={async () => { await rounds.addRound({ doctorId: staffId, ...rForm }); setShowForm(false); flash('Round saved'); setRForm({ roundType: 'routine', subjective: '', objective: '', assessment: '', plan: '', dietInstruction: '', activityLevel: '', codeStatus: '' }); }}
-            className="px-4 py-2 bg-green-600 text-white text-sm rounded-lg">Save Round</button>
-        </div>}
-        {rounds.loading ? <div className="text-center py-6 text-gray-400 text-sm">Loading...</div> :
-        rounds.rounds.length === 0 ? <div className="text-center py-8 bg-white rounded-xl border text-gray-400 text-sm">No rounds documented</div> :
-        <div className="space-y-3">{rounds.rounds.map((r: any) => (
-          <div key={r.id} className={`bg-white rounded-xl border p-4 ${r.is_critical ? 'border-red-300 bg-red-50' : ''}`}>
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2">
-                <span className={`px-2 py-0.5 rounded text-xs font-medium ${r.round_type === 'admission' ? 'bg-blue-100 text-blue-700' : r.round_type === 'discharge' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}`}>{r.round_type}</span>
-                <span className="text-xs text-gray-400">{new Date(r.created_at).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
-                <span className="text-xs text-gray-500">Dr. {r.doctor?.full_name}</span>
-                {r.code_status && <span className={`text-xs px-1.5 py-0.5 rounded ${r.code_status === 'full_code' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>{r.code_status.replace('_', ' ').toUpperCase()}</span>}
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-3 text-xs">
-              {r.subjective && <div><span className="font-medium text-blue-600">S:</span> {r.subjective}</div>}
-              {r.objective && <div><span className="font-medium text-green-600">O:</span> {r.objective}</div>}
-              {r.assessment && <div><span className="font-medium text-orange-600">A:</span> {r.assessment}</div>}
-              {r.plan && <div><span className="font-medium text-purple-600">P:</span> {r.plan}</div>}
-            </div>
-            {(r.diet_instruction || r.activity_level) && <div className="text-xs text-gray-500 mt-2">{r.diet_instruction && <span>Diet: {r.diet_instruction}</span>}{r.activity_level && <span className="ml-3">Activity: {r.activity_level}</span>}</div>}
-          </div>
-        ))}</div>}
-      </div>}
+      {/* ===== ROUNDS (Smart) ===== */}
+      {tab === 'rounds' && <SmartRounds rounds={rounds.rounds} admissionDx={admission.provisional_diagnosis || ''} staffId={staffId} loading={rounds.loading} onSave={async (round: any) => { await rounds.addRound(round); }} onFlash={flash} />}
 
       {/* ===== ICU CHART ===== */}
       {tab === 'icu' && <div>
@@ -360,42 +310,8 @@ export default function IPDClinicalPage() {
         ))}</div>}
       </div>}
 
-      {/* ===== CONSENTS ===== */}
-      {tab === 'consents' && <div>
-        <div className="flex justify-between items-center mb-3">
-          <h2 className="font-semibold text-sm">Consent Forms</h2>
-          <button onClick={() => setShowForm(!showForm)} className="px-3 py-1.5 bg-blue-600 text-white text-xs rounded-lg">{showForm ? 'Cancel' : '+ New Consent'}</button>
-        </div>
-        {showForm && <div className="bg-white rounded-xl border p-5 mb-4 space-y-3">
-          <div className="grid grid-cols-2 gap-3">
-            <div><label className="text-xs text-gray-500">Consent type *</label>
-              <select value={conForm.consentType} onChange={e => setConForm(f => ({...f, consentType: e.target.value}))} className="w-full px-3 py-2 border rounded-lg text-sm">
-                {['general','surgical','anesthesia','blood_transfusion','high_risk','ama_lama','hiv_test','research','photography','dnr'].map(t =>
-                  <option key={t} value={t}>{t.replace(/_/g,' ').toUpperCase()}</option>)}</select></div>
-            <div><label className="text-xs text-gray-500">Procedure name</label>
-              <input type="text" value={conForm.procedureName} onChange={e => setConForm(f => ({...f, procedureName: e.target.value}))} className="w-full px-3 py-2 border rounded-lg text-sm" /></div>
-          </div>
-          <div><label className="text-xs text-gray-500">Risks explained</label>
-            <textarea value={conForm.risksExplained} onChange={e => setConForm(f => ({...f, risksExplained: e.target.value}))} rows={2} className="w-full px-3 py-2 border rounded-lg text-sm" /></div>
-          <div className="grid grid-cols-2 gap-3">
-            <div><label className="text-xs text-gray-500">Witness name</label>
-              <input type="text" value={conForm.witnessName} onChange={e => setConForm(f => ({...f, witnessName: e.target.value}))} className="w-full px-3 py-2 border rounded-lg text-sm" /></div>
-            <div><label className="text-xs text-gray-500">Witness relation</label>
-              <input type="text" value={conForm.witnessRelation} onChange={e => setConForm(f => ({...f, witnessRelation: e.target.value}))} className="w-full px-3 py-2 border rounded-lg text-sm" /></div>
-          </div>
-          <button onClick={async () => { await consents.addConsent({...conForm, patientId: pt.id}, staffId); setShowForm(false); flash('Consent recorded'); }}
-            className="px-4 py-2 bg-green-600 text-white text-sm rounded-lg">Save Consent</button>
-        </div>}
-        {consents.consents.length === 0 ? <div className="text-center py-8 bg-white rounded-xl border text-gray-400 text-sm">No consent forms</div> :
-        <div className="space-y-2">{consents.consents.map((c: any) => (
-          <div key={c.id} className="bg-white rounded-lg border p-3 flex items-center justify-between">
-            <div><span className="font-medium text-sm">{c.consent_type.replace(/_/g,' ').toUpperCase()}</span>
-              {c.procedure_name && <span className="text-xs text-gray-500 ml-2">— {c.procedure_name}</span>}
-              <div className="text-[10px] text-gray-400">{new Date(c.consent_date).toLocaleDateString('en-IN')} | {c.staff?.full_name}</div></div>
-            <span className={`px-2 py-0.5 rounded text-xs ${c.consent_given ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>{c.consent_given ? 'Obtained' : 'Refused'}</span>
-          </div>
-        ))}</div>}
-      </div>}
+      {/* ===== CONSENTS (Builder) ===== */}
+      {tab === 'consents' && <ConsentBuilder consents={consents.consents} patientId={pt.id} patientName={patientName} admissionId={admissionId} admissionDx={admission.provisional_diagnosis || ''} staffId={staffId} onSave={async (c: any, sid: string) => { await consents.addConsent(c, sid); }} onFlash={flash} />}
 
       {/* ===== PROCEDURES ===== */}
       {tab === 'procedures' && <div>
@@ -453,6 +369,9 @@ export default function IPDClinicalPage() {
 
       {/* ===== NURSING NOTES ===== */}
       {tab === 'nursing' && <NursingShiftNotes admissionId={admissionId} staffId={staffId} patientName={patientName} onFlash={flash} />}
+
+      {/* ===== DISCHARGE ENGINE ===== */}
+      {tab === 'discharge' && <DischargeEngine admissionId={admissionId} patientId={pt.id} staffId={staffId} admission={admission} onFlash={flash} />}
     </div>
   );
 }
