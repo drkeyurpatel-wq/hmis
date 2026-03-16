@@ -88,6 +88,7 @@ function OTPageInner() {
           <td className="p-3"><div className="flex gap-1">
             {b.status === 'scheduled' && <button onClick={() => updateBookingStatus(b.id, 'in_progress')} className="px-2 py-1 bg-blue-50 text-blue-700 text-xs rounded">Start</button>}
             {b.status === 'in_progress' && <button onClick={() => updateBookingStatus(b.id, 'completed')} className="px-2 py-1 bg-green-50 text-green-700 text-xs rounded">Complete</button>}
+            <a href={`/ot/${b.id}`} className="px-2 py-1 bg-purple-50 text-purple-700 text-xs rounded hover:bg-purple-100 font-medium">Clinical</a>
           </div></td>
         </tr>
       ))}</tbody></table></div>}
