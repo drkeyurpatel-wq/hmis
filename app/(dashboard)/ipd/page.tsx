@@ -2,7 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { useIPD, type Admission } from '@/lib/revenue/phase2-hooks';
 import { useDoctors } from '@/lib/revenue/hooks';
-import { RoleGuard, TableSkeleton, printDischargeSummary, ConfirmModal } from '@/components/ui/shared';
+import { RoleGuard, TableSkeleton, ConfirmModal } from '@/components/ui/shared';
+import DischargeForm from '@/components/emr-v2/discharge-form';
 import { useAuthStore } from '@/lib/store/auth';
 import { createClient } from '@/lib/supabase/client';
 
@@ -95,17 +96,7 @@ function IPDPageInner() {
           <td className="p-3"><span className={`px-2 py-0.5 rounded-full text-xs ${stColor(a.status)}`}>{a.status.replace('_', ' ')}</span></td>
           <td className="p-3"><div className="flex gap-1">
             {a.status === 'active' && <button onClick={() => initiateDischarge(a.id)} className="px-2 py-1 bg-orange-50 text-orange-700 text-xs rounded hover:bg-orange-100">Init Discharge</button>}
-            {a.status === 'discharge_initiated' && <>
-              <button onClick={() => dischargePatient(a.id, 'normal')} className="px-2 py-1 bg-green-50 text-green-700 text-xs rounded hover:bg-green-100">Discharge</button>
-              <button onClick={() => printDischargeSummary({
-                patientName: a.patientName, uhid: a.patientUhid, ageGender: '--', ipdNumber: a.ipdNumber,
-                admissionDate: new Date(a.admissionDate).toLocaleDateString('en-IN'), dischargeDate: new Date().toLocaleDateString('en-IN'),
-                department: a.department, admittingDoctor: a.admittingDoctor, primaryDoctor: a.primaryDoctor,
-                payorType: a.payorType, provisionalDiagnosis: a.provisionalDiagnosis || '--', finalDiagnosis: '--',
-                procedures: [], investigations: '--', courseInHospital: '--', conditionAtDischarge: 'Stable',
-                adviceOnDischarge: ['Follow-up in 1 week'], medications: [], followUp: '1 week',
-              }, { name: 'Health1 Super Speciality Hospital', address: 'Shilaj, Ahmedabad', phone: '+91 79 6190 1111', tagline: '' })} className="px-2 py-1 bg-purple-50 text-purple-700 text-xs rounded hover:bg-purple-100">Print D/S</button>
-            </>}
+            {a.status === 'discharge_initiated' && <button onClick={() => setSelectedAdm(a)} className="px-2 py-1 bg-green-50 text-green-700 text-xs rounded hover:bg-green-100">Discharge</button>}
             <a href={`/emr-v2?patient=${a.patientId}`} className="px-2 py-1 bg-blue-50 text-blue-700 text-xs rounded hover:bg-blue-100">EMR</a>
           </div></td>
         </tr>
@@ -153,6 +144,16 @@ function IPDPageInner() {
           </div>
         </div>
       </div>}
+
+      {/* Discharge Summary Form */}
+      {selectedAdm && selectedAdm.status === 'discharge_initiated' && (
+        <DischargeForm
+          admission={selectedAdm}
+          centreId={centreId}
+          onClose={() => setSelectedAdm(null)}
+          onDischarge={(id, type, dx) => { dischargePatient(id, type, dx); setSelectedAdm(null); }}
+        />
+      )}
     </div>
   );
 }

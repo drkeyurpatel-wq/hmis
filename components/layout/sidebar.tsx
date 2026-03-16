@@ -27,14 +27,17 @@ const navItems = [
   { href: '/settings', label: 'Settings', icon: Settings, module: null },
 ];
 
-export function Sidebar() {
+export function Sidebar({ mobileOpen, onMobileClose }: { mobileOpen?: boolean; onMobileClose?: () => void } = {}) {
   const pathname = usePathname();
   const { staff, centres, activeCentreId, setActiveCentre } = useAuthStore();
 
   const activeCentre = centres.find((c) => c.centre_id === activeCentreId);
 
   return (
-    <aside className="fixed left-0 top-0 h-screen w-[var(--sidebar-width)] bg-white border-r border-gray-200 flex flex-col z-30">
+    <>
+      {/* Mobile overlay */}
+      {mobileOpen && <div className="fixed inset-0 bg-black/40 z-30 md:hidden" onClick={onMobileClose} />}
+      <aside className={`fixed left-0 top-0 h-screen w-[260px] bg-white border-r border-gray-200 flex flex-col z-40 transition-transform duration-200 ${mobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}>
       {/* Logo */}
       <div className="h-[var(--header-height)] flex items-center px-5 border-b border-gray-100">
         <div className="flex items-center gap-2.5">
@@ -123,5 +126,6 @@ export function Sidebar() {
         </div>
       </div>
     </aside>
+    </>
   );
 }
