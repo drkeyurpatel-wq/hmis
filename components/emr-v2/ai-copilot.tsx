@@ -1,7 +1,8 @@
 // components/emr-v2/ai-copilot.tsx
 'use client';
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import {
   getDifferentialDiagnosis, reviewPrescription, getCopilotSuggestions,
   type DDxResult, type RxReviewResult, type CopilotResult,
@@ -86,18 +87,25 @@ export default function AICopilot({
   const probColor = (p: string) =>
     p === 'high' ? 'bg-red-100 text-red-700' : p === 'moderate' ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100 text-gray-600';
 
+  // Portal mount — ensures we render to document.body so fixed positioning isn't clipped
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
+  if (!mounted) return null;
+
   if (!isOpen) {
-    return (
+    return createPortal(
       <button onClick={() => { setIsOpen(true); if (!copilotResult && !ddxResult && !rxResult) runCopilot(); }}
-        className="fixed bottom-4 right-4 z-30 w-14 h-14 bg-gradient-to-br from-purple-600 to-blue-600 text-white rounded-full shadow-lg flex items-center justify-center hover:scale-105 transition-transform"
-        title="AI Clinical Copilot">
+        className="fixed bottom-6 right-6 z-[9999] w-14 h-14 bg-gradient-to-br from-purple-600 to-blue-600 text-white rounded-full shadow-xl flex items-center justify-center hover:scale-110 transition-transform cursor-pointer"
+        title="AI Clinical Copilot"
+        style={{ boxShadow: '0 4px 20px rgba(124, 58, 237, 0.4)' }}>
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2a5 5 0 0 1 5 5v3a5 5 0 0 1-10 0V7a5 5 0 0 1 5-5z"/><path d="M7 13a7 7 0 0 0 10 0"/><circle cx="12" cy="20" r="2"/><path d="M12 16v2"/></svg>
-      </button>
+      </button>,
+      document.body
     );
   }
 
-  return (
-    <div className="fixed right-0 top-0 h-screen w-[380px] bg-white border-l border-gray-200 z-40 flex flex-col shadow-2xl">
+  return createPortal(
+    <div className="fixed right-0 top-0 h-screen w-[380px] bg-white border-l border-gray-200 z-[9999] flex flex-col shadow-2xl">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b bg-gradient-to-r from-purple-50 to-blue-50">
         <div className="flex items-center gap-2">
@@ -346,6 +354,7 @@ export default function AICopilot({
       <div className="px-4 py-2 border-t bg-gray-50 text-[10px] text-gray-400 text-center">
         AI suggestions are advisory only — clinical judgment takes precedence
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
