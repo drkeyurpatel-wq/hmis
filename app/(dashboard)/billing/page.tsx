@@ -3,6 +3,10 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useBilling, type Bill, type BillItem } from '@/lib/revenue/hooks';
 import { RoleGuard, TableSkeleton, printBill } from '@/components/ui/shared';
 import { useAuthStore } from '@/lib/store/auth';
+import { createClient } from '@/lib/supabase/client';
+
+let _sb: any = null;
+function sb() { if (typeof window === 'undefined') return null as any; if (!_sb) { try { _sb = createClient(); } catch { return null; } } return _sb; }
 
 function BillingPageInner() {
   const { staff, activeCentreId } = useAuthStore();
@@ -21,6 +25,12 @@ function BillingPageInner() {
   const [discountAmt, setDiscountAmt] = useState('');
   const [dateFilter, setDateFilter] = useState(new Date().toISOString().split('T')[0]);
   const [statusFilter, setStatusFilter] = useState('all');
+  const [showNewBill, setShowNewBill] = useState(false);
+  const [newBillPatientQ, setNewBillPatientQ] = useState('');
+  const [newBillPatients, setNewBillPatients] = useState<any[]>([]);
+  const [newBillPatient, setNewBillPatient] = useState<any>(null);
+  const [newBillItems, setNewBillItems] = useState<any[]>([]);
+  const [newBillPayor, setNewBillPayor] = useState('self');
 
   // Load bill items when selected
   useEffect(() => {
@@ -47,6 +57,24 @@ function BillingPageInner() {
       }
     }
   }, [tariffs]);
+
+  // Patient search for new bill
+  useEffect(() => {
+    if (newBillPatientQ.length < 2 || !sb()) { setNewBillPatients([]); return; }
+    const t = setTimeout(async () => {
+      const { data } = await sb().from('hmis_patients').select('id, uhid, first_name, last_name, age_years, gender, phone_primary')
+        .or(`uhid.ilike.%${newBillPatientQ}%,first_name.ilike.%${newBillPatientQ}%,phone_primary.ilike.%${newBillPatientQ}%`)
+        .eq('is_active', true).limit(8);
+      setNewBillPatients(data || []);
+    }, 300);
+    return () => clearTimeout(t);
+  }, [newBillPatientQ]);
+
+  const handleCreateNewBill = async () => {
+    if (!newBillPatient || newBillItems.length === 0) return;
+    await createBillFromEncounter(newBillPatient.id, '', staffId, newBillItems, newBillPayor);
+    setShowNewBill(false); setNewBillPatient(null); setNewBillItems([]); setNewBillPatientQ('');
+  };
 
   const handlePayment = async () => {
     if (!selectedBill || !payAmount) return;
@@ -84,7 +112,10 @@ function BillingPageInner() {
     <div className="max-w-6xl mx-auto">
       <div className="flex items-center justify-between mb-6">
         <div><h1 className="text-2xl font-bold text-gray-900">Billing</h1><p className="text-sm text-gray-500">OPD billing and payment collection</p></div>
-        <input type="date" value={dateFilter} onChange={e => setDateFilter(e.target.value)} className="text-sm border rounded-lg px-3 py-2" />
+        <div className="flex gap-2 items-center">
+          <input type="date" value={dateFilter} onChange={e => setDateFilter(e.target.value)} className="text-sm border rounded-lg px-3 py-2" />
+          <button onClick={() => setShowNewBill(true)} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700">+ New Bill</button>
+        </div>
       </div>
 
       {/* Stats */}
@@ -215,6 +246,70 @@ function BillingPageInner() {
           )}
         </div>
       </div>
+
+      {/* New Bill Modal */}
+      {showNewBill && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center" onClick={() => setShowNewBill(false)}>
+          <div className="bg-white rounded-xl p-6 w-full max-w-lg shadow-xl max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <h2 className="text-lg font-semibold mb-4">Create New Bill</h2>
+            <div className="space-y-4">
+              {/* Patient search */}
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1">Patient *</label>
+                {newBillPatient ? (
+                  <div className="flex items-center justify-between bg-blue-50 rounded-lg p-3">
+                    <div><div className="font-medium text-sm">{newBillPatient.first_name} {newBillPatient.last_name}</div>
+                      <div className="text-xs text-gray-500">{newBillPatient.uhid}</div></div>
+                    <button onClick={() => setNewBillPatient(null)} className="text-xs text-red-500">Change</button>
+                  </div>
+                ) : (
+                  <div className="relative">
+                    <input type="text" placeholder="Search patient..." value={newBillPatientQ} onChange={e => setNewBillPatientQ(e.target.value)} autoFocus
+                      className="w-full px-3 py-2 border rounded-lg text-sm" />
+                    {newBillPatients.length > 0 && <div className="absolute top-full left-0 right-0 mt-1 bg-white border rounded-lg shadow-lg z-10 max-h-40 overflow-y-auto">
+                      {newBillPatients.map(p => <button key={p.id} onClick={() => { setNewBillPatient(p); setNewBillPatients([]); setNewBillPatientQ(''); }}
+                        className="w-full text-left px-3 py-2 text-sm hover:bg-blue-50 border-b last:border-0">
+                        <span className="font-medium">{p.first_name} {p.last_name}</span> <span className="text-gray-400">{p.uhid}</span></button>)}</div>}
+                  </div>
+                )}
+              </div>
+              {/* Payor */}
+              <div><label className="block text-xs font-medium text-gray-500 mb-1">Payor type</label>
+                <select value={newBillPayor} onChange={e => setNewBillPayor(e.target.value)} className="w-full px-3 py-2 border rounded-lg text-sm">
+                  {['self','insurance','corporate','govt_pmjay','govt_cghs'].map(p => <option key={p}>{p}</option>)}</select></div>
+              {/* Add items from tariff */}
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1">Bill items</label>
+                <input type="text" placeholder="Search tariff to add..." value={tariffSearch} onChange={e => setTariffSearch(e.target.value)} className="w-full px-3 py-2 border rounded-lg text-sm mb-2" />
+                {tariffSearch.length >= 1 && <div className="max-h-32 overflow-y-auto border rounded-lg mb-2">{filteredTariffs.slice(0, 10).map((t: any) =>
+                  <button key={t.id} onClick={() => { setNewBillItems(prev => [...prev, { description: t.service_name, quantity: 1, unitRate: t.rate_self, tariffId: t.id }]); setTariffSearch(''); }}
+                    className="w-full text-left px-3 py-1.5 text-xs hover:bg-blue-50 border-b last:border-0 flex justify-between">
+                    <span>{t.service_name}</span><span className="text-gray-400">Rs.{t.rate_self}</span></button>
+                )}</div>}
+                {newBillItems.length > 0 && <div className="border rounded-lg overflow-hidden">
+                  {newBillItems.map((item, i) => (
+                    <div key={i} className="flex items-center justify-between px-3 py-2 border-b last:border-0 text-sm">
+                      <span>{item.description}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium">Rs.{item.unitRate.toLocaleString('en-IN')}</span>
+                        <button onClick={() => setNewBillItems(prev => prev.filter((_, j) => j !== i))} className="text-red-400 text-xs hover:text-red-600">x</button>
+                      </div>
+                    </div>
+                  ))}
+                  <div className="px-3 py-2 bg-gray-50 text-sm font-bold flex justify-between">
+                    <span>Total</span><span>Rs.{newBillItems.reduce((s, i) => s + i.unitRate * i.quantity, 0).toLocaleString('en-IN')}</span>
+                  </div>
+                </div>}
+              </div>
+              <div className="flex gap-2 pt-2">
+                <button onClick={handleCreateNewBill} disabled={!newBillPatient || newBillItems.length === 0}
+                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm disabled:opacity-50">Create Bill</button>
+                <button onClick={() => { setShowNewBill(false); setNewBillPatient(null); setNewBillItems([]); }} className="px-4 py-2 bg-gray-100 rounded-lg text-sm">Cancel</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

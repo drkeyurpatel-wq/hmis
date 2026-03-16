@@ -38,9 +38,18 @@ function ReportsPageInner() {
 
   return (
     <div className="max-w-6xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-4">
         <div><h1 className="text-2xl font-bold text-gray-900">Reports & MIS</h1><p className="text-sm text-gray-500">Operational analytics and management information</p></div>
-        <div className="flex gap-2 items-center">
+        <div className="flex gap-2 items-center flex-wrap">
+          {/* Date presets */}
+          {[
+            ['Today', () => { const t = new Date().toISOString().split('T')[0]; setDateFrom(t); setDateTo(t); }],
+            ['This week', () => { const now = new Date(); const mon = new Date(now); mon.setDate(now.getDate() - now.getDay() + 1); setDateFrom(mon.toISOString().split('T')[0]); setDateTo(now.toISOString().split('T')[0]); }],
+            ['This month', () => { const now = new Date(); setDateFrom(new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0]); setDateTo(now.toISOString().split('T')[0]); }],
+            ['Last month', () => { const now = new Date(); setDateFrom(new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString().split('T')[0]); setDateTo(new Date(now.getFullYear(), now.getMonth(), 0).toISOString().split('T')[0]); }],
+          ].map(([label, fn]) => (
+            <button key={label as string} onClick={fn as () => void} className="px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded hover:bg-gray-200">{label as string}</button>
+          ))}
           <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="text-sm border rounded-lg px-2 py-1.5" />
           <span className="text-gray-400 text-sm">to</span>
           <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className="text-sm border rounded-lg px-2 py-1.5" />
