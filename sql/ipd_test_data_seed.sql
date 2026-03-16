@@ -54,16 +54,16 @@ BEGIN
     -- ============================================================
     -- DOCTORS (8 consultants)
     -- ============================================================
-    INSERT INTO hmis_staff (centre_id, full_name, staff_type, department_id, qualification, specialization, phone, email, is_active) VALUES
-    (shilaj_id, 'Dr. Sunil Gurmukhani', 'doctor', dept_cardio, 'MD, DM (Cardiology)', 'Interventional Cardiology', '9876500101', 'sunil.g@health1.co.in', true),
-    (shilaj_id, 'Dr. Jignesh Patel', 'doctor', dept_cardio, 'MD, DM (Cardiology)', 'Clinical Cardiology', '9876500102', 'jignesh.p@health1.co.in', true),
-    (shilaj_id, 'Dr. Milind Akhani', 'doctor', dept_surg, 'MS (Surgery), FMAS', 'Robotic & Laparoscopic Surgery', '9876500103', 'milind.a@health1.co.in', true),
-    (shilaj_id, 'Dr. Priya Mehta', 'doctor', dept_med, 'MD (Medicine)', 'Internal Medicine', '9876500104', 'priya.m@health1.co.in', true),
-    (shilaj_id, 'Dr. Ravi Sharma', 'doctor', dept_neuro, 'MD, DM (Neurology)', 'Neurology & Stroke', '9876500105', 'ravi.s@health1.co.in', true),
-    (shilaj_id, 'Dr. Sneha Desai', 'doctor', dept_ortho, 'MS (Ortho), MCh', 'Joint Replacement & Spine', '9876500106', 'sneha.d@health1.co.in', true),
-    (shilaj_id, 'Dr. Amit Trivedi', 'doctor', dept_pulm, 'MD (Pulmonology)', 'Pulmonology & Critical Care', '9876500107', 'amit.t@health1.co.in', true),
-    (shilaj_id, 'Dr. Kavita Shah', 'doctor', dept_gastro, 'MD, DM (Gastro)', 'Gastroenterology & Hepatology', '9876500108', 'kavita.s@health1.co.in', true)
-    ON CONFLICT DO NOTHING;
+    INSERT INTO hmis_staff (primary_centre_id, employee_code, full_name, staff_type, department_id, designation, specialisation, phone, email, is_active) VALUES
+    (shilaj_id, 'DOC-SG-001', 'Dr. Sunil Gurmukhani', 'doctor', dept_cardio, 'MD, DM (Cardiology)', 'Interventional Cardiology', '9876500101', 'sunil.g@health1.co.in', true),
+    (shilaj_id, 'DOC-JP-002', 'Dr. Jignesh Patel', 'doctor', dept_cardio, 'MD, DM (Cardiology)', 'Clinical Cardiology', '9876500102', 'jignesh.p@health1.co.in', true),
+    (shilaj_id, 'DOC-MA-003', 'Dr. Milind Akhani', 'doctor', dept_surg, 'MS (Surgery), FMAS', 'Robotic & Laparoscopic Surgery', '9876500103', 'milind.a@health1.co.in', true),
+    (shilaj_id, 'DOC-PM-004', 'Dr. Priya Mehta', 'doctor', dept_med, 'MD (Medicine)', 'Internal Medicine', '9876500104', 'priya.m@health1.co.in', true),
+    (shilaj_id, 'DOC-RS-005', 'Dr. Ravi Sharma', 'doctor', dept_neuro, 'MD, DM (Neurology)', 'Neurology & Stroke', '9876500105', 'ravi.s@health1.co.in', true),
+    (shilaj_id, 'DOC-SD-006', 'Dr. Sneha Desai', 'doctor', dept_ortho, 'MS (Ortho), MCh', 'Joint Replacement & Spine', '9876500106', 'sneha.d@health1.co.in', true),
+    (shilaj_id, 'DOC-AT-007', 'Dr. Amit Trivedi', 'doctor', dept_pulm, 'MD (Pulmonology)', 'Pulmonology & Critical Care', '9876500107', 'amit.t@health1.co.in', true),
+    (shilaj_id, 'DOC-KS-008', 'Dr. Kavita Shah', 'doctor', dept_gastro, 'MD, DM (Gastro)', 'Gastroenterology & Hepatology', '9876500108', 'kavita.s@health1.co.in', true)
+    ON CONFLICT (employee_code) DO NOTHING;
 
     SELECT id INTO dr_sunil FROM hmis_staff WHERE phone = '9876500101';
     SELECT id INTO dr_jignesh FROM hmis_staff WHERE phone = '9876500102';
@@ -232,7 +232,7 @@ BEGIN
     -- ============================================================
 
     -- Rajesh (MI, ICU) — 3 rounds
-    INSERT INTO hmis_doctor_rounds (admission_id, doctor_id, round_type, round_date, subjective, objective, assessment, plan, code_status, diet, activity) VALUES
+    INSERT INTO hmis_doctor_rounds (admission_id, doctor_id, round_type, round_date, subjective, objective, assessment, plan, code_status, diet_instruction, activity_level) VALUES
     (adm1, dr_sunil, 'admission', now() - interval '3 days',
      'Severe retrosternal chest pain radiating to left arm since 4 hours, associated with sweating and nausea. Known hypertensive on Amlodipine.',
      'HR 105, BP 90/60, SpO2 94% on room air. ECG: ST elevation V1-V5. Troponin I: 15.2 ng/mL.',
@@ -253,7 +253,7 @@ BEGIN
      'full_code', 'cardiac diet', 'ambulate in room');
 
     -- Priti (Cholecystectomy) — 2 rounds
-    INSERT INTO hmis_doctor_rounds (admission_id, doctor_id, round_type, round_date, subjective, objective, assessment, plan, diet, activity) VALUES
+    INSERT INTO hmis_doctor_rounds (admission_id, doctor_id, round_type, round_date, subjective, objective, assessment, plan, diet_instruction, activity_level) VALUES
     (adm2, dr_milind, 'admission', now() - interval '1 day',
      'Right upper abdominal pain after fatty meal, 3 episodes in last month. USG shows multiple gallstones.',
      'Vitals stable. Murphy sign positive. No jaundice. Labs: LFT normal, TLC 8500.',
@@ -268,7 +268,7 @@ BEGIN
      'liquids → soft diet', 'ambulate corridor');
 
     -- Mahesh (Stroke, ICU) — 3 rounds
-    INSERT INTO hmis_doctor_rounds (admission_id, doctor_id, round_type, round_date, subjective, objective, assessment, plan, code_status, diet, activity) VALUES
+    INSERT INTO hmis_doctor_rounds (admission_id, doctor_id, round_type, round_date, subjective, objective, assessment, plan, code_status, diet_instruction, activity_level) VALUES
     (adm3, dr_ravi, 'admission', now() - interval '5 days',
      'Found with right-sided weakness and slurred speech by family. Onset ~6 hours ago. Known diabetic and hypertensive.',
      'GCS 12 (E3V4M5). Right hemiplegia (0/5 UL, 2/5 LL). Right UMN facial palsy. Aphasia. NIHSS 16. CT Brain: Left MCA infarct.',
@@ -289,7 +289,7 @@ BEGIN
      'full_code', 'soft diet', 'sit up in bed, transfer to chair with assist');
 
     -- Anita (TKR) — 2 rounds
-    INSERT INTO hmis_doctor_rounds (admission_id, doctor_id, round_type, round_date, subjective, objective, assessment, plan, diet, activity) VALUES
+    INSERT INTO hmis_doctor_rounds (admission_id, doctor_id, round_type, round_date, subjective, objective, assessment, plan, diet_instruction, activity_level) VALUES
     (adm4, dr_sneha, 'admission', now() - interval '2 days',
      'Severe bilateral knee pain for 5 years, worse in last 6 months. Unable to climb stairs. BMI 32.',
      'Bilateral varus deformity. Right knee: FFD 15°, ROM 0-90°. X-ray: Grade IV OA bilateral. Pre-op fitness: ASA Grade 2.',
@@ -304,7 +304,7 @@ BEGIN
      'full diet, high protein', 'CPM, transfer to chair with PT');
 
     -- Dharmesh (COPD Exacerbation) — 2 rounds
-    INSERT INTO hmis_doctor_rounds (admission_id, doctor_id, round_type, round_date, subjective, objective, assessment, plan, diet, activity) VALUES
+    INSERT INTO hmis_doctor_rounds (admission_id, doctor_id, round_type, round_date, subjective, objective, assessment, plan, diet_instruction, activity_level) VALUES
     (adm5, dr_amit, 'admission', now() - interval '4 days',
      'Severe breathlessness for 2 days, worsening cough with purulent sputum. Known COPD on inhalers. 30 pack-year smoker.',
      'RR 28, SpO2 82% on RA → 92% on 4L O2. Bilateral wheeze + creps. ABG: pH 7.32, pCO2 55, pO2 58.',
@@ -319,7 +319,7 @@ BEGIN
      'normal diet', 'sit up in bed, bedside commode');
 
     -- Kavita (DKA) — 2 rounds
-    INSERT INTO hmis_doctor_rounds (admission_id, doctor_id, round_type, round_date, subjective, objective, assessment, plan, code_status, diet, activity) VALUES
+    INSERT INTO hmis_doctor_rounds (admission_id, doctor_id, round_type, round_date, subjective, objective, assessment, plan, code_status, diet_instruction, activity_level) VALUES
     (adm6, dr_priya, 'admission', now() - interval '2 days',
      'Found drowsy at home. Missed insulin for 3 days due to gastroenteritis. Known Type 1 DM for 8 years. Vomiting and abdominal pain.',
      'GCS 13. Kussmaul breathing. Dehydrated. RBS 480, pH 7.18, HCO3 8, Ketones 5.2, K+ 5.8.',
@@ -334,7 +334,7 @@ BEGIN
      'full_code', 'diabetic diet 1500 kcal', 'sit up, walk to bathroom');
 
     -- Suresh (GI Bleed, discharge initiated) — 2 rounds
-    INSERT INTO hmis_doctor_rounds (admission_id, doctor_id, round_type, round_date, subjective, objective, assessment, plan, diet, activity) VALUES
+    INSERT INTO hmis_doctor_rounds (admission_id, doctor_id, round_type, round_date, subjective, objective, assessment, plan, diet_instruction, activity_level) VALUES
     (adm7, dr_kavita, 'admission', now() - interval '6 days',
      'Multiple episodes of hematemesis and melena since morning. 2 episodes of syncope. Known H. pylori positive 1 year ago — did not complete treatment.',
      'Pale, tachycardic HR 120, BP 88/60. Hb 5.8 g/dL. Melena on DRE.',
@@ -353,41 +353,41 @@ BEGIN
     -- ============================================================
 
     -- Rajesh (MI) meds
-    INSERT INTO hmis_ipd_medication_orders (admission_id, drug_name, dose, route, frequency, is_stat, ordered_by) VALUES
-    (adm1, 'Aspirin', '75 mg', 'oral', 'OD', false, dr_sunil),
-    (adm1, 'Ticagrelor', '90 mg', 'oral', 'BD', false, dr_sunil),
-    (adm1, 'Atorvastatin', '80 mg', 'oral', 'HS', false, dr_sunil),
-    (adm1, 'Ramipril', '2.5 mg', 'oral', 'OD', false, dr_sunil),
-    (adm1, 'Metoprolol Succinate', '25 mg', 'oral', 'OD', false, dr_sunil),
-    (adm1, 'Eplerenone', '25 mg', 'oral', 'OD', false, dr_sunil),
-    (adm1, 'Pantoprazole', '40 mg', 'IV', 'OD', false, dr_sunil),
-    (adm1, 'Enoxaparin', '60 mg', 'SC', 'BD', false, dr_sunil);
+    INSERT INTO hmis_ipd_medication_orders (admission_id, drug_name, dose, route, frequency, ordered_by) VALUES
+    (adm1, 'Aspirin', '75 mg', 'oral', 'OD', dr_sunil),
+    (adm1, 'Ticagrelor', '90 mg', 'oral', 'BD', dr_sunil),
+    (adm1, 'Atorvastatin', '80 mg', 'oral', 'HS', dr_sunil),
+    (adm1, 'Ramipril', '2.5 mg', 'oral', 'OD', dr_sunil),
+    (adm1, 'Metoprolol Succinate', '25 mg', 'oral', 'OD', dr_sunil),
+    (adm1, 'Eplerenone', '25 mg', 'oral', 'OD', dr_sunil),
+    (adm1, 'Pantoprazole', '40 mg', 'IV', 'OD', dr_sunil),
+    (adm1, 'Enoxaparin', '60 mg', 'SC', 'BD', dr_sunil);
 
     -- Mahesh (Stroke) meds
-    INSERT INTO hmis_ipd_medication_orders (admission_id, drug_name, dose, route, frequency, is_stat, ordered_by) VALUES
-    (adm3, 'Aspirin', '325 mg', 'oral', 'OD', false, dr_ravi),
-    (adm3, 'Atorvastatin', '80 mg', 'oral', 'HS', false, dr_ravi),
-    (adm3, 'Amlodipine', '5 mg', 'oral', 'OD', false, dr_ravi),
-    (adm3, 'Metformin', '500 mg', 'oral', 'BD', false, dr_ravi),
-    (adm3, 'Pantoprazole', '40 mg', 'oral', 'OD', false, dr_ravi),
-    (adm3, 'Enoxaparin', '40 mg', 'SC', 'OD', false, dr_ravi);
+    INSERT INTO hmis_ipd_medication_orders (admission_id, drug_name, dose, route, frequency, ordered_by) VALUES
+    (adm3, 'Aspirin', '325 mg', 'oral', 'OD', dr_ravi),
+    (adm3, 'Atorvastatin', '80 mg', 'oral', 'HS', dr_ravi),
+    (adm3, 'Amlodipine', '5 mg', 'oral', 'OD', dr_ravi),
+    (adm3, 'Metformin', '500 mg', 'oral', 'BD', dr_ravi),
+    (adm3, 'Pantoprazole', '40 mg', 'oral', 'OD', dr_ravi),
+    (adm3, 'Enoxaparin', '40 mg', 'SC', 'OD', dr_ravi);
 
     -- Anita (TKR) meds
-    INSERT INTO hmis_ipd_medication_orders (admission_id, drug_name, dose, route, frequency, is_stat, ordered_by) VALUES
-    (adm4, 'Paracetamol', '1 gm', 'IV', 'TDS', false, dr_sneha),
-    (adm4, 'Tramadol', '50 mg', 'IV', 'BD', false, dr_sneha),
-    (adm4, 'Pregabalin', '75 mg', 'oral', 'HS', false, dr_sneha),
-    (adm4, 'Enoxaparin', '40 mg', 'SC', 'OD', false, dr_sneha),
-    (adm4, 'Cefuroxime', '1.5 gm', 'IV', 'BD', false, dr_sneha),
-    (adm4, 'Pantoprazole', '40 mg', 'IV', 'OD', false, dr_sneha);
+    INSERT INTO hmis_ipd_medication_orders (admission_id, drug_name, dose, route, frequency, ordered_by) VALUES
+    (adm4, 'Paracetamol', '1 gm', 'IV', 'TDS', dr_sneha),
+    (adm4, 'Tramadol', '50 mg', 'IV', 'BD', dr_sneha),
+    (adm4, 'Pregabalin', '75 mg', 'oral', 'HS', dr_sneha),
+    (adm4, 'Enoxaparin', '40 mg', 'SC', 'OD', dr_sneha),
+    (adm4, 'Cefuroxime', '1.5 gm', 'IV', 'BD', dr_sneha),
+    (adm4, 'Pantoprazole', '40 mg', 'IV', 'OD', dr_sneha);
 
     -- Kavita (DKA) meds
-    INSERT INTO hmis_ipd_medication_orders (admission_id, drug_name, dose, route, frequency, is_stat, ordered_by) VALUES
-    (adm6, 'Insulin Glargine', '20 units', 'SC', 'HS', false, dr_priya),
-    (adm6, 'Insulin Aspart', '8 units', 'SC', 'TDS (pre-meals)', false, dr_priya),
-    (adm6, 'Ondansetron', '4 mg', 'IV', 'SOS', true, dr_priya),
-    (adm6, 'NS 0.9%', '500 ml', 'IV', 'q6h', false, dr_priya),
-    (adm6, 'KCl', '20 mEq/L', 'IV', 'in each NS', false, dr_priya);
+    INSERT INTO hmis_ipd_medication_orders (admission_id, drug_name, dose, route, frequency, ordered_by) VALUES
+    (adm6, 'Insulin Glargine', '20 units', 'SC', 'HS', dr_priya),
+    (adm6, 'Insulin Aspart', '8 units', 'SC', 'TDS (pre-meals)', dr_priya),
+    (adm6, 'Ondansetron', '4 mg', 'IV', 'SOS', dr_priya),
+    (adm6, 'NS 0.9%', '500 ml', 'IV', 'q6h', dr_priya),
+    (adm6, 'KCl', '20 mEq/L', 'IV', 'in each NS', dr_priya);
 
     RAISE NOTICE 'IPD test data seeded: 8 departments, 8 doctors, 4 wards, 8 rooms, 11 beds, 8 admissions, 17 rounds, 24 med orders';
 END $$;
