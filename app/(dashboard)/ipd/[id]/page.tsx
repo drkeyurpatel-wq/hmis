@@ -124,9 +124,9 @@ function IPDClinicalInner() {
 
       {/* ===== TAB CONTENT ===== */}
       {tab === 'rounds' && <SmartRounds rounds={rounds.rounds} admissionDx={admDx} staffId={staffId} loading={rounds.loading} onSave={async (round: any) => { await rounds.addRound(round); }} onFlash={flash} />}
-      {tab === 'icu' && <SmartICUChart entries={icu.entries} admissionId={admissionId} staffId={staffId} loading={false} onSave={async (entry: any, sid: string) => { await icu.addEntry(entry, sid); }} onFlash={flash} />}
+      {tab === 'icu' && <SmartICUChart entries={icu.entries} admissionId={admissionId} staffId={staffId} onAdd={async (entry: any, sid: string) => { await icu.addEntry(entry, sid); }} onFlash={flash} />}
       {tab === 'trends' && <VitalsTrendChart entries={icu.entries} hoursBack={48} />}
-      {tab === 'io' && <SmartIOChart entries={io.entries} admissionId={admissionId} staffId={staffId} onSave={async (entry: any, sid: string) => { await io.addEntry(entry, sid); }} onFlash={flash} />}
+      {tab === 'io' && <SmartIOChart entries={io.entries} admissionId={admissionId} staffId={staffId} onAdd={async (entry: any, sid: string) => { await io.addEntry(entry, sid); }} onFlash={flash} />}
       {tab === 'meds' && <SmartMedOrders meds={meds.orders} admissionId={admissionId} staffId={staffId} admissionDx={admDx} onAdd={async (med: any) => { await meds.addOrder(med, staffId); }} onDiscontinue={async (id: string, reason: string) => { await meds.discontinue(id, staffId, reason); }} onFlash={flash} />}
       {tab === 'mar' && <SmartMAR records={mar.records} meds={meds.orders} admissionId={admissionId} staffId={staffId} onAdminister={async (id: string, sid: string) => { await mar.administer(id, sid); }} onHold={async (id: string, reason: string) => { await mar.holdDose(id, reason); }} onFlash={flash} />}
       {tab === 'scores' && <AutoICUScores scores={scores.scores} admissionId={admissionId} staffId={staffId} onSave={async (score: any, sid: string) => { await scores.addScore(score.scoreType, score.scoreValue, {}, score.interpretation, sid); }} onFlash={flash} />}
