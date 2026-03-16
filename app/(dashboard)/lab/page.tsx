@@ -5,9 +5,11 @@ import { useAuthStore } from '@/lib/store/auth';
 import { useLabWorklist, useSamples, useResultEntry, useCriticalAlerts, useOutsourcedLab, type LabOrder } from '@/lib/lab/lims-hooks';
 import MicrobiologyPanel from '@/components/lab/microbiology-panel';
 import QCPanel from '@/components/lab/qc-panel';
+import HistopathologyPanel from '@/components/lab/histopathology-panel';
+import AuditPanel from '@/components/lab/audit-panel';
 import { useAntibiogram } from '@/lib/lab/micro-hooks';
 
-type LabTab = 'worklist' | 'collect' | 'results' | 'verify' | 'critical' | 'micro' | 'antibiogram' | 'qc' | 'outsourced' | 'tat';
+type LabTab = 'worklist' | 'collect' | 'results' | 'verify' | 'critical' | 'micro' | 'antibiogram' | 'qc' | 'histo' | 'nabl' | 'outsourced' | 'tat';
 
 function LabPageInner() {
   const { staff, activeCentreId } = useAuthStore();
@@ -55,7 +57,7 @@ function LabPageInner() {
 
       {/* Tabs */}
       <div className="flex gap-1 mb-4 border-b pb-px overflow-x-auto">
-        {([['worklist','Worklist'],['collect','Samples'],['results','Results'],['verify','Verify'],['critical','Critical'],['micro','Microbiology'],['antibiogram','Antibiogram'],['qc','QC'],['outsourced','Outsourced'],['tat','TAT']] as [LabTab,string][]).map(([k,l]) =>
+        {([['worklist','Worklist'],['collect','Samples'],['results','Results'],['verify','Verify'],['critical','Critical'],['micro','Microbiology'],['histo','Histopath'],['antibiogram','Antibiogram'],['qc','QC'],['nabl','NABL/Audit'],['outsourced','Outsourced'],['tat','TAT']] as [LabTab,string][]).map(([k,l]) =>
           <button key={k} onClick={() => setTab(k)} className={`px-3 py-2 text-xs font-medium whitespace-nowrap border-b-2 -mb-px ${tab === k ? 'border-blue-600 text-blue-700' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
             {l} {k === 'critical' && criticalAlerts.alerts.length > 0 ? <span className="ml-1 bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded-full">{criticalAlerts.alerts.length}</span> : ''}</button>
         )}
@@ -248,6 +250,12 @@ function LabPageInner() {
 
       {/* ===== QC ===== */}
       {tab === 'qc' && <QCPanel centreId={centreId} staffId={staffId} onFlash={flash} />}
+
+      {/* ===== HISTOPATHOLOGY ===== */}
+      {tab === 'histo' && <HistopathologyPanel orders={orders} staffId={staffId} onFlash={flash} />}
+
+      {/* ===== NABL / AUDIT TRAIL ===== */}
+      {tab === 'nabl' && <AuditPanel centreId={centreId} staffId={staffId} onFlash={flash} />}
 
       {/* ===== OUTSOURCED ===== */}
       {tab === 'outsourced' && <>
