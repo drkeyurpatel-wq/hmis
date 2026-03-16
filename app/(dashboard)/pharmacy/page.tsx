@@ -1,9 +1,10 @@
 'use client';
 import React, { useState, useEffect, useCallback } from 'react';
 import { usePharmacy, useBilling, type PharmacyOrder } from '@/lib/revenue/hooks';
+import { RoleGuard, TableSkeleton } from '@/components/ui/shared';
 import { useAuthStore } from '@/lib/store/auth';
 
-export default function PharmacyPage() {
+function PharmacyPageInner() {
   const { staff, activeCentreId } = useAuthStore();
   const centreId = activeCentreId || '';
   const staffId = staff?.id || '';
@@ -172,3 +173,5 @@ export default function PharmacyPage() {
     </div>
   );
 }
+
+export default function PharmacyPage() { return <RoleGuard module="pharmacy"><PharmacyPageInner /></RoleGuard>; }

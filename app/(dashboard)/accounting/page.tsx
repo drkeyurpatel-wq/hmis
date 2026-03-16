@@ -1,9 +1,10 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import { useAccounting } from '@/lib/revenue/phase2-hooks';
+import { RoleGuard, TableSkeleton } from '@/components/ui/shared';
 import { useAuthStore } from '@/lib/store/auth';
 
-export default function AccountingPage() {
+function AccountingPageInner() {
   const { staff, activeCentreId } = useAuthStore();
   const centreId = activeCentreId || '';
   const staffId = staff?.id || '';
@@ -98,3 +99,5 @@ export default function AccountingPage() {
     </div>
   );
 }
+
+export default function AccountingPage() { return <RoleGuard module="accounting"><AccountingPageInner /></RoleGuard>; }

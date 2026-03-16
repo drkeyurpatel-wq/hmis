@@ -1,9 +1,10 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import { useReports } from '@/lib/revenue/phase2-hooks';
+import { RoleGuard, TableSkeleton } from '@/components/ui/shared';
 import { useAuthStore } from '@/lib/store/auth';
 
-export default function ReportsPage() {
+function ReportsPageInner() {
   const { activeCentreId } = useAuthStore();
   const centreId = activeCentreId || '';
   const { loading, getRevenueReport, getOPDReport } = useReports(centreId);
@@ -109,3 +110,5 @@ export default function ReportsPage() {
     </div>
   );
 }
+
+export default function ReportsPage() { return <RoleGuard module="reports"><ReportsPageInner /></RoleGuard>; }

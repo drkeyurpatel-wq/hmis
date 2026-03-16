@@ -1,5 +1,6 @@
 'use client';
 import React, { useState, useEffect, useCallback } from 'react';
+import { RoleGuard, TableSkeleton } from '@/components/ui/shared';
 import { useAuthStore } from '@/lib/store/auth';
 import { createClient } from '@/lib/supabase/client';
 
@@ -12,7 +13,7 @@ interface LabOrder {
   status: string; createdAt: string; results: any[];
 }
 
-export default function LabPage() {
+function LabPageInner() {
   const { staff, activeCentreId } = useAuthStore();
   const centreId = activeCentreId || '';
   const staffId = staff?.id || '';
@@ -216,3 +217,5 @@ export default function LabPage() {
     </div>
   );
 }
+
+export default function LabPage() { return <RoleGuard module="lab"><LabPageInner /></RoleGuard>; }

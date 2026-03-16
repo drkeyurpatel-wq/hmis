@@ -63,7 +63,26 @@ export function Sidebar() {
 
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-0.5">
-        {navItems.map((item) => {
+        {navItems.filter((item) => {
+          if (!item.module) return true; // dashboard, settings always visible
+          const staffType = staff?.staff_type || 'admin';
+          if (staffType === 'admin') return true;
+          const moduleAccess: Record<string, string[]> = {
+            patients: ['doctor','nurse','admin','receptionist','support'],
+            opd: ['doctor','nurse','admin','receptionist'],
+            emr: ['doctor','nurse'], 'emr-v2': ['doctor','nurse'],
+            billing: ['admin','receptionist','accountant'],
+            pharmacy: ['pharmacist','admin','doctor'],
+            lab: ['lab_tech','admin','doctor','nurse'],
+            ipd: ['doctor','nurse','admin'],
+            ot: ['doctor','nurse','admin'],
+            radiology: ['technician','admin','doctor'],
+            insurance: ['admin','accountant'],
+            accounting: ['accountant','admin'],
+            mis: ['admin','doctor','accountant'],
+          };
+          return (moduleAccess[item.module] || []).includes(staffType);
+        }).map((item) => {
           const isActive =
             item.href === '/'
               ? pathname === '/'

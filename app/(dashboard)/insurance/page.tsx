@@ -1,9 +1,10 @@
 'use client';
 import React, { useState } from 'react';
 import { useInsurance, type PreAuthRequest, type Claim } from '@/lib/revenue/phase2-hooks';
+import { RoleGuard, TableSkeleton } from '@/components/ui/shared';
 import { useAuthStore } from '@/lib/store/auth';
 
-export default function InsurancePage() {
+function InsurancePageInner() {
   const { activeCentreId } = useAuthStore();
   const centreId = activeCentreId || '';
   const { preAuths, claims, loading, loadPreAuths, loadClaims, updatePreAuth } = useInsurance(centreId);
@@ -109,3 +110,5 @@ export default function InsurancePage() {
     </div>
   );
 }
+
+export default function InsurancePage() { return <RoleGuard module="insurance"><InsurancePageInner /></RoleGuard>; }

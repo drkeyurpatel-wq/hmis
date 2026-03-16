@@ -1,9 +1,10 @@
 'use client';
 import React, { useState, useEffect, useCallback } from 'react';
 import { useBilling, type Bill, type BillItem } from '@/lib/revenue/hooks';
+import { RoleGuard, TableSkeleton, printBill } from '@/components/ui/shared';
 import { useAuthStore } from '@/lib/store/auth';
 
-export default function BillingPage() {
+function BillingPageInner() {
   const { staff, activeCentreId } = useAuthStore();
   const centreId = activeCentreId || '';
   const staffId = staff?.id || '';
@@ -161,7 +162,18 @@ export default function BillingPage() {
               <div className="flex gap-2 mt-4">
                 {selectedBill.status === 'draft' && <button onClick={() => finalizeBill(selectedBill.id)} className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700">Finalize Bill</button>}
                 {selectedBill.balanceAmount > 0 && <button onClick={() => { setShowPayment(true); setPayAmount(selectedBill.balanceAmount.toString()); }} className="px-4 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700">Collect Payment</button>}
-                <button className="px-4 py-2 bg-gray-100 text-gray-600 text-sm rounded-lg" onClick={() => window.print()}>Print</button>
+                <button className="px-4 py-2 bg-gray-100 text-gray-600 text-sm rounded-lg" onClick={() => {
+                  if(!selectedBill) return;
+                  printBill({
+                    billNumber: selectedBill.billNumber, billDate: selectedBill.billDate,
+                    patientName: selectedBill.patientName, patientUhid: selectedBill.patientUhid,
+                    ageGender: '--', payorType: selectedBill.payorType,
+                    items: billItems.map(i => ({ description: i.description, quantity: i.quantity, rate: i.unitRate, amount: i.netAmount })),
+                    grossAmount: selectedBill.grossAmount, discountAmount: selectedBill.discountAmount,
+                    netAmount: selectedBill.netAmount, paidAmount: selectedBill.paidAmount, balanceAmount: selectedBill.balanceAmount,
+                    payments: [],
+                  }, { name: 'Health1 Super Speciality Hospital', address: 'Shilaj, Ahmedabad', phone: '+91 79 6190 1111', tagline: '330 Beds' });
+                }}>Print Bill</button>
               </div>
 
               {/* Payment modal */}
@@ -189,3 +201,5 @@ export default function BillingPage() {
     </div>
   );
 }
+
+export default function BillingPage() { return <RoleGuard module="billing"><BillingPageInner /></RoleGuard>; }

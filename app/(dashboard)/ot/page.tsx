@@ -1,9 +1,10 @@
 'use client';
 import React, { useState } from 'react';
 import { useOT, type OTBooking } from '@/lib/revenue/phase2-hooks';
+import { RoleGuard, TableSkeleton } from '@/components/ui/shared';
 import { useAuthStore } from '@/lib/store/auth';
 
-export default function OTPage() {
+function OTPageInner() {
   const { activeCentreId } = useAuthStore();
   const centreId = activeCentreId || '';
   const { bookings, rooms, loading, loadBookings, updateBookingStatus } = useOT(centreId);
@@ -66,3 +67,5 @@ export default function OTPage() {
     </div>
   );
 }
+
+export default function OTPage() { return <RoleGuard module="ot"><OTPageInner /></RoleGuard>; }

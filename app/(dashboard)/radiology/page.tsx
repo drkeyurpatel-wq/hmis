@@ -1,12 +1,13 @@
 'use client';
 import React, { useState, useEffect, useCallback } from 'react';
+import { RoleGuard, TableSkeleton } from '@/components/ui/shared';
 import { useAuthStore } from '@/lib/store/auth';
 import { createClient } from '@/lib/supabase/client';
 
 let _sb: any = null;
 function sb() { if (typeof window === 'undefined') return null as any; if (!_sb) { try { _sb = createClient(); } catch { return null; } } return _sb; }
 
-export default function RadiologyPage() {
+function RadiologyPageInner() {
   const { activeCentreId } = useAuthStore();
   const centreId = activeCentreId || '';
   const [orders, setOrders] = useState<any[]>([]);
@@ -102,3 +103,5 @@ export default function RadiologyPage() {
     </div>
   );
 }
+
+export default function RadiologyPage() { return <RoleGuard module="radiology"><RadiologyPageInner /></RoleGuard>; }

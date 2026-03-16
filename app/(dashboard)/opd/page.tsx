@@ -1,13 +1,14 @@
 'use client';
 import React, { useState, useEffect, useCallback } from 'react';
 import { useOPDQueue, useDoctors, type OPDVisit } from '@/lib/revenue/hooks';
+import { RoleGuard, TableSkeleton } from '@/components/ui/shared';
 import { useAuthStore } from '@/lib/store/auth';
 import { createClient } from '@/lib/supabase/client';
 
 let _sb: any = null;
 function sb() { if (typeof window === 'undefined') return null as any; if (!_sb) { try { _sb = createClient(); } catch { return null; } } return _sb; }
 
-export default function OPDPage() {
+function OPDPageInner() {
   const { staff, activeCentreId } = useAuthStore();
   const centreId = activeCentreId || '';
   const { visits, loading, stats, createVisit, updateStatus } = useOPDQueue(centreId);
@@ -176,3 +177,5 @@ export default function OPDPage() {
     </div>
   );
 }
+
+export default function OPDPage() { return <RoleGuard module="opd"><OPDPageInner /></RoleGuard>; }
