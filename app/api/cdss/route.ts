@@ -7,29 +7,50 @@ import { NextRequest, NextResponse } from 'next/server';
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY || '';
 const MODEL = 'claude-sonnet-4-20250514';
 
+// GET — health check / debug
+export async function GET() {
+  return NextResponse.json({
+    status: 'ok',
+    keyConfigured: !!ANTHROPIC_API_KEY,
+    keyPrefix: ANTHROPIC_API_KEY ? ANTHROPIC_API_KEY.substring(0, 12) + '...' : 'NOT SET',
+    model: MODEL,
+  });
+}
+
 async function callClaude(systemPrompt: string, userMessage: string, maxTokens: number = 1500): Promise<string> {
   if (!ANTHROPIC_API_KEY) {
     return JSON.stringify({ error: 'ANTHROPIC_API_KEY not configured. Set it in Vercel environment variables.' });
   }
 
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': ANTHROPIC_API_KEY,
-      'anthropic-version': '2023-06-01',
-    },
-    body: JSON.stringify({
-      model: MODEL,
-      max_tokens: maxTokens,
-      system: systemPrompt,
-      messages: [{ role: 'user', content: userMessage }],
-    }),
-  });
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model: MODEL,
+        max_tokens: maxTokens,
+        system: systemPrompt,
+        messages: [{ role: 'user', content: userMessage }],
+      }),
+    });
 
-  const data = await response.json();
-  if (data.content?.[0]?.text) return data.content[0].text;
-  return JSON.stringify({ error: data.error?.message || 'Unknown API error' });
+    if (!response.ok) {
+      const errBody = await response.text();
+      console.error('[CDSS] Anthropic API error:', response.status, errBody);
+      return JSON.stringify({ error: `Anthropic API ${response.status}: ${errBody.substring(0, 200)}` });
+    }
+
+    const data = await response.json();
+    if (data.content?.[0]?.text) return data.content[0].text;
+    return JSON.stringify({ error: data.error?.message || JSON.stringify(data).substring(0, 200) });
+  } catch (err: any) {
+    console.error('[CDSS] Fetch error:', err);
+    return JSON.stringify({ error: `Network error: ${err.message}` });
+  }
 }
 
 // ============================================================
