@@ -98,7 +98,7 @@ function BillingPageInner() {
             <button key={k} onClick={() => setStatusFilter(k)} className={`px-3 py-1 text-xs rounded-lg border ${statusFilter === k ? 'bg-blue-600 text-white border-blue-600' : 'bg-white border-gray-200'}`}>{l}</button>
           )}</div>
 
-          {loading ? <div className="text-center py-8 text-gray-400">Loading...</div> :
+          {loading ? <TableSkeleton rows={6} cols={5} /> :
           filteredBills.length === 0 ? <div className="text-center py-8 bg-white rounded-xl border text-gray-400 text-sm">No bills for this date</div> :
           <div className="space-y-2">{filteredBills.map(b => (
             <div key={b.id} onClick={() => setSelectedBill(b)} className={`bg-white rounded-lg border p-3 cursor-pointer hover:border-blue-400 ${selectedBill?.id === b.id ? 'border-blue-500 ring-2 ring-blue-200' : ''}`}>

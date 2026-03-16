@@ -74,7 +74,7 @@ function RadiologyPageInner() {
 
       <div className="flex gap-6">
         <div className="w-2/5">
-          {loading ? <div className="text-center py-8 text-gray-400">Loading...</div> :
+          {loading ? <TableSkeleton rows={6} cols={5} /> :
           orders.length === 0 ? <div className="text-center py-12 bg-white rounded-xl border text-gray-400 text-sm">No radiology orders</div> :
           <div className="space-y-2">{orders.map((o, i) => (
             <div key={i} onClick={() => { setSelectedOrder(o); setReportText(o.result); }}

@@ -82,7 +82,7 @@ function PharmacyPageInner() {
       <div className="flex gap-6">
         {/* Order List */}
         <div className="w-2/5">
-          {loading ? <div className="text-center py-8 text-gray-400">Loading...</div> :
+          {loading ? <TableSkeleton rows={6} cols={5} /> :
           filteredOrders.length === 0 ? <div className="text-center py-12 bg-white rounded-xl border text-gray-400 text-sm">No orders in this queue</div> :
           <div className="space-y-2">{filteredOrders.map(o => (
             <div key={o.id} onClick={() => { setSelectedOrder(o); if (o.status === 'pending') startDispensing(o.id); }}

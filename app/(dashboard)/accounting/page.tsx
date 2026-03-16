@@ -43,7 +43,7 @@ function AccountingPageInner() {
           <div className="bg-blue-50 rounded-xl p-4"><div className="text-xs text-gray-500">Total debit</div><div className="text-2xl font-bold text-blue-700">Rs.{Math.round(totalDebit).toLocaleString('en-IN')}</div></div>
           <div className="bg-green-50 rounded-xl p-4"><div className="text-xs text-gray-500">Total credit</div><div className="text-2xl font-bold text-green-700">Rs.{Math.round(totalCredit).toLocaleString('en-IN')}</div></div>
         </div>
-        {loading ? <div className="text-center py-8 text-gray-400">Loading...</div> :
+        {loading ? <TableSkeleton rows={6} cols={5} /> :
         journals.length === 0 ? <div className="text-center py-12 bg-white rounded-xl border text-gray-400 text-sm">No journal entries for this period</div> :
         <div className="space-y-3">{journals.map((j: any) => (
           <div key={j.id} className="bg-white rounded-xl border p-4">

@@ -46,7 +46,7 @@ function InsurancePageInner() {
 
         <div className="flex gap-6">
           <div className="w-1/2">
-            {loading ? <div className="text-center py-8 text-gray-400">Loading...</div> :
+            {loading ? <TableSkeleton rows={6} cols={5} /> :
             preAuths.length === 0 ? <div className="text-center py-12 bg-white rounded-xl border text-gray-400 text-sm">No pre-auth requests</div> :
             <div className="space-y-2">{preAuths.map(p => (
               <div key={p.id} onClick={() => { setSelectedPA(p); setPaForm({ approvedAmount: p.approvedAmount?.toString() || '', preAuthNumber: p.preAuthNumber || '', remarks: p.remarks || '' }); }}

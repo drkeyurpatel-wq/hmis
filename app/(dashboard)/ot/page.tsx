@@ -42,7 +42,7 @@ function OTPageInner() {
         })}</div>
       </div>}
 
-      {loading ? <div className="text-center py-8 text-gray-400">Loading...</div> :
+      {loading ? <TableSkeleton rows={6} cols={5} /> :
       bookings.length === 0 ? <div className="text-center py-12 bg-white rounded-xl border text-gray-400">No OT bookings for {dateFilter}</div> :
       <div className="bg-white rounded-xl border overflow-hidden"><table className="w-full text-sm"><thead><tr className="bg-gray-50 border-b">
         <th className="text-left p-3 font-medium text-gray-500">Time</th><th className="text-left p-3 font-medium text-gray-500">OT</th>

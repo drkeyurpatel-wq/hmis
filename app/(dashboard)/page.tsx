@@ -1,6 +1,7 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import { useAuthStore } from '@/lib/store/auth';
+import { CardSkeleton, TableSkeleton } from '@/components/ui/shared';
 import { createClient } from '@/lib/supabase/client';
 import Link from 'next/link';
 import {

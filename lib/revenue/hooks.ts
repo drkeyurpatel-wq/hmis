@@ -3,6 +3,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { sendOPDTokenConfirmation, sendPharmacyReady, sendPaymentReceipt } from '@/lib/notifications/whatsapp';
 
 let _sb: ReturnType<typeof createClient> | null = null;
 function sb() {
@@ -82,7 +83,17 @@ export function useOPDQueue(centreId: string | null, doctorId?: string | null) {
       chief_complaint: complaint || null, status: 'waiting',
       check_in_time: new Date().toISOString(),
     }).select().single();
-    if (!error) load();
+    if (!error && data) {
+      load();
+      // WhatsApp: send token confirmation
+      try {
+        const { data: pt } = await sb().from('hmis_patients').select('phone_primary, first_name').eq('id', patientId).single();
+        const { data: dr } = await sb().from('hmis_staff').select('full_name').eq('id', drId).single();
+        if (pt?.phone_primary) {
+          sendOPDTokenConfirmation(pt.phone_primary, pt.first_name || 'Patient', 'T-' + String(tokenNum || 1).padStart(3, '0'), dr?.full_name || 'Doctor', '~20 min');
+        }
+      } catch { /* WhatsApp send is non-blocking */ }
+    }
     return { data, error };
   }, [centreId, load]);
 
@@ -247,6 +258,14 @@ export function useBilling(centreId: string | null) {
         const newBalance = bill.netAmount - newPaid;
         const newStatus = newBalance <= 0 ? 'paid' : newPaid > 0 ? 'partially_paid' : 'draft';
         await sb().from('hmis_bills').update({ paid_amount: newPaid, balance_amount: Math.max(0, newBalance), status: newStatus }).eq('id', billId);
+
+        // WhatsApp: send payment receipt
+        try {
+          const { data: pt } = await sb().from('hmis_patients').select('phone_primary, first_name').eq('id', bill.patientId).single();
+          if (pt?.phone_primary) {
+            sendPaymentReceipt(pt.phone_primary, pt.first_name || 'Patient', rcpNum || 'RCP', `Rs.${amount.toLocaleString('en-IN')}`, mode.toUpperCase());
+          }
+        } catch { /* non-blocking */ }
       }
       loadBills();
     }

@@ -80,7 +80,7 @@ function OPDPageInner() {
       </div>
 
       {/* Queue Table */}
-      {loading ? <div className="text-center py-8 text-gray-400">Loading queue...</div> : filtered.length === 0 ? (
+      {loading ? <TableSkeleton rows={6} cols={5} /> : filtered.length === 0 ? (
         <div className="text-center py-12 bg-white rounded-xl border"><p className="text-gray-400">No visits today</p><p className="text-xs text-gray-300 mt-1">Click "+ New Visit" to register a patient</p></div>
       ) : (
         <div className="bg-white rounded-xl border overflow-hidden">

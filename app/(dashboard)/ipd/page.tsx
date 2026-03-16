@@ -77,7 +77,7 @@ function IPDPageInner() {
         <button key={k} onClick={() => setStatusFilter(k)} className={`px-3 py-1.5 text-xs rounded-lg border ${statusFilter === k ? 'bg-blue-600 text-white border-blue-600' : 'bg-white border-gray-200'}`}>{l}</button>
       )}</div>
 
-      {loading ? <div className="text-center py-8 text-gray-400">Loading...</div> :
+      {loading ? <TableSkeleton rows={6} cols={5} /> :
       admissions.length === 0 ? <div className="text-center py-12 bg-white rounded-xl border text-gray-400">No admissions</div> :
       <div className="bg-white rounded-xl border overflow-hidden"><table className="w-full text-sm"><thead><tr className="bg-gray-50 border-b">
         <th className="text-left p-3 font-medium text-gray-500">IPD #</th><th className="text-left p-3 font-medium text-gray-500">Patient</th>
