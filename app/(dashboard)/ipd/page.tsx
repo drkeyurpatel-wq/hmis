@@ -139,6 +139,7 @@ function IPDPageInner() {
           <td className="p-3"><div className="flex gap-1">
             {a.status === 'active' && <button onClick={() => initiateDischarge(a.id)} className="px-2 py-1 bg-orange-50 text-orange-700 text-xs rounded hover:bg-orange-100">Init Discharge</button>}
             {a.status === 'discharge_initiated' && <button onClick={() => setSelectedAdm(a)} className="px-2 py-1 bg-green-50 text-green-700 text-xs rounded hover:bg-green-100">Discharge</button>}
+            <a href={`/ipd/${a.id}`} className="px-2 py-1 bg-purple-50 text-purple-700 text-xs rounded hover:bg-purple-100 font-medium">Clinical</a>
             <a href={`/emr-v2?patient=${a.patientId}`} className="px-2 py-1 bg-blue-50 text-blue-700 text-xs rounded hover:bg-blue-100">EMR</a>
           </div></td>
         </tr>
