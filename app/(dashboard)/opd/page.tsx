@@ -25,6 +25,8 @@ function OPDPageInner() {
   const [creating, setCreating] = useState(false);
   const [filter, setFilter] = useState('all');
   const [doctorFilter, setDoctorFilter] = useState('all');
+  const [showQuickReg, setShowQuickReg] = useState(false);
+  const [regForm, setRegForm] = useState({ first_name: '', last_name: '', phone: '', gender: 'male', age: '' });
 
   // Patient search
   useEffect(() => {
@@ -137,13 +139,48 @@ function OPDPageInner() {
                   </div>
                 ) : (
                   <div className="relative">
-                    <input type="text" placeholder="Search by UHID, name, or phone..." value={searchQ} onChange={e => setSearchQ(e.target.value)} autoFocus
+                    <input type="text" placeholder="Search by UHID, name, or phone..." value={searchQ} onChange={e => { setSearchQ(e.target.value); setShowQuickReg(false); }} autoFocus
                       className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
                     {searchResults.length > 0 && <div className="absolute top-full left-0 right-0 mt-1 bg-white border rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto">
                       {searchResults.map(p => <button key={p.id} onClick={() => { setSelectedPatient(p); setSearchResults([]); setSearchQ(''); }}
                         className="w-full text-left px-3 py-2 text-sm hover:bg-blue-50 border-b last:border-0">
                         <span className="font-medium">{p.first_name} {p.last_name}</span> <span className="text-gray-400">{p.uhid} | {p.age_years}/{p.gender} | {p.phone_primary}</span>
                       </button>)}</div>}
+                    {searchQ.length >= 2 && searchResults.length === 0 && !showQuickReg && (
+                      <div className="mt-1 p-2 bg-yellow-50 border border-yellow-200 rounded-lg text-xs text-yellow-700">
+                        No patient found. <button onClick={() => { setShowQuickReg(true); setRegForm(f => ({...f, first_name: searchQ})); }} className="text-blue-600 font-medium underline">Quick register</button>
+                      </div>
+                    )}
+                    {showQuickReg && (
+                      <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg space-y-2">
+                        <div className="text-xs font-medium text-blue-700 mb-1">Quick patient registration</div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <input type="text" placeholder="First name *" value={regForm.first_name} onChange={e => setRegForm(f => ({...f, first_name: e.target.value}))} className="px-2 py-1.5 border rounded text-sm" />
+                          <input type="text" placeholder="Last name *" value={regForm.last_name} onChange={e => setRegForm(f => ({...f, last_name: e.target.value}))} className="px-2 py-1.5 border rounded text-sm" />
+                        </div>
+                        <div className="grid grid-cols-3 gap-2">
+                          <input type="text" placeholder="Phone *" value={regForm.phone} onChange={e => setRegForm(f => ({...f, phone: e.target.value}))} className="px-2 py-1.5 border rounded text-sm" />
+                          <select value={regForm.gender} onChange={e => setRegForm(f => ({...f, gender: e.target.value}))} className="px-2 py-1.5 border rounded text-sm">
+                            <option value="male">Male</option><option value="female">Female</option><option value="other">Other</option></select>
+                          <input type="number" placeholder="Age" value={regForm.age} onChange={e => setRegForm(f => ({...f, age: e.target.value}))} className="px-2 py-1.5 border rounded text-sm" />
+                        </div>
+                        <button onClick={async () => {
+                          if (!regForm.first_name || !regForm.last_name || !regForm.phone || !centreId || !sb()) return;
+                          const { data: uhid } = await sb().rpc('hmis_next_sequence', { p_centre_id: centreId, p_type: 'uhid' });
+                          const { data: pt, error } = await sb().from('hmis_patients').insert({
+                            uhid: uhid || 'H1-' + Date.now(), registration_centre_id: centreId,
+                            first_name: regForm.first_name, last_name: regForm.last_name,
+                            phone_primary: regForm.phone, gender: regForm.gender,
+                            age_years: regForm.age ? parseInt(regForm.age) : null, is_active: true,
+                          }).select().single();
+                          if (pt && !error) {
+                            setSelectedPatient(pt); setShowQuickReg(false); setSearchQ('');
+                            setRegForm({ first_name: '', last_name: '', phone: '', gender: 'male', age: '' });
+                          }
+                        }} disabled={!regForm.first_name || !regForm.last_name || !regForm.phone}
+                        className="w-full px-3 py-1.5 bg-blue-600 text-white text-xs rounded-lg disabled:opacity-50">Register & Select</button>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

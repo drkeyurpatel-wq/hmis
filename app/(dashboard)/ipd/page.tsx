@@ -177,6 +177,16 @@ function IPDPageInner() {
               <div><label className="text-xs text-gray-500">Expected discharge</label>
                 <input type="date" value={form.expectedDischarge} onChange={e => setForm(f => ({...f, expectedDischarge: e.target.value}))} className="w-full px-3 py-2 border rounded-lg text-sm" /></div>
             </div>
+            {/* Bed assignment */}
+            <div><label className="text-xs text-gray-500">Assign bed</label>
+              <select value={form.bedId} onChange={e => setForm(f => ({...f, bedId: e.target.value}))} className="w-full px-3 py-2 border rounded-lg text-sm">
+                <option value="">No bed (assign later)</option>
+                {beds.filter((b: any) => b.status === 'available').map((b: any) => (
+                  <option key={b.id} value={b.id}>{b.bed_number} — {b.room?.name || ''} ({b.room?.ward?.name || 'Ward'})</option>
+                ))}
+              </select>
+              <p className="text-xs text-gray-400 mt-0.5">{beds.filter((b: any) => b.status === 'available').length} beds available</p>
+            </div>
             <div><label className="text-xs text-gray-500">Provisional diagnosis</label>
               <input type="text" value={form.provisionalDiagnosis} onChange={e => setForm(f => ({...f, provisionalDiagnosis: e.target.value}))} placeholder="e.g., Acute MI, Appendicitis..." className="w-full px-3 py-2 border rounded-lg text-sm" /></div>
             <div className="flex gap-2 pt-2">

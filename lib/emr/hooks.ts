@@ -24,7 +24,7 @@ export interface EMRPatient {
 export interface EncounterData {
   vitals: any; complaints: any[]; examFindings: any[]; diagnoses: any[];
   investigations: any[]; prescriptions: any[]; advice: string[];
-  followUp: any; referral: any;
+  followUp: any; referral: any; status?: string;
 }
 
 export interface EncounterSummary {
@@ -182,9 +182,10 @@ export function useEncounters(patientId: string | null) {
 
     let result;
     if (activeEncounterId) {
-      result = await sb().from('hmis_emr_encounters').update(payload).eq('id', activeEncounterId).select().single();
+      const updatePayload = data.status ? { ...payload, status: data.status, ...(data.status === 'signed' ? { signed_at: new Date().toISOString() } : {}) } : payload;
+      result = await sb().from('hmis_emr_encounters').update(updatePayload).eq('id', activeEncounterId).select().single();
     } else {
-      result = await sb().from('hmis_emr_encounters').insert({ ...payload, status: 'in_progress' }).select().single();
+      result = await sb().from('hmis_emr_encounters').insert({ ...payload, status: data.status || 'in_progress' }).select().single();
       if (result.data) setActiveEncounterId(result.data.id);
     }
     return result;

@@ -13,6 +13,35 @@ export function GlobalHeader() {
   const [results, setResults] = useState<any[]>([]);
   const [showResults, setShowResults] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [pendingCounts, setPendingCounts] = useState({ rx: 0, lab: 0, preauth: 0 });
+
+  // Ctrl+K keyboard shortcut
+  useEffect(() => {
+    function handleKey(e: KeyboardEvent) {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') { e.preventDefault(); inputRef.current?.focus(); }
+      if (e.key === 'Escape') { setShowResults(false); inputRef.current?.blur(); }
+    }
+    document.addEventListener('keydown', handleKey);
+    return () => document.removeEventListener('keydown', handleKey);
+  }, []);
+
+  // Load pending counts for notification bell
+  useEffect(() => {
+    if (!sb()) return;
+    async function loadCounts() {
+      const today = new Date().toISOString().split('T')[0];
+      const [rx, lab, pa] = await Promise.all([
+        sb().from('hmis_pharmacy_dispensing').select('id', { count: 'exact', head: true }).in('status', ['pending', 'in_progress']),
+        sb().from('hmis_emr_encounters').select('id', { count: 'exact', head: true }).not('investigations', 'eq', '[]').gte('encounter_date', today),
+        sb().from('hmis_pre_auth_requests').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
+      ]);
+      setPendingCounts({ rx: rx.count || 0, lab: lab.count || 0, preauth: pa.count || 0 });
+    }
+    loadCounts();
+    const interval = setInterval(loadCounts, 60000);
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     if (searchQ.length < 2 || !sb()) { setResults([]); return; }
@@ -43,6 +72,7 @@ export function GlobalHeader() {
             <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
           </svg>
           <input
+            ref={inputRef}
             type="text"
             placeholder="Search patient by name, UHID, or phone..."
             value={searchQ}
@@ -77,6 +107,16 @@ export function GlobalHeader() {
               <Link href="/patients" className="text-xs text-blue-600 hover:text-blue-800 mt-1 inline-block">Register new patient</Link>
             </div>
           )}
+        </div>
+
+        {/* Notifications */}
+        <div className="flex items-center gap-3">
+          {pendingCounts.rx > 0 && <Link href="/pharmacy" className="flex items-center gap-1.5 px-2 py-1 bg-yellow-50 text-yellow-700 text-xs rounded-lg hover:bg-yellow-100 transition-colors">
+            <span className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse" />{pendingCounts.rx} Rx</Link>}
+          {pendingCounts.lab > 0 && <Link href="/lab" className="flex items-center gap-1.5 px-2 py-1 bg-blue-50 text-blue-700 text-xs rounded-lg hover:bg-blue-100 transition-colors">
+            <span className="w-2 h-2 bg-blue-500 rounded-full" />{pendingCounts.lab} Lab</Link>}
+          {pendingCounts.preauth > 0 && <Link href="/insurance" className="flex items-center gap-1.5 px-2 py-1 bg-purple-50 text-purple-700 text-xs rounded-lg hover:bg-purple-100 transition-colors">
+            <span className="w-2 h-2 bg-purple-500 rounded-full" />{pendingCounts.preauth} PA</Link>}
         </div>
 
         {/* Keyboard hint */}
