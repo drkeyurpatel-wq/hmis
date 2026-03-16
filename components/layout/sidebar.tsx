@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
@@ -30,6 +31,7 @@ const navItems = [
 export function Sidebar({ mobileOpen, onMobileClose }: { mobileOpen?: boolean; onMobileClose?: () => void } = {}) {
   const pathname = usePathname();
   const { staff, centres, activeCentreId, setActiveCentre } = useAuthStore();
+  const [centreOpen, setCentreOpen] = useState(false);
 
   const activeCentre = centres.find((c) => c.centre_id === activeCentreId);
 
@@ -52,16 +54,26 @@ export function Sidebar({ mobileOpen, onMobileClose }: { mobileOpen?: boolean; o
       </div>
 
       {/* Centre selector */}
-      <div className="px-3 py-3 border-b border-gray-100">
-        <button className="w-full flex items-center justify-between px-3 py-2 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors text-left">
+      <div className="px-3 py-3 border-b border-gray-100 relative">
+        <button onClick={() => setCentreOpen(!centreOpen)} className="w-full flex items-center justify-between px-3 py-2 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors text-left">
           <div className="flex items-center gap-2">
             <Building2 size={14} className="text-gray-500" />
             <span className="text-sm font-medium text-gray-700 truncate">
               {activeCentre?.centre?.name || 'Select centre'}
             </span>
           </div>
-          <ChevronDown size={14} className="text-gray-400" />
+          <ChevronDown size={14} className={`text-gray-400 transition-transform ${centreOpen ? 'rotate-180' : ''}`} />
         </button>
+        {centreOpen && centres.length > 1 && (
+          <div className="absolute left-3 right-3 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 overflow-hidden">
+            {centres.map((c) => (
+              <button key={c.centre_id} onClick={() => { setActiveCentre(c.centre_id); setCentreOpen(false); }}
+                className={`w-full text-left px-3 py-2 text-sm hover:bg-blue-50 border-b last:border-0 ${c.centre_id === activeCentreId ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-700'}`}>
+                {c.centre?.name || c.centre_id}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Navigation */}
@@ -120,7 +132,11 @@ export function Sidebar({ mobileOpen, onMobileClose }: { mobileOpen?: boolean; o
               {staff?.designation || staff?.staff_type}
             </p>
           </div>
-          <button className="text-gray-400 hover:text-red-500 transition-colors">
+          <button onClick={async () => {
+            if (!confirm('Sign out of Health1 HMIS?')) return;
+            try { const { createClient } = await import('@/lib/supabase/client'); const supabase = createClient(); await supabase.auth.signOut(); } catch {}
+            window.location.href = '/auth/login';
+          }} className="text-gray-400 hover:text-red-500 transition-colors" title="Sign out">
             <LogOut size={16} />
           </button>
         </div>

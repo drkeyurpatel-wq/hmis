@@ -3,6 +3,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { sendDischargeAlert } from '@/lib/notifications/whatsapp';
 
 let _sb: ReturnType<typeof createClient> | null = null;
 function sb() {
@@ -87,13 +88,23 @@ export function useIPD(centreId: string | null) {
 
   const dischargePatient = useCallback(async (admissionId: string, dischargeType: string, finalDiagnosis?: string) => {
     if (!sb()) return;
+    // Get patient info for WhatsApp before updating
+    const { data: admInfo } = await sb().from('hmis_admissions')
+      .select('bed_id, ipd_number, patient:hmis_patients!inner(phone_primary, first_name)')
+      .eq('id', admissionId).single();
     await sb().from('hmis_admissions').update({
       status: 'discharged', actual_discharge: new Date().toISOString(),
       discharge_type: dischargeType, final_diagnosis: finalDiagnosis || null,
     }).eq('id', admissionId);
     // Free the bed
-    const { data: adm } = await sb().from('hmis_admissions').select('bed_id').eq('id', admissionId).single();
-    if (adm?.bed_id) await sb().from('hmis_beds').update({ status: 'available', current_admission_id: null }).eq('id', adm.bed_id);
+    if (admInfo?.bed_id) await sb().from('hmis_beds').update({ status: 'available', current_admission_id: null }).eq('id', admInfo.bed_id);
+    // WhatsApp: discharge alert
+    try {
+      const pt = (admInfo as any)?.patient;
+      if (pt?.phone_primary) {
+        sendDischargeAlert(pt.phone_primary, pt.first_name || 'Patient', admInfo?.ipd_number || '', new Date().toLocaleDateString('en-IN'), 'As advised by doctor');
+      }
+    } catch { /* non-blocking */ }
     loadAdmissions('active');
   }, [loadAdmissions]);
 

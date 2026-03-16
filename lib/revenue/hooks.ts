@@ -357,11 +357,22 @@ export function usePharmacy(centreId: string | null) {
   // Dispense order
   const dispenseOrder = useCallback(async (orderId: string, dispensedItems: any[], staffId: string, totalAmount: number) => {
     if (!sb()) return;
+    // Get patient info before update for WhatsApp
+    const { data: order } = await sb().from('hmis_pharmacy_dispensing').select('patient_id').eq('id', orderId).single();
     await sb().from('hmis_pharmacy_dispensing').update({
       dispensed_items: dispensedItems, status: 'dispensed',
       total_amount: totalAmount, dispensed_by: staffId,
       dispensed_at: new Date().toISOString(),
     }).eq('id', orderId);
+    // WhatsApp: pharmacy ready
+    if (order?.patient_id) {
+      try {
+        const { data: pt } = await sb().from('hmis_patients').select('phone_primary, first_name').eq('id', order.patient_id).single();
+        if (pt?.phone_primary) {
+          sendPharmacyReady(pt.phone_primary, pt.first_name || 'Patient', String(dispensedItems.length), 'Pharmacy Counter');
+        }
+      } catch { /* non-blocking */ }
+    }
     loadOrders();
   }, [loadOrders]);
 
