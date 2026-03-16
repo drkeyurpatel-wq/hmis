@@ -360,8 +360,8 @@ BEGIN
     (adm1, 'Ramipril', '2.5 mg', 'oral', 'OD', dr_sunil),
     (adm1, 'Metoprolol Succinate', '25 mg', 'oral', 'OD', dr_sunil),
     (adm1, 'Eplerenone', '25 mg', 'oral', 'OD', dr_sunil),
-    (adm1, 'Pantoprazole', '40 mg', 'IV', 'OD', dr_sunil),
-    (adm1, 'Enoxaparin', '60 mg', 'SC', 'BD', dr_sunil);
+    (adm1, 'Pantoprazole', '40 mg', 'iv', 'OD', dr_sunil),
+    (adm1, 'Enoxaparin', '60 mg', 'sc', 'BD', dr_sunil);
 
     -- Mahesh (Stroke) meds
     INSERT INTO hmis_ipd_medication_orders (admission_id, drug_name, dose, route, frequency, ordered_by) VALUES
@@ -370,24 +370,24 @@ BEGIN
     (adm3, 'Amlodipine', '5 mg', 'oral', 'OD', dr_ravi),
     (adm3, 'Metformin', '500 mg', 'oral', 'BD', dr_ravi),
     (adm3, 'Pantoprazole', '40 mg', 'oral', 'OD', dr_ravi),
-    (adm3, 'Enoxaparin', '40 mg', 'SC', 'OD', dr_ravi);
+    (adm3, 'Enoxaparin', '40 mg', 'sc', 'OD', dr_ravi);
 
     -- Anita (TKR) meds
     INSERT INTO hmis_ipd_medication_orders (admission_id, drug_name, dose, route, frequency, ordered_by) VALUES
-    (adm4, 'Paracetamol', '1 gm', 'IV', 'TDS', dr_sneha),
-    (adm4, 'Tramadol', '50 mg', 'IV', 'BD', dr_sneha),
+    (adm4, 'Paracetamol', '1 gm', 'iv', 'TDS', dr_sneha),
+    (adm4, 'Tramadol', '50 mg', 'iv', 'BD', dr_sneha),
     (adm4, 'Pregabalin', '75 mg', 'oral', 'HS', dr_sneha),
-    (adm4, 'Enoxaparin', '40 mg', 'SC', 'OD', dr_sneha),
-    (adm4, 'Cefuroxime', '1.5 gm', 'IV', 'BD', dr_sneha),
-    (adm4, 'Pantoprazole', '40 mg', 'IV', 'OD', dr_sneha);
+    (adm4, 'Enoxaparin', '40 mg', 'sc', 'OD', dr_sneha),
+    (adm4, 'Cefuroxime', '1.5 gm', 'iv', 'BD', dr_sneha),
+    (adm4, 'Pantoprazole', '40 mg', 'iv', 'OD', dr_sneha);
 
     -- Kavita (DKA) meds
     INSERT INTO hmis_ipd_medication_orders (admission_id, drug_name, dose, route, frequency, ordered_by) VALUES
-    (adm6, 'Insulin Glargine', '20 units', 'SC', 'HS', dr_priya),
-    (adm6, 'Insulin Aspart', '8 units', 'SC', 'TDS (pre-meals)', dr_priya),
-    (adm6, 'Ondansetron', '4 mg', 'IV', 'SOS', dr_priya),
-    (adm6, 'NS 0.9%', '500 ml', 'IV', 'q6h', dr_priya),
-    (adm6, 'KCl', '20 mEq/L', 'IV', 'in each NS', dr_priya);
+    (adm6, 'Insulin Glargine', '20 units', 'sc', 'HS', dr_priya),
+    (adm6, 'Insulin Aspart', '8 units', 'sc', 'TDS (pre-meals)', dr_priya),
+    (adm6, 'Ondansetron', '4 mg', 'iv', 'SOS', dr_priya),
+    (adm6, 'NS 0.9%', '500 ml', 'iv', 'q6h', dr_priya),
+    (adm6, 'KCl', '20 mEq/L', 'iv', 'in each NS', dr_priya);
 
     RAISE NOTICE 'IPD test data seeded: 8 departments, 8 doctors, 4 wards, 8 rooms, 11 beds, 8 admissions, 17 rounds, 24 med orders';
 END $$;
