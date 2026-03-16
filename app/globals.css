@@ -31,3 +31,24 @@
     @apply text-xl font-display font-semibold text-gray-900;
   }
 }
+
+/* Toast slide-in animation */
+@keyframes slide-in {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+.animate-slide-in { animation: slide-in 0.3s ease-out; }
+
+/* Mobile responsive: hide sidebar on small screens */
+@media (max-width: 768px) {
+  :root { --sidebar-width: 0px !important; }
+  aside { transform: translateX(-100%); }
+  aside.open { transform: translateX(0); z-index: 40; }
+}
+
+/* Print: hide sidebar and navigation */
+@media print {
+  aside, nav, .no-print { display: none !important; }
+  main { margin-left: 0 !important; }
+  body { background: white; }
+}

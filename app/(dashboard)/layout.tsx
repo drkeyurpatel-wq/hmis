@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import { Sidebar } from '@/components/layout/sidebar';
+import { ToastProvider } from '@/components/ui/shared';
 import { useAuthStore } from '@/lib/store/auth';
 import { createClient } from '@/lib/supabase/client';
 
@@ -49,14 +50,16 @@ export default function DashboardLayout({
   }, [setStaff, setCentres]);
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Sidebar />
-      <main
-        className="transition-all duration-200"
-        style={{ marginLeft: 'var(--sidebar-width)' }}
-      >
-        <div className="px-6 py-6">{children}</div>
-      </main>
-    </div>
+    <ToastProvider>
+      <div className="min-h-screen bg-gray-50">
+        <Sidebar />
+        <main
+          className="transition-all duration-200 min-h-screen"
+          style={{ marginLeft: 'var(--sidebar-width)' }}
+        >
+          <div className="px-4 sm:px-6 py-4 sm:py-6 max-w-full overflow-x-hidden">{children}</div>
+        </main>
+      </div>
+    </ToastProvider>
   );
 }
