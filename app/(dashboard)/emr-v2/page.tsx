@@ -13,6 +13,7 @@ import { useEMR } from '@/lib/emr/use-emr';
 import { usePharmacy } from '@/lib/revenue/hooks';
 import { useAuthStore } from '@/lib/store/auth';
 import { printEncounterSummary } from '@/components/ui/shared';
+import AICopilot from '@/components/emr-v2/ai-copilot';
 
 // Types
 interface Patient { id:string; name:string; age:string; gender:string; uhid:string; phone:string; allergies:string[]; bloodGroup:string; }
@@ -357,5 +358,15 @@ export default function EMRv3Page() {
         </div></div>}
     </div>}
     </div>
+
+    {/* AI Clinical Copilot */}
+    <AICopilot
+      patient={{ name: patient.name, age: patient.age, gender: patient.gender, allergies: patient.allergies }}
+      vitals={vitals} complaints={complaints.map((c: any) => c.text || c.complaint || c.name || String(c))} examFindings={examEntries}
+      diagnoses={diagnoses} investigations={investigations}
+      prescriptions={prescriptions} advice={followUp.advice} followUp={followUp.date || ''}
+      onAddDiagnosis={(dx) => { if (!diagnoses.find((d: any) => d.code === dx.code)) setDiagnoses((prev: any) => [...prev, { ...dx, type: 'primary' }]); }}
+      onAddInvestigation={(name) => { if (!investigations.find((i: any) => i.name === name)) setInvestigations((prev: any) => [...prev, { name, urgency: 'routine' }]); }}
+    />
   </div>);
 }
