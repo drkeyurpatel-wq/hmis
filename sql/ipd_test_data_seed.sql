@@ -286,7 +286,7 @@ BEGIN
      'GCS 15. NIHSS 9. Vitals stable. No fever.',
      'Stroke Day 4. Good neurological recovery trajectory. Right arm lag expected to be slow.',
      'Shift to ward if stable 24h. Intensify PT/OT. Family counseling. Plan: CEA evaluation by vascular surgery.',
-     'full_code', 'soft diet', 'sit up in bed, transfer to chair with assist');
+     'full_code', 'soft diet', 'sit up, chair transfer');
 
     -- Anita (TKR) — 2 rounds
     INSERT INTO hmis_doctor_rounds (admission_id, doctor_id, round_type, round_date, subjective, objective, assessment, plan, diet_instruction, activity_level) VALUES
@@ -301,7 +301,7 @@ BEGIN
      'HR 88, BP 130/80. Wound clean, drain in situ. Knee ROM 0-40° passive. Ankle pumps active.',
      'Post Right TKR (Cuvis Robot) Day 1. Expected progress. Pain control needs optimization.',
      'Epidural top-ups. Add Pregabalin 75mg HS. CPM machine 0-30° → increase daily. Ice packs. Drain removal Day 2. PT BID.',
-     'full diet, high protein', 'CPM, transfer to chair with PT');
+     'full diet, high protein', 'CPM, chair transfer w PT');
 
     -- Dharmesh (COPD Exacerbation) — 2 rounds
     INSERT INTO hmis_doctor_rounds (admission_id, doctor_id, round_type, round_date, subjective, objective, assessment, plan, diet_instruction, activity_level) VALUES
@@ -316,7 +316,7 @@ BEGIN
      'RR 20, SpO2 95% on 2L. Wheeze reduced. ABG: pH 7.38, pCO2 45, pO2 72.',
      'COPD exacerbation Day 2 — improving. ABG normalized.',
      'Wean to nasal prongs. Switch IV to oral steroids. Continue antibiotics Day 5. Sputum culture pending. Plan step-down from NIV.',
-     'normal diet', 'sit up in bed, bedside commode');
+     'normal diet', 'sit up, bedside commode');
 
     -- Kavita (DKA) — 2 rounds
     INSERT INTO hmis_doctor_rounds (admission_id, doctor_id, round_type, round_date, subjective, objective, assessment, plan, code_status, diet_instruction, activity_level) VALUES
