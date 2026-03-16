@@ -3,8 +3,11 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { RoleGuard, TableSkeleton, StatusBadge, printLabReport } from '@/components/ui/shared';
 import { useAuthStore } from '@/lib/store/auth';
 import { useLabWorklist, useSamples, useResultEntry, useCriticalAlerts, useOutsourcedLab, type LabOrder } from '@/lib/lab/lims-hooks';
+import MicrobiologyPanel from '@/components/lab/microbiology-panel';
+import QCPanel from '@/components/lab/qc-panel';
+import { useAntibiogram } from '@/lib/lab/micro-hooks';
 
-type LabTab = 'worklist' | 'collect' | 'results' | 'verify' | 'critical' | 'outsourced' | 'tat';
+type LabTab = 'worklist' | 'collect' | 'results' | 'verify' | 'critical' | 'micro' | 'antibiogram' | 'qc' | 'outsourced' | 'tat';
 
 function LabPageInner() {
   const { staff, activeCentreId } = useAuthStore();
@@ -14,6 +17,7 @@ function LabPageInner() {
   const samples = useSamples(centreId);
   const criticalAlerts = useCriticalAlerts(centreId);
   const outsourced = useOutsourcedLab();
+  const antibiogram = useAntibiogram(centreId);
 
   const [tab, setTab] = useState<LabTab>('worklist');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -51,7 +55,7 @@ function LabPageInner() {
 
       {/* Tabs */}
       <div className="flex gap-1 mb-4 border-b pb-px overflow-x-auto">
-        {([['worklist','Worklist'],['collect','Sample Collection'],['results','Result Entry'],['verify','Verify & Report'],['critical','Critical Alerts'],['outsourced','Outsourced'],['tat','TAT Dashboard']] as [LabTab,string][]).map(([k,l]) =>
+        {([['worklist','Worklist'],['collect','Samples'],['results','Results'],['verify','Verify'],['critical','Critical'],['micro','Microbiology'],['antibiogram','Antibiogram'],['qc','QC'],['outsourced','Outsourced'],['tat','TAT']] as [LabTab,string][]).map(([k,l]) =>
           <button key={k} onClick={() => setTab(k)} className={`px-3 py-2 text-xs font-medium whitespace-nowrap border-b-2 -mb-px ${tab === k ? 'border-blue-600 text-blue-700' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
             {l} {k === 'critical' && criticalAlerts.alerts.length > 0 ? <span className="ml-1 bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded-full">{criticalAlerts.alerts.length}</span> : ''}</button>
         )}
@@ -179,6 +183,71 @@ function LabPageInner() {
           </div>
         ))}</div>}
       </>}
+
+      {/* ===== MICROBIOLOGY ===== */}
+      {tab === 'micro' && <MicrobiologyPanel orders={orders} staffId={staffId} onFlash={flash} />}
+
+      {/* ===== ANTIBIOGRAM ===== */}
+      {tab === 'antibiogram' && <>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="font-semibold text-sm">Cumulative Antibiogram</h2>
+          <button onClick={() => {
+            const now = new Date();
+            const start = new Date(now.getFullYear(), 0, 1).toISOString().split('T')[0];
+            const end = now.toISOString().split('T')[0];
+            antibiogram.generate(start, end);
+            flash('Antibiogram generated for ' + now.getFullYear());
+          }} className="px-3 py-1.5 bg-purple-600 text-white text-xs rounded-lg">Generate (This Year)</button>
+        </div>
+        {antibiogram.data.length === 0 ? (
+          <div className="text-center py-12 bg-white rounded-xl border text-gray-400 text-sm">No antibiogram data. Generate from cumulative sensitivity data above.</div>
+        ) : (() => {
+          // Build matrix: organisms × antibiotics
+          const orgMap = new Map<string, { name: string; data: Map<string, { total: number; pct: number }> }>();
+          const abxSet = new Map<string, string>();
+          antibiogram.data.forEach((d: any) => {
+            const orgName = d.organism?.organism_name || '?';
+            const abxCode = d.antibiotic?.antibiotic_code || '?';
+            const abxName = d.antibiotic?.antibiotic_name || '?';
+            if (!orgMap.has(orgName)) orgMap.set(orgName, { name: orgName, data: new Map() });
+            orgMap.get(orgName)!.data.set(abxCode, { total: d.total_isolates, pct: parseFloat(d.susceptibility_percent) });
+            abxSet.set(abxCode, abxName);
+          });
+          const abxList = [...abxSet.entries()];
+          const orgList = [...orgMap.entries()];
+          return (
+            <div className="bg-white rounded-xl border overflow-x-auto">
+              <table className="text-[10px] whitespace-nowrap">
+                <thead><tr className="bg-gray-50 border-b">
+                  <th className="p-2 text-left font-medium text-gray-500 sticky left-0 bg-gray-50 min-w-[180px]">Organism</th>
+                  <th className="p-2 text-center font-medium text-gray-500">n</th>
+                  {abxList.map(([code, name]) => <th key={code} className="p-1.5 text-center font-medium text-gray-500 max-w-[40px]" title={name}>{code}</th>)}
+                </tr></thead>
+                <tbody>{orgList.map(([orgName, org]) => (
+                  <tr key={orgName} className="border-b">
+                    <td className="p-2 font-medium sticky left-0 bg-white">{orgName}</td>
+                    <td className="p-2 text-center text-gray-400">{[...org.data.values()][0]?.total || '—'}</td>
+                    {abxList.map(([code]) => {
+                      const d = org.data.get(code);
+                      if (!d) return <td key={code} className="p-1.5 text-center text-gray-300">—</td>;
+                      const bg = d.pct >= 80 ? 'bg-green-100 text-green-800' : d.pct >= 50 ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800';
+                      return <td key={code} className={`p-1.5 text-center font-medium ${bg}`}>{Math.round(d.pct)}%</td>;
+                    })}
+                  </tr>
+                ))}</tbody>
+              </table>
+            </div>
+          );
+        })()}
+        <div className="flex gap-2 mt-2 text-[10px] text-gray-400">
+          <span className="flex items-center gap-1"><span className="w-3 h-3 bg-green-100 rounded"></span>≥80% susceptible</span>
+          <span className="flex items-center gap-1"><span className="w-3 h-3 bg-yellow-100 rounded"></span>50–79%</span>
+          <span className="flex items-center gap-1"><span className="w-3 h-3 bg-red-100 rounded"></span>&lt;50%</span>
+        </div>
+      </>}
+
+      {/* ===== QC ===== */}
+      {tab === 'qc' && <QCPanel centreId={centreId} staffId={staffId} onFlash={flash} />}
 
       {/* ===== OUTSOURCED ===== */}
       {tab === 'outsourced' && <>
