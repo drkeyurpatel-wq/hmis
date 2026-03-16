@@ -413,3 +413,70 @@ ${data.procedures.length > 0 ? `<div class="st">Procedures performed</div><ul st
 </div>
   `, 'Discharge Summary — ' + data.uhid);
 }
+
+// ============================================================
+// ENCOUNTER SUMMARY PRINT
+// ============================================================
+export function printEncounterSummary(data: {
+  patientName: string; uhid: string; ageGender: string; doctorName: string;
+  date: string; encounterType: string; status: string;
+  vitals: any; complaints: string[]; examFindings: any[];
+  diagnoses: { code: string; label: string; type: string }[];
+  investigations: { name: string; urgency?: string; result?: string; isAbnormal?: boolean }[];
+  prescriptions: { brand: string; generic: string; strength: string; dose: string; frequency: string; duration: string; instructions: string }[];
+  advice: string[]; followUp: string; referral?: string;
+}, centre: { name: string; address: string; phone: string; tagline: string }) {
+  const vitalsHtml = data.vitals?.systolic ? `
+    <div class="pr"><b>Vitals:</b> BP ${data.vitals.systolic}/${data.vitals.diastolic} mmHg | HR ${data.vitals.heartRate}/min | SpO2 ${data.vitals.spo2}% | Temp ${data.vitals.temperature}°F | Wt ${data.vitals.weight}kg</div>` : '';
+
+  const dxHtml = data.diagnoses.map(d => `<tr><td>${d.code}</td><td>${d.label}</td><td>${d.type}</td></tr>`).join('');
+
+  const rxHtml = data.prescriptions.map((p, i) =>
+    `<tr><td>${i + 1}</td><td><b>${p.brand}</b> (${p.generic}) ${p.strength}</td><td>${p.dose}</td><td>${p.frequency}</td><td>${p.duration}</td><td>${p.instructions}</td></tr>`
+  ).join('');
+
+  const invHtml = data.investigations.map(i =>
+    `<tr><td>${i.name}</td><td>${i.urgency || 'routine'}</td><td>${i.result || 'Pending'}</td><td>${i.isAbnormal ? '<span style="color:#991b1b;font-weight:700">ABNORMAL</span>' : i.result ? 'Normal' : '—'}</td></tr>`
+  ).join('');
+
+  const examHtml = data.examFindings.length > 0 ? data.examFindings.map(e =>
+    `<div style="margin-bottom:4px"><b>${e.system || ''}:</b> ${e.findings || e.value || JSON.stringify(e)}</div>`
+  ).join('') : '';
+
+  openPrintWindow(`
+<div class="hdr">
+  <div style="display:flex;gap:10px;align-items:center">
+    <div class="logo">LOGO</div>
+    <div><div class="hn">${centre.name}</div><div class="hs">${centre.address} | ${centre.phone}</div><div class="hs">${centre.tagline}</div></div>
+  </div>
+  <div style="text-align:right;font-size:10px;color:#666">
+    <div style="font-size:14px;font-weight:700;color:#1e40af">ENCOUNTER SUMMARY</div>
+    Date: ${data.date}<br/>Type: ${data.encounterType.toUpperCase()}<br/>Status: ${data.status}
+  </div>
+</div>
+
+<div class="pr"><b>Patient:</b> ${data.patientName} &nbsp; <b>UHID:</b> ${data.uhid} &nbsp; <b>Age/Sex:</b> ${data.ageGender} &nbsp; <b>Doctor:</b> ${data.doctorName}</div>
+
+${vitalsHtml}
+
+${data.complaints.length > 0 ? `<div class="st">Chief complaints</div><div style="font-size:11px">${data.complaints.join(', ')}</div>` : ''}
+
+${examHtml ? `<div class="st">Examination findings</div><div style="font-size:10px">${examHtml}</div>` : ''}
+
+${data.diagnoses.length > 0 ? `<div class="st">Diagnosis</div>
+<table><tr><th>ICD Code</th><th>Diagnosis</th><th>Type</th></tr>${dxHtml}</table>` : ''}
+
+${data.investigations.length > 0 ? `<div class="st">Investigations</div>
+<table><tr><th>Test</th><th>Urgency</th><th>Result</th><th>Flag</th></tr>${invHtml}</table>` : ''}
+
+${data.prescriptions.length > 0 ? `<div class="st">Prescription</div>
+<table><tr><th>#</th><th>Medication</th><th>Dose</th><th>Freq</th><th>Duration</th><th>Instructions</th></tr>${rxHtml}</table>` : ''}
+
+${data.advice.length > 0 ? `<div class="st">Advice</div><ul style="padding-left:20px;font-size:10px">${data.advice.map(a => `<li>${a}</li>`).join('')}</ul>` : ''}
+
+${data.followUp ? `<div style="margin-top:6px;font-size:10px"><b>Follow-up:</b> ${data.followUp}</div>` : ''}
+${data.referral ? `<div style="margin-top:4px;font-size:10px"><b>Referral:</b> ${data.referral}</div>` : ''}
+
+<div class="ft"><div class="sig"></div><div style="font-size:9px;color:#666">${data.doctorName}</div></div>
+  `, 'Encounter Summary — ' + data.uhid);
+}
