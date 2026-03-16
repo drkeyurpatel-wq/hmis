@@ -386,5 +386,73 @@ export function useReports(centreId: string | null) {
     };
   }, [centreId]);
 
-  return { loading, getRevenueReport, getOPDReport };
+  const getPharmacyReport = useCallback(async (dateFrom: string, dateTo: string) => {
+    if (!centreId || !sb()) return { orders: [], totalAmount: 0, totalOrders: 0, dispensed: 0, pending: 0 };
+    const { data } = await sb().from('hmis_pharmacy_dispensing')
+      .select('id, status, total_amount, dispensed_at, created_at, patient:hmis_patients!inner(first_name, last_name)')
+      .eq('centre_id', centreId).gte('created_at', dateFrom + 'T00:00:00').lte('created_at', dateTo + 'T23:59:59');
+    const d = data || [];
+    return {
+      orders: d.map((o: any) => ({ name: o.patient.first_name + ' ' + (o.patient.last_name || ''), status: o.status, amount: o.total_amount || 0, date: (o.dispensed_at || o.created_at)?.split('T')[0] })),
+      totalAmount: d.reduce((s: number, o: any) => s + (o.total_amount || 0), 0),
+      totalOrders: d.length,
+      dispensed: d.filter((o: any) => o.status === 'dispensed').length,
+      pending: d.filter((o: any) => o.status === 'pending' || o.status === 'in_progress').length,
+    };
+  }, [centreId]);
+
+  const getLabReport = useCallback(async (dateFrom: string, dateTo: string) => {
+    if (!centreId || !sb()) return { encounters: [], totalTests: 0, completed: 0, pending: 0 };
+    const { data } = await sb().from('hmis_emr_encounters')
+      .select('id, encounter_date, investigations, patient:hmis_patients!inner(first_name, last_name), doctor:hmis_staff!inner(full_name)')
+      .eq('centre_id', centreId).not('investigations', 'eq', '[]')
+      .gte('encounter_date', dateFrom).lte('encounter_date', dateTo);
+    const e = data || [];
+    let totalTests = 0, completed = 0, pending = 0;
+    e.forEach((enc: any) => {
+      const invs = enc.investigations || [];
+      totalTests += invs.length;
+      invs.forEach((i: any) => { if (i.result) completed++; else pending++; });
+    });
+    return {
+      encounters: e.map((enc: any) => ({
+        patient: enc.patient.first_name + ' ' + (enc.patient.last_name || ''),
+        doctor: enc.doctor.full_name, date: enc.encounter_date,
+        tests: (enc.investigations || []).length,
+        done: (enc.investigations || []).filter((i: any) => i.result).length,
+      })),
+      totalTests, completed, pending,
+    };
+  }, [centreId]);
+
+  const getIPDReport = useCallback(async (dateFrom: string, dateTo: string) => {
+    if (!centreId || !sb()) return { admissions: [], total: 0, active: 0, discharged: 0, byDept: [], byPayor: [], avgLOS: 0 };
+    const { data } = await sb().from('hmis_admissions')
+      .select('id, admission_date, actual_discharge, status, admission_type, payor_type, department:hmis_departments!inner(name), patient:hmis_patients!inner(first_name, last_name)')
+      .eq('centre_id', centreId).gte('admission_date', dateFrom + 'T00:00:00').lte('admission_date', dateTo + 'T23:59:59');
+    const a = data || [];
+    // LOS calculation
+    let totalLOS = 0, losCount = 0;
+    a.forEach((adm: any) => {
+      if (adm.actual_discharge) {
+        const days = Math.ceil((new Date(adm.actual_discharge).getTime() - new Date(adm.admission_date).getTime()) / 86400000);
+        totalLOS += days; losCount++;
+      }
+    });
+    const deptMap: Record<string, number> = {};
+    a.forEach((adm: any) => { const d = adm.department?.name || 'Unknown'; deptMap[d] = (deptMap[d] || 0) + 1; });
+    const payorMap: Record<string, number> = {};
+    a.forEach((adm: any) => { payorMap[adm.payor_type] = (payorMap[adm.payor_type] || 0) + 1; });
+    return {
+      admissions: a.map((adm: any) => ({ patient: adm.patient.first_name + ' ' + (adm.patient.last_name || ''), dept: adm.department?.name, type: adm.admission_type, payor: adm.payor_type, status: adm.status, date: adm.admission_date?.split('T')[0] })),
+      total: a.length,
+      active: a.filter((x: any) => x.status === 'active').length,
+      discharged: a.filter((x: any) => x.status === 'discharged').length,
+      byDept: Object.entries(deptMap).map(([dept, count]) => ({ dept, count })).sort((a, b) => b.count - a.count),
+      byPayor: Object.entries(payorMap).map(([payor, count]) => ({ payor, count })).sort((a, b) => b.count - a.count),
+      avgLOS: losCount > 0 ? Math.round(totalLOS / losCount * 10) / 10 : 0,
+    };
+  }, [centreId]);
+
+  return { loading, getRevenueReport, getOPDReport, getPharmacyReport, getLabReport, getIPDReport };
 }

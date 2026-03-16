@@ -113,6 +113,20 @@ export default function DashboardPage() {
         ))}
       </div>
 
+      {/* Quick Actions */}
+      <div className="flex gap-2 mb-6 flex-wrap">
+        <Link href="/opd" className="flex items-center gap-2 px-4 py-2.5 bg-white border rounded-lg text-sm hover:border-blue-400 hover:bg-blue-50 transition-all">
+          <Calendar size={16} className="text-blue-600" /><span>New OPD Visit</span></Link>
+        <Link href="/patients" className="flex items-center gap-2 px-4 py-2.5 bg-white border rounded-lg text-sm hover:border-blue-400 hover:bg-blue-50 transition-all">
+          <Users size={16} className="text-teal-600" /><span>Register Patient</span></Link>
+        <Link href="/emr-v2" className="flex items-center gap-2 px-4 py-2.5 bg-white border rounded-lg text-sm hover:border-blue-400 hover:bg-blue-50 transition-all">
+          <Stethoscope size={16} className="text-purple-600" /><span>New Encounter</span></Link>
+        <Link href="/billing" className="flex items-center gap-2 px-4 py-2.5 bg-white border rounded-lg text-sm hover:border-blue-400 hover:bg-blue-50 transition-all">
+          <CreditCard size={16} className="text-green-600" /><span>Billing</span></Link>
+        <Link href="/reports" className="flex items-center gap-2 px-4 py-2.5 bg-white border rounded-lg text-sm hover:border-blue-400 hover:bg-blue-50 transition-all">
+          <TrendingUp size={16} className="text-orange-600" /><span>Reports</span></Link>
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* OPD Queue */}
         <div className="bg-white rounded-xl border p-5">
