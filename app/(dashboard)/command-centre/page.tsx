@@ -1,6 +1,7 @@
 'use client';
 import React, { useState } from 'react';
 import { useCommandCentre, type CentreData, type Alert } from '@/lib/command-centre/hooks';
+import { VPMSCompactCard } from '@/components/vpms/vpms-dashboard';
 
 // ============================================================
 // FORMATTERS — Indian number system, zero-safe
@@ -257,6 +258,10 @@ export default function CommandCentrePage() {
 
       {/* Detail panel */}
       {selectedCentre && <CentreDetailPanel centre={selectedCentre} />}
+
+      {/* Comparison table */}
+      {/* VPMS Integration */}
+      <VPMSCompactCard />
 
       {/* Comparison table */}
       {centres.length > 1 && <div className="bg-white rounded-xl border overflow-hidden">

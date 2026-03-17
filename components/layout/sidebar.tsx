@@ -8,7 +8,7 @@ import { useAuthStore } from '@/lib/store/auth';
 import {
   LayoutDashboard, Users, Calendar, BedDouble, Stethoscope,
   FileText, CreditCard, Shield, Pill, FlaskConical, ScanLine,
-  Scissors, BarChart3, Settings, LogOut, Building2, ChevronDown, Droplets, Home, Activity,
+  Scissors, BarChart3, Settings, LogOut, Building2, ChevronDown, Droplets, Home, Activity, Truck,
 } from 'lucide-react';
 
 const navItems = [
@@ -26,7 +26,8 @@ const navItems = [
   { href: '/blood-bank', label: 'Blood Bank', icon: Droplets, module: 'lab' },
   { href: '/homecare', label: 'Homecare', icon: Home, module: 'homecare' },
   { href: '/radiology', label: 'Radiology', icon: ScanLine, module: 'radiology' },
-  { href: '/ot', label: 'OT Scheduling', icon: Scissors, module: 'ot' },
+  { href: '/ot', label: 'OT Management', icon: Scissors, module: 'ot' },
+  { href: '/vpms', label: 'Vendor & Purchase', icon: Truck, module: null },
   { href: '/reports', label: 'MIS & Reports', icon: BarChart3, module: 'mis' },
   { href: '/settings', label: 'Settings', icon: Settings, module: null },
 ];
