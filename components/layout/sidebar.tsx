@@ -8,11 +8,12 @@ import { useAuthStore } from '@/lib/store/auth';
 import {
   LayoutDashboard, Users, Calendar, BedDouble, Stethoscope,
   FileText, CreditCard, Shield, Pill, FlaskConical, ScanLine,
-  Scissors, BarChart3, Settings, LogOut, Building2, ChevronDown, Droplets, Home,
+  Scissors, BarChart3, Settings, LogOut, Building2, ChevronDown, Droplets, Home, Activity,
 } from 'lucide-react';
 
 const navItems = [
   { href: '/', label: 'Dashboard', icon: LayoutDashboard, module: null },
+  { href: '/command-centre', label: 'Command Centre', icon: Activity, module: null },
   { href: '/patients', label: 'Patients', icon: Users, module: 'patients' },
   { href: '/opd', label: 'OPD', icon: Calendar, module: 'opd' },
   { href: '/ipd', label: 'IPD', icon: BedDouble, module: 'ipd' },
