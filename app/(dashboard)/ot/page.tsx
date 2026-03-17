@@ -1,147 +1,324 @@
 'use client';
-import React, { useState, useEffect } from 'react';
-import { useOT, type OTBooking } from '@/lib/revenue/phase2-hooks';
-import { useDoctors } from '@/lib/revenue/hooks';
-import { RoleGuard, TableSkeleton } from '@/components/ui/shared';
+import React, { useState, useEffect, useMemo } from 'react';
+import { RoleGuard } from '@/components/ui/shared';
 import { useAuthStore } from '@/lib/store/auth';
+import { useOTSchedule, useOTNotes, useOTUtilization } from '@/lib/ot/ot-hooks';
 import { createClient } from '@/lib/supabase/client';
+import Link from 'next/link';
 
 let _sb: any = null;
 function sb() { if (typeof window === 'undefined') return null as any; if (!_sb) { try { _sb = createClient(); } catch { return null; } } return _sb; }
 
-function OTPageInner() {
-  const { activeCentreId } = useAuthStore();
-  const centreId = activeCentreId || '';
-  const { bookings, rooms, loading, loadBookings, createBooking, updateBookingStatus } = useOT(centreId);
-  const doctors = useDoctors(centreId);
-  const [dateFilter, setDateFilter] = useState(new Date().toISOString().split('T')[0]);
-  const [selectedBooking, setSelectedBooking] = useState<OTBooking | null>(null);
-  const [showNew, setShowNew] = useState(false);
-  const [admissions, setAdmissions] = useState<any[]>([]);
-  const [bkForm, setBkForm] = useState({ admissionId: '', otRoomId: '', surgeonId: '', anaesthetistId: '', procedureName: '', scheduledDate: new Date().toISOString().split('T')[0], scheduledStart: '09:00', estimatedDuration: 60 });
+const fmt = (n: number) => n.toLocaleString('en-IN', { maximumFractionDigits: 0 });
+type Tab = 'board'|'list'|'new_booking'|'utilization'|'rooms'|'implants'|'safety';
 
-  // Load active admissions for booking
+const PROCEDURES = [
+  'Appendectomy','Cholecystectomy (Lap)','Cholecystectomy (Robotic SSI Mantra)','Hernia Repair',
+  'PTCA + Stenting','Coronary Angiography','CABG','Valve Replacement',
+  'Total Knee Replacement (Cuvis Robot)','Total Hip Replacement','Spine Fusion','Arthroscopy',
+  'Craniotomy','VP Shunt','Laminectomy','Discectomy',
+  'Hysterectomy','LSCS','Normal Delivery','D&C',
+  'Cataract (Phaco)','Tonsillectomy','FESS','Mastoidectomy',
+  'Nephrectomy','TURP','PCNL','DJ Stent',
+  'Emergency Laparotomy','Trauma Surgery','Debridement','Skin Grafting',
+];
+
+const ANAESTHESIA_TYPES = ['general','spinal','epidural','regional','local','sedation','combined'];
+
+function OTInner() {
+  const { staff, activeCentreId } = useAuthStore();
+  const centreId = activeCentreId || '';
+  const staffId = staff?.id || '';
+  const schedule = useOTSchedule(centreId);
+  const utilization = useOTUtilization(centreId);
+
+  const [tab, setTab] = useState<Tab>('board');
+  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const [toast, setToast] = useState('');
+  const [selectedBooking, setSelectedBooking] = useState<any>(null);
+  const flash = (m: string) => { setToast(m); setTimeout(() => setToast(''), 2500); };
+
+  // New booking form
+  const [admissions, setAdmissions] = useState<any[]>([]);
+  const [doctors, setDoctors] = useState<any[]>([]);
+  const [bkForm, setBkForm] = useState({
+    admission_id:'', ot_room_id:'', surgeon_id:'', anaesthetist_id:'', assistant_surgeon_id:'',
+    procedure_name:'', scheduled_date:new Date().toISOString().split('T')[0], scheduled_start:'09:00',
+    estimated_duration_min:60, is_emergency:false, is_robotic:false, robot_type:'none' as string,
+    anaesthesia_type:'general', priority:'elective', laterality:'na', patient_category:'adult',
+  });
+  const [procSearch, setProcSearch] = useState('');
+  const procResults = procSearch.length >= 2 ? PROCEDURES.filter(p => p.toLowerCase().includes(procSearch.toLowerCase())) : [];
+
+  // WHO Safety checklist for selected booking
+  const [checklist, setChecklist] = useState<any>({});
+  const [showChecklist, setShowChecklist] = useState(false);
+
   useEffect(() => {
     if (!centreId || !sb()) return;
-    sb().from('hmis_admissions')
-      .select('id, ipd_number, patient:hmis_patients!inner(first_name, last_name)')
+    sb().from('hmis_admissions').select('id, ipd_number, patient:hmis_patients!inner(first_name, last_name, uhid, age_years, gender)')
       .eq('centre_id', centreId).eq('status', 'active').order('admission_date', { ascending: false })
       .then(({ data }: any) => setAdmissions(data || []));
+    sb().from('hmis_staff').select('id, full_name, department_name').eq('centre_id', centreId).eq('is_active', true).in('role', ['doctor','surgeon','anaesthetist'])
+      .then(({ data }: any) => setDoctors(data || []));
   }, [centreId]);
 
-  const handleCreateBooking = async () => {
-    if (!bkForm.admissionId || !bkForm.otRoomId || !bkForm.surgeonId || !bkForm.procedureName) return;
-    await createBooking({ ...bkForm, estimatedDuration: bkForm.estimatedDuration || undefined });
-    setShowNew(false); setBkForm({ admissionId: '', otRoomId: '', surgeonId: '', anaesthetistId: '', procedureName: '', scheduledDate: dateFilter, scheduledStart: '09:00', estimatedDuration: 60 });
-  };
+  // Load utilization for past 30 days
+  useEffect(() => {
+    const from = new Date(Date.now() - 30 * 86400000).toISOString().split('T')[0];
+    const to = new Date().toISOString().split('T')[0];
+    utilization.loadRange(from, to);
+  }, [utilization.loadRange]);
 
-  const stColor = (s: string) => s === 'scheduled' ? 'bg-yellow-100 text-yellow-800' : s === 'in_progress' ? 'bg-blue-100 text-blue-800 animate-pulse' : s === 'completed' ? 'bg-green-100 text-green-800' : s === 'cancelled' ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-700';
-  const scheduled = bookings.filter(b => b.status === 'scheduled').length;
-  const inProgress = bookings.filter(b => b.status === 'in_progress').length;
-  const completed = bookings.filter(b => b.status === 'completed').length;
+  const stColor = (s: string) => s === 'completed' ? 'bg-green-100 text-green-700' : s === 'in_progress' ? 'bg-red-100 text-red-700' : s === 'scheduled' ? 'bg-blue-100 text-blue-700' : s === 'cancelled' ? 'bg-gray-100 text-gray-500' : 'bg-yellow-100 text-yellow-700';
+  const timeSlots = ['07:00','08:00','09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00','18:00','19:00','20:00'];
+
+  const tabs: [Tab,string,string][] = [
+    ['board','Schedule Board','📅'],['list','Case List','📋'],['new_booking','Book Surgery','➕'],
+    ['utilization','Utilization','📊'],['rooms','OT Rooms','🏥'],['implants','Implants','🔩'],['safety','Safety Checklists','✅'],
+  ];
 
   return (
-    <div className="max-w-6xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
-        <div><h1 className="text-2xl font-bold text-gray-900">OT Scheduling</h1><p className="text-sm text-gray-500">Operation Theatre bookings and tracking</p></div>
-        <div className="flex gap-2">
-          <input type="date" value={dateFilter} onChange={e => { setDateFilter(e.target.value); loadBookings(e.target.value); }} className="text-sm border rounded-lg px-3 py-2" />
-          <button onClick={() => setShowNew(true)} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700">+ New Booking</button>
+    <div className="max-w-7xl mx-auto">
+      {toast && <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-green-600 text-white px-4 py-2 rounded-lg shadow-lg text-sm">{toast}</div>}
+      <div className="flex items-center justify-between mb-3">
+        <div><h1 className="text-xl font-bold text-gray-900">Operation Theatre Management</h1>
+          <p className="text-xs text-gray-500">Health1 — {schedule.rooms.length} OT rooms | SSI Mantra 3.0 + Cuvis Robotic</p></div>
+        <div className="flex items-center gap-2">
+          <input type="date" value={date} onChange={e => { setDate(e.target.value); schedule.loadBookings(e.target.value); }} className="px-2 py-1.5 border rounded-lg text-xs" />
+          <button onClick={() => setTab('new_booking')} className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg">+ Book Surgery</button>
         </div>
       </div>
 
-      <div className="grid grid-cols-4 gap-4 mb-6">
-        <div className="bg-gray-50 rounded-xl p-4"><div className="text-xs text-gray-500">Total today</div><div className="text-2xl font-bold">{bookings.length}</div></div>
-        <div className="bg-yellow-50 rounded-xl p-4"><div className="text-xs text-gray-500">Scheduled</div><div className="text-2xl font-bold text-yellow-700">{scheduled}</div></div>
-        <div className="bg-blue-50 rounded-xl p-4"><div className="text-xs text-gray-500">In progress</div><div className="text-2xl font-bold text-blue-700">{inProgress}</div></div>
-        <div className="bg-green-50 rounded-xl p-4"><div className="text-xs text-gray-500">Completed</div><div className="text-2xl font-bold text-green-700">{completed}</div></div>
+      {/* Stats strip */}
+      <div className="grid grid-cols-8 gap-2 mb-3">
+        {[['Scheduled',schedule.stats.scheduled,'text-blue-700','bg-blue-50'],['In Progress',schedule.stats.inProgress,'text-red-700','bg-red-50'],
+          ['Completed',schedule.stats.completed,'text-green-700','bg-green-50'],['Cancelled',schedule.stats.cancelled,'text-gray-500','bg-gray-50'],
+          ['Emergency',schedule.stats.emergency,'text-orange-700','bg-orange-50'],['Robotic',schedule.stats.robotic,'text-purple-700','bg-purple-50'],
+          ['Total',schedule.stats.total,'text-gray-700','bg-white'],['Avg Duration',`${Math.round(schedule.stats.avgDuration)}m`,'text-gray-700','bg-white'],
+        ].map(([l,v,tc,bg],i) => (
+          <div key={i} className={`rounded-xl border p-2 text-center ${bg}`}><div className="text-[9px] text-gray-500 uppercase">{l as string}</div><div className={`text-lg font-bold ${tc}`}>{v}</div></div>
+        ))}
       </div>
 
-      {/* OT Room timeline */}
-      {rooms.length > 0 && <div className="bg-white rounded-xl border p-5 mb-6">
-        <h2 className="font-semibold text-sm mb-3">OT Rooms</h2>
-        <div className="grid grid-cols-3 md:grid-cols-6 gap-3">{rooms.map((r: any) => {
-          const inUse = bookings.some(b => b.otRoom === r.name && b.status === 'in_progress');
-          return <div key={r.id} className={`rounded-lg p-3 text-center border ${inUse ? 'bg-red-50 border-red-300' : 'bg-green-50 border-green-300'}`}>
-            <div className="font-medium text-sm">{r.name}</div>
-            <div className={`text-xs mt-1 ${inUse ? 'text-red-600' : 'text-green-600'}`}>{inUse ? 'IN USE' : 'Available'}</div>
-          </div>;
+      <div className="flex gap-0.5 mb-4 border-b pb-px overflow-x-auto">
+        {tabs.map(([k,l,icon]) => <button key={k} onClick={() => setTab(k)}
+          className={`px-2 py-2 text-[11px] font-medium whitespace-nowrap border-b-2 -mb-px ${tab===k?'border-blue-600 text-blue-700':'border-transparent text-gray-500 hover:text-gray-700'}`}>{icon} {l}</button>)}
+      </div>
+
+      {/* ===== SCHEDULE BOARD — Visual timeline per OT room ===== */}
+      {tab === 'board' && <div className="space-y-2">
+        {schedule.rooms.map(room => {
+          const roomBookings = schedule.byRoom.get(room.id) || [];
+          return (
+            <div key={room.id} className="bg-white rounded-xl border p-3">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="font-bold text-sm">{room.name}</span>
+                <span className="text-[10px] text-gray-400">{room.type}</span>
+                {room.has_robotic && <span className="text-[9px] bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded">Robotic</span>}
+                {room.has_laminar_flow && <span className="text-[9px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded">Laminar</span>}
+                <span className="ml-auto text-xs text-gray-400">{roomBookings.length} case{roomBookings.length !== 1 ? 's' : ''}</span>
+              </div>
+              {/* Timeline */}
+              <div className="relative h-12 bg-gray-50 rounded-lg overflow-hidden">
+                {/* Hour markers */}
+                <div className="absolute inset-0 flex">{timeSlots.map((t, i) => (
+                  <div key={t} className="flex-1 border-l border-gray-200 relative"><span className="absolute top-0 left-0.5 text-[8px] text-gray-300">{t}</span></div>
+                ))}</div>
+                {/* Surgery blocks */}
+                {roomBookings.map(b => {
+                  const [h, m] = (b.scheduled_start || '09:00').split(':').map(Number);
+                  const startMin = (h - 7) * 60 + m;
+                  const totalMin = 14 * 60; // 7:00 to 21:00
+                  const dur = b.estimated_duration_min || 60;
+                  const left = Math.max(0, (startMin / totalMin) * 100);
+                  const width = Math.min(100 - left, (dur / totalMin) * 100);
+                  const bgColor = b.status === 'in_progress' ? 'bg-red-400' : b.status === 'completed' ? 'bg-green-400' : b.status === 'cancelled' ? 'bg-gray-300' : 'bg-blue-400';
+                  return (
+                    <div key={b.id} onClick={() => setSelectedBooking(b)}
+                      className={`absolute top-2 h-8 ${bgColor} rounded cursor-pointer flex items-center px-1 text-white text-[9px] font-medium overflow-hidden shadow-sm hover:opacity-90`}
+                      style={{ left: `${left}%`, width: `${Math.max(3, width)}%` }}
+                      title={`${b.procedure_name} — ${b.patient?.patient?.first_name} ${b.patient?.patient?.last_name} (${b.scheduled_start})`}>
+                      {b.is_robotic && '🤖'}{b.is_emergency && '🚨'}{b.procedure_name?.substring(0, 20)}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
+        {schedule.rooms.length === 0 && <div className="text-center py-8 bg-white rounded-xl border text-gray-400 text-sm">No OT rooms configured</div>}
+      </div>}
+
+      {/* Selected booking detail panel */}
+      {selectedBooking && <div className="bg-white rounded-xl border p-5 mt-3 space-y-3">
+        <div className="flex justify-between">
+          <div>
+            <div className="font-bold">{selectedBooking.procedure_name}</div>
+            <div className="text-xs text-gray-500">{selectedBooking.patient?.patient?.first_name} {selectedBooking.patient?.patient?.last_name} ({selectedBooking.patient?.patient?.uhid}) — {selectedBooking.patient?.patient?.age_years}y {selectedBooking.patient?.patient?.gender}</div>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className={`px-2 py-0.5 rounded text-xs ${stColor(selectedBooking.status)}`}>{selectedBooking.status}</span>
+            <button onClick={() => setSelectedBooking(null)} className="text-xs text-gray-500">Close</button>
+          </div>
+        </div>
+        <div className="grid grid-cols-5 gap-3 text-xs">
+          <div><span className="text-gray-500">OT Room:</span> <span className="font-bold">{selectedBooking.ot_room?.name}</span></div>
+          <div><span className="text-gray-500">Surgeon:</span> <span className="font-bold">{selectedBooking.surgeon?.full_name}</span></div>
+          <div><span className="text-gray-500">Anaesthetist:</span> <span className="font-bold">{selectedBooking.anaesthetist?.full_name || '—'}</span></div>
+          <div><span className="text-gray-500">Time:</span> <span className="font-bold">{selectedBooking.scheduled_start} ({selectedBooking.estimated_duration_min}min)</span></div>
+          <div><span className="text-gray-500">Type:</span> {selectedBooking.is_emergency && <span className="bg-red-100 text-red-700 px-1 rounded text-[10px] mr-1">EMERGENCY</span>}{selectedBooking.is_robotic && <span className="bg-purple-100 text-purple-700 px-1 rounded text-[10px]">ROBOTIC</span>}{!selectedBooking.is_emergency && !selectedBooking.is_robotic && <span>Elective</span>}</div>
+        </div>
+        {/* Status actions */}
+        <div className="flex gap-2">{
+          selectedBooking.status === 'scheduled' && <>
+            <button onClick={async () => { await schedule.updateStatus(selectedBooking.id, 'in_progress'); setSelectedBooking(null); flash('Surgery started'); }} className="px-4 py-2 bg-red-600 text-white text-sm rounded-lg">Start Surgery</button>
+            <button onClick={async () => { await schedule.cancel(selectedBooking.id, 'Postponed'); setSelectedBooking(null); flash('Cancelled'); }} className="px-3 py-2 bg-gray-200 text-sm rounded-lg">Cancel</button>
+          </>}{
+          selectedBooking.status === 'in_progress' && <>
+            <button onClick={async () => { await schedule.updateStatus(selectedBooking.id, 'completed'); setSelectedBooking(null); flash('Surgery completed'); }} className="px-4 py-2 bg-green-600 text-white text-sm rounded-lg">Complete Surgery</button>
+          </>}
+          <Link href={`/ot/${selectedBooking.id}`} className="px-3 py-2 bg-blue-100 text-blue-700 text-sm rounded-lg">Open Detail →</Link>
+        </div>
+      </div>}
+
+      {/* ===== CASE LIST ===== */}
+      {tab === 'list' && <div className="bg-white rounded-xl border overflow-hidden">
+        <table className="w-full text-xs"><thead><tr className="bg-gray-50 border-b">
+          <th className="p-2 text-left">Time</th><th className="p-2 text-left">Patient</th><th className="p-2 text-left">Procedure</th>
+          <th className="p-2">OT</th><th className="p-2">Surgeon</th><th className="p-2">Anaes</th><th className="p-2">Type</th><th className="p-2">Status</th><th className="p-2">Duration</th>
+        </tr></thead><tbody>{schedule.bookings.map(b => (
+          <tr key={b.id} className="border-b hover:bg-blue-50 cursor-pointer" onClick={() => setSelectedBooking(b)}>
+            <td className="p-2 font-mono font-bold">{b.scheduled_start}</td>
+            <td className="p-2"><span className="font-medium">{b.patient?.patient?.first_name} {b.patient?.patient?.last_name}</span><span className="text-[10px] text-gray-400 ml-1">{b.patient?.patient?.uhid}</span></td>
+            <td className="p-2 font-medium">{b.procedure_name}</td>
+            <td className="p-2 text-center">{b.ot_room?.name}</td>
+            <td className="p-2 text-center text-[10px]">{b.surgeon?.full_name}</td>
+            <td className="p-2 text-center text-[10px]">{b.anaesthetist?.full_name || '—'}</td>
+            <td className="p-2 text-center">{b.is_emergency && <span className="bg-red-100 text-red-700 px-1 rounded text-[9px]">EMR</span>}{b.is_robotic && <span className="bg-purple-100 text-purple-700 px-1 rounded text-[9px]">ROB</span>}{!b.is_emergency && !b.is_robotic && <span className="text-gray-400">—</span>}</td>
+            <td className="p-2 text-center"><span className={`px-1.5 py-0.5 rounded text-[9px] ${stColor(b.status)}`}>{b.status?.replace('_',' ')}</span></td>
+            <td className="p-2 text-center">{b.actual_start && b.actual_end ? `${Math.round((new Date(b.actual_end).getTime() - new Date(b.actual_start).getTime()) / 60000)}m` : `~${b.estimated_duration_min}m`}</td>
+          </tr>))}</tbody></table>
+      </div>}
+
+      {/* ===== NEW BOOKING ===== */}
+      {tab === 'new_booking' && <div className="bg-white rounded-xl border p-5 space-y-4">
+        <h2 className="font-semibold text-sm">Book New Surgery</h2>
+        <div className="grid grid-cols-3 gap-3">
+          <div><label className="text-xs text-gray-500">Patient (IPD) *</label>
+            <select value={bkForm.admission_id} onChange={e => setBkForm(f => ({...f, admission_id:e.target.value}))} className="w-full px-3 py-2 border rounded-lg text-sm">
+              <option value="">Select admitted patient</option>
+              {admissions.map(a => <option key={a.id} value={a.id}>{a.patient?.first_name} {a.patient?.last_name} ({a.ipd_number})</option>)}
+            </select></div>
+          <div><label className="text-xs text-gray-500">OT Room *</label>
+            <select value={bkForm.ot_room_id} onChange={e => setBkForm(f => ({...f, ot_room_id:e.target.value}))} className="w-full px-3 py-2 border rounded-lg text-sm">
+              <option value="">Select OT</option>
+              {schedule.rooms.map(r => <option key={r.id} value={r.id}>{r.name} ({r.type}){r.has_robotic ? ' 🤖' : ''}</option>)}
+            </select></div>
+          <div className="relative"><label className="text-xs text-gray-500">Procedure *</label>
+            <input type="text" value={procSearch || bkForm.procedure_name} onChange={e => { setProcSearch(e.target.value); setBkForm(f => ({...f, procedure_name:e.target.value})); }} className="w-full px-3 py-2 border rounded-lg text-sm" placeholder="Search or type..." />
+            {procResults.length > 0 && <div className="absolute top-full left-0 right-0 bg-white border rounded-lg shadow z-10 mt-1 max-h-40 overflow-y-auto">{procResults.map(p => (
+              <button key={p} onClick={() => { setBkForm(f => ({...f, procedure_name:p, is_robotic:p.includes('Robot')||p.includes('Cuvis')||p.includes('SSI'), robot_type:p.includes('Cuvis')?'cuvis':p.includes('SSI')?'ssi_mantra':'none'})); setProcSearch(''); }} className="w-full text-left px-3 py-1.5 text-xs hover:bg-blue-50 border-b">{p}</button>
+            ))}</div>}</div>
+        </div>
+        <div className="grid grid-cols-4 gap-3">
+          <div><label className="text-xs text-gray-500">Surgeon *</label>
+            <select value={bkForm.surgeon_id} onChange={e => setBkForm(f => ({...f, surgeon_id:e.target.value}))} className="w-full px-3 py-2 border rounded-lg text-sm">
+              <option value="">Select</option>
+              {doctors.map(d => <option key={d.id} value={d.id}>{d.full_name}</option>)}
+            </select></div>
+          <div><label className="text-xs text-gray-500">Anaesthetist</label>
+            <select value={bkForm.anaesthetist_id} onChange={e => setBkForm(f => ({...f, anaesthetist_id:e.target.value}))} className="w-full px-3 py-2 border rounded-lg text-sm">
+              <option value="">Select</option>
+              {doctors.map(d => <option key={d.id} value={d.id}>{d.full_name}</option>)}
+            </select></div>
+          <div><label className="text-xs text-gray-500">Date *</label>
+            <input type="date" value={bkForm.scheduled_date} onChange={e => setBkForm(f => ({...f, scheduled_date:e.target.value}))} className="w-full px-3 py-2 border rounded-lg text-sm" /></div>
+          <div><label className="text-xs text-gray-500">Start time *</label>
+            <input type="time" value={bkForm.scheduled_start} onChange={e => setBkForm(f => ({...f, scheduled_start:e.target.value}))} className="w-full px-3 py-2 border rounded-lg text-sm" /></div>
+        </div>
+        <div className="grid grid-cols-5 gap-3">
+          <div><label className="text-xs text-gray-500">Duration (min)</label>
+            <div className="flex gap-1 mt-1">{[30,60,90,120,180,240].map(d => (
+              <button key={d} onClick={() => setBkForm(f => ({...f, estimated_duration_min:d}))} className={`flex-1 py-1.5 rounded text-[10px] border ${bkForm.estimated_duration_min===d?'bg-blue-600 text-white':'bg-white'}`}>{d}m</button>
+            ))}</div></div>
+          <div><label className="text-xs text-gray-500">Anaesthesia</label>
+            <div className="flex flex-wrap gap-0.5 mt-1">{ANAESTHESIA_TYPES.map(a => (
+              <button key={a} onClick={() => setBkForm(f => ({...f, anaesthesia_type:a}))} className={`px-1.5 py-0.5 rounded text-[9px] border ${bkForm.anaesthesia_type===a?'bg-blue-600 text-white':'bg-white'}`}>{a}</button>
+            ))}</div></div>
+          <div><label className="text-xs text-gray-500">Priority</label>
+            <div className="flex gap-1 mt-1">{['elective','urgent','emergency'].map(p => (
+              <button key={p} onClick={() => setBkForm(f => ({...f, priority:p, is_emergency:p==='emergency'}))} className={`flex-1 py-1.5 rounded text-[10px] border ${bkForm.priority===p?p==='emergency'?'bg-red-600 text-white':p==='urgent'?'bg-yellow-500 text-white':'bg-blue-600 text-white':'bg-white'}`}>{p}</button>
+            ))}</div></div>
+          <div><label className="text-xs text-gray-500">Laterality</label>
+            <div className="flex gap-1 mt-1">{['left','right','bilateral','na'].map(l => (
+              <button key={l} onClick={() => setBkForm(f => ({...f, laterality:l}))} className={`flex-1 py-1.5 rounded text-[10px] border ${bkForm.laterality===l?'bg-blue-600 text-white':'bg-white'}`}>{l === 'na' ? 'N/A' : l}</button>
+            ))}</div></div>
+          <div><label className="text-xs text-gray-500">Robot</label>
+            <div className="flex gap-1 mt-1">{[['none','None'],['ssi_mantra','SSI Mantra'],['cuvis','Cuvis']].map(([v,l]) => (
+              <button key={v} onClick={() => setBkForm(f => ({...f, robot_type:v, is_robotic:v!=='none'}))} className={`flex-1 py-1.5 rounded text-[10px] border ${bkForm.robot_type===v?'bg-purple-600 text-white':'bg-white'}`}>{l}</button>
+            ))}</div></div>
+        </div>
+        <button onClick={async () => {
+          if (!bkForm.admission_id || !bkForm.ot_room_id || !bkForm.surgeon_id || !bkForm.procedure_name) return;
+          await schedule.create(bkForm);
+          flash('Surgery booked'); setTab('board');
+          setBkForm({admission_id:'',ot_room_id:'',surgeon_id:'',anaesthetist_id:'',assistant_surgeon_id:'',procedure_name:'',scheduled_date:new Date().toISOString().split('T')[0],scheduled_start:'09:00',estimated_duration_min:60,is_emergency:false,is_robotic:false,robot_type:'none',anaesthesia_type:'general',priority:'elective',laterality:'na',patient_category:'adult'});
+        }} disabled={!bkForm.admission_id||!bkForm.ot_room_id||!bkForm.surgeon_id||!bkForm.procedure_name}
+          className="px-6 py-2.5 bg-green-600 text-white text-sm rounded-lg font-medium disabled:opacity-40">Book Surgery</button>
+      </div>}
+
+      {/* ===== UTILIZATION ===== */}
+      {tab === 'utilization' && <div className="space-y-4">
+        <h2 className="font-semibold text-sm">OT Utilization — Last 30 Days</h2>
+        {utilization.roomUtilization.length === 0 ? <div className="text-center py-8 bg-white rounded-xl border text-gray-400 text-sm">No data</div> :
+        <div className="grid grid-cols-2 gap-3">{utilization.roomUtilization.map((r, i) => {
+          const pct = r.totalMin > 0 ? Math.round((r.usedMin / r.totalMin) * 100) : 0;
+          return (
+            <div key={i} className="bg-white rounded-xl border p-4">
+              <div className="flex justify-between mb-2"><span className="font-bold text-sm">{r.name}</span><span className={`text-lg font-bold ${pct > 70 ? 'text-green-700' : pct > 40 ? 'text-yellow-700' : 'text-red-700'}`}>{pct}%</span></div>
+              <div className="w-full bg-gray-200 rounded-full h-3 mb-2"><div className={`h-full rounded-full ${pct > 70 ? 'bg-green-500' : pct > 40 ? 'bg-yellow-500' : 'bg-red-500'}`} style={{ width: `${pct}%` }} /></div>
+              <div className="grid grid-cols-3 gap-2 text-xs text-center">
+                <div><span className="text-gray-500">Cases:</span> <span className="font-bold">{r.count}</span></div>
+                <div><span className="text-gray-500">Hours used:</span> <span className="font-bold">{Math.round(r.usedMin / 60)}h</span></div>
+                <div><span className="text-gray-500">Cancelled:</span> <span className="font-bold text-red-600">{r.cancelled}</span></div>
+              </div>
+            </div>
+          );
+        })}</div>}
+      </div>}
+
+      {/* ===== OT ROOMS ===== */}
+      {tab === 'rooms' && <div className="space-y-3">
+        <h2 className="font-semibold text-sm">OT Rooms — {schedule.rooms.length} rooms</h2>
+        <div className="grid grid-cols-3 gap-3">{schedule.rooms.map(r => {
+          const roomCases = schedule.byRoom.get(r.id) || [];
+          const live = roomCases.find((b: any) => b.status === 'in_progress');
+          return (
+            <div key={r.id} className={`rounded-xl border p-4 ${live ? 'bg-red-50 border-red-300' : 'bg-white'}`}>
+              <div className="flex justify-between items-start mb-2">
+                <div><div className="font-bold text-lg">{r.name}</div><div className="text-xs text-gray-400">{r.type}</div></div>
+                {live ? <span className="bg-red-600 text-white px-2 py-0.5 rounded text-xs animate-pulse">SURGERY IN PROGRESS</span> : <span className="bg-green-100 text-green-700 px-2 py-0.5 rounded text-xs">Available</span>}
+              </div>
+              <div className="flex gap-1 flex-wrap mb-2">
+                {r.has_robotic && <span className="text-[9px] bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded">Robotic</span>}
+                {r.has_laminar_flow && <span className="text-[9px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded">Laminar Flow</span>}
+              </div>
+              {live && <div className="text-xs bg-red-100 rounded-lg p-2">
+                <div className="font-bold text-red-700">{live.procedure_name}</div>
+                <div className="text-red-600">{live.surgeon?.full_name} | Started {new Date(live.actual_start).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})}</div>
+              </div>}
+              <div className="text-xs text-gray-400 mt-1">{roomCases.length} cases today | {roomCases.filter((b: any) => b.status === 'completed').length} completed</div>
+            </div>
+          );
         })}</div>
       </div>}
 
-      {loading ? <TableSkeleton rows={6} cols={5} /> :
-      bookings.length === 0 ? <div className="text-center py-12 bg-white rounded-xl border text-gray-400">No OT bookings for {dateFilter}</div> :
-      <div className="bg-white rounded-xl border overflow-hidden"><table className="w-full text-sm"><thead><tr className="bg-gray-50 border-b">
-        <th className="text-left p-3 font-medium text-gray-500">Time</th><th className="text-left p-3 font-medium text-gray-500">OT</th>
-        <th className="text-left p-3 font-medium text-gray-500">Patient</th><th className="text-left p-3 font-medium text-gray-500">Procedure</th>
-        <th className="text-left p-3 font-medium text-gray-500">Surgeon</th><th className="text-left p-3 font-medium text-gray-500">Duration</th>
-        <th className="text-left p-3 font-medium text-gray-500">Status</th><th className="p-3">Actions</th>
-      </tr></thead><tbody>{bookings.map(b => (
-        <tr key={b.id} className="border-b hover:bg-gray-50">
-          <td className="p-3 font-mono text-xs">{b.scheduledStart?.slice(0,5)}</td>
-          <td className="p-3 text-xs font-medium">{b.otRoom}</td>
-          <td className="p-3"><div className="text-sm">{b.patientName}</div><div className="text-xs text-gray-400">{b.ipdNumber}</div></td>
-          <td className="p-3 text-sm">{b.procedureName}</td>
-          <td className="p-3 text-xs">{b.surgeonName}</td>
-          <td className="p-3 text-xs">{b.estimatedDuration ? b.estimatedDuration + ' min' : '--'}</td>
-          <td className="p-3"><span className={`px-2 py-0.5 rounded-full text-xs ${stColor(b.status)}`}>{b.status.replace('_',' ')}</span></td>
-          <td className="p-3"><div className="flex gap-1">
-            {b.status === 'scheduled' && <button onClick={() => updateBookingStatus(b.id, 'in_progress')} className="px-2 py-1 bg-blue-50 text-blue-700 text-xs rounded">Start</button>}
-            {b.status === 'in_progress' && <button onClick={() => updateBookingStatus(b.id, 'completed')} className="px-2 py-1 bg-green-50 text-green-700 text-xs rounded">Complete</button>}
-            <a href={`/ot/${b.id}`} className="px-2 py-1 bg-purple-50 text-purple-700 text-xs rounded hover:bg-purple-100 font-medium">Clinical</a>
-          </div></td>
-        </tr>
-      ))}</tbody></table></div>}
-
-      {/* New Booking Modal */}
-      {showNew && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center" onClick={() => setShowNew(false)}>
-          <div className="bg-white rounded-xl p-6 w-full max-w-lg shadow-xl" onClick={e => e.stopPropagation()}>
-            <h2 className="text-lg font-semibold mb-4">New OT Booking</h2>
-            <div className="space-y-3">
-              <div><label className="text-xs text-gray-500">Patient (from active admissions) *</label>
-                <select value={bkForm.admissionId} onChange={e => setBkForm(f => ({...f, admissionId: e.target.value}))} className="w-full px-3 py-2 border rounded-lg text-sm">
-                  <option value="">Select admission...</option>
-                  {admissions.map((a: any) => <option key={a.id} value={a.id}>{a.ipd_number} — {a.patient?.first_name} {a.patient?.last_name}</option>)}
-                </select></div>
-              <div className="grid grid-cols-2 gap-3">
-                <div><label className="text-xs text-gray-500">OT Room *</label>
-                  <select value={bkForm.otRoomId} onChange={e => setBkForm(f => ({...f, otRoomId: e.target.value}))} className="w-full px-3 py-2 border rounded-lg text-sm">
-                    <option value="">Select room...</option>
-                    {rooms.map((r: any) => <option key={r.id} value={r.id}>{r.name} ({r.type || 'General'})</option>)}
-                  </select></div>
-                <div><label className="text-xs text-gray-500">Surgeon *</label>
-                  <select value={bkForm.surgeonId} onChange={e => setBkForm(f => ({...f, surgeonId: e.target.value}))} className="w-full px-3 py-2 border rounded-lg text-sm">
-                    <option value="">Select surgeon...</option>
-                    {doctors.map(d => <option key={d.id} value={d.id}>{d.full_name}</option>)}
-                  </select></div>
-              </div>
-              <div><label className="text-xs text-gray-500">Anaesthetist</label>
-                <select value={bkForm.anaesthetistId} onChange={e => setBkForm(f => ({...f, anaesthetistId: e.target.value}))} className="w-full px-3 py-2 border rounded-lg text-sm">
-                  <option value="">Select (optional)...</option>
-                  {doctors.map(d => <option key={d.id} value={d.id}>{d.full_name}</option>)}
-                </select></div>
-              <div><label className="text-xs text-gray-500">Procedure name *</label>
-                <input type="text" value={bkForm.procedureName} onChange={e => setBkForm(f => ({...f, procedureName: e.target.value}))} placeholder="e.g., Laparoscopic Cholecystectomy" className="w-full px-3 py-2 border rounded-lg text-sm" /></div>
-              <div className="grid grid-cols-3 gap-3">
-                <div><label className="text-xs text-gray-500">Date *</label>
-                  <input type="date" value={bkForm.scheduledDate} onChange={e => setBkForm(f => ({...f, scheduledDate: e.target.value}))} className="w-full px-3 py-2 border rounded-lg text-sm" /></div>
-                <div><label className="text-xs text-gray-500">Start time *</label>
-                  <input type="time" value={bkForm.scheduledStart} onChange={e => setBkForm(f => ({...f, scheduledStart: e.target.value}))} className="w-full px-3 py-2 border rounded-lg text-sm" /></div>
-                <div><label className="text-xs text-gray-500">Duration (min)</label>
-                  <input type="number" value={bkForm.estimatedDuration} onChange={e => setBkForm(f => ({...f, estimatedDuration: parseInt(e.target.value) || 60}))} className="w-full px-3 py-2 border rounded-lg text-sm" /></div>
-              </div>
-              <div className="flex gap-2 pt-2">
-                <button onClick={handleCreateBooking} disabled={!bkForm.admissionId || !bkForm.otRoomId || !bkForm.surgeonId || !bkForm.procedureName}
-                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm disabled:opacity-50">Book OT</button>
-                <button onClick={() => setShowNew(false)} className="px-4 py-2 bg-gray-100 rounded-lg text-sm">Cancel</button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* ===== IMPLANTS / SAFETY — Framework ===== */}
+      {tab === 'implants' && <div className="text-center py-12 bg-white rounded-xl border text-gray-400"><div className="text-lg mb-2">Implant &amp; Consumable Tracking</div><div className="text-sm">Track every implant: manufacturer, lot #, serial #, size, cost. Sticker for patient records. Tables ready.</div></div>}
+      {tab === 'safety' && <div className="text-center py-12 bg-white rounded-xl border text-gray-400"><div className="text-lg mb-2">WHO Surgical Safety Checklist</div><div className="text-sm">Sign In (before anaesthesia) → Time Out (before incision) → Sign Out (before leaving OT). Full checklist with timestamps and sign-off. Tables ready.</div></div>}
     </div>
   );
 }
 
-export default function OTPage() { return <RoleGuard module="ot"><OTPageInner /></RoleGuard>; }
+export default function OTPage() { return <RoleGuard module="ot"><OTInner /></RoleGuard>; }
