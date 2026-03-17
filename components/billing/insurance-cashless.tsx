@@ -127,6 +127,9 @@ export default function InsuranceCashless({ claims, loading, stats, centreId, st
             <button onClick={updateClaim} disabled={!newStatus} className="px-4 py-1.5 bg-blue-600 text-white text-sm rounded-lg disabled:opacity-40">Update</button>
           </div>
         </div>}
+
+        {/* NHCX Integration */}
+        <NHCXActions claim={selectedClaim} onFlash={onFlash} />
       </div>}
 
       {/* Claims table */}
@@ -147,6 +150,102 @@ export default function InsuranceCashless({ claims, loading, stats, centreId, st
           <td className={`p-2 text-center ${days > 30 ? 'text-red-600 font-bold' : days > 15 ? 'text-yellow-600' : ''}`}>{days}d</td>
         </tr>;
       })}</tbody></table></div>}
+    </div>
+  );
+}
+
+// ============================================================
+// NHCX ACTIONS — Submit claims to National Health Claims Exchange
+// ============================================================
+function NHCXActions({ claim, onFlash }: { claim: any; onFlash: (m: string) => void }) {
+  const [nhcxLoading, setNhcxLoading] = useState(false);
+  const [nhcxResult, setNhcxResult] = useState<any>(null);
+
+  const canCheckEligibility = claim.status === 'preauth_initiated';
+  const canSubmitPreAuth = ['preauth_initiated', 'preauth_submitted'].includes(claim.status);
+  const canSubmitClaim = ['admitted', 'claim_submitted'].includes(claim.status);
+  const hasNhcxId = !!claim.nhcx_correlation_id;
+
+  const callNHCX = async (action: string) => {
+    setNhcxLoading(true); setNhcxResult(null);
+    try {
+      const res = await fetch('/api/nhcx', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action,
+          claimId: claim.id,
+          patientId: claim.patient_id || claim.patient?.id,
+          insurerId: claim.insurer_id,
+          tpaId: claim.tpa_id,
+        }),
+      });
+      const data = await res.json();
+      setNhcxResult(data);
+      if (data.success) {
+        onFlash(`NHCX ${action.replace('_', ' ')}: Submitted successfully`);
+      } else {
+        onFlash(`NHCX Error: ${data.error || 'Unknown error'}`);
+      }
+    } catch (err: any) {
+      setNhcxResult({ success: false, error: err.message });
+      onFlash('NHCX connection failed');
+    }
+    setNhcxLoading(false);
+  };
+
+  return (
+    <div className="bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 rounded-lg p-3 space-y-2">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <span className="text-sm">🇮🇳</span>
+          <span className="text-xs font-semibold text-indigo-700">NHCX — National Health Claims Exchange</span>
+        </div>
+        {hasNhcxId && <span className="text-[10px] font-mono text-indigo-500 bg-white px-2 py-0.5 rounded border">ID: {claim.nhcx_correlation_id?.substring(0, 12)}...</span>}
+      </div>
+
+      <div className="flex gap-2 flex-wrap">
+        {canCheckEligibility && <button onClick={() => callNHCX('coverage_check')} disabled={nhcxLoading}
+          className="px-3 py-1.5 bg-indigo-600 text-white text-xs rounded-lg disabled:opacity-50 hover:bg-indigo-700">
+          {nhcxLoading ? 'Sending...' : 'Check Eligibility via NHCX'}
+        </button>}
+
+        {canSubmitPreAuth && <button onClick={() => callNHCX('preauth_submit')} disabled={nhcxLoading}
+          className="px-3 py-1.5 bg-purple-600 text-white text-xs rounded-lg disabled:opacity-50 hover:bg-purple-700">
+          {nhcxLoading ? 'Submitting...' : 'Submit Pre-Auth to NHCX'}
+        </button>}
+
+        {canSubmitClaim && <button onClick={() => callNHCX('claim_submit')} disabled={nhcxLoading}
+          className="px-3 py-1.5 bg-green-600 text-white text-xs rounded-lg disabled:opacity-50 hover:bg-green-700">
+          {nhcxLoading ? 'Submitting...' : 'Submit Final Claim to NHCX'}
+        </button>}
+
+        {!canCheckEligibility && !canSubmitPreAuth && !canSubmitClaim && (
+          <span className="text-[10px] text-gray-500">No NHCX actions available for current status ({claim.status?.replace(/_/g, ' ')})</span>
+        )}
+      </div>
+
+      {nhcxResult && <div className={`rounded-lg p-2 text-xs ${nhcxResult.success ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+        {nhcxResult.success ? (
+          <div>
+            <span className="font-medium">Submitted to NHCX gateway.</span>
+            {nhcxResult.correlationId && <span className="ml-2 font-mono text-[10px]">Correlation: {nhcxResult.correlationId}</span>}
+            {nhcxResult.apiCallId && <span className="ml-2 font-mono text-[10px]">API Call: {nhcxResult.apiCallId}</span>}
+            <div className="mt-1 text-[10px]">Response will arrive asynchronously via callback. Auto-updates claim status when insurer responds.</div>
+          </div>
+        ) : (
+          <div><span className="font-medium">Failed:</span> {nhcxResult.error}</div>
+        )}
+      </div>}
+
+      {claim.nhcx_submitted_at && <div className="text-[10px] text-indigo-500">
+        Last NHCX submission: {new Date(claim.nhcx_submitted_at).toLocaleString('en-IN')}
+        {claim.nhcx_responded_at && <span className="ml-2">| Response: {new Date(claim.nhcx_responded_at).toLocaleString('en-IN')}</span>}
+      </div>}
+
+      <div className="text-[9px] text-gray-400">
+        FHIR R4 | HCX Protocol v0.9 | DHIS incentive: ₹500/claim | Sandbox: hcxbeta.nha.gov.in
+      </div>
     </div>
   );
 }
