@@ -1,18 +1,17 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { useAuthStore } from '@/lib/store/auth';
-import { useWHOChecklist, useOTNotes } from '@/lib/ipd/clinical-hooks';
 import AnaesthesiaForm from '@/components/ot/anaesthesia-form';
 import Link from 'next/link';
 
 let _sb: any = null;
 function sb() { if (typeof window === 'undefined') return null as any; if (!_sb) { try { _sb = createClient(); } catch { return null; } } return _sb; }
 
-type Tab = 'who' | 'pre_op' | 'intra_op' | 'post_op' | 'anaesthesia';
+type Tab = 'who' | 'pre_op' | 'intra_op' | 'post_op' | 'anaesthesia' | 'implants';
 
-export default function OTClinicalPage() {
+export default function OTDetailPage() {
   const { id } = useParams();
   const bookingId = id as string;
   const { staff } = useAuthStore();
@@ -22,267 +21,361 @@ export default function OTClinicalPage() {
   const [toast, setToast] = useState('');
   const flash = (m: string) => { setToast(m); setTimeout(() => setToast(''), 2500); };
 
-  const who = useWHOChecklist(bookingId);
-  const otNotes = useOTNotes(bookingId);
+  // WHO Checklist
+  const [checklist, setChecklist] = useState<any>(null);
+  // OT Notes
+  const [notes, setNotes] = useState<any>({ pre_op: {}, intra_op: {}, post_op: {} });
+  // Implants
+  const [implants, setImplants] = useState<any[]>([]);
+  const [implantForm, setImplantForm] = useState({ implant_name: '', manufacturer: '', catalogue_number: '', lot_number: '', serial_number: '', size: '', quantity: 1, cost: '', mrp: '' });
+  // Errors
+  const [actionError, setActionError] = useState('');
 
+  // Load booking
   useEffect(() => {
     if (!bookingId || !sb()) return;
     sb().from('hmis_ot_bookings')
-      .select('*, admission:hmis_admissions!inner(ipd_number, patient:hmis_patients!inner(id, uhid, first_name, last_name, age_years, gender, blood_group)), ot_room:hmis_ot_rooms!inner(name), surgeon:hmis_staff!hmis_ot_bookings_surgeon_id_fkey(full_name), anaesthetist:hmis_staff!hmis_ot_bookings_anaesthetist_id_fkey(full_name)')
+      .select('*, patient:hmis_admissions!inner(ipd_number, admission_date, patient:hmis_patients!inner(first_name, last_name, uhid, age_years, gender)), surgeon:hmis_staff!hmis_ot_bookings_surgeon_id_fkey(full_name), anaesthetist:hmis_staff!hmis_ot_bookings_anaesthetist_id_fkey(full_name), ot_room:hmis_ot_rooms(name, type)')
       .eq('id', bookingId).single()
       .then(({ data }: any) => setBooking(data));
   }, [bookingId]);
 
-  // WHO checklist local state
-  const [whoForm, setWhoForm] = useState<any>({});
-  useEffect(() => { if (who.checklist) setWhoForm(who.checklist); }, [who.checklist]);
-  const updateWho = (key: string, val: any) => setWhoForm((f: any) => ({ ...f, [key]: val }));
-  const saveWho = async (phase: string) => {
-    const updates: any = { ...whoForm };
-    if (phase === 'sign_in') { updates.sign_in_time = new Date().toISOString(); updates.sign_in_by = staffId; updates.status = 'sign_in_done'; }
-    if (phase === 'time_out') { updates.time_out_time = new Date().toISOString(); updates.time_out_by = staffId; updates.status = 'time_out_done'; }
-    if (phase === 'sign_out') { updates.sign_out_time = new Date().toISOString(); updates.sign_out_by = staffId; updates.status = 'completed'; }
-    await who.createOrUpdate(updates, staffId);
-    flash(phase.replace('_', ' ').toUpperCase() + ' saved');
+  // Load WHO checklist
+  const loadChecklist = useCallback(async () => {
+    if (!bookingId || !sb()) return;
+    const { data } = await sb().from('hmis_ot_safety_checklist').select('*').eq('ot_booking_id', bookingId).maybeSingle();
+    setChecklist(data);
+  }, [bookingId]);
+  useEffect(() => { loadChecklist(); }, [loadChecklist]);
+
+  // Load OT notes
+  const loadNotes = useCallback(async () => {
+    if (!bookingId || !sb()) return;
+    const { data } = await sb().from('hmis_ot_notes').select('*').eq('ot_booking_id', bookingId);
+    const map: any = { pre_op: {}, intra_op: {}, post_op: {} };
+    (data || []).forEach((n: any) => { map[n.note_type] = n; });
+    setNotes(map);
+  }, [bookingId]);
+  useEffect(() => { loadNotes(); }, [loadNotes]);
+
+  // Load implants
+  const loadImplants = useCallback(async () => {
+    if (!bookingId || !sb()) return;
+    const { data } = await sb().from('hmis_ot_implants').select('*').eq('ot_booking_id', bookingId).order('created_at');
+    setImplants(data || []);
+  }, [bookingId]);
+  useEffect(() => { loadImplants(); }, [loadImplants]);
+
+  // ---- WHO Checklist Actions ----
+  const updateChecklist = async (field: string, value: any) => {
+    if (!bookingId || !sb()) return;
+    const updates = { [field]: value };
+    if (checklist?.id) {
+      await sb().from('hmis_ot_safety_checklist').update(updates).eq('id', checklist.id);
+    } else {
+      await sb().from('hmis_ot_safety_checklist').insert({ ot_booking_id: bookingId, ...updates });
+    }
+    loadChecklist();
   };
 
-  // OT Notes form
-  const [noteForm, setNoteForm] = useState<any>({});
-
-  const saveOTNote = async (noteType: string) => {
-    await otNotes.addNote({ note_type: noteType, ...noteForm }, staffId);
-    setNoteForm({});
-    flash(noteType.replace('_', ' ') + ' note saved');
+  const completePhase = async (phase: 'sign_in' | 'time_out' | 'sign_out') => {
+    const now = new Date().toISOString();
+    await updateChecklist(`${phase}_done`, true);
+    await updateChecklist(`${phase}_at`, now);
+    await updateChecklist(`${phase}_by`, staffId);
+    flash(`${phase.replace('_', ' ').toUpperCase()} completed`);
   };
 
-  if (!booking) return <div className="text-center py-12 text-gray-400">Loading OT booking...</div>;
-  const pt = booking.admission?.patient;
-  const patientName = pt ? pt.first_name + ' ' + (pt.last_name || '') : '--';
+  // ---- OT Notes Actions ----
+  const saveNote = async (noteType: string, data: any) => {
+    if (!bookingId || !sb()) return;
+    const existing = notes[noteType];
+    if (existing?.id) {
+      await sb().from('hmis_ot_notes').update({ ...data, updated_at: new Date().toISOString() }).eq('id', existing.id);
+    } else {
+      await sb().from('hmis_ot_notes').insert({ ot_booking_id: bookingId, note_type: noteType, author_id: staffId, ...data });
+    }
+    loadNotes();
+    flash(`${noteType.replace('_', '-')} note saved`);
+  };
 
-  const Check = ({ label, field }: { label: string; field: string }) => (
-    <label className="flex items-center gap-2 py-1.5 border-b last:border-0 text-sm cursor-pointer hover:bg-gray-50 px-2 rounded">
-      <input type="checkbox" checked={!!whoForm[field]} onChange={e => updateWho(field, e.target.checked)} className="w-4 h-4 rounded" />
-      <span className={whoForm[field] ? 'text-green-700' : 'text-gray-700'}>{label}</span>
-    </label>
-  );
+  // ---- Implant Actions ----
+  const addImplant = async () => {
+    if (!bookingId || !sb()) return;
+    if (!implantForm.implant_name.trim()) { setActionError('Implant name required'); return; }
+    if (implantForm.quantity < 1) { setActionError('Quantity must be at least 1'); return; }
+    setActionError('');
+    await sb().from('hmis_ot_implants').insert({
+      ot_booking_id: bookingId, ...implantForm,
+      cost: parseFloat(implantForm.cost) || 0, mrp: parseFloat(implantForm.mrp) || 0,
+    });
+    setImplantForm({ implant_name: '', manufacturer: '', catalogue_number: '', lot_number: '', serial_number: '', size: '', quantity: 1, cost: '', mrp: '' });
+    loadImplants();
+    flash('Implant added');
+  };
 
-  const tabs: [Tab, string][] = [['who', 'WHO Checklist'], ['pre_op', 'Pre-Op Note'], ['intra_op', 'Intra-Op Note'], ['post_op', 'Post-Op Note'], ['anaesthesia', 'Anaesthesia']];
+  const removeImplant = async (implantId: string) => {
+    if (!sb()) return;
+    await sb().from('hmis_ot_implants').delete().eq('id', implantId);
+    loadImplants();
+  };
+
+  const patientName = booking ? `${booking.patient?.patient?.first_name || ''} ${booking.patient?.patient?.last_name || ''}` : '';
+  const fmt = (n: number) => n.toLocaleString('en-IN', { maximumFractionDigits: 0 });
+
+  if (!booking) return <div className="max-w-5xl mx-auto p-4"><div className="animate-pulse space-y-4"><div className="h-8 bg-gray-200 rounded w-1/3" /><div className="h-48 bg-gray-200 rounded-xl" /></div></div>;
+
+  // Timeline
+  const timeline = [
+    booking.actual_start ? { label: 'Surgery Start', time: new Date(booking.actual_start).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }), done: true } : null,
+    checklist?.sign_in_done ? { label: 'Sign In', time: checklist.sign_in_at ? new Date(checklist.sign_in_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : 'Done', done: true } : null,
+    checklist?.time_out_done ? { label: 'Time Out', time: checklist.time_out_at ? new Date(checklist.time_out_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : 'Done', done: true } : null,
+    checklist?.sign_out_done ? { label: 'Sign Out', time: checklist.sign_out_at ? new Date(checklist.sign_out_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : 'Done', done: true } : null,
+    booking.actual_end ? { label: 'Surgery End', time: new Date(booking.actual_end).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }), done: true } : null,
+  ].filter(Boolean);
+
+  const tabs: [Tab, string][] = [['who', 'WHO Safety Checklist'], ['pre_op', 'Pre-Op Assessment'], ['intra_op', 'Intra-Op Notes'], ['post_op', 'Post-Op Orders'], ['anaesthesia', 'Anaesthesia Record'], ['implants', `Implants (${implants.length})`]];
 
   return (
-    <div className="max-w-5xl mx-auto">
+    <div className="max-w-5xl mx-auto space-y-4">
       {toast && <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-green-600 text-white px-4 py-2 rounded-lg shadow-lg text-sm">{toast}</div>}
 
-      {/* Header */}
-      <div className="bg-white rounded-xl border p-4 mb-4">
-        <div className="flex items-center justify-between">
+      {/* Surgery Header */}
+      <div className="bg-white rounded-xl border p-5">
+        <div className="flex items-start justify-between mb-3">
           <div>
-            <h1 className="text-xl font-bold">{booking.procedure_name}</h1>
-            <div className="flex items-center gap-2 text-xs text-gray-500 mt-1">
-              <span className="font-medium">{patientName}</span>
-              <span>{pt?.uhid}</span><span>{pt?.age_years}yr/{pt?.gender?.charAt(0).toUpperCase()}</span>
-              <span className="bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded">{booking.ot_room?.name}</span>
-              <span>Surgeon: {booking.surgeon?.full_name}</span>
-              {booking.anaesthetist && <span>Anaes: {booking.anaesthetist.full_name}</span>}
-              <span>{booking.scheduled_date} {booking.scheduled_start?.slice(0,5)}</span>
-              <span className={`px-1.5 py-0.5 rounded ${booking.status === 'in_progress' ? 'bg-blue-100 text-blue-700 animate-pulse' : booking.status === 'completed' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>{booking.status}</span>
+            <h1 className="text-lg font-bold">{booking.procedure_name}</h1>
+            <div className="text-sm text-gray-600 mt-0.5">
+              {patientName} <span className="text-gray-400">({booking.patient?.patient?.uhid})</span>
+              <span className="text-gray-400 mx-2">|</span>{booking.patient?.patient?.age_years}y {booking.patient?.patient?.gender}
+              <span className="text-gray-400 mx-2">|</span>IPD: {booking.patient?.ipd_number}
             </div>
           </div>
-          <Link href="/ot" className="px-3 py-1.5 bg-gray-100 text-gray-600 text-xs rounded-lg">Back to OT</Link>
+          <div className="flex items-center gap-2">
+            <span className={`px-2.5 py-1 rounded-lg text-xs font-medium ${booking.status === 'in_progress' ? 'bg-red-100 text-red-700 animate-pulse' : booking.status === 'completed' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}`}>{booking.status?.replace('_', ' ')}</span>
+            <Link href="/ot" className="text-xs text-gray-500 hover:text-blue-600">Back to OT</Link>
+          </div>
         </div>
+
+        {/* Team + Details */}
+        <div className="grid grid-cols-5 gap-3 text-xs bg-gray-50 rounded-lg p-3">
+          <div><span className="text-gray-500 block">Surgeon</span><span className="font-semibold">{booking.surgeon?.full_name}</span></div>
+          <div><span className="text-gray-500 block">Anaesthetist</span><span className="font-semibold">{booking.anaesthetist?.full_name || 'Not assigned'}</span></div>
+          <div><span className="text-gray-500 block">OT Room</span><span className="font-semibold">{booking.ot_room?.name}</span></div>
+          <div><span className="text-gray-500 block">Date</span><span className="font-semibold">{booking.scheduled_date} at {booking.scheduled_start}</span></div>
+          <div><span className="text-gray-500 block">Type</span>
+            {booking.is_emergency && <span className="bg-red-100 text-red-700 px-1.5 py-0.5 rounded text-[10px] mr-1">EMERGENCY</span>}
+            {booking.is_robotic && <span className="bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded text-[10px]">{booking.robot_type === 'cuvis' ? 'Cuvis Robot' : booking.robot_type === 'ssi_mantra' ? 'SSI Mantra' : 'Robotic'}</span>}
+            {!booking.is_emergency && !booking.is_robotic && <span>Elective</span>}
+          </div>
+        </div>
+
+        {/* Surgery Timeline */}
+        {timeline.length > 0 && <div className="flex items-center gap-1 mt-3">
+          {timeline.map((t: any, i: number) => (
+            <React.Fragment key={i}>
+              {i > 0 && <div className="flex-1 h-0.5 bg-green-400" />}
+              <div className="flex flex-col items-center">
+                <div className="w-4 h-4 rounded-full bg-green-500 flex items-center justify-center"><span className="text-white text-[8px]">&#10003;</span></div>
+                <span className="text-[9px] text-gray-500 mt-0.5">{t.label}</span>
+                <span className="text-[9px] font-semibold text-green-700">{t.time}</span>
+              </div>
+            </React.Fragment>
+          ))}
+        </div>}
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 mb-4 border-b pb-px">
+      <div className="flex gap-0.5 border-b pb-px overflow-x-auto">
         {tabs.map(([k, l]) => <button key={k} onClick={() => setTab(k)}
-          className={`px-3 py-2 text-xs font-medium whitespace-nowrap border-b-2 -mb-px ${tab === k ? 'border-blue-600 text-blue-700' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>{l}</button>)}
+          className={`px-3 py-2 text-xs font-medium whitespace-nowrap border-b-2 -mb-px ${tab === k ? 'border-blue-600 text-blue-700' : 'border-transparent text-gray-500'}`}>{l}</button>)}
       </div>
 
-      {/* ===== WHO SURGICAL SAFETY CHECKLIST ===== */}
-      {tab === 'who' && <div className="space-y-6">
+      {/* ===== WHO SAFETY CHECKLIST ===== */}
+      {tab === 'who' && <div className="space-y-4">
         {/* SIGN IN */}
-        <div className="bg-white rounded-xl border p-5">
+        <div className={`bg-white rounded-xl border p-5 ${checklist?.sign_in_done ? 'border-green-300' : ''}`}>
           <div className="flex items-center justify-between mb-3">
-            <h3 className="font-semibold text-sm text-red-700">SIGN IN — Before Induction of Anaesthesia</h3>
-            {whoForm.sign_in_time && <span className="text-xs text-green-600">Done {new Date(whoForm.sign_in_time).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</span>}
+            <h3 className="font-bold text-sm">SIGN IN <span className="text-gray-400 font-normal">— Before anaesthesia</span></h3>
+            {checklist?.sign_in_done ? <span className="bg-green-100 text-green-700 px-2 py-0.5 rounded text-xs">Completed {checklist.sign_in_at ? new Date(checklist.sign_in_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : ''}</span> : <button onClick={() => completePhase('sign_in')} className="px-3 py-1.5 bg-green-600 text-white text-xs rounded-lg">Complete Sign In</button>}
           </div>
-          <div className="space-y-0.5">
-            <Check label="Patient identity confirmed (name, DOB, wristband)" field="si_patient_confirmed" />
-            <Check label="Surgical site marked" field="si_site_marked" />
-            <Check label="Consent signed and on file" field="si_consent_signed" />
-            <Check label="Anaesthesia safety check completed" field="si_anaesthesia_check" />
-            <Check label="Pulse oximeter on patient and functioning" field="si_pulse_oximeter" />
-            <Check label="Known allergies checked" field="si_allergy_checked" />
-            <Check label="Difficult airway / aspiration risk assessed" field="si_airway_risk" />
-            <Check label="Risk of >500ml blood loss" field="si_blood_loss_risk" />
-            <Check label="Blood products available if needed" field="si_blood_available" />
+          <div className="grid grid-cols-2 gap-2">
+            {[['patient_identity_confirmed', 'Patient identity confirmed (name, DOB, wristband)'],
+              ['site_marked', 'Surgical site marked'],
+              ['consent_verified', 'Consent form signed and verified'],
+              ['anaesthesia_check', 'Anaesthesia safety check complete'],
+              ['pulse_oximeter', 'Pulse oximeter on patient and functioning'],
+              ['known_allergy', 'Known allergy checked'],
+              ['difficult_airway', 'Difficult airway / aspiration risk assessed'],
+              ['blood_loss_risk', 'Risk of blood loss >500ml assessed'],
+              ['blood_availability', 'Blood products available if needed'],
+            ].map(([field, label]) => (
+              <label key={field} className="flex items-center gap-2 text-xs bg-gray-50 rounded-lg px-3 py-2 cursor-pointer hover:bg-gray-100">
+                <input type="checkbox" checked={!!checklist?.[field]} onChange={e => updateChecklist(field, e.target.checked)} className="rounded" />
+                <span className={checklist?.[field] ? 'text-green-700' : 'text-gray-700'}>{label}</span>
+              </label>
+            ))}
           </div>
-          {(!whoForm.sign_in_time) && <button onClick={() => saveWho('sign_in')} className="mt-3 px-4 py-2 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700">Complete Sign In</button>}
+          {checklist?.known_allergy && <div className="mt-2">
+            <input type="text" value={checklist?.allergy_details || ''} onChange={e => updateChecklist('allergy_details', e.target.value)} className="w-full px-3 py-2 border rounded-lg text-sm" placeholder="Allergy details..." />
+          </div>}
         </div>
 
         {/* TIME OUT */}
-        <div className={`bg-white rounded-xl border p-5 ${!whoForm.sign_in_time ? 'opacity-50 pointer-events-none' : ''}`}>
+        <div className={`bg-white rounded-xl border p-5 ${checklist?.time_out_done ? 'border-green-300' : ''}`}>
           <div className="flex items-center justify-between mb-3">
-            <h3 className="font-semibold text-sm text-orange-700">TIME OUT — Before Skin Incision</h3>
-            {whoForm.time_out_time && <span className="text-xs text-green-600">Done {new Date(whoForm.time_out_time).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</span>}
+            <h3 className="font-bold text-sm">TIME OUT <span className="text-gray-400 font-normal">— Before skin incision</span></h3>
+            {checklist?.time_out_done ? <span className="bg-green-100 text-green-700 px-2 py-0.5 rounded text-xs">Completed {checklist.time_out_at ? new Date(checklist.time_out_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : ''}</span> : <button onClick={() => completePhase('time_out')} className="px-3 py-1.5 bg-green-600 text-white text-xs rounded-lg">Complete Time Out</button>}
           </div>
-          <div className="space-y-0.5">
-            <Check label="All team members introduced (name and role)" field="to_team_introduction" />
-            <Check label="Patient name confirmed" field="to_patient_name_confirmed" />
-            <Check label="Procedure and site confirmed" field="to_procedure_confirmed" />
-            <Check label="Correct site confirmed" field="to_site_confirmed" />
-            <Check label="Prophylactic antibiotic given within last 60 min" field="to_antibiotic_given" />
-            <Check label="Essential imaging displayed" field="to_imaging_displayed" />
-            <Check label="Critical steps discussed with team" field="to_critical_steps_discussed" />
-            <Check label="Equipment and sterility confirmed" field="to_equipment_confirmed" />
-            <Check label="Sterility confirmed (no indicator concerns)" field="to_sterility_confirmed" />
+          <div className="grid grid-cols-2 gap-2">
+            {[['team_introduced', 'All team members introduced by name and role'],
+              ['patient_name_confirmed', 'Patient name confirmed'],
+              ['procedure_confirmed', 'Procedure confirmed'],
+              ['site_confirmed', 'Site confirmed'],
+              ['antibiotic_given', 'Prophylactic antibiotic given within last 60 min'],
+              ['imaging_displayed', 'Essential imaging displayed'],
+              ['anticipated_events_discussed', 'Anticipated critical events discussed'],
+            ].map(([field, label]) => (
+              <label key={field} className="flex items-center gap-2 text-xs bg-gray-50 rounded-lg px-3 py-2 cursor-pointer hover:bg-gray-100">
+                <input type="checkbox" checked={!!checklist?.[field]} onChange={e => updateChecklist(field, e.target.checked)} className="rounded" />
+                <span className={checklist?.[field] ? 'text-green-700' : 'text-gray-700'}>{label}</span>
+              </label>
+            ))}
           </div>
-          <div className="grid grid-cols-2 gap-3 mt-3">
-            <div><label className="text-xs text-gray-500">Anticipated duration</label>
-              <input type="text" value={whoForm.to_anticipated_duration || ''} onChange={e => updateWho('to_anticipated_duration', e.target.value)} className="w-full px-2 py-1.5 border rounded text-sm" placeholder="e.g., 2 hours" /></div>
-            <div><label className="text-xs text-gray-500">Anticipated blood loss</label>
-              <input type="text" value={whoForm.to_anticipated_blood_loss || ''} onChange={e => updateWho('to_anticipated_blood_loss', e.target.value)} className="w-full px-2 py-1.5 border rounded text-sm" placeholder="e.g., 200ml" /></div>
-          </div>
-          {whoForm.sign_in_time && !whoForm.time_out_time && <button onClick={() => saveWho('time_out')} className="mt-3 px-4 py-2 bg-orange-600 text-white text-sm rounded-lg hover:bg-orange-700">Complete Time Out</button>}
         </div>
 
         {/* SIGN OUT */}
-        <div className={`bg-white rounded-xl border p-5 ${!whoForm.time_out_time ? 'opacity-50 pointer-events-none' : ''}`}>
+        <div className={`bg-white rounded-xl border p-5 ${checklist?.sign_out_done ? 'border-green-300' : ''}`}>
           <div className="flex items-center justify-between mb-3">
-            <h3 className="font-semibold text-sm text-green-700">SIGN OUT — Before Patient Leaves OT</h3>
-            {whoForm.sign_out_time && <span className="text-xs text-green-600">Done {new Date(whoForm.sign_out_time).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</span>}
+            <h3 className="font-bold text-sm">SIGN OUT <span className="text-gray-400 font-normal">— Before patient leaves OT</span></h3>
+            {checklist?.sign_out_done ? <span className="bg-green-100 text-green-700 px-2 py-0.5 rounded text-xs">Completed {checklist.sign_out_at ? new Date(checklist.sign_out_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : ''}</span> : <button onClick={() => completePhase('sign_out')} className="px-3 py-1.5 bg-green-600 text-white text-xs rounded-lg">Complete Sign Out</button>}
           </div>
-          <div className="space-y-0.5">
-            <Check label="Procedure recorded correctly" field="so_procedure_recorded" />
-            <Check label="Instrument, sponge, and needle counts correct" field="so_instrument_count_correct" />
-            <Check label="Specimen labelled (including patient name)" field="so_specimen_labelled" />
-            <Check label="VTE prophylaxis planned" field="so_vte_prophylaxis_planned" />
+          <div className="grid grid-cols-2 gap-2">
+            {[['procedure_recorded', 'Procedure name recorded'],
+              ['instrument_count_correct', 'Instrument count correct'],
+              ['sponge_count_correct', 'Sponge count correct'],
+              ['needle_count_correct', 'Needle count correct'],
+              ['specimen_labelled', 'Specimen labelled correctly'],
+            ].map(([field, label]) => (
+              <label key={field} className="flex items-center gap-2 text-xs bg-gray-50 rounded-lg px-3 py-2 cursor-pointer hover:bg-gray-100">
+                <input type="checkbox" checked={!!checklist?.[field]} onChange={e => updateChecklist(field, e.target.checked)} className="rounded" />
+                <span className={checklist?.[field] ? 'text-green-700' : 'text-gray-700'}>{label}</span>
+              </label>
+            ))}
           </div>
-          <div className="grid grid-cols-2 gap-3 mt-3">
+          <div className="grid grid-cols-2 gap-3 mt-2">
             <div><label className="text-xs text-gray-500">Equipment problems</label>
-              <input type="text" value={whoForm.so_equipment_problems || ''} onChange={e => updateWho('so_equipment_problems', e.target.value)} className="w-full px-2 py-1.5 border rounded text-sm" placeholder="None / describe..." /></div>
-            <div><label className="text-xs text-gray-500">Recovery concerns</label>
-              <input type="text" value={whoForm.so_recovery_concerns || ''} onChange={e => updateWho('so_recovery_concerns', e.target.value)} className="w-full px-2 py-1.5 border rounded text-sm" placeholder="None / describe..." /></div>
+              <input type="text" value={checklist?.equipment_issues || ''} onChange={e => updateChecklist('equipment_issues', e.target.value)} className="w-full px-3 py-2 border rounded-lg text-sm" placeholder="None / describe..." /></div>
+            <div><label className="text-xs text-gray-500">Key recovery concerns</label>
+              <input type="text" value={checklist?.recovery_concerns || ''} onChange={e => updateChecklist('recovery_concerns', e.target.value)} className="w-full px-3 py-2 border rounded-lg text-sm" placeholder="None / describe..." /></div>
           </div>
-          {whoForm.time_out_time && !whoForm.sign_out_time && <button onClick={() => saveWho('sign_out')} className="mt-3 px-4 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700">Complete Sign Out</button>}
+        </div>
+      </div>}
+
+      {/* ===== PRE-OP ===== */}
+      {tab === 'pre_op' && <div className="bg-white rounded-xl border p-5 space-y-3">
+        <h3 className="font-bold text-sm">Pre-Operative Assessment</h3>
+        <div className="grid grid-cols-2 gap-3">
+          <div><label className="text-xs text-gray-500">Pre-op diagnosis</label>
+            <textarea value={notes.pre_op?.pre_op_diagnosis || ''} onChange={e => setNotes((n: any) => ({ ...n, pre_op: { ...n.pre_op, pre_op_diagnosis: e.target.value } }))} rows={2} className="w-full px-3 py-2 border rounded-lg text-sm" /></div>
+          <div><label className="text-xs text-gray-500">Investigations</label>
+            <textarea value={notes.pre_op?.pre_op_investigations || ''} onChange={e => setNotes((n: any) => ({ ...n, pre_op: { ...n.pre_op, pre_op_investigations: e.target.value } }))} rows={2} className="w-full px-3 py-2 border rounded-lg text-sm" placeholder="CBC, RFT, ECG, CXR..." /></div>
+        </div>
+        <div className="grid grid-cols-3 gap-3">
+          <div><label className="text-xs text-gray-500">Fitness</label>
+            <div className="flex gap-1 mt-1">{['fit', 'unfit', 'conditional'].map(f => (
+              <button key={f} onClick={() => setNotes((n: any) => ({ ...n, pre_op: { ...n.pre_op, pre_op_fitness: f } }))}
+                className={`flex-1 py-1.5 rounded text-xs border ${notes.pre_op?.pre_op_fitness === f ? 'bg-blue-600 text-white' : 'bg-white'}`}>{f}</button>
+            ))}</div></div>
+          <div><label className="text-xs text-gray-500">ASA Grade</label>
+            <div className="flex gap-1 mt-1">{[1, 2, 3, 4, 5, 6].map(g => (
+              <button key={g} onClick={() => setNotes((n: any) => ({ ...n, pre_op: { ...n.pre_op, pre_op_asa_grade: g } }))}
+                className={`flex-1 py-1.5 rounded text-xs border ${notes.pre_op?.pre_op_asa_grade === g ? 'bg-blue-600 text-white' : 'bg-white'}`}>ASA {g}</button>
+            ))}</div></div>
+          <div className="flex items-end"><button onClick={() => saveNote('pre_op', notes.pre_op)} className="w-full px-4 py-2 bg-green-600 text-white text-sm rounded-lg">Save Pre-Op</button></div>
+        </div>
+      </div>}
+
+      {/* ===== INTRA-OP ===== */}
+      {tab === 'intra_op' && <div className="bg-white rounded-xl border p-5 space-y-3">
+        <h3 className="font-bold text-sm">Intra-Operative Notes</h3>
+        <div className="grid grid-cols-2 gap-3">
+          <div><label className="text-xs text-gray-500">Procedure performed</label>
+            <textarea value={notes.intra_op?.procedure_performed || ''} onChange={e => setNotes((n: any) => ({ ...n, intra_op: { ...n.intra_op, procedure_performed: e.target.value } }))} rows={3} className="w-full px-3 py-2 border rounded-lg text-sm" /></div>
+          <div><label className="text-xs text-gray-500">Findings</label>
+            <textarea value={notes.intra_op?.findings || ''} onChange={e => setNotes((n: any) => ({ ...n, intra_op: { ...n.intra_op, findings: e.target.value } }))} rows={3} className="w-full px-3 py-2 border rounded-lg text-sm" /></div>
+        </div>
+        <div className="grid grid-cols-4 gap-3">
+          <div><label className="text-xs text-gray-500">Approach</label><input type="text" value={notes.intra_op?.approach || ''} onChange={e => setNotes((n: any) => ({ ...n, intra_op: { ...n.intra_op, approach: e.target.value } }))} className="w-full px-3 py-2 border rounded-lg text-sm" placeholder="Lap / Open / Robotic" /></div>
+          <div><label className="text-xs text-gray-500">EBL (ml)</label><input type="number" value={notes.intra_op?.ebl_ml || ''} onChange={e => setNotes((n: any) => ({ ...n, intra_op: { ...n.intra_op, ebl_ml: parseInt(e.target.value) || 0 } }))} className="w-full px-3 py-2 border rounded-lg text-sm" /></div>
+          <div><label className="text-xs text-gray-500">Duration (min)</label><input type="number" value={notes.intra_op?.duration_minutes || ''} onChange={e => setNotes((n: any) => ({ ...n, intra_op: { ...n.intra_op, duration_minutes: parseInt(e.target.value) || 0 } }))} className="w-full px-3 py-2 border rounded-lg text-sm" /></div>
+          <div><label className="text-xs text-gray-500">Specimens sent</label><input type="text" value={notes.intra_op?.specimens_sent || ''} onChange={e => setNotes((n: any) => ({ ...n, intra_op: { ...n.intra_op, specimens_sent: e.target.value } }))} className="w-full px-3 py-2 border rounded-lg text-sm" placeholder="None / describe" /></div>
+        </div>
+        <div><label className="text-xs text-gray-500">Complications</label><input type="text" value={notes.intra_op?.complications || ''} onChange={e => setNotes((n: any) => ({ ...n, intra_op: { ...n.intra_op, complications: e.target.value } }))} className="w-full px-3 py-2 border rounded-lg text-sm" placeholder="None / describe..." /></div>
+        <button onClick={() => saveNote('intra_op', notes.intra_op)} className="px-4 py-2 bg-green-600 text-white text-sm rounded-lg">Save Intra-Op</button>
+      </div>}
+
+      {/* ===== POST-OP ===== */}
+      {tab === 'post_op' && <div className="bg-white rounded-xl border p-5 space-y-3">
+        <h3 className="font-bold text-sm">Post-Operative Orders</h3>
+        <div className="grid grid-cols-2 gap-3">
+          <div><label className="text-xs text-gray-500">Post-op diagnosis</label><textarea value={notes.post_op?.post_op_diagnosis || ''} onChange={e => setNotes((n: any) => ({ ...n, post_op: { ...n.post_op, post_op_diagnosis: e.target.value } }))} rows={2} className="w-full px-3 py-2 border rounded-lg text-sm" /></div>
+          <div><label className="text-xs text-gray-500">Post-op instructions</label><textarea value={notes.post_op?.post_op_instructions || ''} onChange={e => setNotes((n: any) => ({ ...n, post_op: { ...n.post_op, post_op_instructions: e.target.value } }))} rows={2} className="w-full px-3 py-2 border rounded-lg text-sm" placeholder="Vitals Q15min x4, NPO x6h..." /></div>
+        </div>
+        <div className="grid grid-cols-4 gap-3">
+          <div><label className="text-xs text-gray-500">Diet</label><input type="text" value={notes.post_op?.post_op_diet || ''} onChange={e => setNotes((n: any) => ({ ...n, post_op: { ...n.post_op, post_op_diet: e.target.value } }))} className="w-full px-3 py-2 border rounded-lg text-sm" placeholder="NPO / Sips / Soft" /></div>
+          <div><label className="text-xs text-gray-500">Activity</label><input type="text" value={notes.post_op?.post_op_activity || ''} onChange={e => setNotes((n: any) => ({ ...n, post_op: { ...n.post_op, post_op_activity: e.target.value } }))} className="w-full px-3 py-2 border rounded-lg text-sm" placeholder="Bed rest / OOB" /></div>
+          <div><label className="text-xs text-gray-500">Drains</label><input type="text" value={notes.post_op?.drain_details || ''} onChange={e => setNotes((n: any) => ({ ...n, post_op: { ...n.post_op, drain_details: e.target.value } }))} className="w-full px-3 py-2 border rounded-lg text-sm" placeholder="ICD, abdominal drain..." /></div>
+          <div><label className="text-xs text-gray-500">DVT prophylaxis</label><input type="text" value={notes.post_op?.dvt_prophylaxis || ''} onChange={e => setNotes((n: any) => ({ ...n, post_op: { ...n.post_op, dvt_prophylaxis: e.target.value } }))} className="w-full px-3 py-2 border rounded-lg text-sm" placeholder="Enoxaparin 40mg SC OD" /></div>
+        </div>
+        <button onClick={() => saveNote('post_op', notes.post_op)} className="px-4 py-2 bg-green-600 text-white text-sm rounded-lg">Save Post-Op</button>
+      </div>}
+
+      {/* ===== ANAESTHESIA ===== */}
+      {tab === 'anaesthesia' && <AnaesthesiaForm bookingId={bookingId} staffId={staffId} patientName={patientName} onFlash={flash} />}
+
+      {/* ===== IMPLANTS ===== */}
+      {tab === 'implants' && <div className="space-y-4">
+        <div className="bg-white rounded-xl border p-5 space-y-3">
+          <h3 className="font-bold text-sm">Add Implant / Consumable</h3>
+          <div className="grid grid-cols-4 gap-3">
+            <div><label className="text-xs text-gray-500">Implant name *</label><input type="text" value={implantForm.implant_name} onChange={e => setImplantForm(f => ({ ...f, implant_name: e.target.value }))} className="w-full px-3 py-2 border rounded-lg text-sm" placeholder="e.g., DePuy TKR Implant" /></div>
+            <div><label className="text-xs text-gray-500">Manufacturer</label><input type="text" value={implantForm.manufacturer} onChange={e => setImplantForm(f => ({ ...f, manufacturer: e.target.value }))} className="w-full px-3 py-2 border rounded-lg text-sm" placeholder="DePuy / Zimmer / Medtronic" /></div>
+            <div><label className="text-xs text-gray-500">Catalogue #</label><input type="text" value={implantForm.catalogue_number} onChange={e => setImplantForm(f => ({ ...f, catalogue_number: e.target.value }))} className="w-full px-3 py-2 border rounded-lg text-sm" /></div>
+            <div><label className="text-xs text-gray-500">Lot #</label><input type="text" value={implantForm.lot_number} onChange={e => setImplantForm(f => ({ ...f, lot_number: e.target.value }))} className="w-full px-3 py-2 border rounded-lg text-sm" /></div>
+          </div>
+          <div className="grid grid-cols-5 gap-3">
+            <div><label className="text-xs text-gray-500">Serial #</label><input type="text" value={implantForm.serial_number} onChange={e => setImplantForm(f => ({ ...f, serial_number: e.target.value }))} className="w-full px-3 py-2 border rounded-lg text-sm" /></div>
+            <div><label className="text-xs text-gray-500">Size</label><input type="text" value={implantForm.size} onChange={e => setImplantForm(f => ({ ...f, size: e.target.value }))} className="w-full px-3 py-2 border rounded-lg text-sm" placeholder="e.g., 12mm, Size 5" /></div>
+            <div><label className="text-xs text-gray-500">Qty</label><input type="number" value={implantForm.quantity} onChange={e => setImplantForm(f => ({ ...f, quantity: parseInt(e.target.value) || 1 }))} className="w-full px-3 py-2 border rounded-lg text-sm" min="1" /></div>
+            <div><label className="text-xs text-gray-500">Cost</label><input type="number" value={implantForm.cost} onChange={e => setImplantForm(f => ({ ...f, cost: e.target.value }))} className="w-full px-3 py-2 border rounded-lg text-sm" placeholder="Purchase rate" /></div>
+            <div><label className="text-xs text-gray-500">MRP</label><input type="number" value={implantForm.mrp} onChange={e => setImplantForm(f => ({ ...f, mrp: e.target.value }))} className="w-full px-3 py-2 border rounded-lg text-sm" placeholder="Patient charge" /></div>
+          </div>
+          {actionError && <div className="text-sm text-red-700">{actionError}</div>}
+          <button onClick={addImplant} className="px-4 py-2 bg-green-600 text-white text-sm rounded-lg">Add Implant</button>
         </div>
 
-        {whoForm.status === 'completed' && <div className="text-center py-4 bg-green-50 rounded-xl border border-green-200 text-green-700 font-medium">WHO Surgical Safety Checklist — COMPLETED</div>}
+        {implants.length > 0 && <div className="bg-white rounded-xl border overflow-hidden">
+          <table className="w-full text-xs"><thead><tr className="bg-gray-50 border-b">
+            <th className="p-2 text-left">Implant</th><th className="p-2">Manufacturer</th><th className="p-2">Lot #</th><th className="p-2">Serial #</th><th className="p-2">Size</th><th className="p-2 text-right">Qty</th><th className="p-2 text-right">Cost</th><th className="p-2 text-right">MRP</th><th className="p-2"></th>
+          </tr></thead><tbody>{implants.map(imp => (
+            <tr key={imp.id} className="border-b">
+              <td className="p-2 font-medium">{imp.implant_name}</td>
+              <td className="p-2 text-center text-gray-500">{imp.manufacturer || '-'}</td>
+              <td className="p-2 text-center font-mono text-[10px]">{imp.lot_number || '-'}</td>
+              <td className="p-2 text-center font-mono text-[10px]">{imp.serial_number || '-'}</td>
+              <td className="p-2 text-center">{imp.size || '-'}</td>
+              <td className="p-2 text-right">{imp.quantity}</td>
+              <td className="p-2 text-right">{parseFloat(imp.cost) > 0 ? `₹${fmt(parseFloat(imp.cost))}` : '-'}</td>
+              <td className="p-2 text-right font-semibold">{parseFloat(imp.mrp) > 0 ? `₹${fmt(parseFloat(imp.mrp))}` : '-'}</td>
+              <td className="p-2"><button onClick={() => removeImplant(imp.id)} className="text-red-500 text-[10px]">Remove</button></td>
+            </tr>
+          ))}</tbody>
+          <tfoot><tr className="bg-gray-50 font-semibold"><td colSpan={5} className="p-2 text-right">Total</td><td className="p-2 text-right">{implants.reduce((s, i) => s + i.quantity, 0)}</td><td className="p-2 text-right">₹{fmt(implants.reduce((s, i) => s + parseFloat(i.cost || 0) * i.quantity, 0))}</td><td className="p-2 text-right">₹{fmt(implants.reduce((s, i) => s + parseFloat(i.mrp || 0) * i.quantity, 0))}</td><td></td></tr></tfoot>
+          </table>
+        </div>}
+        {implants.length === 0 && <div className="text-center py-6 bg-white rounded-xl border text-gray-400 text-sm">No implants recorded for this surgery</div>}
       </div>}
-
-      {/* ===== PRE-OP NOTE ===== */}
-      {tab === 'pre_op' && <div className="bg-white rounded-xl border p-5">
-        <h3 className="font-semibold text-sm mb-3">Pre-Operative Assessment Note</h3>
-        {otNotes.notes.find((n: any) => n.note_type === 'pre_op') ? (
-          <div className="space-y-2 text-sm">{(() => { const n = otNotes.notes.find((n: any) => n.note_type === 'pre_op'); return <>
-            <div><span className="text-gray-500">Diagnosis:</span> {n.pre_op_diagnosis}</div>
-            <div><span className="text-gray-500">Investigations:</span> {n.pre_op_investigations}</div>
-            <div><span className="text-gray-500">Fitness:</span> {n.pre_op_fitness}</div>
-            <div><span className="text-gray-500">ASA Grade:</span> {n.pre_op_asa_grade}</div>
-            <div className="text-xs text-gray-400 mt-2">By {n.author?.full_name} — {new Date(n.created_at).toLocaleString('en-IN')}</div>
-          </>; })()}</div>
-        ) : (
-          <div className="space-y-3">
-            <div><label className="text-xs text-gray-500">Pre-op diagnosis *</label>
-              <textarea value={noteForm.pre_op_diagnosis || ''} onChange={e => setNoteForm((f: any) => ({...f, pre_op_diagnosis: e.target.value}))} rows={2} className="w-full px-3 py-2 border rounded-lg text-sm" /></div>
-            <div><label className="text-xs text-gray-500">Relevant investigations</label>
-              <textarea value={noteForm.pre_op_investigations || ''} onChange={e => setNoteForm((f: any) => ({...f, pre_op_investigations: e.target.value}))} rows={2} className="w-full px-3 py-2 border rounded-lg text-sm" placeholder="CBC, RFT, ECG, CXR findings..." /></div>
-            <div className="grid grid-cols-2 gap-3">
-              <div><label className="text-xs text-gray-500">Fitness for surgery</label>
-                <select value={noteForm.pre_op_fitness || ''} onChange={e => setNoteForm((f: any) => ({...f, pre_op_fitness: e.target.value}))} className="w-full px-3 py-2 border rounded-lg text-sm">
-                  <option value="">Select...</option>{['fit','fit_with_precautions','unfit','high_risk'].map(f => <option key={f}>{f.replace(/_/g,' ')}</option>)}</select></div>
-              <div><label className="text-xs text-gray-500">ASA Grade (1-6)</label>
-                <select value={noteForm.pre_op_asa_grade || ''} onChange={e => setNoteForm((f: any) => ({...f, pre_op_asa_grade: parseInt(e.target.value)||null}))} className="w-full px-3 py-2 border rounded-lg text-sm">
-                  <option value="">Select...</option>{[1,2,3,4,5,6].map(g => <option key={g} value={g}>ASA {g}</option>)}</select></div>
-            </div>
-            <button onClick={() => saveOTNote('pre_op')} className="px-4 py-2 bg-green-600 text-white text-sm rounded-lg">Save Pre-Op Note</button>
-          </div>
-        )}
-      </div>}
-
-      {/* ===== INTRA-OP NOTE ===== */}
-      {tab === 'intra_op' && <div className="bg-white rounded-xl border p-5">
-        <h3 className="font-semibold text-sm mb-3">Intra-Operative / Surgical Note</h3>
-        {otNotes.notes.find((n: any) => n.note_type === 'intra_op') ? (
-          <div className="space-y-2 text-sm">{(() => { const n = otNotes.notes.find((n: any) => n.note_type === 'intra_op'); return <>
-            <div><span className="text-gray-500">Procedure:</span> {n.procedure_performed}</div>
-            <div><span className="text-gray-500">Approach:</span> {n.approach}</div>
-            <div><span className="text-gray-500">Findings:</span> {n.findings}</div>
-            {n.specimens_sent && <div><span className="text-gray-500">Specimens:</span> {n.specimens_sent}</div>}
-            {n.implants_used && <div><span className="text-gray-500">Implants:</span> {n.implants_used}</div>}
-            <div><span className="text-gray-500">EBL:</span> {n.ebl_ml} ml</div>
-            {n.complications && <div className="text-red-600"><span className="font-medium">Complications:</span> {n.complications}</div>}
-            <div><span className="text-gray-500">Duration:</span> {n.duration_minutes} min</div>
-            <div className="text-xs text-gray-400 mt-2">By {n.author?.full_name} — {new Date(n.created_at).toLocaleString('en-IN')}</div>
-          </>; })()}</div>
-        ) : (
-          <div className="space-y-3">
-            <div><label className="text-xs text-gray-500">Procedure performed *</label>
-              <textarea value={noteForm.procedure_performed || ''} onChange={e => setNoteForm((f: any) => ({...f, procedure_performed: e.target.value}))} rows={2} className="w-full px-3 py-2 border rounded-lg text-sm" /></div>
-            <div className="grid grid-cols-2 gap-3">
-              <div><label className="text-xs text-gray-500">Approach</label>
-                <input type="text" value={noteForm.approach || ''} onChange={e => setNoteForm((f: any) => ({...f, approach: e.target.value}))} className="w-full px-3 py-2 border rounded-lg text-sm" placeholder="e.g., Laparoscopic, Open, Robotic..." /></div>
-              <div><label className="text-xs text-gray-500">Duration (minutes)</label>
-                <input type="number" value={noteForm.duration_minutes || ''} onChange={e => setNoteForm((f: any) => ({...f, duration_minutes: parseInt(e.target.value)||null}))} className="w-full px-3 py-2 border rounded-lg text-sm" /></div>
-            </div>
-            <div><label className="text-xs text-gray-500">Findings *</label>
-              <textarea value={noteForm.findings || ''} onChange={e => setNoteForm((f: any) => ({...f, findings: e.target.value}))} rows={3} className="w-full px-3 py-2 border rounded-lg text-sm" /></div>
-            <div className="grid grid-cols-2 gap-3">
-              <div><label className="text-xs text-gray-500">Specimens sent</label>
-                <input type="text" value={noteForm.specimens_sent || ''} onChange={e => setNoteForm((f: any) => ({...f, specimens_sent: e.target.value}))} className="w-full px-3 py-2 border rounded-lg text-sm" /></div>
-              <div><label className="text-xs text-gray-500">Implants used</label>
-                <input type="text" value={noteForm.implants_used || ''} onChange={e => setNoteForm((f: any) => ({...f, implants_used: e.target.value}))} className="w-full px-3 py-2 border rounded-lg text-sm" /></div>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div><label className="text-xs text-gray-500">EBL (ml)</label>
-                <input type="number" value={noteForm.ebl_ml || ''} onChange={e => setNoteForm((f: any) => ({...f, ebl_ml: parseInt(e.target.value)||null}))} className="w-full px-3 py-2 border rounded-lg text-sm" /></div>
-              <div><label className="text-xs text-gray-500">Complications</label>
-                <input type="text" value={noteForm.complications || ''} onChange={e => setNoteForm((f: any) => ({...f, complications: e.target.value}))} className="w-full px-3 py-2 border rounded-lg text-sm" placeholder="None / describe..." /></div>
-            </div>
-            <button onClick={() => saveOTNote('intra_op')} className="px-4 py-2 bg-green-600 text-white text-sm rounded-lg">Save Intra-Op Note</button>
-          </div>
-        )}
-      </div>}
-
-      {/* ===== POST-OP NOTE ===== */}
-      {tab === 'post_op' && <div className="bg-white rounded-xl border p-5">
-        <h3 className="font-semibold text-sm mb-3">Post-Operative Orders & Instructions</h3>
-        {otNotes.notes.find((n: any) => n.note_type === 'post_op') ? (
-          <div className="space-y-2 text-sm">{(() => { const n = otNotes.notes.find((n: any) => n.note_type === 'post_op'); return <>
-            <div><span className="text-gray-500">Post-op diagnosis:</span> {n.post_op_diagnosis}</div>
-            <div><span className="text-gray-500">Instructions:</span> {n.post_op_instructions}</div>
-            <div><span className="text-gray-500">Diet:</span> {n.post_op_diet}</div>
-            <div><span className="text-gray-500">Activity:</span> {n.post_op_activity}</div>
-            <div><span className="text-gray-500">Drains:</span> {n.drain_details}</div>
-            <div><span className="text-gray-500">DVT prophylaxis:</span> {n.dvt_prophylaxis}</div>
-            <div className="text-xs text-gray-400 mt-2">By {n.author?.full_name} — {new Date(n.created_at).toLocaleString('en-IN')}</div>
-          </>; })()}</div>
-        ) : (
-          <div className="space-y-3">
-            <div><label className="text-xs text-gray-500">Post-op diagnosis</label>
-              <input type="text" value={noteForm.post_op_diagnosis || ''} onChange={e => setNoteForm((f: any) => ({...f, post_op_diagnosis: e.target.value}))} className="w-full px-3 py-2 border rounded-lg text-sm" /></div>
-            <div><label className="text-xs text-gray-500">Post-op instructions *</label>
-              <textarea value={noteForm.post_op_instructions || ''} onChange={e => setNoteForm((f: any) => ({...f, post_op_instructions: e.target.value}))} rows={3} className="w-full px-3 py-2 border rounded-lg text-sm" placeholder="Monitor vitals Q15min x 4, then Q1H. Keep NPO x 6 hours. DVT prophylaxis..." /></div>
-            <div className="grid grid-cols-2 gap-3">
-              <div><label className="text-xs text-gray-500">Diet</label>
-                <input type="text" value={noteForm.post_op_diet || ''} onChange={e => setNoteForm((f: any) => ({...f, post_op_diet: e.target.value}))} className="w-full px-3 py-2 border rounded-lg text-sm" placeholder="NPO / Sips / Soft diet..." /></div>
-              <div><label className="text-xs text-gray-500">Activity</label>
-                <input type="text" value={noteForm.post_op_activity || ''} onChange={e => setNoteForm((f: any) => ({...f, post_op_activity: e.target.value}))} className="w-full px-3 py-2 border rounded-lg text-sm" placeholder="Strict bed rest / OOB tomorrow..." /></div>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div><label className="text-xs text-gray-500">Drain details</label>
-                <input type="text" value={noteForm.drain_details || ''} onChange={e => setNoteForm((f: any) => ({...f, drain_details: e.target.value}))} className="w-full px-3 py-2 border rounded-lg text-sm" placeholder="e.g., Abdominal drain in situ, ICD right..." /></div>
-              <div><label className="text-xs text-gray-500">DVT prophylaxis</label>
-                <input type="text" value={noteForm.dvt_prophylaxis || ''} onChange={e => setNoteForm((f: any) => ({...f, dvt_prophylaxis: e.target.value}))} className="w-full px-3 py-2 border rounded-lg text-sm" placeholder="e.g., Enoxaparin 40mg SC OD, TED stockings" /></div>
-            </div>
-            <div><label className="text-xs text-gray-500">Follow-up plan</label>
-              <input type="text" value={noteForm.follow_up_plan || ''} onChange={e => setNoteForm((f: any) => ({...f, follow_up_plan: e.target.value}))} className="w-full px-3 py-2 border rounded-lg text-sm" /></div>
-            <button onClick={() => saveOTNote('post_op')} className="px-4 py-2 bg-green-600 text-white text-sm rounded-lg">Save Post-Op Note</button>
-          </div>
-        )}
-      </div>}
-
-      {/* ===== ANAESTHESIA RECORD ===== */}
-      {tab === 'anaesthesia' && <AnaesthesiaForm bookingId={bookingId} staffId={staffId} patientName={patientName} onFlash={flash} />}
     </div>
   );
 }

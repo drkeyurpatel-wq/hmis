@@ -310,7 +310,7 @@ export function useWHOChecklist(bookingId: string | null) {
 
   const load = useCallback(async () => {
     if (!bookingId || !sb()) return;
-    const { data } = await sb().from('hmis_who_checklist').select('*').eq('ot_booking_id', bookingId).single();
+    const { data } = await sb().from('hmis_ot_safety_checklist').select('*').eq('ot_booking_id', bookingId).single();
     setChecklist(data);
   }, [bookingId]);
 
@@ -319,9 +319,9 @@ export function useWHOChecklist(bookingId: string | null) {
   const createOrUpdate = useCallback(async (updates: any, staffId: string) => {
     if (!bookingId || !sb()) return;
     if (checklist?.id) {
-      await sb().from('hmis_who_checklist').update(updates).eq('id', checklist.id);
+      await sb().from('hmis_ot_safety_checklist').update(updates).eq('id', checklist.id);
     } else {
-      await sb().from('hmis_who_checklist').insert({ ot_booking_id: bookingId, ...updates });
+      await sb().from('hmis_ot_safety_checklist').insert({ ot_booking_id: bookingId, ...updates });
     }
     load();
   }, [bookingId, checklist, load]);
