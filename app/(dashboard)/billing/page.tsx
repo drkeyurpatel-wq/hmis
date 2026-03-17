@@ -3,16 +3,20 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { RoleGuard } from '@/components/ui/shared';
 import { useAuthStore } from '@/lib/store/auth';
 import { useBillsV2, useTariffs, useEstimates, usePackages } from '@/lib/billing/billing-hooks';
+import { useCashlessWorkflow, useCorporateBilling, useAccountsReceivable, useSettlements, useGovtSchemes, useLoyalty, useIntegrationBridge } from '@/lib/billing/revenue-cycle-hooks';
 import { createClient } from '@/lib/supabase/client';
 import BillDetail from '@/components/billing/bill-detail';
 import RevenueDashboard from '@/components/billing/revenue-dashboard';
 import EstimateGenerator from '@/components/billing/estimate-generator';
 import DayEndSettlement from '@/components/billing/day-end-settlement';
+import CashlessWorkflow from '@/components/billing/cashless-workflow';
+import ARDashboard from '@/components/billing/ar-dashboard';
+import { CorporatePanel, LoyaltyPanel, IntegrationPanel } from '@/components/billing/corporate-loyalty-integrations';
 
 let _sb: any = null;
 function sb() { if (typeof window === 'undefined') return null as any; if (!_sb) { try { _sb = createClient(); } catch { return null; } } return _sb; }
 
-type Tab = 'dashboard' | 'bills' | 'ipd_billing' | 'estimates' | 'advances' | 'tariffs' | 'packages' | 'day_end' | 'refunds' | 'credit_notes';
+type Tab = 'dashboard' | 'bills' | 'cashless' | 'corporate' | 'ipd_billing' | 'ar' | 'estimates' | 'advances' | 'settlements' | 'govt' | 'loyalty' | 'tariffs' | 'day_end' | 'integrations';
 
 function BillingInner() {
   const { staff, activeCentreId } = useAuthStore();
@@ -22,6 +26,13 @@ function BillingInner() {
   const tariffs = useTariffs(centreId);
   const estimates = useEstimates(centreId);
   const packages = usePackages(centreId);
+  const cashless = useCashlessWorkflow(centreId);
+  const corporates = useCorporateBilling(centreId);
+  const ar = useAccountsReceivable(centreId);
+  const settlements = useSettlements(centreId);
+  const govtSchemes = useGovtSchemes(centreId);
+  const loyalty = useLoyalty(centreId);
+  const integrations = useIntegrationBridge(centreId);
 
   const [tab, setTab] = useState<Tab>('dashboard');
   const [toast, setToast] = useState('');
@@ -83,9 +94,10 @@ function BillingInner() {
   const reloadBills = () => billing.load({ dateFrom, dateTo, status: statusFilter, payorType: payorFilter, billType: typeFilter });
 
   const tabs: [Tab, string, string][] = [
-    ['dashboard','Dashboard','📊'],['bills','Bills','📄'],['ipd_billing','IPD Running','🏥'],['estimates','Estimates','📋'],
-    ['advances','Advances','💰'],['tariffs','Tariff Master','📑'],['packages','Packages','📦'],['day_end','Day End','🔒'],
-    ['refunds','Refunds','↩️'],['credit_notes','Credit Notes','📝']
+    ['dashboard','Dashboard','📊'],['bills','Bills','📄'],['cashless','Cashless/TPA','🏥'],['corporate','Corporate','🏢'],
+    ['ipd_billing','IPD Running','🛏️'],['ar','Receivables','📉'],['estimates','Estimates','📋'],
+    ['advances','Advances','💰'],['settlements','Settlements','🤝'],['govt','Govt Schemes','🇮🇳'],
+    ['loyalty','Loyalty','💳'],['tariffs','Tariff Master','📑'],['day_end','Day End','🔒'],['integrations','Integrations','🔗']
   ];
 
   return (
@@ -254,36 +266,74 @@ function BillingInner() {
         ))}</tbody></table></div>
       </div>}
 
-      {/* ===== PACKAGES ===== */}
-      {tab === 'packages' && <div>
-        <h2 className="font-semibold text-sm mb-3">Surgery / Treatment Packages</h2>
-        {packages.packages.length === 0 ? <div className="text-center py-8 bg-white rounded-xl border text-gray-400 text-sm">No packages configured</div> :
-        <div className="grid grid-cols-2 gap-3">{packages.packages.map((p: any) => (
-          <div key={p.id} className="bg-white rounded-xl border p-4">
-            <div className="flex justify-between"><div><div className="font-semibold">{p.package_name}</div><div className="text-[10px] text-gray-400">{p.package_code} | {p.department?.name}</div></div>
-              <div className="text-lg font-bold text-blue-700">₹{fmt(p.total_amount)}</div></div>
-            {p.inclusions && Array.isArray(p.inclusions) && <div className="text-xs text-green-600 mt-1">Includes: {p.inclusions.join(', ')}</div>}
-            {p.exclusions && Array.isArray(p.exclusions) && p.exclusions.length > 0 && <div className="text-xs text-red-500 mt-0.5">Excludes: {p.exclusions.join(', ')}</div>}
+      {/* ===== DAY END ===== */}
+      {tab === 'day_end' && <DayEndSettlement bills={billing.bills} />}
+
+      {/* ===== CASHLESS / TPA ===== */}
+      {tab === 'cashless' && <CashlessWorkflow preAuths={cashless.preAuths} claims={cashless.claims} stats={cashless.stats} loading={cashless.loading} onUpdatePreAuth={cashless.updatePreAuth} onUpdateClaim={cashless.updateClaim} onFlash={flash} />}
+
+      {/* ===== CORPORATE ===== */}
+      {tab === 'corporate' && <CorporatePanel corporates={corporates.corporates} onFlash={flash} />}
+
+      {/* ===== ACCOUNTS RECEIVABLE ===== */}
+      {tab === 'ar' && <ARDashboard entries={ar.entries} stats={ar.stats} loading={ar.loading} onFollowup={ar.addFollowup} onWriteOff={ar.writeOff} staffId={staffId} onFlash={flash} />}
+
+      {/* ===== SETTLEMENTS ===== */}
+      {tab === 'settlements' && <div>
+        <h2 className="font-semibold text-sm mb-3">Settlement & Reconciliation</h2>
+        {settlements.settlements.length === 0 ? <div className="text-center py-8 bg-white rounded-xl border text-gray-400 text-sm">No settlements recorded. Settlements are created when insurance/TPA/corporate payments are received.</div> :
+        <div className="space-y-2">{settlements.settlements.map(s => (
+          <div key={s.id} className="bg-white rounded-xl border p-4">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <span className="bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded text-[10px]">{s.settlement_type}</span>
+                <span className="font-medium">{s.insurer?.name || s.tpa?.name || s.corporate?.company_name || '—'}</span>
+                <span className="font-mono text-xs text-gray-400">{s.settlement_number}</span>
+                {s.reconciled && <span className="bg-green-100 text-green-700 px-1.5 py-0.5 rounded text-[10px]">Reconciled ✓</span>}
+              </div>
+              <div className="text-right text-xs">
+                <div>Claimed: ₹{fmt(s.claimed_amount)} | Settled: <b className="text-green-700">₹{fmt(s.settled_amount)}</b></div>
+                {parseFloat(s.tds_amount || 0) > 0 && <div className="text-gray-500">TDS: ₹{fmt(s.tds_amount)} | Disallowed: ₹{fmt(s.disallowance_amount)}</div>}
+              </div>
+            </div>
+            <div className="flex items-center gap-3 text-[10px] text-gray-500">
+              <span>Date: {s.settlement_date}</span>
+              {s.utr_number && <span className="font-mono">UTR: {s.utr_number}</span>}
+              <span>{s.total_claims} claims</span>
+              <span>Net received: <b className="text-green-700">₹{fmt(s.net_received)}</b></span>
+            </div>
+            {!s.reconciled && <button onClick={() => settlements.reconcile(s.id, staffId)} className="mt-2 px-3 py-1 bg-green-50 text-green-700 text-[10px] rounded">Mark Reconciled</button>}
           </div>
         ))}</div>}
       </div>}
 
-      {/* ===== DAY END ===== */}
-      {tab === 'day_end' && <DayEndSettlement bills={billing.bills} />}
-
-      {/* ===== REFUNDS ===== */}
-      {tab === 'refunds' && <div>
-        <h2 className="font-semibold text-sm mb-3">Refund Management</h2>
-        <p className="text-xs text-gray-500 mb-3">Process refunds against bills or advances. Requires supervisor/MD approval.</p>
-        <div className="text-center py-8 bg-white rounded-xl border text-gray-400 text-sm">No refunds processed. Initiate from the Advances tab or Bill Detail view.</div>
+      {/* ===== GOVT SCHEMES ===== */}
+      {tab === 'govt' && <div>
+        <h2 className="font-semibold text-sm mb-3">Government Scheme Empanelments</h2>
+        {govtSchemes.schemes.length === 0 ? <div className="text-center py-8 bg-white rounded-xl border text-gray-400 text-sm">No government schemes configured. Run sql/revenue_cycle_migration.sql to seed scheme data.</div> :
+        <div className="grid grid-cols-2 gap-3">{govtSchemes.schemes.map(s => (
+          <div key={s.id} className="bg-white rounded-xl border p-4">
+            <div className="flex items-center justify-between mb-2">
+              <div><div className="font-semibold">{s.scheme_name}</div><div className="text-[10px] text-gray-400">{s.scheme_code.toUpperCase()}</div></div>
+              <span className={`px-2 py-0.5 rounded text-xs ${s.is_active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>{s.is_active ? 'Active' : 'Inactive'}</span>
+            </div>
+            <div className="grid grid-cols-2 gap-2 text-xs text-gray-600">
+              {s.empanelment_number && <div><b>Empanelment #:</b> {s.empanelment_number}</div>}
+              {s.empanelment_valid_to && <div><b>Valid until:</b> {s.empanelment_valid_to}</div>}
+              {s.nodal_officer && <div><b>Nodal officer:</b> {s.nodal_officer}</div>}
+              {s.submission_portal && <div><b>Portal:</b> {s.submission_portal.replace('_',' ')}</div>}
+              <div><b>Claim window:</b> {s.max_claim_days} days</div>
+              {s.portal_url && <div><a href={s.portal_url} target="_blank" className="text-blue-600 underline text-[10px]">Open portal →</a></div>}
+            </div>
+          </div>
+        ))}</div>}
       </div>}
 
-      {/* ===== CREDIT NOTES ===== */}
-      {tab === 'credit_notes' && <div>
-        <h2 className="font-semibold text-sm mb-3">Credit / Debit Notes</h2>
-        <p className="text-xs text-gray-500 mb-3">Issue credit notes against finalized bills for corrections, cancellations, or insurance adjustments.</p>
-        <div className="text-center py-8 bg-white rounded-xl border text-gray-400 text-sm">No credit notes issued</div>
-      </div>}
+      {/* ===== LOYALTY ===== */}
+      {tab === 'loyalty' && <LoyaltyPanel cards={loyalty.cards} onIssue={loyalty.issueCard} onFlash={flash} />}
+
+      {/* ===== INTEGRATIONS ===== */}
+      {tab === 'integrations' && <IntegrationPanel pendingSync={integrations.pendingSync} onMarkSynced={integrations.markSynced} onFlash={flash} />}
     </div>
   );
 }
