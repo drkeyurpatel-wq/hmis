@@ -17,6 +17,7 @@ const navItems = [
   { href: '/patients', label: 'Patients', icon: Users, module: 'patients' },
   { href: '/opd', label: 'OPD', icon: Calendar, module: 'opd' },
   { href: '/ipd', label: 'IPD', icon: BedDouble, module: 'ipd' },
+  { href: '/beds', label: 'Bed Board', icon: BedDouble, module: 'ipd' },
   { href: '/emr', label: 'EMR (Legacy)', icon: Stethoscope, module: 'emr' },
   { href: '/emr-v2', label: 'EMR v2', icon: Stethoscope, module: 'emr' },
   { href: '/billing', label: 'Billing', icon: CreditCard, module: 'billing' },
