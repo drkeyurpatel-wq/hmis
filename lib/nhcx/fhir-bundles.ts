@@ -99,7 +99,7 @@ function buildProviderOrganization(config: NHCXConfig): any {
     resourceType: 'Organization',
     id: uuidv4(),
     meta: { profile: ['https://nrces.in/ndhm/fhir/r4/StructureDefinition/Organization'] },
-    identifier: [{ system: 'https://facilitysbx.abdm.gov.in', value: config.facilityHfrId }],
+    identifier: [{ system: 'https://facility.abdm.gov.in', value: config.facilityHfrId }],
     name: config.facilityName,
     address: [{ city: config.facilityCity, state: config.facilityState, postalCode: config.facilityPincode, country: 'IN' }],
   };

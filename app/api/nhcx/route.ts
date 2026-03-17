@@ -24,7 +24,7 @@ function getSupabase() {
 function getNHCXConfig(): NHCXConfig {
   return {
     participantCode: process.env.NHCX_PARTICIPANT_CODE || '',
-    facilityHfrId: process.env.NHCX_HFR_ID || '',
+    facilityHfrId: process.env.NHCX_HFR_ID || 'IN2410013685',
     facilityName: 'Health1 Super Speciality Hospital',
     facilityCity: 'Ahmedabad',
     facilityState: 'Gujarat',
