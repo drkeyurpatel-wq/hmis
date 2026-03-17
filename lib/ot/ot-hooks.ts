@@ -36,11 +36,87 @@ export function useOTSchedule(centreId: string | null) {
 
   useEffect(() => { loadRooms(); loadBookings(); }, [loadRooms, loadBookings]);
 
-  const create = useCallback(async (data: any) => {
-    if (!sb()) return null;
-    const { data: result } = await sb().from('hmis_ot_bookings').insert(data).select().single();
+  const create = useCallback(async (data: any): Promise<{ success: boolean; error?: string; booking?: any }> => {
+    if (!sb()) return { success: false, error: 'Database not available' };
+
+    // ---- VALIDATION ----
+    if (!data.admission_id) return { success: false, error: 'Patient (admission) is required' };
+    if (!data.ot_room_id) return { success: false, error: 'OT room is required' };
+    if (!data.surgeon_id) return { success: false, error: 'Surgeon is required' };
+    if (!data.procedure_name) return { success: false, error: 'Procedure name is required' };
+    if (!data.scheduled_date) return { success: false, error: 'Date is required' };
+    if (!data.scheduled_start) return { success: false, error: 'Start time is required' };
+
+    const duration = data.estimated_duration_min || 60;
+    const [startH, startM] = data.scheduled_start.split(':').map(Number);
+    const startMin = startH * 60 + startM;
+    const endMin = startMin + duration;
+
+    // ---- ROOM CONFLICT CHECK ----
+    // Fetch all non-cancelled bookings in the same room on the same date
+    const { data: existingBookings } = await sb().from('hmis_ot_bookings')
+      .select('id, scheduled_start, estimated_duration_min, procedure_name, status')
+      .eq('ot_room_id', data.ot_room_id)
+      .eq('scheduled_date', data.scheduled_date)
+      .neq('status', 'cancelled');
+
+    if (existingBookings?.length) {
+      for (const existing of existingBookings) {
+        const [eH, eM] = (existing.scheduled_start || '09:00').split(':').map(Number);
+        const eStart = eH * 60 + eM;
+        const eEnd = eStart + (existing.estimated_duration_min || 60);
+        // Overlap: new starts before existing ends AND new ends after existing starts
+        if (startMin < eEnd && endMin > eStart) {
+          const conflictTime = `${String(eH).padStart(2, '0')}:${String(eM).padStart(2, '0')}`;
+          return { success: false, error: `Room conflict: "${existing.procedure_name}" is booked at ${conflictTime} (${existing.estimated_duration_min}min). Your surgery (${data.scheduled_start}, ${duration}min) overlaps.` };
+        }
+      }
+    }
+
+    // ---- SURGEON CONFLICT CHECK ----
+    const { data: surgeonBookings } = await sb().from('hmis_ot_bookings')
+      .select('id, scheduled_start, estimated_duration_min, procedure_name, ot_room:hmis_ot_rooms(name)')
+      .eq('surgeon_id', data.surgeon_id)
+      .eq('scheduled_date', data.scheduled_date)
+      .neq('status', 'cancelled');
+
+    if (surgeonBookings?.length) {
+      for (const existing of surgeonBookings) {
+        const [eH, eM] = (existing.scheduled_start || '09:00').split(':').map(Number);
+        const eStart = eH * 60 + eM;
+        const eEnd = eStart + (existing.estimated_duration_min || 60);
+        if (startMin < eEnd && endMin > eStart) {
+          return { success: false, error: `Surgeon conflict: already booked for "${existing.procedure_name}" in ${existing.ot_room?.name} at ${existing.scheduled_start}` };
+        }
+      }
+    }
+
+    // ---- ANAESTHETIST CONFLICT CHECK ----
+    if (data.anaesthetist_id) {
+      const { data: anaesBookings } = await sb().from('hmis_ot_bookings')
+        .select('id, scheduled_start, estimated_duration_min, procedure_name, ot_room:hmis_ot_rooms(name)')
+        .eq('anaesthetist_id', data.anaesthetist_id)
+        .eq('scheduled_date', data.scheduled_date)
+        .neq('status', 'cancelled');
+
+      if (anaesBookings?.length) {
+        for (const existing of anaesBookings) {
+          const [eH, eM] = (existing.scheduled_start || '09:00').split(':').map(Number);
+          const eStart = eH * 60 + eM;
+          const eEnd = eStart + (existing.estimated_duration_min || 60);
+          if (startMin < eEnd && endMin > eStart) {
+            return { success: false, error: `Anaesthetist conflict: already assigned to "${existing.procedure_name}" in ${existing.ot_room?.name} at ${existing.scheduled_start}` };
+          }
+        }
+      }
+    }
+
+    // ---- CREATE ----
+    const { data: result, error } = await sb().from('hmis_ot_bookings').insert(data).select().single();
+    if (error) return { success: false, error: error.message };
+
     loadBookings(data.scheduled_date);
-    return result;
+    return { success: true, booking: result };
   }, [loadBookings]);
 
   const updateStatus = useCallback(async (id: string, status: string, extra?: any) => {

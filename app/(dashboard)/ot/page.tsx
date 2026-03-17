@@ -38,6 +38,9 @@ function OTInner() {
   const [selectedBooking, setSelectedBooking] = useState<any>(null);
   const flash = (m: string) => { setToast(m); setTimeout(() => setToast(''), 2500); };
 
+  // Booking error
+  const [bookingError, setBookingError] = useState('');
+
   // New booking form
   const [admissions, setAdmissions] = useState<any[]>([]);
   const [doctors, setDoctors] = useState<any[]>([]);
@@ -127,18 +130,29 @@ function OTInner() {
                 ))}</div>
                 {/* Surgery blocks */}
                 {roomBookings.map(b => {
+                  const TIMELINE_START = 7 * 60;  // 7:00 AM in minutes
+                  const TIMELINE_END = 21 * 60;   // 9:00 PM in minutes
+                  const TIMELINE_SPAN = TIMELINE_END - TIMELINE_START; // 840 minutes
+
                   const [h, m] = (b.scheduled_start || '09:00').split(':').map(Number);
-                  const startMin = (h - 7) * 60 + m;
-                  const totalMin = 14 * 60; // 7:00 to 21:00
+                  const surgeryStart = h * 60 + m; // absolute minutes from midnight
                   const dur = b.estimated_duration_min || 60;
-                  const left = Math.max(0, (startMin / totalMin) * 100);
-                  const width = Math.min(100 - left, (dur / totalMin) * 100);
+                  const surgeryEnd = surgeryStart + dur;
+
+                  // Clamp to timeline bounds
+                  const visibleStart = Math.max(surgeryStart, TIMELINE_START);
+                  const visibleEnd = Math.min(surgeryEnd, TIMELINE_END);
+                  if (visibleEnd <= visibleStart) return null; // entirely outside timeline
+
+                  const left = ((visibleStart - TIMELINE_START) / TIMELINE_SPAN) * 100;
+                  const width = ((visibleEnd - visibleStart) / TIMELINE_SPAN) * 100;
+
                   const bgColor = b.status === 'in_progress' ? 'bg-red-400' : b.status === 'completed' ? 'bg-green-400' : b.status === 'cancelled' ? 'bg-gray-300' : 'bg-blue-400';
                   return (
                     <div key={b.id} onClick={() => setSelectedBooking(b)}
                       className={`absolute top-2 h-8 ${bgColor} rounded cursor-pointer flex items-center px-1 text-white text-[9px] font-medium overflow-hidden shadow-sm hover:opacity-90`}
-                      style={{ left: `${left}%`, width: `${Math.max(3, width)}%` }}
-                      title={`${b.procedure_name} — ${b.patient?.patient?.first_name} ${b.patient?.patient?.last_name} (${b.scheduled_start})`}>
+                      style={{ left: `${left}%`, width: `${Math.max(2, width)}%` }}
+                      title={`${b.procedure_name} — ${b.patient?.patient?.first_name} ${b.patient?.patient?.last_name} (${b.scheduled_start}, ${dur}min)`}>
                       {b.is_robotic && '🤖'}{b.is_emergency && '🚨'}{b.procedure_name?.substring(0, 20)}
                     </div>
                   );
@@ -259,10 +273,13 @@ function OTInner() {
               <button key={v} onClick={() => setBkForm(f => ({...f, robot_type:v, is_robotic:v!=='none'}))} className={`flex-1 py-1.5 rounded text-[10px] border ${bkForm.robot_type===v?'bg-purple-600 text-white':'bg-white'}`}>{l}</button>
             ))}</div></div>
         </div>
+        {bookingError && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3 text-sm text-red-700">{bookingError}</div>}
         <button onClick={async () => {
           if (!bkForm.admission_id || !bkForm.ot_room_id || !bkForm.surgeon_id || !bkForm.procedure_name) return;
-          await schedule.create(bkForm);
-          flash('Surgery booked'); setTab('board');
+          setBookingError('');
+          const result = await schedule.create(bkForm);
+          if (!result.success) { setBookingError(result.error || 'Booking failed'); return; }
+          flash('Surgery booked'); setTab('board'); setBookingError('');
           setBkForm({admission_id:'',ot_room_id:'',surgeon_id:'',anaesthetist_id:'',assistant_surgeon_id:'',procedure_name:'',scheduled_date:new Date().toISOString().split('T')[0],scheduled_start:'09:00',estimated_duration_min:60,is_emergency:false,is_robotic:false,robot_type:'none',anaesthesia_type:'general',priority:'elective',laterality:'na',patient_category:'adult'});
         }} disabled={!bkForm.admission_id||!bkForm.ot_room_id||!bkForm.surgeon_id||!bkForm.procedure_name}
           className="px-6 py-2.5 bg-green-600 text-white text-sm rounded-lg font-medium disabled:opacity-40">Book Surgery</button>

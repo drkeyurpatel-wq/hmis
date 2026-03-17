@@ -38,9 +38,13 @@ function PharmacyInner() {
   const [stockDrugQ, setStockDrugQ] = useState('');
   const stockDrugResults = useMemo(() => drugMaster.search(stockDrugQ), [stockDrugQ, drugMaster]);
   const [stockForm, setStockForm] = useState({ drug_id:'', drug_name:'', batch_number:'', expiry_date:'', purchase_rate:'', mrp:'', quantity_received:'', supplier:'' });
+  const [stockError, setStockError] = useState('');
 
   // Dispensing
   const [selectedRx, setSelectedRx] = useState<any>(null);
+  const [dispItems, setDispItems] = useState<{drugId: string; drugName: string; qty: number; prescribed: string}[]>([]);
+  const [dispError, setDispError] = useState('');
+  const [dispLoading, setDispLoading] = useState(false);
 
   const tabs: [Tab,string,string][] = [
     ['dashboard','Dashboard','📊'],['dispensing','Dispensing','💊'],['drug_master','Drug Master','📋'],
@@ -117,9 +121,78 @@ function PharmacyInner() {
           </div>
         ))}</div>}
 
-        {selectedRx && <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-          <div className="flex justify-between mb-2"><h3 className="text-sm font-bold">Dispense: {selectedRx.patient?.first_name} {selectedRx.patient?.last_name}</h3><button onClick={() => setSelectedRx(null)} className="text-xs text-gray-500">Close</button></div>
-          <button onClick={async () => { await dispensing.dispense(selectedRx.id, [], staffId, 0); setSelectedRx(null); flash('Dispensed'); }} className="px-4 py-2 bg-green-600 text-white text-sm rounded-lg">Mark Dispensed</button>
+        {selectedRx && <div className="bg-white rounded-xl border p-5 space-y-3">
+          <div className="flex justify-between items-start">
+            <div><h3 className="font-bold">Dispense Prescription</h3>
+              <div className="text-xs text-gray-500">{selectedRx.patient?.first_name} {selectedRx.patient?.last_name} ({selectedRx.patient?.uhid})</div></div>
+            <button onClick={() => { setSelectedRx(null); setDispItems([]); setDispError(''); }} className="text-xs text-gray-500">Close</button>
+          </div>
+
+          {/* Prescribed medications */}
+          <div className="bg-gray-50 rounded-lg p-3">
+            <div className="text-xs font-semibold text-gray-500 mb-2">Prescribed Medications</div>
+            {(() => {
+              const rxData = typeof selectedRx.prescription_data === 'string' ? JSON.parse(selectedRx.prescription_data || '[]') : (selectedRx.prescription_data || []);
+              return rxData.length === 0
+                ? <div className="text-xs text-gray-400">No prescription data — add items manually below</div>
+                : <div className="space-y-1">{rxData.map((med: any, i: number) => (
+                    <div key={i} className="flex items-center justify-between text-xs bg-white rounded px-3 py-2">
+                      <div><span className="font-medium">{med.drug_name || med.name || 'Drug'}</span> <span className="text-gray-400">{med.dose} {med.route} {med.frequency}</span></div>
+                      <div className="text-gray-500">{med.duration || ''}</div>
+                    </div>
+                  ))}</div>;
+            })()}
+          </div>
+
+          {/* Dispensing items — drug search + qty entry */}
+          <div>
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-xs font-semibold text-gray-500">Items to Dispense</span>
+              <button onClick={() => setDispItems(prev => [...prev, { drugId: '', drugName: '', qty: 1, prescribed: '' }])}
+                className="text-xs text-blue-600">+ Add Drug</button>
+            </div>
+            {dispItems.map((item, idx) => (
+              <div key={idx} className="flex items-center gap-2 mb-1.5">
+                <div className="flex-1 relative">
+                  <input type="text" value={item.drugName} placeholder="Search drug..."
+                    onChange={e => { const items = [...dispItems]; items[idx].drugName = e.target.value; items[idx].drugId = ''; setDispItems(items); }}
+                    className="w-full px-3 py-1.5 border rounded text-sm" />
+                  {item.drugName.length >= 2 && !item.drugId && (() => {
+                    const results = drugMaster.search(item.drugName);
+                    return results.length > 0 ? (
+                      <div className="absolute top-full left-0 right-0 bg-white border rounded shadow z-10 mt-0.5 max-h-32 overflow-y-auto">
+                        {results.map(d => (
+                          <button key={d.id} onClick={() => { const items = [...dispItems]; items[idx].drugId = d.id; items[idx].drugName = `${d.generic_name} ${d.strength || ''} (${d.formulation})`; setDispItems(items); }}
+                            className="w-full text-left px-3 py-1.5 text-xs hover:bg-blue-50 border-b">{d.generic_name} {d.strength} ({d.formulation}) {d.brand_name ? `— ${d.brand_name}` : ''}</button>
+                        ))}
+                      </div>
+                    ) : null;
+                  })()}
+                </div>
+                <input type="number" value={item.qty} min={1} onChange={e => { const items = [...dispItems]; items[idx].qty = parseInt(e.target.value) || 0; setDispItems(items); }}
+                  className="w-20 px-2 py-1.5 border rounded text-sm text-center" placeholder="Qty" />
+                {item.drugId && <span className="text-green-600 text-xs">Ready</span>}
+                <button onClick={() => setDispItems(prev => prev.filter((_, i) => i !== idx))} className="text-red-500 text-sm">Remove</button>
+              </div>
+            ))}
+            {dispItems.length === 0 && <div className="text-xs text-gray-400 py-2">No items added. Click + Add Drug to start dispensing.</div>}
+          </div>
+
+          {/* Error + Dispense button */}
+          {dispError && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-2 text-sm text-red-700">{dispError}</div>}
+          <div className="flex items-center justify-between">
+            <div className="text-xs text-gray-500">{dispItems.filter(i => i.drugId && i.qty > 0).length} of {dispItems.length} items ready</div>
+            <button onClick={async () => {
+              const validItems = dispItems.filter(i => i.drugId && i.qty > 0);
+              if (validItems.length === 0) { setDispError('No valid items to dispense'); return; }
+              setDispLoading(true); setDispError('');
+              const result = await dispensing.dispense(selectedRx.id, validItems, staffId, 0);
+              setDispLoading(false);
+              if (!result.success) { setDispError(result.error || 'Dispensing failed'); return; }
+              flash('Dispensed successfully'); setSelectedRx(null); setDispItems([]); setDispError('');
+            }} disabled={dispLoading || dispItems.filter(i => i.drugId && i.qty > 0).length === 0}
+              className="px-6 py-2 bg-green-600 text-white text-sm rounded-lg font-medium disabled:opacity-40">{dispLoading ? 'Processing...' : 'Dispense (FEFO Auto-Pick)'}</button>
+          </div>
         </div>}
       </div>}
 
@@ -199,7 +272,14 @@ function PharmacyInner() {
             <div><label className="text-xs text-gray-500">MRP *</label><input type="number" value={stockForm.mrp} onChange={e => setStockForm(f => ({...f, mrp:e.target.value}))} className="w-full px-3 py-2 border rounded-lg text-sm" /></div>
             <div><label className="text-xs text-gray-500">Quantity *</label><input type="number" value={stockForm.quantity_received} onChange={e => setStockForm(f => ({...f, quantity_received:e.target.value}))} className="w-full px-3 py-2 border rounded-lg text-sm" /></div>
           </div>
-          <button onClick={async () => { if (!stockForm.drug_id||!stockForm.batch_number||!stockForm.expiry_date) return; await stock.addStock({ drug_id:stockForm.drug_id, batch_number:stockForm.batch_number, expiry_date:stockForm.expiry_date, purchase_rate:parseFloat(stockForm.purchase_rate), mrp:parseFloat(stockForm.mrp), quantity_received:parseInt(stockForm.quantity_received), quantity_available:parseInt(stockForm.quantity_received), supplier:stockForm.supplier }); setShowAddStock(false); flash('Stock added'); }} className="px-4 py-2 bg-green-600 text-white text-sm rounded-lg">Add Stock</button>
+          {stockError && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-2 text-sm text-red-700">{stockError}</div>}
+          <button onClick={async () => {
+            setStockError('');
+            const result = await stock.addStock({ drug_id:stockForm.drug_id, batch_number:stockForm.batch_number, expiry_date:stockForm.expiry_date, purchase_rate:parseFloat(stockForm.purchase_rate), mrp:parseFloat(stockForm.mrp), quantity_received:parseInt(stockForm.quantity_received), supplier:stockForm.supplier });
+            if (!result.success) { setStockError(result.error || 'Failed to add stock'); return; }
+            setShowAddStock(false); setStockError(''); flash('Stock added');
+            setStockForm({ drug_id:'', drug_name:'', batch_number:'', expiry_date:'', purchase_rate:'', mrp:'', quantity_received:'', supplier:'' });
+          }} className="px-4 py-2 bg-green-600 text-white text-sm rounded-lg">Add Stock</button>
         </div>}
         <div className="bg-white rounded-xl border overflow-hidden"><table className="w-full text-xs"><thead><tr className="bg-gray-50 border-b">
           <th className="p-2 text-left">Drug</th><th className="p-2">Form</th><th className="p-2 text-right">Total Qty</th><th className="p-2">Batches</th><th className="p-2">Earliest Exp</th><th className="p-2 text-right">Avg Cost</th><th className="p-2 text-right">MRP</th><th className="p-2 text-right">Value</th>

@@ -107,11 +107,52 @@ export function usePharmacyStock(centreId: string | null) {
   const totalValue = useMemo(() => stock.reduce((s, i) => s + (parseFloat(i.purchase_rate) * i.quantity_available), 0), [stock]);
   const totalMRPValue = useMemo(() => stock.reduce((s, i) => s + (parseFloat(i.mrp) * i.quantity_available), 0), [stock]);
 
-  // Add stock (manual or GRN)
-  const addStock = useCallback(async (data: any) => {
-    if (!centreId || !sb()) return;
-    await sb().from('hmis_pharmacy_stock').insert({ ...data, centre_id: centreId, quantity_dispensed: 0 });
+  // Add stock (manual or GRN) — with full validation
+  const addStock = useCallback(async (data: any): Promise<{ success: boolean; error?: string }> => {
+    if (!centreId || !sb()) return { success: false, error: 'Not ready' };
+
+    // Required fields
+    if (!data.drug_id) return { success: false, error: 'Drug is required' };
+    if (!data.batch_number?.trim()) return { success: false, error: 'Batch number is required' };
+    if (!data.expiry_date) return { success: false, error: 'Expiry date is required' };
+    if (!data.purchase_rate || parseFloat(data.purchase_rate) < 0) return { success: false, error: 'Purchase rate must be >= 0' };
+    if (!data.mrp || parseFloat(data.mrp) <= 0) return { success: false, error: 'MRP must be > 0' };
+    if (!data.quantity_received || parseInt(data.quantity_received) <= 0) return { success: false, error: 'Quantity must be > 0' };
+
+    // MRP should be >= purchase rate
+    if (parseFloat(data.mrp) < parseFloat(data.purchase_rate)) {
+      return { success: false, error: `MRP (₹${data.mrp}) cannot be less than purchase rate (₹${data.purchase_rate})` };
+    }
+
+    // Expiry date must be in the future
+    const today = new Date().toISOString().split('T')[0];
+    if (data.expiry_date <= today) {
+      return { success: false, error: 'Cannot add stock that has already expired. Use Returns module for expired stock write-off.' };
+    }
+
+    // Check for duplicate batch in same centre
+    const { data: existing } = await sb().from('hmis_pharmacy_stock')
+      .select('id, quantity_available')
+      .eq('centre_id', centreId).eq('drug_id', data.drug_id).eq('batch_number', data.batch_number.trim())
+      .limit(1);
+
+    if (existing?.length) {
+      return { success: false, error: `Batch "${data.batch_number}" already exists for this drug at this centre (${existing[0].quantity_available} units remaining). Use GRN to add more to an existing batch.` };
+    }
+
+    const { error } = await sb().from('hmis_pharmacy_stock').insert({
+      ...data,
+      centre_id: centreId,
+      batch_number: data.batch_number.trim(),
+      quantity_available: parseInt(data.quantity_received),
+      quantity_dispensed: 0,
+      received_date: new Date().toISOString().split('T')[0],
+    });
+
+    if (error) return { success: false, error: error.message };
+
     load();
+    return { success: true };
   }, [centreId, load]);
 
   return { stock, aggregated, loading, expiringSoon, expired, lowStock, totalValue, totalMRPValue, load, addStock };
@@ -139,28 +180,88 @@ export function useDispensingQueue(centreId: string | null) {
 
   useEffect(() => { load(); }, [load]);
 
-  const dispense = useCallback(async (dispensingId: string, items: any[], staffId: string, totalAmount: number) => {
-    if (!sb()) return;
-    // Deduct stock for each item
+  const dispense = useCallback(async (dispensingId: string, items: any[], staffId: string, totalAmount: number): Promise<{ success: boolean; error?: string }> => {
+    if (!sb() || !centreId) return { success: false, error: 'Not ready' };
+
+    // Validate all items have drugId, qty > 0
     for (const item of items) {
-      if (item.batchId && item.qty > 0) {
-        const { data: batch } = await sb().from('hmis_pharmacy_stock').select('quantity_available, quantity_dispensed').eq('id', item.batchId).single();
-        if (batch) {
-          await sb().from('hmis_pharmacy_stock').update({
-            quantity_available: batch.quantity_available - item.qty,
-            quantity_dispensed: (batch.quantity_dispensed || 0) + item.qty,
-          }).eq('id', item.batchId);
-        }
-      }
+      if (!item.drugId) return { success: false, error: `Drug not selected for "${item.drugName || 'item'}"` };
+      if (!item.qty || item.qty <= 0) return { success: false, error: `Invalid quantity for ${item.drugName}` };
     }
+
+    // FEFO batch auto-selection + stock deduction
+    const dispensedItems: any[] = [];
+
+    for (const item of items) {
+      // Get available batches for this drug, sorted by expiry (FEFO)
+      const { data: batches } = await sb().from('hmis_pharmacy_stock')
+        .select('id, batch_number, expiry_date, quantity_available, quantity_dispensed, mrp, purchase_rate')
+        .eq('centre_id', centreId).eq('drug_id', item.drugId)
+        .gt('quantity_available', 0).gt('expiry_date', new Date().toISOString().split('T')[0])
+        .order('expiry_date', { ascending: true }); // FEFO: earliest expiry first
+
+      if (!batches?.length) return { success: false, error: `No stock available for ${item.drugName}` };
+
+      // Check total available
+      const totalAvail = batches.reduce((s: number, b: any) => s + b.quantity_available, 0);
+      if (totalAvail < item.qty) return { success: false, error: `Insufficient stock for ${item.drugName}: need ${item.qty}, have ${totalAvail}` };
+
+      // Pick from batches (FEFO)
+      let remaining = item.qty;
+      const pickedBatches: any[] = [];
+
+      for (const batch of batches) {
+        if (remaining <= 0) break;
+        const pick = Math.min(remaining, batch.quantity_available);
+        pickedBatches.push({ batchId: batch.id, batchNumber: batch.batch_number, expiry: batch.expiry_date, qty: pick, mrp: batch.mrp, cost: batch.purchase_rate });
+
+        // Deduct stock
+        const { error: deductErr } = await sb().from('hmis_pharmacy_stock').update({
+          quantity_available: batch.quantity_available - pick,
+          quantity_dispensed: (batch.quantity_dispensed || 0) + pick,
+        }).eq('id', batch.id);
+
+        if (deductErr) return { success: false, error: `Stock deduction failed for batch ${batch.batch_number}: ${deductErr.message}` };
+        remaining -= pick;
+      }
+
+      dispensedItems.push({
+        drugId: item.drugId, drugName: item.drugName, requestedQty: item.qty,
+        dispensedQty: item.qty, batches: pickedBatches,
+        totalMRP: pickedBatches.reduce((s: number, b: any) => s + (b.qty * parseFloat(b.mrp)), 0),
+      });
+    }
+
+    // Calculate total
+    const computedTotal = dispensedItems.reduce((s: number, i: any) => s + (i.totalMRP || 0), 0);
+
     // Update dispensing record
-    await sb().from('hmis_pharmacy_dispensing').update({
-      status: 'dispensed', dispensed_items: items, total_amount: totalAmount,
-      dispensed_by: staffId, dispensed_at: new Date().toISOString(),
+    const { error: updateErr } = await sb().from('hmis_pharmacy_dispensing').update({
+      status: 'dispensed',
+      dispensed_items: dispensedItems,
+      total_amount: totalAmount > 0 ? totalAmount : computedTotal,
+      dispensed_by: staffId,
+      dispensed_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     }).eq('id', dispensingId);
+
+    if (updateErr) return { success: false, error: `Update failed: ${updateErr.message}` };
+
     load();
-  }, [load]);
+    return { success: true };
+  }, [centreId, load]);
+
+  // FEFO batch lookup for a specific drug (used by UI for manual batch selection)
+  const getBatchesForDrug = useCallback(async (drugId: string): Promise<any[]> => {
+    if (!centreId || !sb()) return [];
+    const today = new Date().toISOString().split('T')[0];
+    const { data } = await sb().from('hmis_pharmacy_stock')
+      .select('id, batch_number, expiry_date, quantity_available, mrp, purchase_rate')
+      .eq('centre_id', centreId).eq('drug_id', drugId)
+      .gt('quantity_available', 0).gt('expiry_date', today)
+      .order('expiry_date', { ascending: true });
+    return data || [];
+  }, [centreId]);
 
   const stats = useMemo(() => ({
     pending: queue.filter(q => q.status === 'pending').length,
@@ -168,7 +269,7 @@ export function useDispensingQueue(centreId: string | null) {
     dispensed: queue.filter(q => q.status === 'dispensed').length,
   }), [queue]);
 
-  return { queue, loading, stats, load, dispense };
+  return { queue, loading, stats, load, dispense, getBatchesForDrug };
 }
 
 // ============================================================
