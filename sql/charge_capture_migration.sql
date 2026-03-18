@@ -193,7 +193,6 @@ BEGIN
           AND ar.trigger_type = 'daily'
           AND (ar.ward_type = r.ward_type OR ar.ward_type IS NULL);
 
-        GET DIAGNOSTICS v_count = v_count + ROW_COUNT;
     END LOOP;
 
     -- Calculate total
