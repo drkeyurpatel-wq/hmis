@@ -1,379 +1,363 @@
 // lib/radiology/stradus-client.ts
-// Server-side only — called from API routes
-import { createClient } from '@supabase/supabase-js';
-
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-
-function adminDb() {
-  return createClient(SUPABASE_URL, SERVICE_KEY);
-}
+// Stradus PACS/RIS Integration Client
+// Handles: URL building, HL7 ORU parsing, report ingestion, study linking
 
 export interface StradusConfig {
-  pacs_url: string;
-  viewer_url: string;
-  api_key?: string;
-  dicom_ae_title?: string;
-  dicom_ip?: string;
-  dicom_port?: number;
-  hl7_ip?: string;
-  hl7_port?: number;
+  pacsUrl: string;          // e.g., https://pacs.health1hospitals.com
+  viewerUrl: string;        // e.g., https://pacs.health1hospitals.com/viewer
+  risUrl?: string;          // e.g., https://pacs.health1hospitals.com/ris
+  dicomAeTitle: string;     // e.g., HEALTH1_HMIS
+  dicomIp: string;
+  dicomPort: number;
+  hl7Ip?: string;
+  hl7Port?: number;
+  apiKey?: string;
+  webhookSecret?: string;   // HMAC secret for verifying Stradus callbacks
+}
+
+export interface StradusStudy {
+  studyInstanceUid: string;
+  accessionNumber: string;
+  patientId: string;        // UHID
+  patientName: string;
+  studyDate: string;        // YYYYMMDD
+  modality: string;
+  studyDescription: string;
+  seriesCount: number;
+  imageCount: number;
+  referringPhysician: string;
+  performingPhysician: string;
+  institutionName: string;
+  stationName: string;
+  viewerUrl: string;        // Direct link to open in Stradus viewer
+}
+
+export interface StradusReport {
+  accessionNumber: string;
+  studyInstanceUid: string;
+  patientId: string;
+  modality: string;
+  studyDescription: string;
+  reportStatus: 'preliminary' | 'final' | 'corrected' | 'addendum';
+  reportDateTime: string;
+  reportingRadiologist: string;
+  verifyingRadiologist?: string;
+  technique?: string;
+  clinicalHistory?: string;
+  comparison?: string;
+  findings: string;
+  impression: string;
+  isCritical: boolean;
+  rawHl7?: string;
 }
 
 // ============================================================
-// CONFIG
+// URL BUILDERS — for opening studies in Stradus web viewer
 // ============================================================
-export async function getStradusConfig(centreId: string): Promise<StradusConfig | null> {
-  const db = adminDb();
-  const { data } = await db.from('hmis_pacs_config')
-    .select('*').eq('centre_id', centreId).eq('is_active', true).maybeSingle();
-  return data;
+
+/**
+ * Build a Stradus viewer URL from a Study Instance UID.
+ * This is the primary way to open images — most reliable.
+ */
+export function buildViewerUrlByStudyUid(config: StradusConfig, studyUid: string): string {
+  const base = config.viewerUrl.replace(/\/$/, '');
+  return `${base}?StudyInstanceUID=${encodeURIComponent(studyUid)}`;
 }
 
-// ============================================================
-// VIEWER URL BUILDER
-// ============================================================
+/**
+ * Build a Stradus viewer URL from an accession number.
+ * Fallback when Study UID is not yet available (images not acquired).
+ */
+export function buildViewerUrlByAccession(config: StradusConfig, accession: string): string {
+  const base = config.viewerUrl.replace(/\/$/, '');
+  return `${base}?AccessionNumber=${encodeURIComponent(accession)}`;
+}
+
+/**
+ * Build a Stradus viewer URL from patient ID (UHID) — shows all studies for patient.
+ */
+export function buildViewerUrlByPatient(config: StradusConfig, patientId: string): string {
+  const base = config.viewerUrl.replace(/\/$/, '');
+  return `${base}?PatientID=${encodeURIComponent(patientId)}`;
+}
+
+/**
+ * Build a Stradus viewer URL with multiple parameters for precise study lookup.
+ */
 export function buildViewerUrl(config: StradusConfig, params: {
   studyUid?: string; accession?: string; patientId?: string;
 }): string | null {
-  if (!config.viewer_url) return null;
-  const base = config.viewer_url.replace(/\/$/, '');
-
-  // Stradus web viewer accepts these URL params
-  if (params.studyUid) return `${base}?StudyInstanceUID=${encodeURIComponent(params.studyUid)}`;
-  if (params.accession) return `${base}?AccessionNumber=${encodeURIComponent(params.accession)}`;
-  if (params.patientId) return `${base}?PatientID=${encodeURIComponent(params.patientId)}`;
+  if (!config.viewerUrl) return null;
+  if (params.studyUid) return buildViewerUrlByStudyUid(config, params.studyUid);
+  if (params.accession) return buildViewerUrlByAccession(config, params.accession);
+  if (params.patientId) return buildViewerUrlByPatient(config, params.patientId);
   return null;
 }
 
-// ============================================================
-// SEND ORDER TO STRADUS (outbound ORM)
-// ============================================================
-export async function sendOrderToStradus(centreId: string, order: {
-  accession: string;
-  patientUhid: string;
-  patientName: string;
-  patientDob?: string;
-  patientGender?: string;
-  modality: string;
-  studyDescription: string;
-  referringDoctor: string;
-  scheduledDate?: string;
-  scheduledTime?: string;
-  urgency?: string;
-  clinicalHistory?: string;
-}): Promise<{ success: boolean; error?: string; stradusId?: string }> {
-  const config = await getStradusConfig(centreId);
-  if (!config) return { success: false, error: 'PACS not configured for this centre' };
-
-  const db = adminDb();
-
-  // Build HL7 ORM^O01 equivalent payload
-  const payload = {
-    messageType: 'ORM',
-    accessionNumber: order.accession,
-    patient: {
-      id: order.patientUhid,
-      name: order.patientName,
-      dateOfBirth: order.patientDob,
-      gender: order.patientGender,
-    },
-    order: {
-      modality: order.modality,
-      description: order.studyDescription,
-      referringPhysician: order.referringDoctor,
-      scheduledDate: order.scheduledDate,
-      scheduledTime: order.scheduledTime,
-      priority: order.urgency === 'stat' ? 'STAT' : order.urgency === 'urgent' ? 'URGENT' : 'ROUTINE',
-      clinicalHistory: order.clinicalHistory,
-    },
-    facility: {
-      centreId,
-      sendingApplication: 'Health1-HMIS',
-      sendingFacility: 'Health1',
-    },
-  };
-
-  // Log outbound
-  await db.from('hmis_stradus_sync_log').insert({
-    direction: 'outbound', message_type: 'ORM_O01',
-    accession_number: order.accession, patient_uhid: order.patientUhid,
-    payload,
-  });
-
-  // If Stradus has an API endpoint, POST to it
-  if (config.api_key && config.pacs_url) {
-    try {
-      const apiUrl = `${config.pacs_url.replace(/\/$/, '')}/api/orders`;
-      const resp = await fetch(apiUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${config.api_key}`,
-          'X-Sending-Facility': 'Health1-HMIS',
-        },
-        body: JSON.stringify(payload),
-      });
-
-      const respBody = await resp.text();
-      await db.from('hmis_stradus_sync_log').update({
-        response_code: resp.status, response_body: respBody, processed: resp.ok,
-      }).eq('accession_number', order.accession).eq('direction', 'outbound').eq('message_type', 'ORM_O01');
-
-      if (!resp.ok) return { success: false, error: `Stradus returned ${resp.status}: ${respBody.substring(0, 200)}` };
-
-      let stradusId;
-      try { const j = JSON.parse(respBody); stradusId = j.studyId || j.id; } catch {}
-      return { success: true, stradusId };
-    } catch (err: any) {
-      await db.from('hmis_stradus_sync_log').update({
-        error_message: err.message, processed: false,
-      }).eq('accession_number', order.accession).eq('direction', 'outbound');
-      return { success: false, error: 'Network error: ' + err.message };
-    }
-  }
-
-  // If no API, order is logged for HL7 MLLP pickup (Stradus polls or listens)
-  return { success: true };
-}
-
-// ============================================================
-// PROCESS INBOUND REPORT FROM STRADUS
-// ============================================================
-export async function processStradusReport(payload: {
-  accessionNumber: string;
-  studyInstanceUID?: string;
-  patientId?: string;
+/**
+ * Build a complete Stradus link object for storage in patient file.
+ * This is what gets saved to hmis_radiology_orders.stradus_link
+ */
+export function buildStudyLink(config: StradusConfig, study: {
+  studyUid?: string;
+  accession?: string;
   modality?: string;
-  studyDescription?: string;
-  studyDate?: string;
-  seriesCount?: number;
-  imageCount?: number;
-  viewerUrl?: string;
-  report?: {
-    findings: string;
-    impression: string;
-    technique?: string;
-    clinicalHistory?: string;
-    comparison?: string;
-    isCritical?: boolean;
-    criticalValue?: string;
-    reportedBy?: string;
-    reportedAt?: string;
-    verifiedBy?: string;
-    verifiedAt?: string;
-    status?: string;
-    stradusReportId?: string;
-    rawText?: string;
-  };
-}): Promise<{ success: boolean; error?: string; studyId?: string; reportId?: string }> {
-  const db = adminDb();
-
-  // Log inbound
-  await db.from('hmis_stradus_sync_log').insert({
-    direction: 'inbound',
-    message_type: payload.report ? 'ORU_R01' : 'STUDY_UPDATE',
-    accession_number: payload.accessionNumber,
-    study_uid: payload.studyInstanceUID,
-    patient_uhid: payload.patientId,
-    payload,
-  });
-
-  // Find or create imaging study
-  let study: any = null;
-
-  // Try accession first
-  const { data: existingByAccession } = await db.from('hmis_imaging_studies')
-    .select('*').eq('accession_number', payload.accessionNumber).maybeSingle();
-
-  if (existingByAccession) {
-    study = existingByAccession;
-  } else if (payload.studyInstanceUID) {
-    const { data: existingByUid } = await db.from('hmis_imaging_studies')
-      .select('*').eq('study_instance_uid', payload.studyInstanceUID).maybeSingle();
-    study = existingByUid;
-  }
-
-  // If study doesn't exist, try to create from order
-  if (!study) {
-    // Look up the original order by accession
-    const { data: order } = await db.from('hmis_radiology_orders')
-      .select('*, patient:hmis_patients!inner(id, uhid)')
-      .eq('accession_number', payload.accessionNumber).maybeSingle();
-
-    if (order) {
-      const { data: newStudy, error: createErr } = await db.from('hmis_imaging_studies').insert({
-        centre_id: order.centre_id,
-        patient_id: order.patient_id,
-        order_id: order.id,
-        admission_id: order.admission_id,
-        accession_number: payload.accessionNumber,
-        study_instance_uid: payload.studyInstanceUID,
-        modality: payload.modality || order.modality,
-        study_description: payload.studyDescription || order.test?.test_name || 'Unknown',
-        body_part: order.body_part,
-        is_contrast: order.is_contrast,
-        series_count: payload.seriesCount || 0,
-        image_count: payload.imageCount || 0,
-        pacs_study_id: payload.studyInstanceUID,
-        stradus_study_url: payload.viewerUrl,
-        study_date: payload.studyDate || new Date().toISOString().split('T')[0],
-        acquired_at: new Date().toISOString(),
-        referring_doctor_id: order.ordered_by,
-        status: 'acquired',
-      }).select().single();
-
-      if (createErr) return { success: false, error: 'Failed to create study: ' + createErr.message };
-      study = newStudy;
-
-      // Update order status
-      await db.from('hmis_radiology_orders').update({
-        status: 'in_progress', pacs_study_uid: payload.studyInstanceUID,
-        started_at: new Date().toISOString(), updated_at: new Date().toISOString(),
-      }).eq('id', order.id);
-    } else if (payload.patientId) {
-      // No order found, try patient UHID match (walk-in or external referral)
-      const { data: patient } = await db.from('hmis_patients')
-        .select('id').eq('uhid', payload.patientId).maybeSingle();
-
-      if (!patient) return { success: false, error: 'No matching order or patient for accession ' + payload.accessionNumber };
-
-      // Find centre from PACS config (assume first active)
-      const { data: pacsConfig } = await db.from('hmis_pacs_config')
-        .select('centre_id').eq('is_active', true).limit(1).maybeSingle();
-
-      const { data: newStudy, error: createErr } = await db.from('hmis_imaging_studies').insert({
-        centre_id: pacsConfig?.centre_id,
-        patient_id: patient.id,
-        accession_number: payload.accessionNumber,
-        study_instance_uid: payload.studyInstanceUID,
-        modality: payload.modality || 'Unknown',
-        study_description: payload.studyDescription || 'Unknown Study',
-        series_count: payload.seriesCount || 0,
-        image_count: payload.imageCount || 0,
-        stradus_study_url: payload.viewerUrl,
-        study_date: payload.studyDate || new Date().toISOString().split('T')[0],
-        acquired_at: new Date().toISOString(),
-        status: 'acquired',
-      }).select().single();
-
-      if (createErr) return { success: false, error: 'Failed to create study: ' + createErr.message };
-      study = newStudy;
-    } else {
-      return { success: false, error: 'Cannot link study: no order or patient ID for accession ' + payload.accessionNumber };
-    }
-  }
-
-  // Update study fields if we have new data
-  const studyUpdates: any = { updated_at: new Date().toISOString() };
-  if (payload.studyInstanceUID && !study.study_instance_uid) studyUpdates.study_instance_uid = payload.studyInstanceUID;
-  if (payload.viewerUrl) studyUpdates.stradus_study_url = payload.viewerUrl;
-  if (payload.seriesCount) studyUpdates.series_count = payload.seriesCount;
-  if (payload.imageCount) studyUpdates.image_count = payload.imageCount;
-  if (payload.viewerUrl) studyUpdates.pacs_viewer_url = payload.viewerUrl;
-
-  // Process report if included
-  let reportId: string | undefined;
-  if (payload.report) {
-    const reportStatus = payload.report.verifiedBy ? 'verified' : payload.report.status === 'final' ? 'final' : 'preliminary';
-
-    const { data: newReport, error: rErr } = await db.from('hmis_imaging_reports').insert({
-      study_id: study.id,
-      centre_id: study.centre_id,
-      report_status: reportStatus,
-      technique: payload.report.technique,
-      clinical_history: payload.report.clinicalHistory,
-      comparison: payload.report.comparison,
-      findings: payload.report.findings,
-      impression: payload.report.impression,
-      is_critical: payload.report.isCritical || false,
-      critical_value: payload.report.criticalValue,
-      reported_by_name: payload.report.reportedBy,
-      reported_at: payload.report.reportedAt || new Date().toISOString(),
-      verified_by_name: payload.report.verifiedBy,
-      verified_at: payload.report.verifiedAt,
-      source: 'stradus',
-      stradus_report_id: payload.report.stradusReportId,
-      raw_report_text: payload.report.rawText,
-      tat_minutes: study.created_at ? Math.round((Date.now() - new Date(study.created_at).getTime()) / 60000) : null,
-    }).select().single();
-
-    if (!rErr && newReport) {
-      reportId = newReport.id;
-      studyUpdates.status = reportStatus === 'verified' ? 'verified' : 'reported';
-
-      // Update order status
-      if (study.order_id) {
-        await db.from('hmis_radiology_orders').update({
-          status: reportStatus === 'verified' ? 'verified' : 'reported',
-          reported_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        }).eq('id', study.order_id);
-      }
-
-      // Critical finding workflow
-      if (payload.report.isCritical) {
-        await db.from('hmis_critical_findings').insert({
-          report_id: newReport.id,
-          study_id: study.id,
-          patient_id: study.patient_id,
-          centre_id: study.centre_id,
-          finding_text: payload.report.criticalValue || payload.report.impression,
-          severity: 'critical',
-        });
-      }
-    }
-  }
-
-  await db.from('hmis_imaging_studies').update(studyUpdates).eq('id', study.id);
-
-  // Mark sync log as processed
-  await db.from('hmis_stradus_sync_log').update({ processed: true })
-    .eq('accession_number', payload.accessionNumber).eq('direction', 'inbound');
-
-  return { success: true, studyId: study.id, reportId };
+  description?: string;
+  date?: string;
+}): { url: string; label: string; studyUid?: string; accession?: string } | null {
+  const url = buildViewerUrl(config, { studyUid: study.studyUid, accession: study.accession });
+  if (!url) return null;
+  const label = [study.modality, study.description, study.date].filter(Boolean).join(' — ');
+  return { url, label, studyUid: study.studyUid, accession: study.accession };
 }
 
 // ============================================================
-// MANUAL STUDY LINK — for linking a Stradus URL to a patient
+// HL7 ORU PARSER — parse Stradus report messages
 // ============================================================
-export async function linkStudyManually(data: {
-  centreId: string;
-  patientId: string;
+
+/**
+ * Parse HL7 v2.x ORU^R01 message from Stradus into structured report.
+ * Stradus sends HL7 ORU messages when a radiologist finalizes a report.
+ * 
+ * HL7 ORU^R01 segments we care about:
+ * MSH — message header
+ * PID — patient identification (PID.3 = UHID)
+ * OBR — observation request (OBR.3 = accession, OBR.4 = test, OBR.25 = status)
+ * OBX — observation result (OBX.3 = field type, OBX.5 = value)
+ */
+export function parseHl7OruMessage(raw: string): StradusReport | null {
+  try {
+    const segments = raw.split(/\r?\n|\r/).filter(s => s.length > 0);
+    const getSegment = (type: string) => segments.filter(s => s.startsWith(type + '|'));
+    const getField = (segment: string, index: number): string => {
+      const fields = segment.split('|');
+      return (fields[index] || '').trim();
+    };
+    const getComponent = (field: string, index: number): string => {
+      const parts = field.split('^');
+      return (parts[index] || '').trim();
+    };
+
+    const msh = getSegment('MSH')[0];
+    if (!msh) return null;
+
+    const pid = getSegment('PID')[0];
+    const obr = getSegment('OBR')[0];
+    const obxList = getSegment('OBX');
+
+    if (!pid || !obr) return null;
+
+    // Patient ID from PID.3 (first component)
+    const patientId = getComponent(getField(pid, 3), 0);
+
+    // Accession from OBR.3 or OBR.18
+    const accession = getField(obr, 3) || getField(obr, 18);
+
+    // Study Instance UID from OBR.21 (custom) or OBX with tag
+    const studyUid = getField(obr, 21) || '';
+
+    // Test description from OBR.4
+    const testField = getField(obr, 4);
+    const studyDescription = getComponent(testField, 1) || getComponent(testField, 0);
+    const modality = getComponent(testField, 3) || '';
+
+    // Report status from OBR.25: F=final, P=preliminary, C=corrected, A=addendum
+    const statusCode = getField(obr, 25).toUpperCase();
+    const reportStatus: StradusReport['reportStatus'] =
+      statusCode === 'F' ? 'final' : statusCode === 'C' ? 'corrected' :
+      statusCode === 'A' ? 'addendum' : 'preliminary';
+
+    // Reporting radiologist from OBR.32
+    const radField = getField(obr, 32);
+    const reportingRadiologist = [getComponent(radField, 1), getComponent(radField, 2)].filter(Boolean).join(' ') || getComponent(radField, 0);
+
+    // Verifying radiologist from OBR.35
+    const verField = getField(obr, 35);
+    const verifyingRadiologist = [getComponent(verField, 1), getComponent(verField, 2)].filter(Boolean).join(' ') || undefined;
+
+    // Report date from OBR.22
+    const reportDateTime = getField(obr, 22);
+
+    // Extract report sections from OBX segments
+    // Common OBX.3 identifiers:
+    // "TECH" or "11529-5" = Technique
+    // "HX" or "29299-5" = Clinical History
+    // "COMP" = Comparison
+    // "FIND" or "18782-3" = Findings
+    // "IMP" or "19005-8" = Impression
+    // "CRIT" = Critical flag
+    // Generic text in OBX.5
+
+    let technique = '';
+    let clinicalHistory = '';
+    let comparison = '';
+    let findings = '';
+    let impression = '';
+    let isCritical = false;
+
+    const allText: string[] = [];
+
+    obxList.forEach(obx => {
+      const obxId = getField(obx, 3).toUpperCase();
+      const obxIdCode = getComponent(obxId, 0).toUpperCase();
+      const value = getField(obx, 5).replace(/\\.br\\/g, '\n').replace(/\\R\\/g, '\n');
+
+      if (obxIdCode.includes('TECH') || obxIdCode === '11529-5') {
+        technique += (technique ? '\n' : '') + value;
+      } else if (obxIdCode.includes('HX') || obxIdCode === '29299-5' || obxIdCode.includes('CLINICAL')) {
+        clinicalHistory += (clinicalHistory ? '\n' : '') + value;
+      } else if (obxIdCode.includes('COMP') || obxIdCode.includes('COMPARISON')) {
+        comparison += (comparison ? '\n' : '') + value;
+      } else if (obxIdCode.includes('FIND') || obxIdCode === '18782-3') {
+        findings += (findings ? '\n' : '') + value;
+      } else if (obxIdCode.includes('IMP') || obxIdCode === '19005-8' || obxIdCode.includes('CONCLUSION')) {
+        impression += (impression ? '\n' : '') + value;
+      } else if (obxIdCode.includes('CRIT')) {
+        isCritical = value.toUpperCase() === 'Y' || value === '1' || value.toUpperCase() === 'TRUE';
+      } else {
+        allText.push(value);
+      }
+    });
+
+    // If structured sections weren't found, try to split generic text
+    if (!findings && !impression && allText.length > 0) {
+      const fullText = allText.join('\n');
+      // Try to find "Impression:" or "Conclusion:" delimiter
+      const impMatch = fullText.match(/(?:impression|conclusion|summary)\s*[:]\s*([\s\S]*)/i);
+      if (impMatch) {
+        impression = impMatch[1].trim();
+        findings = fullText.substring(0, fullText.indexOf(impMatch[0])).trim();
+      } else {
+        findings = fullText;
+        impression = '(See findings)';
+      }
+    }
+
+    return {
+      accessionNumber: accession,
+      studyInstanceUid: studyUid,
+      patientId,
+      modality,
+      studyDescription,
+      reportStatus,
+      reportDateTime,
+      reportingRadiologist,
+      verifyingRadiologist,
+      technique,
+      clinicalHistory,
+      comparison,
+      findings,
+      impression,
+      isCritical,
+      rawHl7: raw,
+    };
+  } catch (err) {
+    console.error('HL7 ORU parse error:', err);
+    return null;
+  }
+}
+
+// ============================================================
+// WEBHOOK SIGNATURE VERIFICATION
+// ============================================================
+
+/**
+ * Verify HMAC-SHA256 signature from Stradus webhook.
+ * Stradus signs payloads with a shared secret.
+ */
+export async function verifyWebhookSignature(
+  payload: string,
+  signature: string,
+  secret: string
+): Promise<boolean> {
+  try {
+    const encoder = new TextEncoder();
+    const key = await crypto.subtle.importKey(
+      'raw', encoder.encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']
+    );
+    const sig = await crypto.subtle.sign('HMAC', key, encoder.encode(payload));
+    const expected = Array.from(new Uint8Array(sig)).map(b => b.toString(16).padStart(2, '0')).join('');
+    return expected === signature.replace(/^sha256=/, '');
+  } catch {
+    return false;
+  }
+}
+
+// ============================================================
+// HL7 ORM BUILDER — send order to Stradus
+// ============================================================
+
+/**
+ * Build HL7 ORM^O01 message for sending an order to Stradus.
+ * Stradus creates a worklist entry from this message.
+ */
+export function buildHl7OrmMessage(order: {
   accessionNumber: string;
+  patientId: string;
+  patientName: string;  // "LAST^FIRST"
+  dob: string;          // YYYYMMDD
+  gender: string;       // M/F/O
+  testCode: string;
+  testName: string;
   modality: string;
-  studyDescription: string;
-  studyDate: string;
-  stradusUrl: string;
-  studyInstanceUid?: string;
-  orderId?: string;
-  admissionId?: string;
-  referringDoctorId?: string;
-}): Promise<{ success: boolean; error?: string; studyId?: string }> {
-  const db = adminDb();
+  urgency: string;      // R/S/A (routine/stat/asap)
+  referringDoctor: string;
+  scheduledDate?: string; // YYYYMMDDHHMMSS
+  clinicalIndication?: string;
+}): string {
+  const now = new Date();
+  const ts = now.toISOString().replace(/[-:T]/g, '').substring(0, 14);
+  const msgId = `HMIS-${ts}-${Math.floor(Math.random() * 9999).toString().padStart(4, '0')}`;
 
-  // Check duplicate accession
-  const { data: existing } = await db.from('hmis_imaging_studies')
-    .select('id').eq('accession_number', data.accessionNumber).maybeSingle();
-  if (existing) return { success: false, error: 'Study with this accession number already exists' };
+  const urgencyCode = order.urgency === 'stat' ? 'S' : order.urgency === 'urgent' ? 'A' : 'R';
+  const gender = order.gender?.toUpperCase() === 'MALE' ? 'M' : order.gender?.toUpperCase() === 'FEMALE' ? 'F' : 'O';
 
-  const { data: study, error } = await db.from('hmis_imaging_studies').insert({
-    centre_id: data.centreId,
-    patient_id: data.patientId,
-    order_id: data.orderId || null,
-    admission_id: data.admissionId || null,
-    accession_number: data.accessionNumber,
-    study_instance_uid: data.studyInstanceUid,
-    modality: data.modality,
-    study_description: data.studyDescription,
-    stradus_study_url: data.stradusUrl,
-    pacs_viewer_url: data.stradusUrl,
-    study_date: data.studyDate,
-    acquired_at: new Date().toISOString(),
-    referring_doctor_id: data.referringDoctorId,
-    status: 'acquired',
-  }).select().single();
+  const segments = [
+    `MSH|^~\\&|HEALTH1_HMIS|HEALTH1|STRADUS_PACS|STRADUS|${ts}||ORM^O01|${msgId}|P|2.3.1`,
+    `PID|||${order.patientId}||${order.patientName}||${order.dob}|${gender}`,
+    `PV1|||||||${order.referringDoctor}`,
+    `ORC|NW|${order.accessionNumber}|||IP||1^^^${order.scheduledDate || ts}||${ts}|||${order.referringDoctor}`,
+    `OBR|1|${order.accessionNumber}||${order.testCode}^${order.testName}^L|||${order.scheduledDate || ts}||||${order.clinicalIndication || ''}||||||||||||||${urgencyCode}||||||${order.modality}`,
+  ];
 
-  if (error) return { success: false, error: error.message };
-  return { success: true, studyId: study.id };
+  return segments.join('\r');
 }
+
+// ============================================================
+// JSON REPORT PARSER (alternative to HL7)
+// ============================================================
+
+/**
+ * Parse a JSON report payload from Stradus REST API callback.
+ * Some Stradus configurations send JSON instead of HL7.
+ */
+export function parseJsonReport(json: any): StradusReport | null {
+  try {
+    return {
+      accessionNumber: json.accession_number || json.accessionNumber || '',
+      studyInstanceUid: json.study_instance_uid || json.studyInstanceUid || json.study_uid || '',
+      patientId: json.patient_id || json.patientId || json.mrn || '',
+      modality: json.modality || '',
+      studyDescription: json.study_description || json.studyDescription || json.procedure_name || '',
+      reportStatus: json.report_status === 'F' ? 'final' : json.report_status === 'P' ? 'preliminary' :
+                    json.report_status === 'C' ? 'corrected' : json.report_status || 'final',
+      reportDateTime: json.report_datetime || json.reportDateTime || json.finalized_at || new Date().toISOString(),
+      reportingRadiologist: json.reporting_radiologist || json.reportingRadiologist || json.radiologist || '',
+      verifyingRadiologist: json.verifying_radiologist || json.verifyingRadiologist || undefined,
+      technique: json.technique || '',
+      clinicalHistory: json.clinical_history || json.clinicalHistory || '',
+      comparison: json.comparison || '',
+      findings: json.findings || '',
+      impression: json.impression || json.conclusion || '',
+      isCritical: json.is_critical === true || json.isCritical === true || json.critical === true,
+      rawHl7: undefined,
+    };
+  } catch {
+    return null;
+  }
+}
+
+export default {
+  buildViewerUrl, buildViewerUrlByStudyUid, buildViewerUrlByAccession, buildViewerUrlByPatient,
+  buildStudyLink, parseHl7OruMessage, parseJsonReport, verifyWebhookSignature, buildHl7OrmMessage,
+};

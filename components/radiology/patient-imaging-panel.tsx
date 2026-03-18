@@ -87,12 +87,12 @@ function ReportViewer({ study, onClose }: { study: ImagingStudy; onClose: () => 
         {/* Authorship */}
         <div className="mt-4 pt-3 border-t text-xs text-gray-500 flex justify-between">
           <div>
-            <span className="font-medium">Reported by:</span> {report.reportedByName || 'Unknown'}
+            <span className="font-medium">Reported by:</span> {report.reportedBy || 'Unknown'}
             {report.reportedAt && <span className="ml-2">{new Date(report.reportedAt).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>}
           </div>
-          {report.verifiedByName && (
+          {report.verifiedBy && (
             <div>
-              <span className="font-medium">Verified by:</span> {report.verifiedByName}
+              <span className="font-medium">Verified by:</span> {report.verifiedBy}
               {report.verifiedAt && <span className="ml-2">{new Date(report.verifiedAt).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>}
             </div>
           )}
@@ -187,7 +187,9 @@ interface Props {
 export default function PatientImagingPanel({ patientId, admissionId, compact = false, showLinkButton = true }: Props) {
   const { activeCentreId } = useAuthStore();
   const centreId = activeCentreId || '';
-  const { studies, loading, load, byModality, timeline, count } = usePatientImaging(patientId);
+  const { studies, loading, load, byModality, stats } = usePatientImaging(patientId);
+  const timeline = studies; // studies are already sorted by date desc
+  const count = stats.total;
   const [viewingStudy, setViewingStudy] = useState<ImagingStudy | null>(null);
   const [showLink, setShowLink] = useState(false);
   const [viewMode, setViewMode] = useState<'timeline' | 'modality'>('timeline');
@@ -217,7 +219,7 @@ export default function PatientImagingPanel({ patientId, admissionId, compact = 
 
         {filtered.length === 0 ? <div className="text-xs text-gray-400 text-center py-3">No imaging studies</div> :
           filtered.slice(0, 8).map(s => (
-            <div key={s.id} className="flex items-center gap-2 bg-gray-50 rounded-lg px-2 py-1.5 hover:bg-blue-50 cursor-pointer" onClick={() => s.report ? setViewingStudy(s) : undefined}>
+            <div key={s.orderId} className="flex items-center gap-2 bg-gray-50 rounded-lg px-2 py-1.5 hover:bg-blue-50 cursor-pointer" onClick={() => s.report ? setViewingStudy(s) : undefined}>
               <span className={`px-1 py-0.5 rounded text-[8px] ${MODALITY_COLORS[s.modality] || 'bg-gray-100'}`}>{s.modality}</span>
               <div className="flex-1 min-w-0">
                 <div className="text-xs font-medium truncate">{s.studyDescription}</div>
@@ -273,12 +275,12 @@ export default function PatientImagingPanel({ patientId, admissionId, compact = 
         // Timeline view
         <div className="space-y-1.5">
           {filtered.map(s => (
-            <div key={s.id} className="bg-white rounded-xl border hover:border-blue-300 transition-colors">
+            <div key={s.orderId} className="bg-white rounded-xl border hover:border-blue-300 transition-colors">
               <div className="flex items-center px-4 py-3 gap-3">
                 {/* Date column */}
                 <div className="w-20 text-center flex-shrink-0">
-                  <div className="text-xs font-bold text-gray-700">{new Date(s.studyDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}</div>
-                  <div className="text-[9px] text-gray-400">{new Date(s.studyDate).getFullYear()}</div>
+                  <div className="text-xs font-bold text-gray-700">{new Date(s.studyDate || s.date || '').toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}</div>
+                  <div className="text-[9px] text-gray-400">{new Date(s.studyDate || s.date || '').getFullYear()}</div>
                 </div>
 
                 {/* Modality badge */}
@@ -291,7 +293,7 @@ export default function PatientImagingPanel({ patientId, admissionId, compact = 
                     {s.bodyPart && <span className="mr-2">{s.bodyPart}</span>}
                     {s.isContrast && <span className="text-amber-600 mr-2">C+</span>}
                     {s.referringDoctorName && <span>Ref: {s.referringDoctorName}</span>}
-                    {s.seriesCount > 0 && <span className="ml-2">{s.seriesCount} series • {s.imageCount} images</span>}
+                    {(s.seriesCount || 0) > 0 && <span className="ml-2">{s.seriesCount || 0} series • {s.imageCount || 0} images</span>}
                   </div>
                 </div>
 
@@ -308,8 +310,8 @@ export default function PatientImagingPanel({ patientId, admissionId, compact = 
                       className="px-2.5 py-1.5 bg-green-600 text-white text-xs rounded-lg hover:bg-green-700 font-medium">
                       View Images
                     </a>
-                  ) : s.pacsViewerUrl ? (
-                    <a href={s.pacsViewerUrl} target="_blank" rel="noopener noreferrer"
+                  ) : s.stradusUrl || s.stradusStudyUrl ? (
+                    <a href={s.stradusUrl || s.stradusStudyUrl} target="_blank" rel="noopener noreferrer"
                       className="px-2.5 py-1.5 bg-green-600 text-white text-xs rounded-lg hover:bg-green-700 font-medium">
                       View Images
                     </a>
@@ -336,7 +338,7 @@ export default function PatientImagingPanel({ patientId, admissionId, compact = 
       ) : (
         // Modality grouped view
         <div className="space-y-4">
-          {Object.entries(byModality).filter(([m]) => modalityFilter === 'all' || m === modalityFilter).map(([mod, modStudies]) => (
+          {Array.from(byModality.entries()).filter(([m]) => modalityFilter === 'all' || m === modalityFilter).map(([mod, modStudies]) => (
             <div key={mod}>
               <div className="flex items-center gap-2 mb-2">
                 <span className={`px-2 py-0.5 rounded text-xs font-medium ${MODALITY_COLORS[mod] || 'bg-gray-100'}`}>{mod}</span>
@@ -344,7 +346,7 @@ export default function PatientImagingPanel({ patientId, admissionId, compact = 
               </div>
               <div className="grid grid-cols-2 gap-2">
                 {modStudies.map(s => (
-                  <div key={s.id} className="bg-white rounded-lg border p-3 hover:border-blue-300">
+                  <div key={s.orderId} className="bg-white rounded-lg border p-3 hover:border-blue-300">
                     <div className="flex items-center justify-between mb-1">
                       <span className="text-sm font-medium">{s.studyDescription}</span>
                       <span className="text-[10px] text-gray-400">{s.studyDate}</span>

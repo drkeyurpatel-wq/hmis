@@ -28,7 +28,7 @@ export default function StudyDetailPage() {
   // Related studies for same patient
   const patientImaging = usePatientImaging(study?.patientId || null);
   const relatedStudies = useMemo(() =>
-    patientImaging.studies.filter(s => s.id !== studyId).slice(0, 10)
+    patientImaging.studies.filter(s => s.orderId !== studyId).slice(0, 10)
   , [patientImaging.studies, studyId]);
 
   // Templates for manual reporting
@@ -126,7 +126,7 @@ export default function StudyDetailPage() {
       </div>
 
       {/* Report(s) */}
-      {allReports.length > 0 ? allReports.map((r, idx) => (
+      {allReports.length > 0 ? allReports.map((r: any, idx: number) => (
         <div key={r.id} className={`bg-white rounded-xl border p-5 ${r.isCritical ? 'border-red-300 bg-red-50' : ''}`}>
           <div className="flex items-center justify-between mb-3">
             <h3 className="font-bold text-sm">{idx === 0 ? 'Report' : `Report (${r.reportStatus})`}
@@ -191,7 +191,7 @@ export default function StudyDetailPage() {
       {relatedStudies.length > 0 && <div className="bg-white rounded-xl border p-4">
         <h3 className="text-xs font-bold text-gray-500 mb-2">Other Studies for This Patient ({relatedStudies.length})</h3>
         <div className="space-y-1">{relatedStudies.map(s => (
-          <Link key={s.id} href={`/radiology/${s.id}`} className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-blue-50 text-xs">
+          <Link key={s.orderId} href={`/radiology/${s.orderId}`} className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-blue-50 text-xs">
             <span className={`px-1.5 py-0.5 rounded text-[9px] ${MOD_CLR[s.modality] || 'bg-gray-100'}`}>{s.modality}</span>
             <span className="font-medium flex-1">{s.studyDescription}</span>
             <span className="text-gray-400">{s.studyDate}</span>
