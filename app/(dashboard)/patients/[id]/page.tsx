@@ -4,6 +4,7 @@ import { useParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { useAuthStore } from '@/lib/store/auth';
 import Link from 'next/link';
+import PatientImagingPanel from '@/components/radiology/patient-imaging-panel';
 
 let _sb: any = null;
 function sb() { if (typeof window === 'undefined') return null as any; if (!_sb) { try { _sb = createClient(); } catch { return null; } } return _sb; }
@@ -117,7 +118,7 @@ export default function PatientDetailPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 mb-4 border-b">{[['overview','Overview'],['encounters','Encounters'],['billing','Billing'],['edit','Edit Details']].map(([k,l]) =>
+      <div className="flex gap-1 mb-4 border-b">{[['overview','Overview'],['imaging','Imaging'],['encounters','Encounters'],['billing','Billing'],['edit','Edit Details']].map(([k,l]) =>
         <button key={k} onClick={() => { setActiveTab(k); if (k === 'edit') setEditing(true); }}
           className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px ${activeTab === k ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>{l}</button>
       )}</div>
@@ -157,6 +158,10 @@ export default function PatientDetailPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {activeTab === 'imaging' && (
+        <PatientImagingPanel patientId={patientId} />
       )}
 
       {activeTab === 'encounters' && (
