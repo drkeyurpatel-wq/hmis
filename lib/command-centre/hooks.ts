@@ -94,7 +94,7 @@ export function useCommandCentre() {
       }).catch(async () => {
         // Fallback: single query, group client-side
         const { data } = await sb().from('hmis_beds')
-          .select('id, status, room:hmis_rooms!inner(ward:hmis_wards!inner(centre_id, ward_type))');
+          .select('id, status, room:hmis_rooms!inner(ward:hmis_wards!inner(centre_id, type))');
         return data || [];
       }),
 
@@ -162,7 +162,7 @@ export function useCommandCentre() {
             if (b.status === 'occupied') c.occupied++;
             else if (b.status === 'available') c.available++;
             else if (b.status === 'maintenance') c.maintenance++;
-            if (b.room?.ward?.ward_type === 'icu') {
+            if (b.room?.ward?.type === 'icu') {
               c.icuTotal++;
               if (b.status === 'occupied') c.icuOccupied++;
             }

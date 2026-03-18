@@ -25,7 +25,7 @@ RETURNS TABLE (
             c.name AS centre_name,
             c.code AS centre_code,
             b.status AS bed_status,
-            w.ward_type
+            w.type AS ward_type
         FROM hmis_beds b
         JOIN hmis_rooms r ON r.id = b.room_id
         JOIN hmis_wards w ON w.id = r.ward_id
