@@ -73,10 +73,10 @@ RETURNS TABLE (
         SELECT centre_id,
             COUNT(*) AS total,
             COUNT(*) FILTER (WHERE status = 'waiting') AS waiting,
-            COUNT(*) FILTER (WHERE status = 'in_consultation') AS in_consult,
-            COUNT(*) FILTER (WHERE status IN ('completed','checked_out')) AS completed
+            COUNT(*) FILTER (WHERE status = 'with_doctor') AS in_consult,
+            COUNT(*) FILTER (WHERE status IN ('completed','referred')) AS completed
         FROM hmis_opd_visits
-        WHERE visit_date = p_date
+        WHERE created_at::date = p_date
         GROUP BY centre_id
     ),
     ipd AS (
@@ -187,11 +187,11 @@ RETURNS TABLE (
     total_outstanding numeric
 ) LANGUAGE sql STABLE AS $$
     SELECT
-        cl.centre_id,
-        COUNT(*) FILTER (WHERE cl.status IN ('preauth_initiated','preauth_submitted')) AS preauth_pending,
-        COUNT(*) FILTER (WHERE cl.status = 'preauth_approved') AS preauth_approved,
-        COUNT(*) FILTER (WHERE cl.status IN ('claim_submitted','query_raised','query_responded')) AS claims_pending,
-        COUNT(*) FILTER (WHERE cl.status IN ('approved','partially_approved')) AS claims_approved,
+        b.centre_id,
+        COUNT(*) FILTER (WHERE cl.status IN ('submitted','under_review')) AS preauth_pending,
+        COUNT(*) FILTER (WHERE cl.status = 'approved') AS preauth_approved,
+        COUNT(*) FILTER (WHERE cl.status IN ('submitted','query')) AS claims_pending,
+        COUNT(*) FILTER (WHERE cl.status = 'approved') AS claims_approved,
         COUNT(*) FILTER (WHERE cl.status = 'settled') AS claims_settled,
         COUNT(*) FILTER (WHERE cl.status = 'rejected') AS claims_rejected,
         COALESCE(SUM(cl.claimed_amount), 0) AS total_claimed,
@@ -199,6 +199,7 @@ RETURNS TABLE (
         COALESCE(SUM(cl.settled_amount), 0) AS total_settled,
         COALESCE(SUM(cl.claimed_amount) - COALESCE(SUM(cl.settled_amount), 0), 0) AS total_outstanding
     FROM hmis_claims cl
-    WHERE cl.status NOT IN ('cancelled','settled','rejected')
-    GROUP BY cl.centre_id;
+    JOIN hmis_bills b ON b.id = cl.bill_id
+    WHERE cl.status NOT IN ('settled','rejected')
+    GROUP BY b.centre_id;
 $$;
