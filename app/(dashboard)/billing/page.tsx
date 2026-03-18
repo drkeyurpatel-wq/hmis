@@ -13,11 +13,14 @@ import InsuranceCashless from '@/components/billing/insurance-cashless';
 import ARManagement from '@/components/billing/ar-management';
 import IntegrationHub from '@/components/billing/integration-hub';
 import { CorporateBilling, SettlementReconciliation, LoyaltyProgram, GovtSchemes } from '@/components/billing/revenue-extras';
+import BarcodeScanner from '@/components/billing/barcode-scanner';
+import AutoChargeEngine from '@/components/billing/auto-charge-engine';
+import ChargeDashboard from '@/components/billing/charge-dashboard';
 
 let _sb: any = null;
 function sb() { if (typeof window === 'undefined') return null as any; if (!_sb) { try { _sb = createClient(); } catch { return null; } } return _sb; }
 
-type Tab = 'dashboard'|'bills'|'cashless'|'corporate'|'ipd_billing'|'ar'|'estimates'|'advances'|'settlements'|'govt'|'loyalty'|'tariffs'|'packages'|'day_end'|'integrations';
+type Tab = 'dashboard'|'bills'|'charges'|'barcode'|'auto_charges'|'cashless'|'corporate'|'ipd_billing'|'ar'|'estimates'|'advances'|'settlements'|'govt'|'loyalty'|'tariffs'|'packages'|'day_end'|'integrations';
 
 function BillingInner() {
   const { staff, activeCentreId } = useAuthStore();
@@ -97,7 +100,8 @@ function BillingInner() {
   const reloadBills = () => billing.load({dateFrom, dateTo, status:statusFilter, payorType:payorFilter, billType:typeFilter});
 
   const tabs: [Tab,string,string][] = [
-    ['dashboard','Dashboard','📊'],['bills','Bills','📄'],['cashless','Insurance/Cashless','🏥'],['corporate','Corporate','🏢'],
+    ['dashboard','Dashboard','📊'],['bills','Bills','📄'],['charges','Charge Capture','⚡'],['barcode','Barcode Scan','📡'],['auto_charges','Auto Charges','🔄'],
+    ['cashless','Insurance/Cashless','🏥'],['corporate','Corporate','🏢'],
     ['ipd_billing','IPD Running','🛏️'],['ar','Accounts Receivable','📑'],['estimates','Estimates','📋'],['advances','Advances','💰'],
     ['settlements','Settlements','🤝'],['govt','Govt Schemes','🇮🇳'],['loyalty','Loyalty','💳'],['tariffs','Tariff Master','💲'],
     ['packages','Packages','📦'],['day_end','Day End','🔒'],['integrations','Integrations','🔗']
@@ -182,6 +186,15 @@ function BillingInner() {
             <td className="p-2 text-center"><span className={`px-1.5 py-0.5 rounded text-[9px] ${stColor(b.status)}`}>{b.status?.replace('_',' ')}</span></td>
           </tr>))}</tbody></table></div></>}
       </div>}
+
+      {/* ===== CHARGE CAPTURE ===== */}
+      {tab === 'charges' && <ChargeDashboard centreId={centreId} />}
+
+      {/* ===== BARCODE SCANNER ===== */}
+      {tab === 'barcode' && <BarcodeScanner centreId={centreId} onFlash={flash} />}
+
+      {/* ===== AUTO CHARGES ===== */}
+      {tab === 'auto_charges' && <AutoChargeEngine centreId={centreId} onFlash={flash} />}
 
       {/* ===== INSURANCE / CASHLESS ===== */}
       {tab === 'cashless' && <InsuranceCashless claims={cashless.claims} loading={cashless.loading} stats={cashless.stats} centreId={centreId} staffId={staffId}
