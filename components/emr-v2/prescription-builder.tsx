@@ -35,7 +35,7 @@ export default function PrescriptionBuilder({ prescriptions, onChange, allergies
     // Check interactions with existing prescriptions
     const existingDrugs = prescriptions.map(p => p.generic || p.drug);
     const warnings = checkInteractions([...existingDrugs, med.generic || med.name])
-      .map((w: any) => `${w.drug1} + ${w.drug2}: ${w.severity} — ${w.description}`);
+      .map((w: any) => `${w.drug1} + ${w.drug2}: ${w.severity} — ${w.warning}`);
 
     // Check allergy
     const allergyMatch = allergies.find(a => med.name.toLowerCase().includes(a.toLowerCase()) || med.generic?.toLowerCase().includes(a.toLowerCase()));
