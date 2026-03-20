@@ -16,11 +16,14 @@ import { CorporateBilling, SettlementReconciliation, LoyaltyProgram, GovtSchemes
 import BarcodeScanner from '@/components/billing/barcode-scanner';
 import AutoChargeEngine from '@/components/billing/auto-charge-engine';
 import ChargeDashboard from '@/components/billing/charge-dashboard';
+import IPDFinalBill from '@/components/billing/ipd-final-bill';
+import RefundManager from '@/components/billing/refund-manager';
+import CreditNoteManager from '@/components/billing/credit-note-manager';
 
 let _sb: any = null;
 function sb() { if (typeof window === 'undefined') return null as any; if (!_sb) { try { _sb = createClient(); } catch { return null; } } return _sb; }
 
-type Tab = 'dashboard'|'bills'|'charges'|'barcode'|'auto_charges'|'cashless'|'corporate'|'ipd_billing'|'ar'|'estimates'|'advances'|'settlements'|'govt'|'loyalty'|'tariffs'|'packages'|'day_end'|'integrations';
+type Tab = 'dashboard'|'bills'|'charges'|'barcode'|'auto_charges'|'final_bill'|'cashless'|'corporate'|'ipd_billing'|'ar'|'estimates'|'advances'|'settlements'|'refunds'|'credit_notes'|'govt'|'loyalty'|'tariffs'|'packages'|'day_end'|'integrations';
 
 function BillingInner() {
   const { staff, activeCentreId } = useAuthStore();
@@ -101,9 +104,9 @@ function BillingInner() {
 
   const tabs: [Tab,string,string][] = [
     ['dashboard','Dashboard','📊'],['bills','Bills','📄'],['charges','Charge Capture','⚡'],['barcode','Barcode Scan','📡'],['auto_charges','Auto Charges','🔄'],
-    ['cashless','Insurance/Cashless','🏥'],['corporate','Corporate','🏢'],
+    ['final_bill','IPD Final Bill','🧾'],['cashless','Insurance/Cashless','🏥'],['corporate','Corporate','🏢'],
     ['ipd_billing','IPD Running','🛏️'],['ar','Accounts Receivable','📑'],['estimates','Estimates','📋'],['advances','Advances','💰'],
-    ['settlements','Settlements','🤝'],['govt','Govt Schemes','🇮🇳'],['loyalty','Loyalty','💳'],['tariffs','Tariff Master','💲'],
+    ['settlements','Settlements','🤝'],['refunds','Refunds','↩️'],['credit_notes','Credit Notes','📝'],['govt','Govt Schemes','🇮🇳'],['loyalty','Loyalty','💳'],['tariffs','Tariff Master','💲'],
     ['packages','Packages','📦'],['day_end','Day End','🔒'],['integrations','Integrations','🔗']
   ];
 
@@ -196,6 +199,9 @@ function BillingInner() {
       {/* ===== AUTO CHARGES ===== */}
       {tab === 'auto_charges' && <AutoChargeEngine centreId={centreId} onFlash={flash} />}
 
+      {/* ===== IPD FINAL BILL ===== */}
+      {tab === 'final_bill' && <FinalBillSelector centreId={centreId} staffId={staffId} onFlash={flash} />}
+
       {/* ===== INSURANCE / CASHLESS ===== */}
       {tab === 'cashless' && <InsuranceCashless claims={cashless.claims} loading={cashless.loading} stats={cashless.stats} centreId={centreId} staffId={staffId}
         onInitPreAuth={cashless.submitPreAuth} onUpdateStatus={async (claimId: string, status: string, data?: any) => { await cashless.updateClaim(claimId, { status, ...data }); }} onLoad={cashless.loadClaims} onFlash={flash} />}
@@ -258,6 +264,12 @@ function BillingInner() {
         stats={{total:settlements.settlements.length, totalSettled:settlements.settlements.reduce((s: number,se: any) => s+parseFloat(se.settled_amount||0),0), totalTDS:settlements.settlements.reduce((s: number,se: any) => s+parseFloat(se.tds_amount||0),0), totalDisallowance:settlements.settlements.reduce((s: number,se: any) => s+parseFloat(se.disallowance_amount||0),0), unreconciled:settlements.settlements.filter((s: any) => !s.reconciled).length}}
         onRecord={async (d: any) => { await settlements.createSettlement(d, staffId); }} onReconcile={settlements.reconcile} staffId={staffId} onFlash={flash} />}
 
+      {/* ===== REFUNDS ===== */}
+      {tab === 'refunds' && <RefundManager centreId={centreId} onFlash={flash} />}
+
+      {/* ===== CREDIT NOTES ===== */}
+      {tab === 'credit_notes' && <CreditNoteManager centreId={centreId} onFlash={flash} />}
+
       {/* ===== GOVT SCHEMES ===== */}
       {tab === 'govt' && <GovtSchemes schemes={govtSchemes.schemes} onFlash={flash} />}
 
@@ -297,6 +309,48 @@ function BillingInner() {
       {tab === 'integrations' && <IntegrationHub entries={integrations.pendingSync||[]}
         stats={{pending:(integrations.pendingSync||[]).filter((e: any) => e.sync_status==='pending').length, synced:(integrations.pendingSync||[]).filter((e: any) => e.sync_status==='synced').length, failed:(integrations.pendingSync||[]).filter((e: any) => e.sync_status==='failed').length}}
         centreId={centreId} staffId={staffId} onPush={integrations.queueSync} onMarkSynced={integrations.markSynced} onLoad={integrations.load} onFlash={flash} />}
+    </div>
+  );
+}
+
+// Inline: admission selector → IPD Final Bill
+function FinalBillSelector({ centreId, staffId, onFlash }: { centreId: string; staffId: string; onFlash: (m: string) => void }) {
+  const [admissionId, setAdmissionId] = React.useState('');
+  const [search, setSearch] = React.useState('');
+  const [results, setResults] = React.useState<any[]>([]);
+
+  React.useEffect(() => {
+    if (search.length < 2 || !sb()) { setResults([]); return; }
+    const t = setTimeout(async () => {
+      const { data } = await sb().from('hmis_admissions')
+        .select('id, ipd_number, patient:hmis_patients!inner(first_name, last_name, uhid), doctor:hmis_staff!hmis_admissions_primary_doctor_id_fkey(full_name)')
+        .eq('centre_id', centreId).in('status', ['active', 'discharge_initiated'])
+        .or(`ipd_number.ilike.%${search}%`).limit(5);
+      setResults(data || []);
+    }, 300);
+    return () => clearTimeout(t);
+  }, [search, centreId]);
+
+  if (admissionId) return <IPDFinalBill admissionId={admissionId} centreId={centreId} staffId={staffId} onFlash={onFlash} />;
+
+  return (
+    <div className="bg-white rounded-xl border p-8 max-w-lg mx-auto text-center space-y-4">
+      <div className="text-3xl">🧾</div>
+      <h2 className="font-bold text-lg">Generate IPD Final Bill</h2>
+      <p className="text-xs text-gray-500">Search for an active admission to generate consolidated discharge bill</p>
+      <div className="relative text-left">
+        <input type="text" value={search} onChange={e => setSearch(e.target.value)}
+          className="w-full px-4 py-3 border rounded-xl text-sm" placeholder="Search IPD number or patient name..." autoFocus />
+        {results.length > 0 && <div className="absolute top-full left-0 right-0 mt-1 bg-white border rounded-lg shadow-lg z-10">
+          {results.map((a: any) => (
+            <button key={a.id} onClick={() => setAdmissionId(a.id)}
+              className="w-full text-left px-4 py-3 hover:bg-blue-50 border-b text-sm">
+              <span className="font-mono font-medium">{a.ipd_number}</span> — {a.patient.first_name} {a.patient.last_name}
+              <span className="text-xs text-gray-400 ml-2">{a.patient.uhid} | Dr. {a.doctor?.full_name}</span>
+            </button>
+          ))}
+        </div>}
+      </div>
     </div>
   );
 }
