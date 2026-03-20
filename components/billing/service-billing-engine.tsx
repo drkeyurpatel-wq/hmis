@@ -5,7 +5,8 @@ import {
   searchTariff, getTariffCategories, getRateForPayor,
   calcLineItem, calcBillSummary, createBill, addPaymentToBill,
   buildIPDBillFromCharges, postDailyIPDCharges, loadBillDetails,
-  type TariffItem, type BillLineItem, type PaymentEntry, type BillSummary,
+  searchPmjayPackages,
+  type TariffItem, type BillLineItem, type PaymentEntry, type BillSummary, type PmjayPackage,
 } from '@/lib/billing/billing-engine';
 import { createBrowserClient } from '@supabase/ssr';
 
@@ -38,6 +39,7 @@ export default function ServiceBillingEngine({
   // Tariff search
   const [tariffQ, setTariffQ] = useState('');
   const [tariffResults, setTariffResults] = useState<TariffItem[]>([]);
+  const [pmjayResults, setPmjayResults] = useState<PmjayPackage[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
   const [catFilter, setCatFilter] = useState('');
 
@@ -87,13 +89,20 @@ export default function ServiceBillingEngine({
 
   // Tariff search
   useEffect(() => {
-    if (tariffQ.length < 2) { setTariffResults([]); return; }
+    if (tariffQ.length < 2) { setTariffResults([]); setPmjayResults([]); return; }
     const t = setTimeout(async () => {
       const results = await searchTariff(centreId, tariffQ, catFilter || undefined);
       setTariffResults(results);
+      // Also search PMJAY packages when payor is PMJAY
+      if (payorType === 'pmjay') {
+        const pmjay = await searchPmjayPackages(centreId, tariffQ);
+        setPmjayResults(pmjay);
+      } else {
+        setPmjayResults([]);
+      }
     }, 300);
     return () => clearTimeout(t);
-  }, [tariffQ, centreId, catFilter]);
+  }, [tariffQ, centreId, catFilter, payorType]);
 
   // Add tariff item to bill
   const addItem = (tariff: TariffItem) => {
@@ -109,6 +118,33 @@ export default function ServiceBillingEngine({
     setItems(prev => [...prev, item]);
     setTariffQ('');
     setTariffResults([]);
+    setPmjayResults([]);
+  };
+
+  // Add PMJAY package to bill
+  const addPmjayItem = (pkg: PmjayPackage) => {
+    const item = calcLineItem({
+      tariff_id: null,
+      description: `[PMJAY ${pkg.procedure_code}] ${pkg.package_name}`,
+      category: 'pmjay',
+      quantity: 1, days: 1,
+      unit_rate: pkg.effective_rate,  // Already includes 10% NABH incentive
+    });
+    // Add implant as separate line if present
+    const newItems = [item];
+    if (pkg.implant_cost > 0 && pkg.implant_name) {
+      newItems.push(calcLineItem({
+        tariff_id: null,
+        description: `[PMJAY Implant] ${pkg.implant_name}`,
+        category: 'pmjay_implant',
+        quantity: 1, days: 1,
+        unit_rate: pkg.implant_cost,
+      }));
+    }
+    setItems(prev => [...prev, ...newItems]);
+    setTariffQ('');
+    setTariffResults([]);
+    setPmjayResults([]);
   };
 
   // Add custom item
@@ -272,7 +308,7 @@ export default function ServiceBillingEngine({
             <div className="relative flex-1">
               <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
               <input className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-500"
-                value={tariffQ} onChange={e => setTariffQ(e.target.value)} placeholder="Search 717 services — CBC, ECG, X-Ray, Bed Charges..." />
+                value={tariffQ} onChange={e => setTariffQ(e.target.value)} placeholder={payorType === 'pmjay' ? "Search PMJAY packages — knee replacement, CABG, cataract..." : "Search services — CBC, ECG, X-Ray, Bed Charges..."} />
             </div>
             <select className="px-2 py-2 border rounded-lg text-xs" value={catFilter} onChange={e => setCatFilter(e.target.value)}>
               <option value="">All Categories</option>
@@ -299,6 +335,35 @@ export default function ServiceBillingEngine({
                   </div>
                 </button>
               ))}
+            </div>
+          )}
+
+          {/* PMJAY Package results */}
+          {pmjayResults.length > 0 && (
+            <div className="mb-3">
+              <div className="text-[10px] font-bold text-orange-700 mb-1 px-1">PMJAY HBP 2022 Packages (NABH +10% included)</div>
+              <div className="border border-orange-200 rounded-lg max-h-56 overflow-y-auto bg-orange-50/30">
+                {pmjayResults.map(p => (
+                  <button key={p.id} onClick={() => addPmjayItem(p)} className="w-full text-left px-3 py-2.5 hover:bg-orange-100 flex items-center justify-between border-b border-orange-100 last:border-0 text-xs">
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium text-gray-900 truncate">{p.package_name}</div>
+                      <div className="text-[9px] text-gray-500 truncate">{p.procedure_name?.substring(0, 80)}</div>
+                      <div className="flex gap-1 mt-0.5">
+                        <span className="text-[8px] bg-orange-100 text-orange-700 px-1 py-0.5 rounded">{p.procedure_code}</span>
+                        <span className="text-[8px] bg-gray-100 px-1 py-0.5 rounded">{p.specialty?.split(',')[0]}</span>
+                        {p.is_day_care && <span className="text-[8px] bg-blue-100 text-blue-700 px-1 py-0.5 rounded">Day Care</span>}
+                        {p.auto_approved && <span className="text-[8px] bg-green-100 text-green-700 px-1 py-0.5 rounded">Auto-Approved</span>}
+                        {p.alos > 0 && <span className="text-[8px] bg-gray-100 px-1 py-0.5 rounded">ALOS {p.alos}d</span>}
+                      </div>
+                    </div>
+                    <div className="text-right ml-3 flex-shrink-0">
+                      <div className="font-bold text-orange-700">{INR(p.effective_rate)}</div>
+                      <div className="text-[8px] text-gray-400">Base {INR(p.base_rate)} + 10%</div>
+                      {p.implant_cost > 0 && <div className="text-[8px] text-purple-600">+Implant {INR(p.implant_cost)}</div>}
+                    </div>
+                  </button>
+                ))}
+              </div>
             </div>
           )}
 

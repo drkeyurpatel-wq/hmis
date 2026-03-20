@@ -57,7 +57,46 @@ export interface BillSummary {
 }
 
 // ============================================================
-// TARIFF SEARCH — real-time from SOC
+// PMJAY PACKAGE SEARCH — when payor is PMJAY
+// ============================================================
+export interface PmjayPackage {
+  id: string;
+  procedure_code: string;
+  package_code: string;
+  specialty: string;
+  package_name: string;
+  procedure_name: string;
+  base_rate: number;
+  nabh_incentive: number;
+  effective_rate: number;
+  implant_name: string;
+  implant_cost: number;
+  total_with_implant: number;
+  level_of_care: string;
+  alos: number;
+  is_day_care: boolean;
+  auto_approved: boolean;
+  pre_auth_docs: string;
+}
+
+export async function searchPmjayPackages(centreId: string, query: string): Promise<PmjayPackage[]> {
+  if (!query || query.length < 2) return [];
+  const { data } = await sb().from('hmis_pmjay_packages')
+    .select('*').eq('centre_id', centreId).eq('is_active', true)
+    .or(`package_name.ilike.%${query}%,procedure_name.ilike.%${query}%,specialty.ilike.%${query}%,procedure_code.ilike.%${query}%`)
+    .order('package_name').limit(20);
+  return data || [];
+}
+
+export async function getPmjaySpecialties(centreId: string): Promise<string[]> {
+  const { data } = await sb().from('hmis_pmjay_packages')
+    .select('specialty').eq('centre_id', centreId).eq('is_active', true);
+  const specs: string[] = (data || []).map((d: any) => String(d.specialty).split(',')[0].trim());
+  return [...new Set(specs)].sort();
+}
+
+// ============================================================
+// TARIFF SEARCH — with PMJAY fallback
 // ============================================================
 export async function searchTariff(
   centreId: string,
