@@ -8,6 +8,7 @@ import { ErrorBoundary } from '@/components/ui/error-boundary';
 import { useAuthStore } from '@/lib/store/auth';
 import { createClient } from '@/lib/supabase/client';
 import { useKeyboardShortcuts, ShortcutHelpModal } from '@/components/ui/keyboard-shortcuts';
+import { registerServiceWorker } from '@/lib/offline/sync-manager';
 
 export default function DashboardLayout({
   children,
@@ -52,12 +53,27 @@ export default function DashboardLayout({
     loadProfile();
   }, [setStaff, setCentres]);
 
+  // Register service worker for offline support
+  useEffect(() => { registerServiceWorker(); }, []);
+
+  // Online/offline status
+  const [online, setOnline] = useState(true);
+  useEffect(() => {
+    const on = () => setOnline(true);
+    const off = () => setOnline(false);
+    window.addEventListener('online', on);
+    window.addEventListener('offline', off);
+    setOnline(navigator.onLine);
+    return () => { window.removeEventListener('online', on); window.removeEventListener('offline', off); };
+  }, []);
+
   const [mobileOpen, setMobileOpen] = useState(false);
   const { showHelp, setShowHelp } = useKeyboardShortcuts();
 
   return (
     <ToastProvider>
       <div className="min-h-screen bg-gray-50">
+        {!online && <div className="fixed top-0 left-0 right-0 z-[60] bg-amber-500 text-white text-center py-1.5 text-xs font-medium">⚡ Offline — changes will sync when connection returns</div>}
         <ShortcutHelpModal show={showHelp} onClose={() => setShowHelp(false)} />
         <Sidebar mobileOpen={mobileOpen} onMobileClose={() => setMobileOpen(false)} />
         {/* Mobile hamburger */}

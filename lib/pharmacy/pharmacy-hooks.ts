@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { postPharmacyCharge } from '@/lib/bridge/cross-module-bridge';
 import { auditCreate } from '@/lib/audit/audit-logger';
+import { notifyPharmacyReady } from '@/lib/notifications/notification-dispatcher';
 
 let _sb: any = null;
 function sb() { if (typeof window === 'undefined') return null as any; if (!_sb) { try { _sb = createClient(); } catch { return null; } } return _sb; }
@@ -258,6 +259,11 @@ export function useDispensingQueue(centreId: string | null) {
           drugName: item.drugName, quantity: item.dispensedQty, amount: item.totalMRP,
           dispensingId, staffId,
         });
+      }
+      // Notify patient
+      if (disp.data?.patient_id) {
+        const { data: ptInfo } = await sb().from('hmis_patients').select('phone_primary, first_name, last_name').eq('id', disp.data.patient_id).maybeSingle();
+        if (ptInfo?.phone_primary) notifyPharmacyReady({ phone: ptInfo.phone_primary, patientName: `${ptInfo.first_name} ${ptInfo.last_name}`, medicineCount: dispensedItems.length });
       }
       auditCreate(centreId, staffId, 'pharmacy_dispense', dispensingId, `Dispensed ${dispensedItems.length} items — ₹${computedTotal}`);
     }

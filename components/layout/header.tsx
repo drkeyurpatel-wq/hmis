@@ -4,6 +4,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import Link from 'next/link';
+import { DarkModeToggle } from '@/components/ui/dark-mode-toggle';
 
 let _sb: any = null;
 function sb() { if (typeof window === 'undefined') return null as any; if (!_sb) { try { _sb = createClient(); } catch { return null; } } return _sb; }
@@ -119,10 +120,11 @@ export function GlobalHeader() {
             <span className="w-2 h-2 bg-purple-500 rounded-full" />{pendingCounts.preauth} PA</Link>}
         </div>
 
-        {/* Keyboard hint */}
+        {/* Keyboard hint + Dark mode */}
         <div className="hidden lg:flex items-center gap-2 text-xs text-gray-400">
           <kbd className="px-1.5 py-0.5 bg-gray-100 rounded border text-[10px]">Ctrl+K</kbd>
           <span>Search</span>
+          <DarkModeToggle />
         </div>
       </div>
     </div>

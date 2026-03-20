@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/client';
 import { smartPostConsultationCharge, generateBillNumber, lookupTariff } from '@/lib/bridge/cross-module-bridge';
 import { printBillInvoice, printPaymentReceipt } from '@/components/billing/bill-pdf';
 import { auditCreate } from '@/lib/audit/audit-logger';
+import { notifyPayment } from '@/lib/notifications/notification-dispatcher';
 
 let _sb: any = null;
 function sb() { if (typeof window === 'undefined') return null as any; if (!_sb) { try { _sb = createClient(); } catch { return null; } } return _sb; }
@@ -105,6 +106,8 @@ export default function OPDBilling({ centreId, staffId, patient, doctor, visitId
       receipt_number: receiptNumber, received_by: staffId,
     }).select('id, receipt_number, amount, payment_mode, reference_number, created_at').single();
 
+    // Notify patient
+    if (patient.phone) notifyPayment({ phone: patient.phone, patientName: patient.name, receiptNumber: receiptNumber, amount: net, paymentMode: payMode });
     auditCreate(centreId, staffId, 'bill', billData.id, `OPD Bill: ${billNumber} ₹${net} — ${patient.name}`);
 
     setBill({ ...billData, gross_amount: gross, discount_amount: discount, net_amount: net, paid_amount: net, balance_amount: 0, bill_date: new Date().toISOString().split('T')[0], payor_type: 'self', bill_type: 'opd', payment });

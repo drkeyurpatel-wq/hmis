@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/client';
 import { openPrintWindow } from '@/components/ui/shared';
 import { auditCreate, auditSign, auditPrint } from '@/lib/audit/audit-logger';
 import { triggerFinalBillOnDischarge } from '@/lib/bridge/cross-module-bridge';
+import { notifyDischarge } from '@/lib/notifications/notification-dispatcher';
 
 let _sb: any = null;
 function sb() { if (typeof window === 'undefined') return null as any; if (!_sb) { try { _sb = createClient(); } catch { return null; } } return _sb; }
@@ -284,6 +285,11 @@ RULES:
     await sb().from('hmis_ipd_medication_orders').update({ status: 'completed', end_date: new Date().toISOString().split('T')[0] }).eq('admission_id', admissionId).eq('status', 'active');
     // Trigger final bill check
     await triggerFinalBillOnDischarge({ centreId: admission?.centre_id || '', admissionId, patientId, staffId });
+    // Notify patient
+    const pt = admission?.patient;
+    if (pt?.phone_primary) {
+      notifyDischarge({ phone: pt.phone_primary, patientName: `${pt.first_name} ${pt.last_name}`, ipdNumber: admission?.ipd_number || '', dischargeDate: new Date().toLocaleDateString('en-IN'), followUpDate: Array.isArray(ds.followUp) ? ds.followUp.map((f: any) => `${f.department} ${f.date}`).join(', ') : String(ds.followUp || '') });
+    }
     auditSign(admission?.centre_id || '', staffId, 'discharge', admissionId, `Discharged: ${ds.dischargeType} | Dx: ${ds.finalDiagnosis?.substring(0, 50)}`);
     onFlash('Patient discharged successfully');
     setStep(6); // done
