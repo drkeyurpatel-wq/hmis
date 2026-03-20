@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useBillItems, usePaymentsV2, useAdvances } from '@/lib/billing/billing-hooks';
 import { createClient } from '@/lib/supabase/client';
-import { openPrintWindow } from '@/components/ui/shared';
+import { printBillInvoice, printPaymentReceipt } from '@/components/billing/bill-pdf';
 
 let _sb: any = null;
 function sb() { if (typeof window === 'undefined') return null as any; if (!_sb) { try { _sb = createClient(); } catch { return null; } } return _sb; }
@@ -110,57 +110,12 @@ export default function BillDetail({ bill, staffId, centreId, tariffs, onUpdate,
 
   // Print bill
   const printBillDoc = () => {
-    const itemRows = items.items.map((i: any, idx: number) => `<tr><td style="padding:3px 6px;border:1px solid #ddd;text-align:center;font-size:9px">${idx+1}</td><td style="padding:3px 6px;border:1px solid #ddd;font-size:9px">${i.description}${i.tariff?.category ? ` <span style="color:#888">(${i.tariff.category.replace('_',' ')})</span>` : ''}${i.doctor?.full_name ? ` <span style="color:#666">Dr.${i.doctor.full_name}</span>` : ''}</td><td style="padding:3px 6px;border:1px solid #ddd;text-align:center;font-size:9px">${i.quantity}</td><td style="padding:3px 6px;border:1px solid #ddd;text-align:right;font-size:9px">₹${fmt(i.unit_rate)}</td><td style="padding:3px 6px;border:1px solid #ddd;text-align:right;font-size:9px;font-weight:600">₹${fmt(i.net_amount)}</td></tr>`).join('');
-
-    const payRows = pay.payments.map((p: any) => `<tr><td style="padding:2px 6px;font-size:9px">${p.payment_date}</td><td style="padding:2px 6px;font-size:9px">${p.payment_mode.toUpperCase()}</td><td style="padding:2px 6px;font-size:9px">${p.receipt_number}</td><td style="padding:2px 6px;text-align:right;font-size:9px;font-weight:600">₹${fmt(p.amount)}</td></tr>`).join('');
-
-    const pt = bill.patient;
-    openPrintWindow(`<div style="max-width:700px;margin:0 auto;font-family:'Segoe UI',Arial;color:#1a1a1a">
-      <div style="display:flex;justify-content:space-between;border-bottom:3px solid #1e40af;padding-bottom:8px;margin-bottom:8px">
-        <div><div style="font-size:18px;font-weight:700;color:#1e40af">Health1 Super Speciality Hospital</div><div style="font-size:8px;color:#666">Shilaj, Ahmedabad | NABH Accredited | CIN: U85110GJ2019PTC109866</div></div>
-        <div style="text-align:right"><div style="font-size:13px;font-weight:700">TAX INVOICE</div><div style="font-size:9px;color:#666">GSTIN: 24AADCH1234F1Z5</div></div>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:3px;font-size:10px;padding:6px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:4px;margin-bottom:8px">
-        <div><b>Bill No:</b> ${bill.bill_number}</div><div><b>Bill Date:</b> ${bill.bill_date}</div>
-        <div><b>Patient:</b> ${pt?.first_name} ${pt?.last_name}</div><div><b>UHID:</b> ${pt?.uhid}</div>
-        <div><b>Age/Sex:</b> ${pt?.age_years || ''}yr / ${pt?.gender || ''}</div><div><b>Phone:</b> ${pt?.phone_primary || '—'}</div>
-        <div><b>Bill Type:</b> ${bill.bill_type?.toUpperCase()}</div><div><b>Payor:</b> ${bill.payor_type?.replace('govt_','').replace('_',' ').toUpperCase()}</div>
-      </div>
-      <table style="width:100%;border-collapse:collapse;margin-bottom:8px"><thead><tr style="background:#eff6ff"><th style="padding:4px 6px;border:1px solid #ddd;text-align:center;font-size:9px">#</th><th style="padding:4px 6px;border:1px solid #ddd;text-align:left;font-size:9px">Service Description</th><th style="padding:4px 6px;border:1px solid #ddd;text-align:center;font-size:9px">Qty</th><th style="padding:4px 6px;border:1px solid #ddd;text-align:right;font-size:9px">Rate</th><th style="padding:4px 6px;border:1px solid #ddd;text-align:right;font-size:9px">Amount</th></tr></thead><tbody>${itemRows}</tbody></table>
-      <div style="display:flex;justify-content:flex-end"><div style="width:250px">
-        <div style="display:flex;justify-content:space-between;padding:3px 0;font-size:10px"><span>Gross Amount</span><span>₹${fmt(bill.gross_amount)}</span></div>
-        ${parseFloat(bill.discount_amount) > 0 ? `<div style="display:flex;justify-content:space-between;padding:3px 0;font-size:10px;color:#dc2626"><span>Discount</span><span>- ₹${fmt(bill.discount_amount)}</span></div>` : ''}
-        <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:12px;font-weight:700;border-top:2px solid #1e40af;border-bottom:2px solid #1e40af"><span>Net Amount</span><span>₹${fmt(bill.net_amount)}</span></div>
-        ${parseFloat(bill.paid_amount) > 0 ? `<div style="display:flex;justify-content:space-between;padding:3px 0;font-size:10px;color:#16a34a"><span>Paid</span><span>₹${fmt(bill.paid_amount)}</span></div>` : ''}
-        ${parseFloat(bill.balance_amount) > 0 ? `<div style="display:flex;justify-content:space-between;padding:3px 0;font-size:11px;font-weight:700;color:#dc2626"><span>Balance Due</span><span>₹${fmt(bill.balance_amount)}</span></div>` : '<div style="display:flex;justify-content:space-between;padding:3px 0;font-size:10px;color:#16a34a;font-weight:700"><span>Status</span><span>PAID IN FULL</span></div>'}
-      </div></div>
-      ${payRows ? `<div style="margin-top:8px"><div style="font-size:9px;font-weight:600;margin-bottom:3px">Payment Details:</div><table style="width:100%;font-size:9px"><tbody>${payRows}</tbody></table></div>` : ''}
-      <div style="margin-top:30px;display:flex;justify-content:space-between;font-size:8px;color:#888"><div>Printed: ${new Date().toLocaleString('en-IN')}</div><div>Authorised Signatory</div></div>
-      <div style="margin-top:10px;text-align:center;font-size:7px;color:#aaa">This is a computer-generated bill. Health1 Super Speciality Hospital Pvt. Ltd.</div>
-    </div>`, `Bill-${bill.bill_number}`);
+    printBillInvoice(bill, items.items, pay.payments, bill.patient, { name: 'Health1 Super Speciality Hospital', address: 'Shilaj, Ahmedabad', gstin: '24AADCH1234F1Z5', cin: 'U85110GJ2019PTC109866' });
   };
 
   // Print receipt for specific payment
   const printReceipt = (payment: any) => {
-    const pt = bill.patient;
-    openPrintWindow(`<div style="max-width:400px;margin:0 auto;font-family:'Segoe UI',Arial;font-size:11px">
-      <div style="text-align:center;border-bottom:2px solid #1e40af;padding-bottom:6px;margin-bottom:8px">
-        <div style="font-size:14px;font-weight:700;color:#1e40af">Health1 Super Speciality Hospital</div>
-        <div style="font-size:8px;color:#666">Shilaj, Ahmedabad</div>
-        <div style="font-size:12px;font-weight:700;margin-top:4px">PAYMENT RECEIPT</div>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:3px;font-size:10px;margin-bottom:8px">
-        <div><b>Receipt:</b> ${payment.receipt_number}</div><div><b>Date:</b> ${payment.payment_date}</div>
-        <div><b>Patient:</b> ${pt?.first_name} ${pt?.last_name}</div><div><b>UHID:</b> ${pt?.uhid}</div>
-        <div><b>Bill No:</b> ${bill.bill_number}</div><div><b>Mode:</b> ${payment.payment_mode.toUpperCase()}</div>
-        ${payment.reference_number ? `<div><b>Ref:</b> ${payment.reference_number}</div>` : ''}
-      </div>
-      <div style="text-align:center;padding:12px;background:#f0fdf4;border:2px solid #16a34a;border-radius:8px;margin:12px 0">
-        <div style="font-size:10px;color:#16a34a">Amount Received</div>
-        <div style="font-size:24px;font-weight:700;color:#16a34a">₹${fmt(payment.amount)}</div>
-      </div>
-      <div style="text-align:right;font-size:9px;color:#888;margin-top:20px">Cashier: ${staffId.substring(0,8)}</div>
-    </div>`, `Receipt-${payment.receipt_number}`);
+    printPaymentReceipt(payment, bill, bill.patient, { name: 'Health1 Super Speciality Hospital', address: 'Shilaj, Ahmedabad' });
   };
 
   const pt = bill.patient;
