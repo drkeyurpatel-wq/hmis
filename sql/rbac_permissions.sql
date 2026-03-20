@@ -5,7 +5,7 @@
 -- ============================================================
 
 -- 1. Clear old roles and insert proper templates
-DELETE FROM hmis_roles WHERE is_system = true;
+-- Upsert roles (safe — does not delete referenced roles)
 
 -- ============================================================
 -- PERMISSION STRUCTURE:
@@ -164,7 +164,11 @@ INSERT INTO hmis_roles (name, description, permissions, is_system) VALUES
   "patients": ["view"],
   "radiology": ["view","create","edit","print","export"],
   "reports": ["view"]
-}'::jsonb, true);
+}'::jsonb, true)
+ON CONFLICT (name) DO UPDATE SET
+  description = EXCLUDED.description,
+  permissions = EXCLUDED.permissions,
+  is_system = EXCLUDED.is_system;
 
 
 -- ============================================================
