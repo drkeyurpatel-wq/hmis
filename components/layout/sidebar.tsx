@@ -30,6 +30,7 @@ const navItems = [
   { href: '/vpms', label: 'Vendor & Purchase', icon: Truck, module: null },
   { href: '/homecare', label: 'Homecare', icon: Home, module: 'homecare' },
   { href: '/reports', label: 'MIS & Reports', icon: BarChart3, module: 'mis' },
+  { href: '/quality', label: 'Quality & NABH', icon: Activity, module: 'mis' },
   { href: '/settings', label: 'Settings', icon: Settings, module: null },
 ];
 
