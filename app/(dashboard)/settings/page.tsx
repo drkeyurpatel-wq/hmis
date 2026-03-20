@@ -181,26 +181,11 @@ function SettingsInner() {
       </div>}
 
       {/* ROLES */}
-      {tab === 'roles' && <div className="bg-white rounded-xl border p-4">
-        <h3 className="font-bold text-sm mb-3">Role-Based Access Control</h3>
-        <div className="grid grid-cols-3 gap-3 text-xs">
-          {[
-            { role: 'MD / Admin', modules: 'All modules, Settings, Reports, User management', color: 'bg-red-50 border-red-200' },
-            { role: 'Doctor', modules: 'EMR, OPD, IPD (own patients), Lab results, Radiology, Pharmacy', color: 'bg-blue-50 border-blue-200' },
-            { role: 'Nurse', modules: 'IPD nursing, Vitals, MAR, Bed management, Barcode scan', color: 'bg-teal-50 border-teal-200' },
-            { role: 'Billing Staff', modules: 'Billing (all tabs), Estimates, Collections, Day-end', color: 'bg-green-50 border-green-200' },
-            { role: 'Lab Tech', modules: 'Lab module, Sample collection, Result entry', color: 'bg-purple-50 border-purple-200' },
-            { role: 'Radiology Tech', modules: 'Radiology worklist, PACS link, Stradus integration', color: 'bg-indigo-50 border-indigo-200' },
-            { role: 'Pharmacist', modules: 'Pharmacy dispense, Stock management, Drug master', color: 'bg-pink-50 border-pink-200' },
-            { role: 'Front Desk', modules: 'OPD queue, Patient registration, Appointments', color: 'bg-amber-50 border-amber-200' },
-            { role: 'Operations / CEO', modules: 'Command Centre, Reports, Bed Management, VPMS', color: 'bg-orange-50 border-orange-200' },
-          ].map(r => (
-            <div key={r.role} className={`rounded-lg border p-3 ${r.color}`}>
-              <div className="font-bold mb-1">{r.role}</div>
-              <div className="text-gray-600">{r.modules}</div>
-            </div>
-          ))}
-        </div>
+      {tab === 'roles' && <div className="bg-white rounded-xl border p-6 text-center">
+        <div className="text-3xl mb-3">👥</div>
+        <h3 className="font-bold text-sm mb-2">Staff & Access Management</h3>
+        <p className="text-xs text-gray-500 mb-4">Create users, assign roles, edit permissions with the checkbox matrix editor.</p>
+        <a href="/staff" className="px-6 py-2.5 bg-blue-600 text-white text-sm rounded-lg inline-block">Open Staff & Access →</a>
       </div>}
 
       {/* SYSTEM */}

@@ -5,6 +5,7 @@ import { exportToCSV } from '@/lib/utils/data-export';
 import { createClient } from '@/lib/supabase/client';
 import { useAuthStore } from '@/lib/store/auth';
 import { formatDate, calculateAge, getInitials, cn } from '@/lib/utils';
+import { validatePatientRegistration, getFieldError, type ValidationError } from '@/lib/utils/validation';
 import {
   Search, Plus, Phone, MapPin, ChevronRight, X, User, Heart,
   Shield, AlertCircle, Camera, FileText, Clock, Filter,
@@ -134,6 +135,7 @@ function RegisterModal({ onClose, onSuccess }: { onClose: () => void; onSuccess:
   const [section, setSection] = useState<RegSection>('demographics');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState<ValidationError[]>([]);
   const [form, setForm] = useState({
     first_name: '', middle_name: '', last_name: '', gender: '', date_of_birth: '',
     age_years: '', blood_group: '', marital_status: '', occupation: '', religion: '',
@@ -158,8 +160,15 @@ function RegisterModal({ onClose, onSuccess }: { onClose: () => void; onSuccess:
   ];
 
   async function handleSubmit() {
-    if (!form.first_name || !form.last_name || !form.gender || !form.phone_primary) {
-      setError('First name, last name, gender, and phone are required.'); setSection('demographics'); return;
+    const { valid, errors } = validatePatientRegistration(form);
+    setFieldErrors(errors);
+    if (!valid) {
+      setError(errors.map(e => e.message).join('. '));
+      // Navigate to section with first error
+      const firstField = errors[0]?.field;
+      if (['first_name','last_name','gender','age_years','blood_group','date_of_birth'].includes(firstField)) setSection('demographics');
+      else if (['phone_primary','email','address_line1','city','pincode'].includes(firstField)) setSection('contact');
+      return;
     }
     setSaving(true); setError('');
     const supabase = createClient();

@@ -103,6 +103,12 @@ export function useCorporateBilling(centreId: string | null) {
 
   useEffect(() => { loadCorporates(); }, [loadCorporates]);
 
+  const addCorporate = useCallback(async (data: { company_name: string; contact_person?: string; phone?: string; email?: string; gst_number?: string; credit_limit?: number; discount_percentage?: number; billing_cycle?: string }) => {
+    if (!centreId || !sb()) return;
+    await sb().from('hmis_corporates').insert({ centre_id: centreId, ...data, status: 'active', current_outstanding: 0 });
+    loadCorporates();
+  }, [centreId, loadCorporates]);
+
   const addEmployee = useCallback(async (corporateId: string, patientId: string, empId: string, relationship: string, coverage: string) => {
     if (!sb()) return;
     await sb().from('hmis_corporate_employees').insert({ corporate_id: corporateId, patient_id: patientId, employee_id: empId, relationship, coverage_type: coverage });
@@ -133,7 +139,7 @@ export function useCorporateBilling(centreId: string | null) {
     return bills || [];
   }, [centreId]);
 
-  return { corporates, employees, loadCorporates, loadEmployees, addEmployee, getCorporateRate, checkCreditLimit, creditBills };
+  return { corporates, employees, loadCorporates, loadEmployees, addCorporate, addEmployee, getCorporateRate, checkCreditLimit, creditBills };
 }
 
 // ============================================================

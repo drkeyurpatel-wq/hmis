@@ -213,7 +213,7 @@ function BillingInner() {
 
       {/* ===== CORPORATE ===== */}
       {tab === 'corporate' && <CorporateBilling corporates={corporate.corporates} employees={corporate.employees}
-        onAdd={async (d) => { /* TODO: addCorporate not in current hooks — stub */ flash('Corporate feature ready'); }}
+        onAdd={async (d: any) => { await corporate.addCorporate(d); flash('Corporate added'); }}
         onLoadEmployees={corporate.loadEmployees} onCreditBills={corporate.creditBills} onFlash={flash} />}
 
       {/* ===== IPD RUNNING ===== */}

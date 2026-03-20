@@ -3,6 +3,7 @@ import React, { useState, useMemo } from 'react';
 import { RoleGuard } from '@/components/ui/shared';
 import { useAuthStore } from '@/lib/store/auth';
 import { useStaffManagement, useRoles, ALL_MODULES, type Permissions, hasModuleAccess } from '@/lib/rbac/rbac-hooks';
+import { validateStaffCreation, getFieldError } from '@/lib/utils/validation';
 
 type Tab = 'staff' | 'create' | 'bulk' | 'roles' | 'permissions';
 

@@ -105,6 +105,18 @@ export default function DashboardPage() {
 
   useEffect(() => { load(); }, [load]);
 
+  // Auto-refresh every 60 seconds + real-time on bill/admission changes
+  useEffect(() => {
+    const interval = setInterval(load, 60000);
+    if (!centreId || !sb()) return () => clearInterval(interval);
+    const ch = sb().channel('dashboard-live-' + centreId)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'hmis_bills', filter: `centre_id=eq.${centreId}` }, () => load())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'hmis_admissions', filter: `centre_id=eq.${centreId}` }, () => load())
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'hmis_opd_visits', filter: `centre_id=eq.${centreId}` }, () => load())
+      .subscribe();
+    return () => { clearInterval(interval); sb().removeChannel(ch); };
+  }, [load, centreId]);
+
   if (loading) return <div className="max-w-7xl mx-auto space-y-4 animate-pulse"><div className="h-10 bg-gray-200 rounded-xl" /><div className="grid grid-cols-4 gap-3">{[1,2,3,4].map(i => <div key={i} className="h-24 bg-gray-200 rounded-xl" />)}</div><div className="h-64 bg-gray-200 rounded-xl" /></div>;
   if (!stats) return <div className="max-w-7xl mx-auto text-center py-12 text-gray-400">Select a centre to view dashboard</div>;
 

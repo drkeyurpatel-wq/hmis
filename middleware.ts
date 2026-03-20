@@ -33,7 +33,11 @@ export async function middleware(request: NextRequest) {
   if (
     !user &&
     !request.nextUrl.pathname.startsWith('/auth') &&
-    !request.nextUrl.pathname.startsWith('/api')
+    !request.nextUrl.pathname.startsWith('/api') &&
+    !request.nextUrl.pathname.startsWith('/portal') &&
+    !request.nextUrl.pathname.startsWith('/offline') &&
+    request.nextUrl.pathname !== '/sw.js' &&
+    request.nextUrl.pathname !== '/manifest.json'
   ) {
     const url = request.nextUrl.clone();
     url.pathname = '/auth/login';
