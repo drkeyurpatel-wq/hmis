@@ -332,8 +332,20 @@ function OTInner() {
       </div>}
 
       {/* ===== IMPLANTS / SAFETY — Framework ===== */}
-      {tab === 'implants' && <div className="text-center py-12 bg-white rounded-xl border text-gray-400"><div className="text-lg mb-2">Implant &amp; Consumable Tracking</div><div className="text-sm">Track every implant: manufacturer, lot #, serial #, size, cost. Sticker for patient records. Tables ready.</div></div>}
-      {tab === 'safety' && <div className="text-center py-12 bg-white rounded-xl border text-gray-400"><div className="text-lg mb-2">WHO Surgical Safety Checklist</div><div className="text-sm">Sign In (before anaesthesia) → Time Out (before incision) → Sign Out (before leaving OT). Full checklist with timestamps and sign-off. Tables ready.</div></div>}
+      {tab === 'implants' && <div className="bg-white rounded-xl border p-4">
+        <h2 className="font-bold text-sm mb-3">Implant & Consumable Tracking</h2>
+        <p className="text-xs text-gray-500 mb-3">Implants are tracked per surgery in each OT booking detail page. Select a booking above to manage implants.</p>
+        <div className="text-xs text-gray-400">Fields tracked: manufacturer, catalogue #, lot #, serial #, size, quantity, cost, MRP. Each implant is linked to the patient record for medicolegal traceability.</div>
+      </div>}
+      {tab === 'safety' && <div className="bg-white rounded-xl border p-4">
+        <h2 className="font-bold text-sm mb-3">WHO Surgical Safety Checklist</h2>
+        <p className="text-xs text-gray-500 mb-3">The WHO checklist runs in 3 phases per surgery — available in each OT booking detail page.</p>
+        <div className="grid grid-cols-3 gap-3 text-xs">
+          <div className="bg-blue-50 rounded-lg p-3"><div className="font-bold text-blue-700">Sign In</div><div className="text-gray-500 mt-1">Before anaesthesia — patient identity, consent, allergy, airway risk, blood loss risk, equipment check</div></div>
+          <div className="bg-amber-50 rounded-lg p-3"><div className="font-bold text-amber-700">Time Out</div><div className="text-gray-500 mt-1">Before incision — team introduction, procedure confirmation, anticipated events, antibiotic prophylaxis, imaging displayed</div></div>
+          <div className="bg-green-50 rounded-lg p-3"><div className="font-bold text-green-700">Sign Out</div><div className="text-gray-500 mt-1">Before leaving OT — procedure recorded, instrument/sponge/needle count, specimen labelled, equipment issues, recovery plan</div></div>
+        </div>
+      </div>}
     </div>
   );
 }

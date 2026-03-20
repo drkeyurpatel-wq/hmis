@@ -3,6 +3,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { auditCreate, auditUpdate, auditSign } from '@/lib/audit/audit-logger';
 
 let _sb: ReturnType<typeof createClient> | null = null;
 function sb() {
@@ -275,6 +276,7 @@ export function useResultEntry(orderId: string | null) {
       status: 'completed', reported_at: new Date().toISOString(), reported_by: staffId,
       verified_at: new Date().toISOString(), verified_by: staffId, tat_met: tatMet,
     }).eq('id', orderId);
+    auditSign('', staffId, 'lab_result', orderId, `Lab results verified for order ${orderId}`);
     load();
   }, [orderId, load]);
 

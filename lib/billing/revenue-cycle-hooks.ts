@@ -121,7 +121,19 @@ export function useCorporateBilling(centreId: string | null) {
     return { limit, outstanding, available, canBill: available >= billAmount, shortfall: Math.max(0, billAmount - available) };
   }, []);
 
-  return { corporates, employees, loadCorporates, loadEmployees, addEmployee, getCorporateRate, checkCreditLimit };
+  const creditBills = useCallback(async (corporateId: string): Promise<any[]> => {
+    if (!centreId || !sb()) return [];
+    const { data: employees } = await sb().from('hmis_corporate_employees')
+      .select('patient_id').eq('corporate_id', corporateId).eq('is_active', true);
+    if (!employees?.length) return [];
+    const patientIds = employees.map((e: any) => e.patient_id);
+    const { data: bills } = await sb().from('hmis_bills')
+      .select('id, bill_number, bill_date, net_amount, paid_amount, balance_amount, status, patient:hmis_patients!inner(first_name, last_name, uhid)')
+      .eq('centre_id', centreId).in('patient_id', patientIds).gt('balance_amount', 0).order('bill_date', { ascending: false });
+    return bills || [];
+  }, [centreId]);
+
+  return { corporates, employees, loadCorporates, loadEmployees, addEmployee, getCorporateRate, checkCreditLimit, creditBills };
 }
 
 // ============================================================

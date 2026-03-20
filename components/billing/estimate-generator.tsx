@@ -1,7 +1,7 @@
 // components/billing/estimate-generator.tsx
 'use client';
 import React, { useState, useMemo } from 'react';
-import { openPrintWindow } from '@/components/ui/shared';
+import { printEstimate as printEstimatePDF } from '@/components/billing/bill-pdf';
 
 interface Props {
   estimates: any[]; centreId: string; staffId: string;
@@ -75,24 +75,11 @@ export default function EstimateGenerator({ estimates, centreId, staffId, tariff
   const totalEstimate = form.items.reduce((s: number, i: any) => s + (i?.total || 0), 0);
 
   const printEstimate = () => {
-    const rows = form.items.map((i: any, idx: number) => `<tr><td style="padding:3px 6px;border:1px solid #ddd;font-size:9px">${idx+1}</td><td style="padding:3px 6px;border:1px solid #ddd;font-size:9px">${i.name} <span style="color:#888">(${i.category?.replace('_',' ')})</span></td><td style="padding:3px 6px;border:1px solid #ddd;text-align:center;font-size:9px">${i.quantity}</td><td style="padding:3px 6px;border:1px solid #ddd;text-align:right;font-size:9px">₹${fmt(i.rate)}</td><td style="padding:3px 6px;border:1px solid #ddd;text-align:right;font-size:9px;font-weight:600">₹${fmt(i.total)}</td></tr>`).join('');
-    openPrintWindow(`<div style="max-width:700px;margin:0 auto;font-family:'Segoe UI',Arial;font-size:11px">
-      <div style="text-align:center;border-bottom:3px solid #1e40af;padding-bottom:8px;margin-bottom:10px">
-        <div style="font-size:18px;font-weight:700;color:#1e40af">Health1 Super Speciality Hospital</div>
-        <div style="font-size:8px;color:#666">Shilaj, Ahmedabad | NABH Accredited</div>
-        <div style="font-size:14px;font-weight:700;margin-top:6px">COST ESTIMATE / PROFORMA</div>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;font-size:10px;padding:6px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:4px;margin-bottom:8px">
-        <div><b>Procedure:</b> ${form.procedureName}</div><div><b>Room:</b> ${form.roomCategory}</div>
-        <div><b>Expected Stay:</b> ${form.expectedLOS} days</div><div><b>Payor:</b> ${form.payorType.replace('govt_','').replace('_',' ').toUpperCase()}</div>
-      </div>
-      <table style="width:100%;border-collapse:collapse;margin-bottom:8px"><thead><tr style="background:#eff6ff"><th style="padding:4px;border:1px solid #ddd;font-size:9px">#</th><th style="padding:4px;border:1px solid #ddd;text-align:left;font-size:9px">Description</th><th style="padding:4px;border:1px solid #ddd;font-size:9px">Qty/Days</th><th style="padding:4px;border:1px solid #ddd;text-align:right;font-size:9px">Rate</th><th style="padding:4px;border:1px solid #ddd;text-align:right;font-size:9px">Amount</th></tr></thead><tbody>${rows}</tbody></table>
-      <div style="text-align:right;font-size:14px;font-weight:700;padding:8px;background:#eff6ff;border-radius:4px;margin-bottom:8px">Estimated Total: ₹${fmt(totalEstimate)}</div>
-      <div style="font-size:8px;color:#888;padding:6px;background:#fef3c7;border:1px solid #fbbf24;border-radius:4px">
-        <b>Disclaimer:</b> This is an approximate estimate only. Actual charges may vary based on clinical condition, complications, extended stay, additional investigations, consumables, and doctor's fees. Final bill will be generated at discharge. Advance deposit of ₹${fmt(totalEstimate * 0.5)} is recommended.
-      </div>
-      <div style="margin-top:8px;font-size:8px;color:#aaa;text-align:center">Generated: ${new Date().toLocaleString('en-IN')} | Health1 Super Speciality Hospital</div>
-    </div>`, `Estimate-${form.procedureName}`);
+    printEstimatePDF(
+      { estimate_number: `EST-${Date.now().toString().slice(-6)}`, procedure_name: form.procedureName, room_category: form.roomCategory, expected_los_days: form.expectedLOS, total_estimated: totalEstimate, items: form.items.map((i: any) => ({ description: i.name, amount: i.total })), valid_until: '15 days' },
+      null, // patient — not yet selected at estimate stage
+      { name: 'Health1 Super Speciality Hospital', address: 'Shilaj, Ahmedabad' }
+    );
   };
 
   const stColor = (s: string) => s === 'active' ? 'bg-green-100 text-green-700' : s === 'converted' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600';

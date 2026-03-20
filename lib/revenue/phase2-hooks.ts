@@ -296,7 +296,7 @@ export function useAccounting(centreId: string | null) {
 
   const createJournal = useCallback(async (description: string, lines: { accountId: string; debit: number; credit: number }[], staffId: string) => {
     if (!centreId || !sb()) return null;
-    const entryNum = 'JE-' + new Date().toISOString().slice(2, 10).replace(/-/g, '') + '-' + Math.floor(Math.random() * 9000 + 1000);
+    const entryNum = 'JE-' + new Date().toISOString().slice(2, 10).replace(/-/g, '') + '-' + Date.now().toString(36).slice(-4).toUpperCase();
     const { data: je, error } = await sb().from('hmis_journal_entries').insert({
       centre_id: centreId, entry_number: entryNum, entry_date: new Date().toISOString().split('T')[0],
       description, created_by: staffId, status: 'draft',

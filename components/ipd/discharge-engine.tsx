@@ -4,6 +4,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { openPrintWindow } from '@/components/ui/shared';
+import { auditCreate, auditSign, auditPrint } from '@/lib/audit/audit-logger';
+import { triggerFinalBillOnDischarge } from '@/lib/bridge/cross-module-bridge';
 
 let _sb: any = null;
 function sb() { if (typeof window === 'undefined') return null as any; if (!_sb) { try { _sb = createClient(); } catch { return null; } } return _sb; }
@@ -280,6 +282,9 @@ RULES:
     }
     // Discontinue all active meds
     await sb().from('hmis_ipd_medication_orders').update({ status: 'completed', end_date: new Date().toISOString().split('T')[0] }).eq('admission_id', admissionId).eq('status', 'active');
+    // Trigger final bill check
+    await triggerFinalBillOnDischarge({ centreId: admission?.centre_id || '', admissionId, patientId, staffId });
+    auditSign(admission?.centre_id || '', staffId, 'discharge', admissionId, `Discharged: ${ds.dischargeType} | Dx: ${ds.finalDiagnosis?.substring(0, 50)}`);
     onFlash('Patient discharged successfully');
     setStep(6); // done
   };

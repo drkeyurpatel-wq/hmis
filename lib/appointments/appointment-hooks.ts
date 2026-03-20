@@ -1,6 +1,8 @@
 // lib/appointments/appointment-hooks.ts
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { auditCreate, auditCancel, auditUpdate } from '@/lib/audit/audit-logger';
+import { createOPDVisitFromAppointment } from '@/lib/bridge/cross-module-bridge';
 
 let _sb: any = null;
 function sb() { if (typeof window === 'undefined') return null as any; if (!_sb) { try { _sb = createClient(); } catch { return null; } } return _sb; }
@@ -176,6 +178,7 @@ export function useAppointments(centreId: string | null) {
     }).select('id, token_number').single();
 
     if (error) return { success: false, error: error.message };
+    auditCreate(centreId!, data.staffId, 'appointment', appt?.id, `Appt: ${data.date} ${data.time} Token#${appt?.token_number}`);
     load();
     return { success: true, appointment: appt };
   }, [centreId, load]);
@@ -185,8 +188,16 @@ export function useAppointments(centreId: string | null) {
     await sb().from('hmis_appointments').update({
       status: 'checked_in', checked_in_at: new Date().toISOString(),
     }).eq('id', appointmentId);
+    // Auto-create OPD visit
+    const appt = appointments.find(a => a.id === appointmentId);
+    if (appt && centreId) {
+      await createOPDVisitFromAppointment({
+        centreId, patientId: appt.patientId, doctorId: appt.doctorId,
+        appointmentId, visitReason: appt.visitReason, staffId: appt.doctorId,
+      });
+    }
     load();
-  }, [load]);
+  }, [load, appointments, centreId]);
 
   // Start consultation
   const startConsultation = useCallback(async (appointmentId: string) => {

@@ -5,6 +5,8 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useIPDRunningBill, useChargeCapture } from '@/lib/billing/charge-capture-hooks';
 import { useAdvances } from '@/lib/billing/billing-hooks';
+import { auditCreate } from '@/lib/audit/audit-logger';
+import { generateBillNumber } from '@/lib/bridge/cross-module-bridge';
 
 let _sb: any = null;
 function sb() { if (typeof window === 'undefined') return null as any; if (!_sb) { try { _sb = createClient(); } catch { return null; } } return _sb; }
@@ -74,7 +76,8 @@ export default function IPDFinalBill({ admissionId, centreId, staffId, onFlash, 
 
     try {
       // 1. Create the bill
-      const billNumber = `IPD-${new Date().toISOString().slice(2, 10).replace(/-/g, '')}-${Math.floor(Math.random() * 9999).toString().padStart(4, '0')}`;
+      const { data: seqNum } = await sb().rpc('generate_bill_number', { p_bill_type: 'ipd' });
+      const billNumber = seqNum || `IPD-${new Date().toISOString().slice(2, 10).replace(/-/g, '')}-${Date.now().toString(36).slice(-4).toUpperCase()}`;
 
       const { data: bill, error: billErr } = await sb().from('hmis_bills').insert({
         centre_id: centreId, patient_id: patient.id, bill_number: billNumber,
@@ -121,6 +124,7 @@ export default function IPDFinalBill({ admissionId, centreId, staffId, onFlash, 
         });
       }
 
+      auditCreate(centreId, staffId, 'bill', bill.id, `IPD Final Bill: ${bill.bill_number} — ₹${Math.round(calc.net)}`);
       onFlash(`Final bill generated: ${bill.bill_number} — ${fmt(calc.net)}`);
       if (onBillCreated) onBillCreated(bill.id);
       running.load();

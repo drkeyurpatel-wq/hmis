@@ -1,6 +1,7 @@
 // lib/billing/charge-capture-hooks.ts
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { auditCreate, auditCancel, auditUpdate } from '@/lib/audit/audit-logger';
 
 let _sb: any = null;
 function sb() { if (typeof window === 'undefined') return null as any; if (!_sb) { try { _sb = createClient(); } catch { return null; } } return _sb; }
@@ -105,6 +106,7 @@ export function useChargeCapture(centreId: string | null) {
     }).select('id').single();
 
     if (error) return { success: false, error: error.message };
+    auditCreate(centreId, data.staffId, 'charge', charge?.id, `Charge: ${data.description} ₹${amount}`);
     load();
     return { success: true, chargeId: charge?.id };
   }, [centreId, load]);
@@ -168,6 +170,7 @@ export function useChargeCapture(centreId: string | null) {
       reversed_by: staffId, reversal_reason: reason,
     }).eq('id', chargeId);
 
+    auditCancel(centreId!, staffId, 'charge', chargeId, `Reversed: ${reason}`);
     load();
     return { success: true };
   }, [load]);

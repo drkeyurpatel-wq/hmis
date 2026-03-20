@@ -1,6 +1,8 @@
 // lib/cpoe/cpoe-hooks.ts
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { auditCreate, auditCancel } from '@/lib/audit/audit-logger';
+import { routeCPOEOrder } from '@/lib/bridge/cross-module-bridge';
 
 let _sb: any = null;
 function sb() { if (typeof window === 'undefined') return null as any; if (!_sb) { try { _sb = createClient(); } catch { return null; } } return _sb; }
@@ -100,7 +102,7 @@ export function useCPOE(admissionId: string | null) {
   // Place single order
   const placeOrder = useCallback(async (data: {
     patientId: string; orderType: string; orderText: string; details?: any;
-    priority?: string; isVerbal?: boolean; notes?: string; staffId: string;
+    priority?: string; isVerbal?: boolean; notes?: string; staffId: string; centreId?: string;
   }): Promise<{ success: boolean; error?: string }> => {
     if (!admissionId || !sb()) return { success: false, error: 'Not ready' };
     const { error } = await sb().from('hmis_cpoe_orders').insert({
@@ -111,6 +113,16 @@ export function useCPOE(admissionId: string | null) {
       is_verbal: data.isVerbal || false, notes: data.notes || '',
     });
     if (error) return { success: false, error: error.message };
+    const cId = data.centreId || '';
+    auditCreate(cId, data.staffId, 'cpoe_order', '', `CPOE: ${data.orderText} [${data.priority}]`);
+    // Route to downstream module (pharmacy/lab/radiology)
+    if (['medication', 'lab', 'radiology'].includes(data.orderType)) {
+      await routeCPOEOrder({
+        centreId: cId, patientId: data.patientId, admissionId: admissionId!,
+        orderType: data.orderType, orderText: data.orderText, details: data.details || {},
+        priority: data.priority || 'routine', staffId: data.staffId,
+      });
+    }
     load();
     return { success: true };
   }, [admissionId, load]);

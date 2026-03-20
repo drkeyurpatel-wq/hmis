@@ -4,6 +4,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useAuthStore } from '@/lib/store/auth';
+import { auditCreate, auditCancel } from '@/lib/audit/audit-logger';
 
 let _sb: any = null;
 function sb() { if (typeof window === 'undefined') return null as any; if (!_sb) { try { _sb = createClient(); } catch { return null; } } return _sb; }
@@ -62,7 +63,7 @@ export default function CreditNoteManager({ centreId, onFlash }: Props) {
     if (!form.reason) { setError('Reason required'); return; }
     setError('');
 
-    const cnNumber = `CN-${new Date().toISOString().slice(2, 10).replace(/-/g, '')}-${Math.floor(Math.random() * 999).toString().padStart(3, '0')}`;
+    const cnNumber = `CN-${new Date().toISOString().slice(2, 10).replace(/-/g, '')}-${Date.now().toString(36).slice(-4).toUpperCase()}`;
     const { data: patient } = await sb().from('hmis_bills').select('patient_id').eq('id', form.billId).single();
 
     const { error: err } = await sb().from('hmis_credit_notes').insert({
@@ -84,6 +85,7 @@ export default function CreditNoteManager({ centreId, onFlash }: Props) {
       }).eq('id', form.billId);
     }
 
+    auditCreate(centreId, staffId, 'credit_note', '', `Credit note ${cnNumber}: ₹${amt}`);
     onFlash(`Credit note ${cnNumber} issued: ${fmt(amt)}`);
     setForm({ billSearch: '', billId: '', billNumber: '', patientName: '', uhid: '', netAmount: 0, creditAmount: '', reason: '', items: '' });
     setShowNew(false); load();
@@ -91,6 +93,7 @@ export default function CreditNoteManager({ centreId, onFlash }: Props) {
 
   const cancelNote = async (id: string) => {
     await sb().from('hmis_credit_notes').update({ status: 'cancelled' }).eq('id', id);
+    auditCancel(centreId, staffId, 'credit_note', id, 'Credit note cancelled');
     onFlash('Credit note cancelled'); load();
   };
 

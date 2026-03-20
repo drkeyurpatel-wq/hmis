@@ -33,7 +33,7 @@ export function useIncidentReporting(centreId: string | null) {
     immediateAction?: string; reportedBy: string;
   }): Promise<{ success: boolean; error?: string; incidentNumber?: string }> => {
     if (!centreId || !sb()) return { success: false };
-    const incidentNumber = `INC-${new Date().toISOString().slice(2, 10).replace(/-/g, '')}-${Math.floor(Math.random() * 999).toString().padStart(3, '0')}`;
+    const incidentNumber = `INC-${new Date().toISOString().slice(2, 10).replace(/-/g, '')}-${Date.now().toString(36).slice(-4).toUpperCase()}`;
     const { error } = await sb().from('hmis_incidents').insert({
       centre_id: centreId, incident_number: incidentNumber,
       category: data.category, severity: data.severity,

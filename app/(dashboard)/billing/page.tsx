@@ -209,7 +209,7 @@ function BillingInner() {
       {/* ===== CORPORATE ===== */}
       {tab === 'corporate' && <CorporateBilling corporates={corporate.corporates} employees={corporate.employees}
         onAdd={async (d) => { /* TODO: addCorporate not in current hooks — stub */ flash('Corporate feature ready'); }}
-        onLoadEmployees={corporate.loadEmployees} onCreditBills={async () => []} onFlash={flash} />}
+        onLoadEmployees={corporate.loadEmployees} onCreditBills={corporate.creditBills} onFlash={flash} />}
 
       {/* ===== IPD RUNNING ===== */}
       {tab === 'ipd_billing' && <div>
@@ -306,9 +306,7 @@ function BillingInner() {
       {tab === 'day_end' && <DayEndSettlement bills={billing.bills} />}
 
       {/* ===== INTEGRATIONS ===== */}
-      {tab === 'integrations' && <IntegrationHub entries={integrations.pendingSync||[]}
-        stats={{pending:(integrations.pendingSync||[]).filter((e: any) => e.sync_status==='pending').length, synced:(integrations.pendingSync||[]).filter((e: any) => e.sync_status==='synced').length, failed:(integrations.pendingSync||[]).filter((e: any) => e.sync_status==='failed').length}}
-        centreId={centreId} staffId={staffId} onPush={integrations.queueSync} onMarkSynced={integrations.markSynced} onLoad={integrations.load} onFlash={flash} />}
+      {tab === 'integrations' && <IntegrationHub />}
     </div>
   );
 }

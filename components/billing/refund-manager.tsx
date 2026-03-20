@@ -4,6 +4,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useAuthStore } from '@/lib/store/auth';
+import { auditCreate, auditApprove } from '@/lib/audit/audit-logger';
 
 let _sb: any = null;
 function sb() { if (typeof window === 'undefined') return null as any; if (!_sb) { try { _sb = createClient(); } catch { return null; } } return _sb; }
@@ -72,12 +73,14 @@ export default function RefundManager({ centreId, onFlash }: Props) {
 
     if (err) { setError(err.message); return; }
     onFlash(`Refund initiated: ${fmt(amt)} for ${form.billNumber}`);
+    auditCreate(centreId, staffId, 'refund', '', `Refund ₹${amt} initiated for ${form.billNumber}`);
     setForm({ billSearch: '', billId: '', patientName: '', uhid: '', billNumber: '', paidAmount: 0, refundAmount: '', reason: '', mode: 'neft', bankDetails: '' });
     setShowNew(false); load();
   };
 
   const approveRefund = async (id: string) => {
     await sb().from('hmis_refunds').update({ status: 'approved', approved_by: staffId, approved_at: new Date().toISOString() }).eq('id', id);
+    auditApprove(centreId, staffId, 'refund', id, 'Refund approved');
     onFlash('Refund approved'); load();
   };
 
@@ -94,6 +97,7 @@ export default function RefundManager({ centreId, onFlash }: Props) {
         balance_amount: parseFloat(bill.balance_amount) + parseFloat(refund.refund_amount),
       }).eq('id', refund.bill_id);
     }
+    auditApprove(centreId, staffId, 'refund', id, 'Refund processed — bill adjusted');
     onFlash('Refund processed — bill updated'); load();
   };
 

@@ -1,6 +1,8 @@
 // lib/pharmacy/pharmacy-hooks.ts
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { postPharmacyCharge } from '@/lib/bridge/cross-module-bridge';
+import { auditCreate } from '@/lib/audit/audit-logger';
 
 let _sb: any = null;
 function sb() { if (typeof window === 'undefined') return null as any; if (!_sb) { try { _sb = createClient(); } catch { return null; } } return _sb; }
@@ -246,6 +248,19 @@ export function useDispensingQueue(centreId: string | null) {
     }).eq('id', dispensingId);
 
     if (updateErr) return { success: false, error: `Update failed: ${updateErr.message}` };
+
+    // Auto-post charges to billing
+    const disp = await sb().from('hmis_pharmacy_dispensing').select('patient_id, encounter_id').eq('id', dispensingId).single();
+    if (disp.data) {
+      for (const item of dispensedItems) {
+        await postPharmacyCharge({
+          centreId, patientId: disp.data.patient_id, admissionId: disp.data.encounter_id || undefined,
+          drugName: item.drugName, quantity: item.dispensedQty, amount: item.totalMRP,
+          dispensingId, staffId,
+        });
+      }
+      auditCreate(centreId, staffId, 'pharmacy_dispense', dispensingId, `Dispensed ${dispensedItems.length} items — ₹${computedTotal}`);
+    }
 
     load();
     return { success: true };

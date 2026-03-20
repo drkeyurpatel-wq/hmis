@@ -45,9 +45,24 @@ export async function POST(request: NextRequest) {
           patient_id: patient.id, phone: cleanPhone, otp_code: otp, otp_expires_at: expiresAt,
         });
 
-        // TODO: Send OTP via WhatsApp/SMS API
-        // For now, log it (in production, integrate MSG91 or Twilio)
-        console.log(`[PORTAL OTP] Phone: ${cleanPhone}, OTP: ${otp}, Patient: ${patient.first_name}`);
+        // Send OTP via WhatsApp Cloud API (if configured)
+        const WHATSAPP_API = process.env.WHATSAPP_API_URL;
+        const WHATSAPP_TOKEN = process.env.WHATSAPP_API_TOKEN;
+        if (WHATSAPP_API && WHATSAPP_TOKEN) {
+          try {
+            await fetch(WHATSAPP_API, {
+              method: 'POST',
+              headers: { 'Authorization': `Bearer ${WHATSAPP_TOKEN}`, 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                messaging_product: 'whatsapp', to: `91${cleanPhone}`,
+                type: 'template', template: { name: 'otp_verification', language: { code: 'en' },
+                  components: [{ type: 'body', parameters: [{ type: 'text', text: otp }] }] },
+              }),
+            });
+          } catch { /* Silent fail — OTP still stored in DB for verification */ }
+        } else {
+          console.log(`[PORTAL OTP] Phone: ${cleanPhone}, OTP: ${otp} (WhatsApp not configured — set WHATSAPP_API_URL + WHATSAPP_API_TOKEN)`);
+        }
 
         return NextResponse.json({
           success: true,

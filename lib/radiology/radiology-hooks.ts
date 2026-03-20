@@ -2,6 +2,7 @@
 // Complete radiology hooks — worklist, orders, reports, PACS links, patient imaging, templates, TAT
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { auditCreate, auditSign } from '@/lib/audit/audit-logger';
 
 let _sb: any = null;
 function sb() { if (typeof window === 'undefined') return null as any; if (!_sb) { try { _sb = createClient(); } catch { return null; } } return _sb; }
@@ -117,7 +118,7 @@ export function useLinkStudy() {
       }
 
       // Create a new order from Stradus study (study done outside HMIS workflow)
-      const accession = data.accessionNumber || `RAD-${new Date().toISOString().slice(2, 10).replace(/-/g, '')}-${Math.floor(Math.random() * 9999).toString().padStart(4, '0')}`;
+      const accession = data.accessionNumber || `RAD-${new Date().toISOString().slice(2, 10).replace(/-/g, '')}-${Date.now().toString(36).slice(-4).toUpperCase()}`;
 
       // Try to find test in master
       const { data: testMatch } = await sb().from('hmis_radiology_test_master')
@@ -371,6 +372,7 @@ export function useRadiologyWorklist(centreId: string | null) {
     }).select().single();
 
     if (error) return { success: false, error: error.message };
+    auditCreate(centreId, data.ordered_by || '', 'radiology_order', order?.id, `Radiology: ${test.modality} ${test.body_part} [${accession}]`);
     load();
     return { success: true, order };
   }, [centreId, load]);
