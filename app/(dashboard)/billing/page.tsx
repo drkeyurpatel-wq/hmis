@@ -22,6 +22,8 @@ import CreditNoteManager from '@/components/billing/credit-note-manager';
 import PackageBuilder from '@/components/billing/package-builder';
 import OPDBilling from '@/components/billing/opd-billing';
 import ServiceBillingEngine from '@/components/billing/service-billing-engine';
+import IPDBillingTab from '@/components/billing/ipd-billing-tab';
+import BillDetailView from '@/components/billing/bill-detail-view';
 
 let _sb: any = null;
 function sb() { if (typeof window === 'undefined') return null as any; if (!_sb) { try { _sb = createClient(); } catch { return null; } } return _sb; }
@@ -135,40 +137,12 @@ function BillingInner() {
 
       {/* ===== BILLS ===== */}
       {tab === 'bills' && <div>
-        {selectedBillId && selectedBill && <BillDetail bill={selectedBill} staffId={staffId} centreId={centreId} tariffs={tariffs} onUpdate={reloadBills} onClose={() => setSelectedBillId(null)} onFlash={flash} />}
+        {selectedBillId && <BillDetailView billId={selectedBillId} centreId={centreId} staffId={staffId} onFlash={flash} onClose={() => { setSelectedBillId(null); billing.load(); }} />}
 
-        {showNewBill && !selectedBillId && <div className="bg-white rounded-xl border p-5 mb-4 space-y-3">
-          <div className="flex justify-between"><h3 className="font-semibold text-sm">Create New Bill</h3><button onClick={() => setShowNewBill(false)} className="text-xs text-gray-500">✕</button></div>
-          <div className="grid grid-cols-3 gap-3">
-            <div className="relative"><label className="text-xs text-gray-500">Patient *</label>
-              {newBill.patientId ? <div className="bg-blue-50 rounded-lg p-2 flex justify-between"><span className="text-sm font-medium">Selected</span><button onClick={() => setNewBill((b: any) => ({...b, patientId:''}))} className="text-xs text-red-500">Change</button></div> :
-              <><input type="text" value={patSearch} onChange={e => setPatSearch(e.target.value)} className="w-full px-3 py-2 border rounded-lg text-sm" placeholder="UHID/name/phone" />
-              {patResults.length > 0 && <div className="absolute top-full left-0 right-0 mt-1 bg-white border rounded-lg shadow z-10">{patResults.map(p => (
-                <button key={p.id} onClick={() => setNewBill((b: any) => ({...b, patientId:p.id}))} className="w-full text-left px-3 py-2 text-sm hover:bg-blue-50 border-b">{p.first_name} {p.last_name} — {p.uhid}</button>
-              ))}</div>}</>}</div>
-            <div><label className="text-xs text-gray-500">Bill type</label>
-              <div className="flex gap-1 mt-1">{['opd','ipd','pharmacy','lab','radiology','package'].map(t => (
-                <button key={t} onClick={() => setNewBill((b: any) => ({...b, billType:t}))} className={`flex-1 py-1.5 rounded text-[10px] border ${newBill.billType===t?'bg-blue-600 text-white':'bg-white'}`}>{t.toUpperCase()}</button>
-              ))}</div></div>
-            <div><label className="text-xs text-gray-500">Payor</label>
-              <div className="flex flex-wrap gap-1 mt-1">{['self','insurance','corporate','govt_pmjay','govt_cghs'].map(p => (
-                <button key={p} onClick={() => setNewBill((b: any) => ({...b, payorType:p}))} className={`px-2 py-1 rounded text-[10px] border ${newBill.payorType===p?'bg-blue-600 text-white':'bg-white'}`}>{p.replace('govt_','').replace('_',' ').toUpperCase()}</button>
-              ))}</div></div>
-          </div>
-          <div className="relative"><input type="text" value={tariffQ} onChange={e => setTariffQ(e.target.value)} className="w-full px-3 py-2 border rounded-lg text-sm" placeholder="Search tariff to add items..." />
-            {tariffResults.length > 0 && <div className="absolute top-full left-0 right-0 mt-1 bg-white border rounded-lg shadow z-10 max-h-48 overflow-y-auto">{tariffResults.map((t: any) => (
-              <button key={t.id} onClick={() => addTariffToNewBill(t)} className="w-full text-left px-3 py-2 hover:bg-blue-50 border-b flex justify-between text-xs">
-                <span className="font-medium">{t.service_name} <span className={`text-[10px] ${catColor(t.category)}`}>({t.category?.replace('_',' ')})</span></span>
-                <span className="font-bold text-blue-600">₹{fmt(tariffs.getRate(t.id, newBill.payorType))}</span>
-              </button>))}</div>}</div>
-          {newBill.items.length > 0 && <div className="border rounded-lg overflow-hidden"><table className="w-full text-xs"><thead><tr className="bg-gray-50"><th className="p-2 text-left">Item</th><th className="p-2 text-center">Qty</th><th className="p-2 text-right">Rate</th><th className="p-2 text-right">Amount</th><th className="p-2"></th></tr></thead><tbody>{newBill.items.map((i: any, idx: number) => (
-            <tr key={idx} className="border-b"><td className="p-2">{i.description}</td>
-              <td className="p-2 text-center"><input type="number" value={i.quantity} onChange={e => {const items=[...newBill.items]; items[idx].quantity=parseInt(e.target.value)||1; setNewBill((b: any) => ({...b, items}));}} className="w-12 text-center border rounded" min="1" /></td>
-              <td className="p-2 text-right"><input type="number" value={i.unitRate} onChange={e => {const items=[...newBill.items]; items[idx].unitRate=parseFloat(e.target.value)||0; setNewBill((b: any) => ({...b, items}));}} className="w-20 text-right border rounded" /></td>
-              <td className="p-2 text-right font-bold">₹{fmt(i.quantity*i.unitRate)}</td>
-              <td className="p-2"><button onClick={() => setNewBill((b: any) => ({...b, items:b.items.filter((_: any,j: number) => j!==idx)}))} className="text-red-500">✕</button></td></tr>
-          ))}</tbody><tfoot><tr className="bg-blue-50"><td colSpan={3} className="p-2 text-right font-bold">Total</td><td className="p-2 text-right font-bold text-lg text-blue-700">₹{fmt(newBill.items.reduce((s: number, i: any) => s+i.quantity*i.unitRate, 0))}</td><td></td></tr></tfoot></table></div>}
-          <button onClick={async () => {if(!newBill.patientId||!newBill.items.length) return; const b=await billing.createBill(newBill, staffId); if(b){flash('Bill created'); setShowNewBill(false); setNewBill({patientId:'',billType:'opd',payorType:'self',items:[]}); setSelectedBillId(b.id);}}} disabled={!newBill.patientId||!newBill.items.length} className="px-4 py-2 bg-green-600 text-white text-sm rounded-lg disabled:opacity-40">Create Bill</button>
+        {showNewBill && !selectedBillId && <div className="mb-4">
+          <div className="flex justify-between mb-3"><h3 className="font-semibold text-sm">Create New Bill</h3><button onClick={() => setShowNewBill(false)} className="text-xs text-gray-500">✕ Close</button></div>
+          <ServiceBillingEngine centreId={centreId} staffId={staffId} mode="general"
+            onDone={(billId) => { setShowNewBill(false); setSelectedBillId(billId); billing.load(); }} onFlash={flash} />
         </div>}
 
         {!selectedBillId && !showNewBill && <><div className="flex gap-2 mb-3 flex-wrap items-center">
@@ -222,22 +196,8 @@ function BillingInner() {
         onLoadEmployees={corporate.loadEmployees} onCreditBills={corporate.creditBills} onFlash={flash} />}
 
       {/* ===== IPD RUNNING ===== */}
-      {tab === 'ipd_billing' && <div>
-        <h2 className="font-semibold text-sm mb-3">IPD Running Bills</h2>
-        <div className="grid grid-cols-3 gap-3 mb-4">
-          {[['Active IPD',billing.bills.filter(b => b.bill_type==='ipd'&&b.status!=='cancelled'&&b.status!=='paid').length,'text-blue-700'],
-            ['IPD Revenue','₹'+fmt(billing.bills.filter(b => b.bill_type==='ipd').reduce((s: number,b: any) => s+parseFloat(b.net_amount||0),0)),'text-green-700'],
-            ['IPD Outstanding','₹'+fmt(billing.bills.filter(b => b.bill_type==='ipd'&&parseFloat(b.balance_amount)>0).reduce((s: number,b: any) => s+parseFloat(b.balance_amount||0),0)),'text-red-700']
-          ].map(([l,v,c],i) => <div key={i} className="bg-white rounded-xl border p-4 text-center"><div className="text-[10px] text-gray-500">{l as string}</div><div className={`text-xl font-bold ${c}`}>{v}</div></div>)}
-        </div>
-        {billing.bills.filter(b => b.bill_type==='ipd'&&b.status!=='cancelled'&&b.status!=='paid').map(b => (
-          <div key={b.id} onClick={() => {setSelectedBillId(b.id); setTab('bills');}} className="bg-white rounded-xl border p-4 mb-2 hover:border-blue-300 cursor-pointer flex justify-between">
-            <div><span className="font-medium">{b.patient?.first_name} {b.patient?.last_name}</span><span className="ml-2 text-xs font-mono text-gray-400">{b.bill_number}</span>
-              <div className="flex gap-1 mt-1"><span className={`px-1 py-0.5 rounded text-[9px] ${payorColor(b.payor_type)}`}>{b.payor_type?.replace('_',' ')}</span><span className={`px-1 py-0.5 rounded text-[9px] ${stColor(b.status)}`}>{b.status?.replace('_',' ')}</span></div></div>
-            <div className="text-right"><div className="font-bold text-lg">₹{fmt(b.net_amount)}</div>{parseFloat(b.balance_amount)>0 && <div className="text-xs text-red-600 font-bold">Due: ₹{fmt(b.balance_amount)}</div>}</div>
-          </div>
-        ))}
-      </div>}
+      {tab === 'ipd_billing' && <IPDBillingTab centreId={centreId} staffId={staffId} bills={billing.bills} onFlash={flash}
+        onSelectBill={(id: string) => { setSelectedBillId(id); setTab('bills'); }} onReload={billing.load} />}
 
       {/* ===== AR ===== */}
       {tab === 'ar' && <ARManagement entries={ar.entries} loading={ar.loading} aging={ar.stats} totalOutstanding={ar.entries.reduce((s: number, e: any) => s+parseFloat(e.balance_amount||0), 0)}
