@@ -7,8 +7,8 @@ import { createClient } from '@/lib/supabase/client';
 import { printEncounterSummary, openPrintWindow } from '@/components/ui/shared';
 import PatientBanner from '@/components/emr-v2/patient-banner';
 import VitalsPanel from '@/components/emr-v2/vitals-panel';
-import ComplaintBuilder from '@/components/emr-v2/complaint-builder';
-import ExamBuilder from '@/components/emr-v2/exam-builder';
+import { SmartComplaintBuilder, generateComplaintText, type ActiveComplaint } from '@/components/emr/smart-complaint-builder';
+import { SmartExamBuilder, type ExamFindings, generateExamText } from '@/components/emr/smart-exam-builder';
 import DiagnosisBuilder from '@/components/emr-v2/diagnosis-builder';
 import PrescriptionBuilder from '@/components/emr-v2/prescription-builder';
 import InvestigationPanel from '@/components/emr-v2/investigation-panel';
@@ -22,8 +22,6 @@ function sb() { if (typeof window === 'undefined') return null as any; if (!_sb)
 // Types matching component interfaces
 interface Patient { id: string; name: string; age: string; gender: string; uhid: string; phone: string; allergies: string[]; bloodGroup: string; }
 interface VitalValues { systolic: string; diastolic: string; heartRate: string; spo2: string; temperature: string; weight: string; height: string; respiratoryRate: string; isAlert: boolean; onO2: boolean; }
-interface ComplaintEntry { complaint: string; duration: string; severity: string; notes: string; }
-interface ExamEntry { system: string; findings: string; isAbnormal: boolean; }
 interface DiagnosisEntry { code: string; name: string; type: 'primary' | 'secondary' | 'differential'; notes: string; }
 interface RxEntry { drug: string; generic: string; dose: string; route: string; frequency: string; duration: string; instructions: string; isSOS: boolean; category: string; }
 interface InvestigationEntry { name: string; type: 'lab' | 'radiology'; urgency: 'routine' | 'urgent' | 'stat'; notes: string; }
@@ -56,8 +54,8 @@ function EMRInner() {
 
   // Clinical data
   const [vitals, setVitals] = useState<VitalValues>({ systolic: '', diastolic: '', heartRate: '', spo2: '', temperature: '', weight: '', height: '', respiratoryRate: '', isAlert: true, onO2: false });
-  const [complaints, setComplaints] = useState<ComplaintEntry[]>([]);
-  const [examEntries, setExamEntries] = useState<ExamEntry[]>([]);
+  const [complaints, setComplaints] = useState<ActiveComplaint[]>([]);
+  const [examFindings, setExamFindings] = useState<ExamFindings>({});
   const [diagnoses, setDiagnoses] = useState<DiagnosisEntry[]>([]);
   const [prescriptions, setPrescriptions] = useState<RxEntry[]>([]);
   const [investigations, setInvestigations] = useState<InvestigationEntry[]>([]);
@@ -99,8 +97,8 @@ function EMRInner() {
     const encounterData = {
       patientId: patient.id,
       vitals: { ...vitals },
-      complaints: complaints.map(c => ({ ...c })),
-      examination: examEntries.map(e => ({ ...e })),
+      complaints: complaints.map(c => ({ complaint: c.template.name, text: generateComplaintText(c), values: c.values })),
+      examination: generateExamText(examFindings),
       diagnoses: diagnoses.map(d => ({ ...d })),
       prescriptions: prescriptions.map(p => ({ ...p })),
       investigations: investigations.map(i => ({ ...i })),
@@ -114,7 +112,7 @@ function EMRInner() {
         // Reset for next patient
         setPatient({ id: '', name: '', age: '--', gender: '--', uhid: 'H1-00000', phone: '', allergies: [], bloodGroup: '' });
         setVitals({ systolic: '', diastolic: '', heartRate: '', spo2: '', temperature: '', weight: '', height: '', respiratoryRate: '', isAlert: true, onO2: false });
-        setComplaints([]); setExamEntries([]); setDiagnoses([]); setPrescriptions([]); setInvestigations([]);
+        setComplaints([]); setExamFindings({}); setDiagnoses([]); setPrescriptions([]); setInvestigations([]);
         setAdvice(''); setFollowUpDate('');
         setStep('vitals'); setShowSearch(true);
       }
@@ -131,7 +129,7 @@ function EMRInner() {
   const filled = {
     vitals: !!(vitals.systolic || vitals.heartRate),
     complaints: complaints.length > 0,
-    exam: examEntries.length > 0,
+    exam: Object.keys(examFindings).length > 0,
     diagnosis: diagnoses.length > 0,
     rx: prescriptions.length > 0,
     investigations: investigations.length > 0,
@@ -207,8 +205,8 @@ function EMRInner() {
 
           {/* Step content */}
           {step === 'vitals' && <VitalsPanel vitals={vitals} onChange={setVitals} />}
-          {step === 'complaints' && <ComplaintBuilder complaints={complaints} onChange={setComplaints} />}
-          {step === 'exam' && <ExamBuilder examEntries={examEntries} onChange={setExamEntries} />}
+          {step === 'complaints' && <SmartComplaintBuilder complaints={complaints} setComplaints={setComplaints} />}
+          {step === 'exam' && <SmartExamBuilder findings={examFindings} setFindings={setExamFindings} />}
           {step === 'diagnosis' && <DiagnosisBuilder diagnoses={diagnoses} onChange={setDiagnoses} />}
           {step === 'rx' && <PrescriptionBuilder prescriptions={prescriptions} onChange={setPrescriptions} allergies={patient.allergies} onFlash={flash} />}
           {step === 'investigations' && <InvestigationPanel investigations={investigations} onChange={setInvestigations} />}
@@ -256,13 +254,12 @@ function EMRInner() {
                 </div>
                 <div className="bg-gray-50 rounded-lg p-3">
                   <div className="font-bold text-gray-700 mb-1">Complaints ({complaints.length})</div>
-                  {complaints.map((c, i) => <div key={i}>{c.complaint} — {c.severity} — {c.duration}</div>)}
+                  {complaints.map((c, i) => <div key={i}>{generateComplaintText(c)}</div>)}
                   {!complaints.length && <div className="text-gray-400">None</div>}
                 </div>
                 <div className="bg-gray-50 rounded-lg p-3">
-                  <div className="font-bold text-gray-700 mb-1">Examination ({examEntries.length})</div>
-                  {examEntries.map((e, i) => <div key={i} className={e.isAbnormal ? 'text-red-700' : ''}>{e.system}: {e.findings.substring(0, 60)}{e.findings.length > 60 ? '...' : ''}</div>)}
-                  {!examEntries.length && <div className="text-gray-400">Not done</div>}
+                  <div className="font-bold text-gray-700 mb-1">Examination</div>
+                  {Object.keys(examFindings).length > 0 ? <div className="whitespace-pre-line text-xs">{generateExamText(examFindings).substring(0, 200)}</div> : <div className="text-gray-400">Not done</div>}
                 </div>
                 <div className="bg-gray-50 rounded-lg p-3">
                   <div className="font-bold text-gray-700 mb-1">Diagnosis ({diagnoses.length})</div>
@@ -317,8 +314,8 @@ function EMRInner() {
                     doctorName: staff?.full_name || '', date: new Date().toLocaleDateString('en-IN'),
                     encounterType: 'OPD', status: 'Completed',
                     vitals: { systolic: vitals.systolic, diastolic: vitals.diastolic, heartRate: vitals.heartRate, spo2: vitals.spo2, temperature: vitals.temperature, weight: vitals.weight },
-                    complaints: complaints.map(c => `${c.complaint} — ${c.severity} — ${c.duration}`),
-                    examFindings: examEntries.map(e => ({ system: e.system, findings: e.findings })),
+                    complaints: complaints.map(c => generateComplaintText(c)),
+                    examFindings: Object.entries(examFindings).map(([sys, vals]) => ({ system: sys, findings: JSON.stringify(vals) })),
                     diagnoses: diagnoses.map(d => ({ code: d.code, label: d.name, type: d.type })),
                     investigations: investigations.map(inv => ({ name: inv.name, urgency: inv.urgency })),
                     prescriptions: prescriptions.map(p => ({ brand: p.drug, generic: p.generic, strength: p.dose, dose: p.dose, frequency: p.frequency, duration: p.duration, instructions: p.instructions })),
@@ -362,8 +359,8 @@ function EMRInner() {
 
             {showCopilot && <AICopilot
               patient={{ name: patient.name, age: patient.age, gender: patient.gender, allergies: patient.allergies }}
-              vitals={vitals} complaints={complaints.map(c => c.complaint)}
-              examFindings={examEntries}
+              vitals={vitals} complaints={complaints.map(c => generateComplaintText(c))}
+              examFindings={Object.entries(examFindings).map(([sys, vals]) => ({ system: sys, ...vals }))}
               diagnoses={diagnoses.map(d => ({ code: d.code, label: d.name, type: d.type }))}
               investigations={investigations}
               prescriptions={prescriptions.map(p => `${p.drug} ${p.dose} ${p.frequency}`)}
