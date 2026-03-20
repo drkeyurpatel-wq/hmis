@@ -92,7 +92,18 @@ CREATE TABLE IF NOT EXISTS hmis_patient_documents (
     created_at timestamptz NOT NULL DEFAULT now()
 );
 
-CREATE INDEX IF NOT EXISTS idx_docs_patient ON hmis_patient_documents(patient_id, document_type);
+CREATE INDEX IF NOT EXISTS idx_docs_patient ON hmis_patient_documents(patient_id);
+
+-- Add document_type if table existed without it
+ALTER TABLE hmis_patient_documents ADD COLUMN IF NOT EXISTS document_type varchar(30);
+ALTER TABLE hmis_patient_documents ADD COLUMN IF NOT EXISTS document_name varchar(100);
+ALTER TABLE hmis_patient_documents ADD COLUMN IF NOT EXISTS file_url text;
+ALTER TABLE hmis_patient_documents ADD COLUMN IF NOT EXISTS file_size int;
+ALTER TABLE hmis_patient_documents ADD COLUMN IF NOT EXISTS mime_type varchar(50);
+ALTER TABLE hmis_patient_documents ADD COLUMN IF NOT EXISTS notes text;
+ALTER TABLE hmis_patient_documents ADD COLUMN IF NOT EXISTS uploaded_by uuid;
+ALTER TABLE hmis_patient_documents ADD COLUMN IF NOT EXISTS verified boolean DEFAULT false;
+ALTER TABLE hmis_patient_documents ADD COLUMN IF NOT EXISTS verified_by uuid;
 
 -- 5. Patient Insurance Records
 CREATE TABLE IF NOT EXISTS hmis_patient_insurance (

@@ -1,33 +1,41 @@
 'use client';
+
+// ============================================================
+// PATIENT REGISTRATION — BUILT FROM SCRATCH
+// RULES:
+//   1. ZERO useEffect
+//   2. ZERO useCallback / useMemo
+//   3. ZERO external hooks (no useAuthStore, no custom hooks)
+//   4. ZERO subscriptions
+//   5. ONLY useState for form fields
+//   6. Supabase called ONLY on submit button click
+//   7. Nothing in this file can cause a re-render except typing
+// ============================================================
+
 import React, { useState } from 'react';
-import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
+import { createBrowserClient } from '@supabase/ssr';
 
-// ============================================================
-// STANDALONE PATIENT REGISTRATION
-// - Own route: /patients/register
-// - Zero external hooks, zero subscriptions, zero useEffect
-// - Only local useState — nothing can re-render this externally
-// ============================================================
-
-const GENDERS = [{ v: 'male', l: 'Male' }, { v: 'female', l: 'Female' }, { v: 'other', l: 'Other' }];
-const BLOOD = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
+// Inline constants — no imports
+const GENDERS = ['Male', 'Female', 'Other'];
+const BLOOD_GROUPS = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
 const MARITAL = ['Single', 'Married', 'Divorced', 'Widowed'];
 const ID_TYPES = ['Aadhaar', 'PAN', 'Passport', 'Voter ID', 'Driving License'];
-const RELIGIONS = ['Hindu', 'Muslim', 'Christian', 'Sikh', 'Buddhist', 'Jain', 'Other'];
-const STATES = ['Gujarat', 'Rajasthan', 'Maharashtra', 'Madhya Pradesh', 'Delhi', 'Karnataka', 'Tamil Nadu', 'Uttar Pradesh', 'West Bengal', 'Other'];
-const SCHEMES = [{ v: 'none', l: 'Self Pay (No Insurance)' }, { v: 'private', l: 'Private Insurance' }, { v: 'pmjay', l: 'PMJAY (Ayushman Bharat)' }, { v: 'cghs', l: 'CGHS' }, { v: 'echs', l: 'ECHS' }, { v: 'esi', l: 'ESI' }];
+const STATES = ['Gujarat','Rajasthan','Maharashtra','Madhya Pradesh','Delhi','Karnataka','Tamil Nadu','Uttar Pradesh','West Bengal','Andhra Pradesh','Bihar','Chhattisgarh','Goa','Haryana','Himachal Pradesh','Jharkhand','Kerala','Manipur','Meghalaya','Mizoram','Nagaland','Odisha','Punjab','Sikkim','Telangana','Tripura','Uttarakhand'];
+const SCHEMES = ['Self Pay','Private Insurance','PMJAY','CGHS','ECHS','ESI'];
+const RELIGIONS = ['Hindu','Muslim','Christian','Sikh','Buddhist','Jain','Other'];
 
-export default function NewPatientRegistration() {
+function supabase() {
+  return createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
+}
+
+export default function PatientRegistrationPage() {
   const router = useRouter();
 
-  // ---- ALL STATE IS LOCAL — nothing external can touch it ----
-  const [step, setStep] = useState(1); // 1=Demographics, 2=Contact, 3=ID/Insurance, 4=Emergency/Medical
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
-
-  // Demographics
+  // --- form state (ALL local, nothing external) ---
   const [firstName, setFirstName] = useState('');
   const [middleName, setMiddleName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -41,7 +49,6 @@ export default function NewPatientRegistration() {
   const [nationality, setNationality] = useState('Indian');
   const [isVip, setIsVip] = useState(false);
 
-  // Contact
   const [phone, setPhone] = useState('');
   const [phone2, setPhone2] = useState('');
   const [email, setEmail] = useState('');
@@ -51,28 +58,26 @@ export default function NewPatientRegistration() {
   const [state, setState] = useState('Gujarat');
   const [pincode, setPincode] = useState('');
 
-  // ID
   const [idType, setIdType] = useState('');
   const [idNumber, setIdNumber] = useState('');
-
-  // Insurance
-  const [scheme, setScheme] = useState('none');
+  const [scheme, setScheme] = useState('Self Pay');
   const [insurer, setInsurer] = useState('');
   const [policyNo, setPolicyNo] = useState('');
   const [tpa, setTpa] = useState('');
 
-  // Emergency contact
   const [ecName, setEcName] = useState('');
-  const [ecPhone, setEcPhone] = useState('');
   const [ecRelation, setEcRelation] = useState('');
-
-  // Medical
-  const [allergies, setAllergies] = useState('');
+  const [ecPhone, setEcPhone] = useState('');
   const [medHistory, setMedHistory] = useState('');
+  const [allergies, setAllergies] = useState('');
 
-  // ---- SUBMIT ----
-  const handleSubmit = async () => {
-    // Validate
+  const [step, setStep] = useState(1);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+  const [successUhid, setSuccessUhid] = useState('');
+
+  // --- SUBMIT (only Supabase call in the entire page) ---
+  async function handleSubmit() {
     if (!firstName.trim()) { setError('First name is required'); setStep(1); return; }
     if (!lastName.trim()) { setError('Last name is required'); setStep(1); return; }
     if (!gender) { setError('Gender is required'); setStep(1); return; }
@@ -82,35 +87,36 @@ export default function NewPatientRegistration() {
     setError('');
 
     try {
-      const supabase = createClient();
+      const sb = supabase();
 
-      // Get centre ID from auth
-      const { data: { user } } = await supabase.auth.getUser();
+      // Get user's centre
+      const { data: { user } } = await sb.auth.getUser();
       if (!user) { setError('Not logged in'); setSaving(false); return; }
 
-      const { data: staffData } = await supabase.from('hmis_staff').select('primary_centre_id').eq('auth_user_id', user.id).single();
-      const centreId = staffData?.primary_centre_id;
-      if (!centreId) { setError('No centre assigned'); setSaving(false); return; }
+      const { data: staff } = await sb.from('hmis_staff').select('primary_centre_id').eq('auth_user_id', user.id).single();
+      if (!staff) { setError('Staff profile not found'); setSaving(false); return; }
+
+      const centreId = staff.primary_centre_id;
 
       // Generate UHID
-      const { data: uhid, error: seqErr } = await supabase.rpc('hmis_next_sequence', { p_centre_id: centreId, p_type: 'uhid' });
-      if (seqErr || !uhid) { setError('UHID generation failed: ' + (seqErr?.message || 'Unknown error')); setSaving(false); return; }
+      const { data: uhid, error: seqErr } = await sb.rpc('hmis_next_sequence', { p_centre_id: centreId, p_type: 'uhid' });
+      if (seqErr || !uhid) { setError('UHID generation failed: ' + (seqErr?.message || 'Unknown')); setSaving(false); return; }
 
       // Insert patient
-      const { data: patient, error: insErr } = await supabase.from('hmis_patients').insert({
+      const { error: insErr } = await sb.from('hmis_patients').insert({
         uhid,
         registration_centre_id: centreId,
         first_name: firstName.trim(),
         middle_name: middleName.trim() || null,
         last_name: lastName.trim(),
-        gender,
+        gender: gender.toLowerCase(),
         date_of_birth: dob || null,
         age_years: age ? parseInt(age) : null,
         blood_group: bloodGroup || null,
         marital_status: marital || null,
         occupation: occupation || null,
         religion: religion || null,
-        nationality,
+        nationality: nationality || 'Indian',
         is_vip: isVip,
         phone_primary: phone.trim(),
         phone_secondary: phone2.trim() || null,
@@ -120,267 +126,239 @@ export default function NewPatientRegistration() {
         city: city.trim() || null,
         state: state || null,
         pincode: pincode.trim() || null,
-        id_type: idType || null,
+        id_type: idType ? idType.toLowerCase().replace(/ /g, '_') : null,
         id_number: idNumber.trim() || null,
-      }).select('id').single();
+      });
 
       if (insErr) { setError('Registration failed: ' + insErr.message); setSaving(false); return; }
 
-      // Emergency contact
-      if (ecName.trim() && ecPhone.trim() && patient) {
-        await supabase.from('hmis_patient_contacts').insert({
-          patient_id: patient.id, name: ecName.trim(),
-          relationship: ecRelation || 'Other', phone: ecPhone.trim(), is_emergency: true,
-        });
-      }
-
-      setSuccess(`Patient registered successfully! UHID: ${uhid}`);
-      setTimeout(() => router.push('/patients'), 2000);
-    } catch (e: any) {
-      setError(e.message || 'Unknown error');
+      setSuccessUhid(uhid);
+      setSaving(false);
+    } catch (err: any) {
+      setError('Error: ' + (err?.message || 'Unknown'));
+      setSaving(false);
     }
-    setSaving(false);
-  };
+  }
 
-  // ---- FIELD COMPONENTS (inline, no external deps) ----
-  const Field = ({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) => (
-    <div>
-      <label className="block text-xs font-medium text-gray-600 mb-1">{label}{required && <span className="text-red-500 ml-0.5">*</span>}</label>
-      {children}
-    </div>
-  );
-  const inputCls = "w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white";
-  const selectCls = inputCls;
+  // --- STYLES (inline, no Tailwind dependencies that could break) ---
+  const card = 'bg-white rounded-2xl border border-gray-200 shadow-sm p-6';
+  const label = 'block text-xs font-semibold text-gray-600 mb-1';
+  const input = 'w-full px-3 py-2.5 rounded-lg border border-gray-300 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 bg-white';
+  const select = input;
+  const btn = 'px-5 py-2.5 rounded-lg text-sm font-semibold transition-colors';
+  const btnPrimary = btn + ' bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50';
+  const btnSecondary = btn + ' bg-gray-100 text-gray-700 hover:bg-gray-200';
 
-  // ---- SUCCESS STATE ----
-  if (success) {
+  // --- SUCCESS SCREEN ---
+  if (successUhid) {
     return (
-      <div className="max-w-lg mx-auto mt-20 text-center">
-        <div className="text-5xl mb-4">✅</div>
-        <h2 className="text-xl font-bold text-green-700 mb-2">{success}</h2>
-        <p className="text-sm text-gray-500">Redirecting to patient list...</p>
+      <div className="max-w-lg mx-auto mt-12">
+        <div className={card + ' text-center'}>
+          <div className="text-5xl mb-4">✅</div>
+          <h2 className="text-xl font-bold text-gray-900">Patient Registered</h2>
+          <div className="mt-3 text-lg font-mono bg-blue-50 text-blue-700 px-4 py-3 rounded-xl font-bold">{successUhid}</div>
+          <p className="mt-2 text-sm text-gray-500">{firstName} {lastName} — {phone}</p>
+          <div className="flex gap-3 mt-6 justify-center">
+            <button onClick={() => router.push('/patients')} className={btnSecondary}>← Patient List</button>
+            <button onClick={() => {
+              setSuccessUhid(''); setFirstName(''); setMiddleName(''); setLastName('');
+              setGender(''); setDob(''); setAge(''); setBloodGroup(''); setMarital('');
+              setOccupation(''); setReligion(''); setNationality('Indian'); setIsVip(false);
+              setPhone(''); setPhone2(''); setEmail(''); setAddr1(''); setAddr2('');
+              setCity('Ahmedabad'); setState('Gujarat'); setPincode('');
+              setIdType(''); setIdNumber(''); setScheme('Self Pay'); setInsurer('');
+              setPolicyNo(''); setTpa(''); setEcName(''); setEcRelation('');
+              setEcPhone(''); setMedHistory(''); setAllergies(''); setStep(1);
+            }} className={btnPrimary}>Register Another</button>
+          </div>
+        </div>
       </div>
     );
   }
 
+  // --- STEP INDICATOR ---
+  const steps = ['Demographics', 'Contact', 'ID & Insurance', 'Emergency & Medical'];
+
   return (
-    <div className="max-w-3xl mx-auto">
+    <div className="max-w-2xl mx-auto">
+      {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-xl font-bold">New Patient Registration</h1>
-          <p className="text-xs text-gray-500">Step {step} of 4</p>
+          <h1 className="text-xl font-bold text-gray-900">New Patient Registration</h1>
+          <p className="text-sm text-gray-500">Step {step} of 4 — {steps[step - 1]}</p>
         </div>
-        <button onClick={() => router.push('/patients')} className="px-3 py-2 bg-gray-100 text-sm rounded-lg">← Back to List</button>
+        <button onClick={() => router.push('/patients')} className={btnSecondary}>← Back</button>
       </div>
 
       {/* Step indicator */}
       <div className="flex gap-1 mb-6">
-        {[1, 2, 3, 4].map(s => (
-          <button key={s} onClick={() => setStep(s)}
-            className={`flex-1 py-2 text-xs font-medium rounded-lg transition-colors ${step === s ? 'bg-blue-600 text-white' : s < step ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-500'}`}>
-            {s === 1 ? 'Demographics' : s === 2 ? 'Contact' : s === 3 ? 'ID & Insurance' : 'Emergency & Medical'}
+        {steps.map((s, i) => (
+          <button key={i} onClick={() => setStep(i + 1)}
+            className={`flex-1 py-2 text-xs font-medium rounded-lg transition-colors ${step === i + 1 ? 'bg-blue-600 text-white' : i + 1 < step ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-500'}`}>
+            {s}
           </button>
         ))}
       </div>
 
-      {error && <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3 mb-4">{error}</div>}
+      {/* Error */}
+      {error && <div className="mb-4 px-4 py-3 bg-red-50 border border-red-200 text-red-700 rounded-xl text-sm">{error}</div>}
 
-      <div className="bg-white rounded-xl border p-6">
+      {/* STEP 1: Demographics */}
+      {step === 1 && <div className={card}>
+        <div className="grid grid-cols-3 gap-4">
+          <div><label className={label}>First Name *</label>
+            <input className={input} value={firstName} onChange={e => setFirstName(e.target.value)} placeholder="First name" autoFocus /></div>
+          <div><label className={label}>Middle Name</label>
+            <input className={input} value={middleName} onChange={e => setMiddleName(e.target.value)} placeholder="Middle name" /></div>
+          <div><label className={label}>Last Name *</label>
+            <input className={input} value={lastName} onChange={e => setLastName(e.target.value)} placeholder="Last name" /></div>
 
-        {/* STEP 1: Demographics */}
-        {step === 1 && (
-          <div className="space-y-4">
-            <h2 className="font-bold text-sm text-gray-700 mb-3">Patient Demographics</h2>
-            <div className="grid grid-cols-3 gap-4">
-              <Field label="First Name" required>
-                <input type="text" value={firstName} onChange={e => setFirstName(e.target.value)} className={inputCls} placeholder="First name" autoFocus />
-              </Field>
-              <Field label="Middle Name">
-                <input type="text" value={middleName} onChange={e => setMiddleName(e.target.value)} className={inputCls} placeholder="Middle name" />
-              </Field>
-              <Field label="Last Name" required>
-                <input type="text" value={lastName} onChange={e => setLastName(e.target.value)} className={inputCls} placeholder="Last name" />
-              </Field>
-            </div>
-            <div className="grid grid-cols-4 gap-4">
-              <Field label="Gender" required>
-                <select value={gender} onChange={e => setGender(e.target.value)} className={selectCls}>
-                  <option value="">Select</option>
-                  {GENDERS.map(g => <option key={g.v} value={g.v}>{g.l}</option>)}
-                </select>
-              </Field>
-              <Field label="Date of Birth">
-                <input type="date" value={dob} onChange={e => { setDob(e.target.value); if (e.target.value) { const a = Math.floor((Date.now() - new Date(e.target.value).getTime()) / 31557600000); setAge(String(a)); } }} className={inputCls} />
-              </Field>
-              <Field label="Age (years)">
-                <input type="number" value={age} onChange={e => setAge(e.target.value)} className={inputCls} placeholder="Age" min="0" max="120" />
-              </Field>
-              <Field label="Blood Group">
-                <select value={bloodGroup} onChange={e => setBloodGroup(e.target.value)} className={selectCls}>
-                  <option value="">Select</option>
-                  {BLOOD.map(b => <option key={b} value={b}>{b}</option>)}
-                </select>
-              </Field>
-            </div>
-            <div className="grid grid-cols-4 gap-4">
-              <Field label="Marital Status">
-                <select value={marital} onChange={e => setMarital(e.target.value)} className={selectCls}>
-                  <option value="">Select</option>
-                  {MARITAL.map(m => <option key={m} value={m}>{m}</option>)}
-                </select>
-              </Field>
-              <Field label="Occupation">
-                <input type="text" value={occupation} onChange={e => setOccupation(e.target.value)} className={inputCls} placeholder="Occupation" />
-              </Field>
-              <Field label="Religion">
-                <select value={religion} onChange={e => setReligion(e.target.value)} className={selectCls}>
-                  <option value="">Select</option>
-                  {RELIGIONS.map(r => <option key={r} value={r}>{r}</option>)}
-                </select>
-              </Field>
-              <Field label="Nationality">
-                <input type="text" value={nationality} onChange={e => setNationality(e.target.value)} className={inputCls} />
-              </Field>
-            </div>
-            <label className="flex items-center gap-2 text-sm">
-              <input type="checkbox" checked={isVip} onChange={e => setIsVip(e.target.checked)} className="rounded" />
-              <span>VIP Patient</span>
+          <div><label className={label}>Gender *</label>
+            <select className={select} value={gender} onChange={e => setGender(e.target.value)}>
+              <option value="">Select</option>
+              {GENDERS.map(g => <option key={g} value={g}>{g}</option>)}
+            </select></div>
+          <div><label className={label}>Date of Birth</label>
+            <input className={input} type="date" value={dob} onChange={e => {
+              setDob(e.target.value);
+              if (e.target.value) { const a = Math.floor((Date.now() - new Date(e.target.value).getTime()) / 31557600000); setAge(String(a)); }
+            }} /></div>
+          <div><label className={label}>Age (years)</label>
+            <input className={input} type="number" value={age} onChange={e => setAge(e.target.value)} placeholder="Age" min="0" max="120" /></div>
+
+          <div><label className={label}>Blood Group</label>
+            <select className={select} value={bloodGroup} onChange={e => setBloodGroup(e.target.value)}>
+              <option value="">Select</option>
+              {BLOOD_GROUPS.map(b => <option key={b} value={b}>{b}</option>)}
+            </select></div>
+          <div><label className={label}>Marital Status</label>
+            <select className={select} value={marital} onChange={e => setMarital(e.target.value)}>
+              <option value="">Select</option>
+              {MARITAL.map(m => <option key={m} value={m}>{m}</option>)}
+            </select></div>
+          <div><label className={label}>Religion</label>
+            <select className={select} value={religion} onChange={e => setReligion(e.target.value)}>
+              <option value="">Select</option>
+              {RELIGIONS.map(r => <option key={r} value={r}>{r}</option>)}
+            </select></div>
+
+          <div><label className={label}>Occupation</label>
+            <input className={input} value={occupation} onChange={e => setOccupation(e.target.value)} placeholder="Occupation" /></div>
+          <div><label className={label}>Nationality</label>
+            <input className={input} value={nationality} onChange={e => setNationality(e.target.value)} /></div>
+          <div className="flex items-end pb-1">
+            <label className="flex items-center gap-2 text-sm cursor-pointer">
+              <input type="checkbox" checked={isVip} onChange={e => setIsVip(e.target.checked)} className="rounded" /> VIP Patient
             </label>
           </div>
-        )}
-
-        {/* STEP 2: Contact */}
-        {step === 2 && (
-          <div className="space-y-4">
-            <h2 className="font-bold text-sm text-gray-700 mb-3">Contact Information</h2>
-            <div className="grid grid-cols-3 gap-4">
-              <Field label="Phone (Primary)" required>
-                <input type="tel" value={phone} onChange={e => setPhone(e.target.value)} className={inputCls} placeholder="9876543210" autoFocus />
-              </Field>
-              <Field label="Phone (Secondary)">
-                <input type="tel" value={phone2} onChange={e => setPhone2(e.target.value)} className={inputCls} placeholder="Optional" />
-              </Field>
-              <Field label="Email">
-                <input type="email" value={email} onChange={e => setEmail(e.target.value)} className={inputCls} placeholder="patient@email.com" />
-              </Field>
-            </div>
-            <Field label="Address Line 1">
-              <input type="text" value={addr1} onChange={e => setAddr1(e.target.value)} className={inputCls} placeholder="House/Flat No, Street" />
-            </Field>
-            <Field label="Address Line 2">
-              <input type="text" value={addr2} onChange={e => setAddr2(e.target.value)} className={inputCls} placeholder="Area, Landmark" />
-            </Field>
-            <div className="grid grid-cols-3 gap-4">
-              <Field label="City">
-                <input type="text" value={city} onChange={e => setCity(e.target.value)} className={inputCls} />
-              </Field>
-              <Field label="State">
-                <select value={state} onChange={e => setState(e.target.value)} className={selectCls}>
-                  {STATES.map(s => <option key={s} value={s}>{s}</option>)}
-                </select>
-              </Field>
-              <Field label="Pincode">
-                <input type="text" value={pincode} onChange={e => setPincode(e.target.value)} className={inputCls} placeholder="380015" maxLength={6} />
-              </Field>
-            </div>
-          </div>
-        )}
-
-        {/* STEP 3: ID & Insurance */}
-        {step === 3 && (
-          <div className="space-y-4">
-            <h2 className="font-bold text-sm text-gray-700 mb-3">Identity Documents</h2>
-            <div className="grid grid-cols-2 gap-4">
-              <Field label="ID Type">
-                <select value={idType} onChange={e => setIdType(e.target.value)} className={selectCls}>
-                  <option value="">Select</option>
-                  {ID_TYPES.map(t => <option key={t} value={t.toLowerCase().replace(/ /g, '_')}>{t}</option>)}
-                </select>
-              </Field>
-              <Field label="ID Number">
-                <input type="text" value={idNumber} onChange={e => setIdNumber(e.target.value)} className={inputCls} placeholder="ID number" />
-              </Field>
-            </div>
-
-            <h2 className="font-bold text-sm text-gray-700 mt-6 mb-3">Insurance</h2>
-            <div className="grid grid-cols-2 gap-4">
-              <Field label="Scheme">
-                <select value={scheme} onChange={e => setScheme(e.target.value)} className={selectCls}>
-                  {SCHEMES.map(s => <option key={s.v} value={s.v}>{s.l}</option>)}
-                </select>
-              </Field>
-              {scheme !== 'none' && <>
-                <Field label="Insurer / Company">
-                  <input type="text" value={insurer} onChange={e => setInsurer(e.target.value)} className={inputCls} placeholder="Insurance company" />
-                </Field>
-                <Field label="Policy Number">
-                  <input type="text" value={policyNo} onChange={e => setPolicyNo(e.target.value)} className={inputCls} placeholder="Policy / member ID" />
-                </Field>
-                <Field label="TPA">
-                  <input type="text" value={tpa} onChange={e => setTpa(e.target.value)} className={inputCls} placeholder="TPA name" />
-                </Field>
-              </>}
-            </div>
-          </div>
-        )}
-
-        {/* STEP 4: Emergency & Medical */}
-        {step === 4 && (
-          <div className="space-y-4">
-            <h2 className="font-bold text-sm text-gray-700 mb-3">Emergency Contact</h2>
-            <div className="grid grid-cols-3 gap-4">
-              <Field label="Name">
-                <input type="text" value={ecName} onChange={e => setEcName(e.target.value)} className={inputCls} placeholder="Emergency contact name" autoFocus />
-              </Field>
-              <Field label="Phone">
-                <input type="tel" value={ecPhone} onChange={e => setEcPhone(e.target.value)} className={inputCls} placeholder="Phone" />
-              </Field>
-              <Field label="Relationship">
-                <input type="text" value={ecRelation} onChange={e => setEcRelation(e.target.value)} className={inputCls} placeholder="Spouse, Parent, etc." />
-              </Field>
-            </div>
-
-            <h2 className="font-bold text-sm text-gray-700 mt-6 mb-3">Medical History</h2>
-            <Field label="Known Allergies">
-              <input type="text" value={allergies} onChange={e => setAllergies(e.target.value)} className={inputCls} placeholder="e.g., Penicillin, Sulfa drugs, Peanuts (comma separated)" />
-            </Field>
-            <Field label="Past Medical History">
-              <textarea value={medHistory} onChange={e => setMedHistory(e.target.value)} rows={3} className={inputCls} placeholder="e.g., DM type 2 since 2018, HTN on medication, Appendectomy 2020..." />
-            </Field>
-
-            {/* Summary */}
-            <div className="bg-blue-50 rounded-lg p-4 mt-4">
-              <h3 className="text-xs font-bold text-blue-700 mb-2">Registration Summary</h3>
-              <div className="grid grid-cols-2 gap-1 text-xs">
-                <div><b>Name:</b> {firstName} {middleName} {lastName}</div>
-                <div><b>Gender:</b> {gender} {age ? `| Age: ${age}` : ''}</div>
-                <div><b>Phone:</b> {phone}</div>
-                <div><b>City:</b> {city}, {state}</div>
-                {scheme !== 'none' && <div><b>Insurance:</b> {scheme.toUpperCase()} — {insurer}</div>}
-                {ecName && <div><b>Emergency:</b> {ecName} ({ecRelation}) {ecPhone}</div>}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Navigation */}
-        <div className="flex items-center justify-between mt-6 pt-4 border-t">
-          <button onClick={() => setStep(Math.max(1, step - 1))} disabled={step === 1}
-            className="px-4 py-2.5 bg-gray-100 text-sm rounded-lg disabled:opacity-30">← Previous</button>
-
-          <div className="text-xs text-gray-400">Step {step} of 4</div>
-
-          {step < 4 ? (
-            <button onClick={() => setStep(step + 1)}
-              className="px-6 py-2.5 bg-blue-600 text-white text-sm rounded-lg font-medium">Next →</button>
-          ) : (
-            <button onClick={handleSubmit} disabled={saving}
-              className="px-8 py-2.5 bg-green-600 text-white text-sm rounded-lg font-bold disabled:opacity-40">
-              {saving ? 'Registering...' : 'Register Patient'}
-            </button>
-          )}
         </div>
-      </div>
+        <div className="flex justify-end mt-6">
+          <button onClick={() => setStep(2)} className={btnPrimary}>Next → Contact Details</button>
+        </div>
+      </div>}
+
+      {/* STEP 2: Contact */}
+      {step === 2 && <div className={card}>
+        <div className="grid grid-cols-2 gap-4">
+          <div><label className={label}>Phone Number *</label>
+            <input className={input} value={phone} onChange={e => setPhone(e.target.value)} placeholder="10-digit mobile" maxLength={13} /></div>
+          <div><label className={label}>Alternate Phone</label>
+            <input className={input} value={phone2} onChange={e => setPhone2(e.target.value)} placeholder="Optional" /></div>
+          <div className="col-span-2"><label className={label}>Email</label>
+            <input className={input} type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="email@example.com" /></div>
+          <div className="col-span-2"><label className={label}>Address Line 1</label>
+            <input className={input} value={addr1} onChange={e => setAddr1(e.target.value)} placeholder="House/Flat, Street" /></div>
+          <div className="col-span-2"><label className={label}>Address Line 2</label>
+            <input className={input} value={addr2} onChange={e => setAddr2(e.target.value)} placeholder="Area, Landmark" /></div>
+          <div><label className={label}>City</label>
+            <input className={input} value={city} onChange={e => setCity(e.target.value)} /></div>
+          <div><label className={label}>State</label>
+            <select className={select} value={state} onChange={e => setState(e.target.value)}>
+              {STATES.map(s => <option key={s} value={s}>{s}</option>)}
+            </select></div>
+          <div><label className={label}>Pincode</label>
+            <input className={input} value={pincode} onChange={e => setPincode(e.target.value)} placeholder="6 digits" maxLength={6} /></div>
+        </div>
+        <div className="flex justify-between mt-6">
+          <button onClick={() => setStep(1)} className={btnSecondary}>← Back</button>
+          <button onClick={() => setStep(3)} className={btnPrimary}>Next → ID & Insurance</button>
+        </div>
+      </div>}
+
+      {/* STEP 3: ID & Insurance */}
+      {step === 3 && <div className={card}>
+        <h3 className="font-bold text-sm text-gray-700 mb-3">Identity Document</h3>
+        <div className="grid grid-cols-2 gap-4 mb-6">
+          <div><label className={label}>ID Type</label>
+            <select className={select} value={idType} onChange={e => setIdType(e.target.value)}>
+              <option value="">Select</option>
+              {ID_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+            </select></div>
+          <div><label className={label}>ID Number</label>
+            <input className={input} value={idNumber} onChange={e => setIdNumber(e.target.value)} placeholder="Document number" /></div>
+        </div>
+        <h3 className="font-bold text-sm text-gray-700 mb-3">Insurance</h3>
+        <div className="grid grid-cols-2 gap-4">
+          <div><label className={label}>Scheme</label>
+            <select className={select} value={scheme} onChange={e => setScheme(e.target.value)}>
+              {SCHEMES.map(s => <option key={s} value={s}>{s}</option>)}
+            </select></div>
+          {scheme !== 'Self Pay' && <>
+            <div><label className={label}>Insurer Name</label>
+              <input className={input} value={insurer} onChange={e => setInsurer(e.target.value)} placeholder="Insurance company" /></div>
+            <div><label className={label}>Policy Number</label>
+              <input className={input} value={policyNo} onChange={e => setPolicyNo(e.target.value)} placeholder="Policy / Card number" /></div>
+            <div><label className={label}>TPA</label>
+              <input className={input} value={tpa} onChange={e => setTpa(e.target.value)} placeholder="Third party administrator" /></div>
+          </>}
+        </div>
+        <div className="flex justify-between mt-6">
+          <button onClick={() => setStep(2)} className={btnSecondary}>← Back</button>
+          <button onClick={() => setStep(4)} className={btnPrimary}>Next → Emergency & Medical</button>
+        </div>
+      </div>}
+
+      {/* STEP 4: Emergency & Medical */}
+      {step === 4 && <div className={card}>
+        <h3 className="font-bold text-sm text-gray-700 mb-3">Emergency Contact</h3>
+        <div className="grid grid-cols-3 gap-4 mb-6">
+          <div><label className={label}>Contact Name</label>
+            <input className={input} value={ecName} onChange={e => setEcName(e.target.value)} placeholder="Name" /></div>
+          <div><label className={label}>Relationship</label>
+            <input className={input} value={ecRelation} onChange={e => setEcRelation(e.target.value)} placeholder="Spouse, Parent..." /></div>
+          <div><label className={label}>Phone</label>
+            <input className={input} value={ecPhone} onChange={e => setEcPhone(e.target.value)} placeholder="Phone number" /></div>
+        </div>
+        <h3 className="font-bold text-sm text-gray-700 mb-3">Medical History</h3>
+        <div className="grid grid-cols-1 gap-4">
+          <div><label className={label}>Known Allergies</label>
+            <input className={input} value={allergies} onChange={e => setAllergies(e.target.value)} placeholder="e.g., Penicillin, Sulfa drugs, Iodine..." /></div>
+          <div><label className={label}>Medical History</label>
+            <textarea className={input + ' resize-none'} rows={3} value={medHistory} onChange={e => setMedHistory(e.target.value)} placeholder="DM, HTN, previous surgeries, chronic conditions..." />
+        </div>
+
+        {/* Summary before submit */}
+        <div className="mt-6 p-4 bg-gray-50 rounded-xl text-xs">
+          <div className="font-bold text-gray-700 mb-2">Review</div>
+          <div className="grid grid-cols-2 gap-1">
+            <div><b>Name:</b> {firstName} {middleName} {lastName}</div>
+            <div><b>Gender:</b> {gender || '—'}</div>
+            <div><b>Age:</b> {age || '—'} {dob ? `(DOB: ${dob})` : ''}</div>
+            <div><b>Phone:</b> {phone || '—'}</div>
+            <div><b>City:</b> {city}</div>
+            <div><b>Blood:</b> {bloodGroup || '—'}</div>
+            {idType && <div><b>ID:</b> {idType} — {idNumber}</div>}
+            {scheme !== 'Self Pay' && <div><b>Insurance:</b> {scheme} — {insurer}</div>}
+          </div>
+        </div>
+
+        <div className="flex justify-between mt-6">
+          <button onClick={() => setStep(3)} className={btnSecondary}>← Back</button>
+          <button onClick={handleSubmit} disabled={saving} className={btnPrimary + ' min-w-[200px]'}>
+            {saving ? 'Registering...' : '✓ Register Patient'}
+          </button>
+        </div>
+      </div>}
     </div>
   );
 }
