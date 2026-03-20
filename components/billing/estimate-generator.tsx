@@ -75,11 +75,9 @@ export default function EstimateGenerator({ estimates, centreId, staffId, tariff
   const totalEstimate = form.items.reduce((s: number, i: any) => s + (i?.total || 0), 0);
 
   const printEstimate = () => {
-    printEstimatePDF(
-      { estimate_number: `EST-${Date.now().toString().slice(-6)}`, procedure_name: form.procedureName, room_category: form.roomCategory, expected_los_days: form.expectedLOS, total_estimated: totalEstimate, items: form.items.map((i: any) => ({ description: i.name, amount: i.total })), valid_until: '15 days' },
-      null, // patient — not yet selected at estimate stage
-      { name: 'Health1 Super Speciality Hospital', address: 'Shilaj, Ahmedabad' }
-    );
+    const est = { estimate_number: `EST-${Date.now().toString().slice(-6)}`, procedure_name: form.procedureName, room_category: form.roomCategory, expected_los_days: form.expectedLOS, total_estimated: totalEstimate, valid_until: '15 days' };
+    const estItems = form.items.map((i: any) => ({ description: i.name, amount: i.total, quantity: 1, unit_rate: i.total, net_amount: i.total }));
+    printEstimatePDF(est, estItems, null, { name: 'Health1 Super Speciality Hospital', address: 'Shilaj, Ahmedabad' });
   };
 
   const stColor = (s: string) => s === 'active' ? 'bg-green-100 text-green-700' : s === 'converted' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600';

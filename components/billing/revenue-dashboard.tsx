@@ -1,149 +1,159 @@
-// components/billing/revenue-dashboard.tsx
 'use client';
-import React, { useMemo } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { createBrowserClient } from '@supabase/ssr';
 
-interface Props { bills: any[]; }
+function sb() { return createBrowserClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!); }
+const fmt = (n: number) => Math.round(n).toLocaleString('en-IN');
+const INR = (n: number) => n >= 10000000 ? `₹${(n/10000000).toFixed(2)} Cr` : n >= 100000 ? `₹${(n/100000).toFixed(2)} L` : `₹${fmt(n)}`;
 
-export default function RevenueDashboard({ bills }: Props) {
-  const fmt = (n: number) => n.toLocaleString('en-IN', { maximumFractionDigits: 0 });
-  const today = new Date().toISOString().split('T')[0];
+interface Props { centreId: string; }
 
-  const stats = useMemo(() => {
-    const todayB = bills.filter(b => b.bill_date === today);
-    const active = bills.filter(b => b.status !== 'cancelled');
-    const total = active.reduce((s, b) => s + parseFloat(b.net_amount || 0), 0);
-    const collected = active.reduce((s, b) => s + parseFloat(b.paid_amount || 0), 0);
-    const outstanding = active.reduce((s, b) => s + parseFloat(b.balance_amount || 0), 0);
-    const efficiency = total > 0 ? (collected / total * 100).toFixed(1) : '0';
+export default function RevenueDashboard({ centreId }: Props) {
+  const [stats, setStats] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [period, setPeriod] = useState<'today' | 'week' | 'month'>('today');
 
-    // By payor
-    const byPayor: Record<string, { count: number; revenue: number; collected: number; outstanding: number }> = {};
-    active.forEach(b => {
-      const p = b.payor_type || 'self';
-      if (!byPayor[p]) byPayor[p] = { count: 0, revenue: 0, collected: 0, outstanding: 0 };
-      byPayor[p].count++; byPayor[p].revenue += parseFloat(b.net_amount || 0);
-      byPayor[p].collected += parseFloat(b.paid_amount || 0); byPayor[p].outstanding += parseFloat(b.balance_amount || 0);
-    });
+  const load = useCallback(async () => {
+    if (!centreId) return;
+    setLoading(true);
+    const now = new Date();
+    const today = now.toISOString().split('T')[0];
+    let dateFrom = today;
+    if (period === 'week') { const d = new Date(now); d.setDate(d.getDate() - 7); dateFrom = d.toISOString().split('T')[0]; }
+    if (period === 'month') { const d = new Date(now); d.setDate(1); dateFrom = d.toISOString().split('T')[0]; }
+
+    const [bills, payments, charges, advances] = await Promise.all([
+      sb().from('hmis_bills').select('id, bill_type, payor_type, gross_amount, discount_amount, net_amount, paid_amount, balance_amount, status')
+        .eq('centre_id', centreId).gte('bill_date', dateFrom).lte('bill_date', today).neq('status', 'cancelled'),
+      sb().from('hmis_payments').select('id, amount, payment_mode, payment_date, bill_id')
+        .gte('payment_date', dateFrom).lte('payment_date', today),
+      sb().from('hmis_charge_log').select('id, amount, status, category')
+        .eq('centre_id', centreId).gte('service_date', dateFrom).lte('service_date', today),
+      sb().from('hmis_advances').select('id, amount, payment_mode')
+        .gte('created_at', dateFrom + 'T00:00:00'),
+    ]);
+
+    const b = bills.data || [];
+    const p = payments.data || [];
+    const c = charges.data || [];
+    const a = advances.data || [];
+
+    const gross = b.reduce((s: number, x: any) => s + parseFloat(x.gross_amount || 0), 0);
+    const discount = b.reduce((s: number, x: any) => s + parseFloat(x.discount_amount || 0), 0);
+    const net = b.reduce((s: number, x: any) => s + parseFloat(x.net_amount || 0), 0);
+    const collected = p.reduce((s: number, x: any) => s + parseFloat(x.amount || 0), 0);
+    const outstanding = b.reduce((s: number, x: any) => s + parseFloat(x.balance_amount || 0), 0);
+    const advTotal = a.reduce((s: number, x: any) => s + parseFloat(x.amount || 0), 0);
+    const chargeTotal = c.reduce((s: number, x: any) => s + parseFloat(x.amount || 0), 0);
 
     // By type
     const byType: Record<string, { count: number; revenue: number }> = {};
-    active.forEach(b => {
-      const t = b.bill_type || 'other';
+    for (const bill of b) {
+      const t = bill.bill_type || 'other';
       if (!byType[t]) byType[t] = { count: 0, revenue: 0 };
-      byType[t].count++; byType[t].revenue += parseFloat(b.net_amount || 0);
-    });
-
-    // By status
-    const byStatus: Record<string, number> = {};
-    bills.forEach(b => { byStatus[b.status] = (byStatus[b.status] || 0) + 1; });
-
-    // Aging
-    const aging = { current: 0, d30: 0, d60: 0, d90: 0, over90: 0 };
-    const nowMs = Date.now();
-    active.filter(b => parseFloat(b.balance_amount) > 0).forEach(b => {
-      const days = Math.floor((nowMs - new Date(b.bill_date).getTime()) / 86400000);
-      const bal = parseFloat(b.balance_amount);
-      if (days <= 7) aging.current += bal;
-      else if (days <= 30) aging.d30 += bal;
-      else if (days <= 60) aging.d60 += bal;
-      else if (days <= 90) aging.d90 += bal;
-      else aging.over90 += bal;
-    });
-
-    // Last 7 days revenue
-    const daily: { date: string; revenue: number; collected: number }[] = [];
-    for (let i = 6; i >= 0; i--) {
-      const d = new Date(); d.setDate(d.getDate() - i);
-      const ds = d.toISOString().split('T')[0];
-      const dayB = active.filter(b => b.bill_date === ds);
-      daily.push({ date: ds, revenue: dayB.reduce((s, b) => s + parseFloat(b.net_amount || 0), 0), collected: dayB.reduce((s, b) => s + parseFloat(b.paid_amount || 0), 0) });
+      byType[t].count++;
+      byType[t].revenue += parseFloat(bill.net_amount || 0);
     }
 
-    return { todayCount: todayB.length, todayRev: todayB.reduce((s, b) => s + parseFloat(b.net_amount || 0), 0),
-      total, collected, outstanding, efficiency, byPayor, byType, byStatus, aging, daily,
-      avgBill: active.length > 0 ? total / active.length : 0,
-      todayCollected: todayB.reduce((s, b) => s + parseFloat(b.paid_amount || 0), 0),
-    };
-  }, [bills, today]);
+    // By payor
+    const byPayor: Record<string, { count: number; revenue: number }> = {};
+    for (const bill of b) {
+      const t = bill.payor_type || 'self';
+      if (!byPayor[t]) byPayor[t] = { count: 0, revenue: 0 };
+      byPayor[t].count++;
+      byPayor[t].revenue += parseFloat(bill.net_amount || 0);
+    }
 
-  const payorColor = (p: string) => p === 'self' ? '#6b7280' : p === 'insurance' ? '#2563eb' : p.includes('pmjay') ? '#16a34a' : p.includes('cghs') ? '#0d9488' : p === 'corporate' ? '#7c3aed' : '#9ca3af';
-  const maxDaily = Math.max(...stats.daily.map(d => d.revenue), 1);
+    // By payment mode
+    const byMode: Record<string, number> = {};
+    for (const pay of p) {
+      const m = pay.payment_mode || 'cash';
+      byMode[m] = (byMode[m] || 0) + parseFloat(pay.amount || 0);
+    }
+
+    setStats({ gross, discount, net, collected, outstanding, advTotal, chargeTotal, billCount: b.length, paymentCount: p.length, chargeCount: c.length, byType, byPayor, byMode });
+    setLoading(false);
+  }, [centreId, period]);
+
+  useEffect(() => { load(); }, [load]);
+
+  if (loading) return <div className="animate-pulse space-y-3"><div className="h-24 bg-gray-200 rounded-xl" /><div className="grid grid-cols-4 gap-3">{[1,2,3,4].map(i => <div key={i} className="h-20 bg-gray-200 rounded-xl" />)}</div></div>;
+  if (!stats) return <div className="text-center py-8 text-gray-400">No data</div>;
 
   return (
     <div className="space-y-4">
-      {/* KPIs */}
-      <div className="grid grid-cols-6 gap-3">
-        <div className="bg-white rounded-xl border p-3 text-center"><div className="text-[10px] text-gray-500">Today Bills</div><div className="text-xl font-bold">{stats.todayCount}</div><div className="text-xs text-green-600">₹{fmt(stats.todayRev)}</div></div>
-        <div className="bg-white rounded-xl border p-3 text-center"><div className="text-[10px] text-gray-500">Today Collected</div><div className="text-xl font-bold text-green-700">₹{fmt(stats.todayCollected)}</div></div>
-        <div className="bg-white rounded-xl border p-3 text-center"><div className="text-[10px] text-gray-500">Total Revenue</div><div className="text-xl font-bold text-blue-700">₹{fmt(stats.total)}</div></div>
-        <div className="bg-white rounded-xl border p-3 text-center"><div className="text-[10px] text-gray-500">Collected</div><div className="text-xl font-bold text-green-700">₹{fmt(stats.collected)}</div></div>
-        <div className="bg-white rounded-xl border p-3 text-center"><div className="text-[10px] text-gray-500">Outstanding</div><div className="text-xl font-bold text-red-700">₹{fmt(stats.outstanding)}</div></div>
-        <div className="bg-white rounded-xl border p-3 text-center"><div className="text-[10px] text-gray-500">Collection %</div><div className={`text-xl font-bold ${parseFloat(stats.efficiency) >= 80 ? 'text-green-700' : parseFloat(stats.efficiency) >= 60 ? 'text-yellow-600' : 'text-red-700'}`}>{stats.efficiency}%</div></div>
+      {/* Period selector */}
+      <div className="flex gap-1">
+        {(['today', 'week', 'month'] as const).map(p => (
+          <button key={p} onClick={() => setPeriod(p)} className={`px-3 py-1.5 text-xs font-medium rounded-lg ${period === p ? 'bg-blue-600 text-white' : 'bg-gray-100'}`}>
+            {p === 'today' ? 'Today' : p === 'week' ? 'Last 7 Days' : 'This Month'}
+          </button>
+        ))}
+        <button onClick={load} className="ml-auto px-2 py-1 text-[10px] bg-gray-100 rounded">↻ Refresh</button>
+      </div>
+
+      {/* KPI cards */}
+      <div className="grid grid-cols-7 gap-2">
+        {[
+          ['Gross Revenue', stats.gross, 'text-gray-700', 'bg-gray-50'],
+          ['Discount', stats.discount, 'text-red-700', 'bg-red-50'],
+          ['Net Revenue', stats.net, 'text-blue-700', 'bg-blue-50'],
+          ['Collected', stats.collected, 'text-green-700', 'bg-green-50'],
+          ['Outstanding', stats.outstanding, 'text-orange-700', 'bg-orange-50'],
+          ['Advances', stats.advTotal, 'text-purple-700', 'bg-purple-50'],
+          ['Charges Posted', stats.chargeTotal, 'text-teal-700', 'bg-teal-50'],
+        ].map(([label, value, color, bg]) => (
+          <div key={label as string} className={`${bg} rounded-xl p-3 text-center`}>
+            <div className="text-[9px] text-gray-500 uppercase">{label as string}</div>
+            <div className={`text-lg font-bold ${color}`}>{INR(value as number)}</div>
+          </div>
+        ))}
       </div>
 
       <div className="grid grid-cols-3 gap-4">
-        {/* 7-day trend */}
+        {/* By bill type */}
         <div className="bg-white rounded-xl border p-4">
-          <h3 className="text-sm font-semibold mb-3">7-Day Revenue Trend</h3>
-          <div className="flex items-end gap-1 h-32">{stats.daily.map(d => (
-            <div key={d.date} className="flex-1 flex flex-col items-center">
-              <div className="w-full rounded-t" style={{ height: `${(d.revenue / maxDaily) * 100}%`, minHeight: '2px', background: 'linear-gradient(#3b82f6, #60a5fa)' }} />
-              <div className="text-[8px] text-gray-400 mt-1">{new Date(d.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}</div>
-              <div className="text-[8px] font-bold">₹{d.revenue >= 100000 ? (d.revenue/100000).toFixed(1)+'L' : d.revenue >= 1000 ? (d.revenue/1000).toFixed(0)+'K' : d.revenue}</div>
-            </div>
-          ))}</div>
+          <h3 className="text-xs font-bold text-gray-700 mb-3">Revenue by Type</h3>
+          <div className="space-y-2">
+            {Object.entries(stats.byType).sort((a: any, b: any) => b[1].revenue - a[1].revenue).map(([type, data]: any) => (
+              <div key={type} className="flex justify-between items-center">
+                <div><span className="text-xs font-medium uppercase">{type}</span><span className="text-[10px] text-gray-400 ml-1">({data.count})</span></div>
+                <span className="text-xs font-bold">{INR(data.revenue)}</span>
+              </div>
+            ))}
+            {Object.keys(stats.byType).length === 0 && <div className="text-xs text-gray-400">No bills yet</div>}
+          </div>
         </div>
 
-        {/* Revenue by payor */}
+        {/* By payor */}
         <div className="bg-white rounded-xl border p-4">
-          <h3 className="text-sm font-semibold mb-3">Revenue by Payor</h3>
-          {Object.entries(stats.byPayor).sort((a, b) => b[1].revenue - a[1].revenue).map(([p, v]) => {
-            const pct = stats.total > 0 ? (v.revenue / stats.total * 100).toFixed(1) : '0';
-            return <div key={p} className="mb-2">
-              <div className="flex justify-between text-xs mb-0.5"><span style={{ color: payorColor(p) }} className="font-medium">{p.replace('govt_','').replace('_',' ').toUpperCase()} <span className="text-gray-400">({v.count})</span></span><span className="font-bold">₹{fmt(v.revenue)}</span></div>
-              <div className="w-full bg-gray-100 rounded-full h-1.5"><div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: payorColor(p) }} /></div>
-            </div>;
-          })}
+          <h3 className="text-xs font-bold text-gray-700 mb-3">Revenue by Payor</h3>
+          <div className="space-y-2">
+            {Object.entries(stats.byPayor).sort((a: any, b: any) => b[1].revenue - a[1].revenue).map(([payor, data]: any) => (
+              <div key={payor} className="flex justify-between items-center">
+                <div><span className="text-xs font-medium">{payor.replace('_', ' ')}</span><span className="text-[10px] text-gray-400 ml-1">({data.count})</span></div>
+                <span className="text-xs font-bold">{INR(data.revenue)}</span>
+              </div>
+            ))}
+          </div>
         </div>
 
-        {/* Aging */}
+        {/* By payment mode */}
         <div className="bg-white rounded-xl border p-4">
-          <h3 className="text-sm font-semibold mb-3">Outstanding Aging</h3>
-          {[['0-7 days', stats.aging.current, 'bg-green-100 text-green-700'], ['8-30 days', stats.aging.d30, 'bg-yellow-100 text-yellow-700'], ['31-60 days', stats.aging.d60, 'bg-orange-100 text-orange-700'], ['61-90 days', stats.aging.d90, 'bg-red-100 text-red-700'], ['90+ days', stats.aging.over90, 'bg-red-200 text-red-800']].map(([label, val, cls]) => (
-            <div key={label as string} className="flex justify-between items-center py-1.5 border-b last:border-0">
-              <span className="text-xs">{label}</span>
-              <span className={`px-2 py-0.5 rounded text-xs font-bold ${cls}`}>{val as number > 0 ? `₹${fmt(val as number)}` : '—'}</span>
-            </div>
-          ))}
-          <div className="flex justify-between items-center pt-2 mt-1 border-t-2">
-            <span className="text-xs font-bold">Total Outstanding</span>
-            <span className="text-sm font-bold text-red-700">₹{fmt(stats.outstanding)}</span>
+          <h3 className="text-xs font-bold text-gray-700 mb-3">Collections by Mode</h3>
+          <div className="space-y-2">
+            {Object.entries(stats.byMode).sort((a: any, b: any) => (b[1] as number) - (a[1] as number)).map(([mode, amount]: any) => (
+              <div key={mode} className="flex justify-between items-center">
+                <span className="text-xs font-medium capitalize">{mode.replace('_', ' ')}</span>
+                <span className="text-xs font-bold text-green-700">{INR(amount)}</span>
+              </div>
+            ))}
+            {Object.keys(stats.byMode).length === 0 && <div className="text-xs text-gray-400">No payments yet</div>}
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        {/* By bill type */}
-        <div className="bg-white rounded-xl border p-4">
-          <h3 className="text-sm font-semibold mb-3">Revenue by Service Type</h3>
-          <div className="space-y-2">{Object.entries(stats.byType).sort((a, b) => b[1].revenue - a[1].revenue).map(([t, v]) => (
-            <div key={t} className="flex items-center justify-between">
-              <div className="flex items-center gap-2"><span className="bg-gray-100 px-2 py-0.5 rounded text-xs font-medium">{t.toUpperCase()}</span><span className="text-xs text-gray-400">{v.count} bills</span></div>
-              <span className="text-sm font-bold">₹{fmt(v.revenue)}</span>
-            </div>
-          ))}</div>
-        </div>
-
-        {/* By status */}
-        <div className="bg-white rounded-xl border p-4">
-          <h3 className="text-sm font-semibold mb-3">Bill Status Distribution</h3>
-          <div className="grid grid-cols-3 gap-2">{Object.entries(stats.byStatus).map(([s, count]) => {
-            const cls = s === 'paid' ? 'bg-green-50 border-green-200 text-green-700' : s === 'partially_paid' ? 'bg-yellow-50 border-yellow-200 text-yellow-700' : s === 'cancelled' ? 'bg-red-50 border-red-200 text-red-700' : 'bg-gray-50 border-gray-200 text-gray-700';
-            return <div key={s} className={`rounded-lg border p-2 text-center ${cls}`}><div className="text-lg font-bold">{count}</div><div className="text-[10px]">{s.replace('_',' ')}</div></div>;
-          })}</div>
-          <div className="mt-3 text-xs text-center">Avg bill value: <span className="font-bold">₹{fmt(stats.avgBill)}</span></div>
-        </div>
-      </div>
+      <div className="text-[10px] text-gray-400 text-right">{stats.billCount} bills, {stats.paymentCount} payments, {stats.chargeCount} charges | Last updated: {new Date().toLocaleTimeString('en-IN')}</div>
     </div>
   );
 }

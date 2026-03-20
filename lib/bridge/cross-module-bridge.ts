@@ -55,7 +55,7 @@ export async function lookupTariff(centreId: string, serviceName: string, payorT
 // ============================================================
 export async function smartPostLabCharge(params: {
   centreId: string; patientId: string; admissionId?: string;
-  labOrderId: string; testName: string; payorType?: string; staffId: string;
+  labOrderId?: string; testName: string; payorType?: string; staffId: string;
 }): Promise<{ posted: boolean; amount: number }> {
   if (!sb()) return { posted: false, amount: 0 };
   const tariff = await lookupTariff(params.centreId, params.testName, params.payorType || 'self');
@@ -78,7 +78,7 @@ export async function smartPostLabCharge(params: {
 
 export async function smartPostRadiologyCharge(params: {
   centreId: string; patientId: string; admissionId?: string;
-  radiologyOrderId: string; testName: string; payorType?: string; staffId: string;
+  radiologyOrderId?: string; testName: string; payorType?: string; staffId: string;
 }): Promise<{ posted: boolean; amount: number }> {
   if (!sb()) return { posted: false, amount: 0 };
   const tariff = await lookupTariff(params.centreId, params.testName, params.payorType || 'self');
@@ -205,7 +205,7 @@ export async function routeCPOEOrder(params: {
   if (!sb()) return { success: false, routed: false };
 
   if (params.orderType === 'medication' && params.details?.drug) {
-    // Create pharmacy dispensing record
+    // Create pharmacy dispensing record + AUTO-POST CHARGE
     const { data, error } = await sb().from('hmis_pharmacy_dispensing').insert({
       centre_id: params.centreId, patient_id: params.patientId,
       encounter_id: params.admissionId,
@@ -213,13 +213,24 @@ export async function routeCPOEOrder(params: {
       status: 'pending',
     }).select('id').maybeSingle();
     if (!error && data) {
-      auditCreate(params.centreId, params.staffId, 'pharmacy_order', data.id, `CPOE→Pharmacy: ${params.details.drug}`);
+      // Auto-post pharmacy charge from tariff
+      const tariff = await lookupTariff(params.centreId, params.details.drug, 'self');
+      if (tariff) {
+        await sb().from('hmis_charge_log').insert({
+          centre_id: params.centreId, patient_id: params.patientId,
+          admission_id: params.admissionId, service_name: tariff.serviceName,
+          tariff_id: tariff.tariffId, amount: tariff.rate, status: 'posted',
+          service_date: new Date().toISOString().split('T')[0],
+          posted_by: params.staffId, category: 'pharmacy',
+        });
+      }
+      auditCreate(params.centreId, params.staffId, 'pharmacy_order', data.id, `CPOE→Pharmacy+Charge: ${params.details.drug}`);
       return { success: true, routed: true, targetId: data.id };
     }
   }
 
   if (params.orderType === 'lab' && params.details?.tests) {
-    // Create lab orders
+    // Create lab orders + AUTO-POST CHARGES
     for (const testName of (params.details.tests || [params.orderText])) {
       await sb().from('hmis_lab_orders').insert({
         centre_id: params.centreId, patient_id: params.patientId,
@@ -227,8 +238,10 @@ export async function routeCPOEOrder(params: {
         test_name: testName, status: 'ordered', ordered_by: params.staffId,
         priority: params.priority === 'stat' ? 'stat' : params.priority === 'urgent' ? 'urgent' : 'routine',
       });
+      // Auto-post charge from tariff
+      await smartPostLabCharge({ centreId: params.centreId, patientId: params.patientId, admissionId: params.admissionId, testName, staffId: params.staffId });
     }
-    auditCreate(params.centreId, params.staffId, 'lab_order', '', `CPOE→Lab: ${params.orderText}`);
+    auditCreate(params.centreId, params.staffId, 'lab_order', '', `CPOE→Lab+Charge: ${params.orderText}`);
     return { success: true, routed: true };
   }
 
@@ -241,7 +254,10 @@ export async function routeCPOEOrder(params: {
       urgency: params.priority === 'stat' ? 'stat' : 'routine',
     }).select('id').maybeSingle();
     if (!error && data) {
-      auditCreate(params.centreId, params.staffId, 'radiology_order', data.id, `CPOE→Radiology: ${params.orderText}`);
+      // Auto-post charge from tariff
+      const testName = `${params.details.modality} ${params.details.bodyPart || ''}`.trim();
+      await smartPostRadiologyCharge({ centreId: params.centreId, patientId: params.patientId, admissionId: params.admissionId, testName, staffId: params.staffId });
+      auditCreate(params.centreId, params.staffId, 'radiology_order', data.id, `CPOE→Radiology+Charge: ${params.orderText}`);
       return { success: true, routed: true, targetId: data.id };
     }
   }
