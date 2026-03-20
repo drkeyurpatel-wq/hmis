@@ -18,7 +18,7 @@ DECLARE
     tbls text[] := ARRAY[
         'hmis_patients', 'hmis_admissions', 'hmis_bills', 'hmis_opd_visits',
         'hmis_lab_orders', 'hmis_radiology_orders', 'hmis_appointments',
-        'hmis_cpoe_orders', 'hmis_incidents', 'hmis_medication_orders',
+        'hmis_cpoe_orders', 'hmis_incidents', 'hmis_ipd_medication_orders',
         'hmis_pharmacy_dispensing', 'hmis_claims'
     ];
 BEGIN
@@ -51,9 +51,9 @@ CREATE INDEX IF NOT EXISTS idx_opd_appointment ON hmis_opd_visits(appointment_id
 -- VALUES ('documents', 'documents', false, 10485760)
 -- ON CONFLICT (id) DO NOTHING;
 
--- 4. Fix: Ensure hmis_medication_orders has the fields CPOE writes to
-ALTER TABLE hmis_medication_orders ADD COLUMN IF NOT EXISTS ordered_by uuid REFERENCES hmis_staff(id);
-ALTER TABLE hmis_medication_orders ADD COLUMN IF NOT EXISTS patient_id uuid REFERENCES hmis_patients(id);
+-- 4. Fix: Ensure hmis_ipd_medication_orders has the fields CPOE writes to
+ALTER TABLE hmis_ipd_medication_orders ADD COLUMN IF NOT EXISTS ordered_by uuid REFERENCES hmis_staff(id);
+ALTER TABLE hmis_ipd_medication_orders ADD COLUMN IF NOT EXISTS patient_id uuid REFERENCES hmis_patients(id);
 
 -- 5. Bill number uniqueness enforcement
 ALTER TABLE hmis_bills DROP CONSTRAINT IF EXISTS hmis_bills_bill_number_key;

@@ -66,7 +66,7 @@ export function useNursingStation(centreId: string | null, wardFilter?: string) 
 
     if (admIds.length > 0) {
       const { data: mar } = await sb().from('hmis_mar')
-        .select('admission_id, status, scheduled_time, medication_order:hmis_medication_orders(drug_name)')
+        .select('admission_id, status, scheduled_time, medication_order:hmis_ipd_medication_orders(drug_name)')
         .in('admission_id', admIds).eq('scheduled_date', today);
       marData = mar || [];
 
