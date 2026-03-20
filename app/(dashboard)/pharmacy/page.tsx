@@ -3,6 +3,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { RoleGuard } from '@/components/ui/shared';
 import { useAuthStore } from '@/lib/store/auth';
 import { useDrugMaster, usePharmacyStock, useDispensingQueue, usePharmacyDashboard } from '@/lib/pharmacy/pharmacy-hooks';
+import { usePharmacyReturns, useStockTransfers, useControlledSubstances } from '@/lib/pharmacy/pharmacy-v2-hooks';
 import { createClient } from '@/lib/supabase/client';
 
 let _sb: any = null;
@@ -22,10 +23,25 @@ function PharmacyInner() {
   const stock = usePharmacyStock(centreId);
   const dispensing = useDispensingQueue(centreId);
   const dashboard = usePharmacyDashboard(centreId);
+  const returns = usePharmacyReturns(centreId);
+  const transfers = useStockTransfers(centreId);
+  const controlled = useControlledSubstances(centreId);
 
   const [tab, setTab] = useState<Tab>('dashboard');
   const [toast, setToast] = useState('');
   const flash = (m: string) => { setToast(m); setTimeout(() => setToast(''), 2500); };
+  const [centres, setCentres] = useState<any[]>([]);
+
+  // Load centres for transfers
+  React.useEffect(() => { if (!sb()) return; sb().from('hmis_centres').select('id, name, code').eq('is_active', true).order('name').then(({ data }: any) => setCentres(data || [])); }, []);
+
+  // Return form
+  const [retForm, setRetForm] = useState({ drugSearch: '', drugId: '', drugName: '', quantity: '', batchNumber: '', returnType: 'patient_return' as string, reason: '', amount: '' });
+  const [retDrugResults, setRetDrugResults] = useState<any[]>([]);
+  // Transfer form
+  const [xferForm, setXferForm] = useState({ drugSearch: '', drugId: '', drugName: '', quantity: '', batchNumber: '', toCentreId: '', reason: '' });
+  // Controlled form
+  const [ctrlForm, setCtrlForm] = useState({ drugSearch: '', drugId: '', drugName: '', quantity: '', batchNumber: '', transactionType: 'dispensed' as string, witnessId: '', notes: '' });
 
   // Drug master form
   const [showAddDrug, setShowAddDrug] = useState(false);
@@ -334,11 +350,200 @@ function PharmacyInner() {
       </div>}
 
       {/* ===== PO / GRN / TRANSFERS / CONTROLLED / RETURNS — Framework ===== */}
-      {tab === 'po' && <div className="text-center py-12 bg-white rounded-xl border text-gray-400"><div className="text-lg mb-2">Purchase Orders</div><div className="text-sm">Linked to VPMS. POs created in vendor system flow through integration bridge.</div></div>}
-      {tab === 'grn' && <div className="text-center py-12 bg-white rounded-xl border text-gray-400"><div className="text-lg mb-2">Goods Receipt Note</div><div className="text-sm">GRN verification for incoming stock. Tables ready — UI next session.</div></div>}
-      {tab === 'transfers' && <div className="text-center py-12 bg-white rounded-xl border text-gray-400"><div className="text-lg mb-2">Inter-Centre Stock Transfer</div><div className="text-sm">Transfer stock between Shilaj / Vastral / Modasa / Udaipur. Tables ready.</div></div>}
-      {tab === 'controlled' && <div className="text-center py-12 bg-white rounded-xl border text-gray-400"><div className="text-lg mb-2">Controlled Substance Register</div><div className="text-sm">Schedule H, H1, X drug tracking. Every unit in/out logged with witness. Tables ready.</div></div>}
-      {tab === 'returns' && <div className="text-center py-12 bg-white rounded-xl border text-gray-400"><div className="text-lg mb-2">Returns &amp; Write-offs</div><div className="text-sm">Patient returns, supplier returns, expiry write-off, damage. Tables ready.</div></div>}
+      {tab === 'po' && <div className="bg-white rounded-xl border p-4">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="font-bold text-sm">Purchase Orders</h2>
+          <a href="/vpms" className="px-3 py-1.5 bg-blue-600 text-white text-xs rounded-lg">Open VPMS →</a>
+        </div>
+        <div className="text-xs text-gray-500 mb-3">Purchase orders are managed in the VPMS (Vendor & Purchase Management System). POs created there auto-flow to pharmacy stock via the integration bridge.</div>
+        <div className="grid grid-cols-3 gap-3">
+          {stock.lowStock.length > 0 && <div className="bg-red-50 rounded-lg p-3"><div className="text-xs font-bold text-red-700 mb-1">Low Stock Alerts ({stock.lowStock.length})</div>
+            {stock.lowStock.slice(0, 8).map((s: any) => <div key={s.id} className="text-[10px] flex justify-between"><span>{s.drug_name}</span><span className="font-bold text-red-600">{s.quantity} left</span></div>)}
+          </div>}
+          {stock.expiringSoon.length > 0 && <div className="bg-amber-50 rounded-lg p-3"><div className="text-xs font-bold text-amber-700 mb-1">Expiring Soon ({stock.expiringSoon.length})</div>
+            {stock.expiringSoon.slice(0, 8).map((s: any) => <div key={s.id} className="text-[10px] flex justify-between"><span>{s.drug_name}</span><span className="text-amber-600">{s.expiry_date}</span></div>)}
+          </div>}
+        </div>
+      </div>}
+
+      {tab === 'grn' && <div className="bg-white rounded-xl border p-4">
+        <h2 className="font-bold text-sm mb-3">Goods Receipt Note</h2>
+        <div className="text-xs text-gray-500 mb-3">GRN verification happens in the Stock tab when adding new stock entries. Each stock entry serves as a GRN with batch number, expiry, supplier, and quantity tracking.</div>
+        <div className="text-center py-8"><button onClick={() => setTab('stock')} className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg">Go to Stock Management →</button></div>
+      </div>}
+
+      {tab === 'transfers' && <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="font-bold text-sm">Inter-Centre Stock Transfer</h2>
+        </div>
+        {/* Transfer form */}
+        <div className="bg-white rounded-xl border p-4 space-y-3">
+          <h3 className="text-xs font-bold text-gray-500">New Transfer (from this centre)</h3>
+          <div className="grid grid-cols-5 gap-2">
+            <div className="relative"><label className="text-[9px] text-gray-500">Drug</label>
+              <input type="text" value={xferForm.drugSearch} onChange={e => { setXferForm(f => ({ ...f, drugSearch: e.target.value })); }}
+                className="w-full px-2 py-1.5 border rounded text-xs" placeholder="Search drug..." />
+              {xferForm.drugSearch.length >= 2 && <div className="absolute top-full left-0 right-0 mt-1 bg-white border rounded shadow-lg z-10 max-h-32 overflow-y-auto">
+                {drugMaster.search(xferForm.drugSearch).slice(0, 5).map((d: any) => (
+                  <button key={d.id} onClick={() => setXferForm(f => ({ ...f, drugId: d.id, drugName: d.drug_name || d.generic_name, drugSearch: '' }))}
+                    className="w-full text-left px-2 py-1 text-[10px] hover:bg-blue-50 border-b">{d.drug_name || d.generic_name}</button>
+                ))}
+              </div>}
+              {xferForm.drugId && <div className="text-[10px] text-blue-600 mt-0.5">{xferForm.drugName}</div>}
+            </div>
+            <div><label className="text-[9px] text-gray-500">Qty</label>
+              <input type="number" value={xferForm.quantity} onChange={e => setXferForm(f => ({ ...f, quantity: e.target.value }))} className="w-full px-2 py-1.5 border rounded text-xs" /></div>
+            <div><label className="text-[9px] text-gray-500">Batch</label>
+              <input type="text" value={xferForm.batchNumber} onChange={e => setXferForm(f => ({ ...f, batchNumber: e.target.value }))} className="w-full px-2 py-1.5 border rounded text-xs" /></div>
+            <div><label className="text-[9px] text-gray-500">To Centre</label>
+              <select value={xferForm.toCentreId} onChange={e => setXferForm(f => ({ ...f, toCentreId: e.target.value }))} className="w-full px-2 py-1.5 border rounded text-xs">
+                <option value="">Select</option>{centres.filter(c => c.id !== centreId).map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select></div>
+            <div className="flex items-end"><button onClick={async () => {
+              const r = await transfers.createTransfer({ drugId: xferForm.drugId, quantity: parseInt(xferForm.quantity), batchNumber: xferForm.batchNumber, toCentreId: xferForm.toCentreId, reason: xferForm.reason, staffId });
+              if (r.success) { flash('Transfer initiated'); setXferForm({ drugSearch: '', drugId: '', drugName: '', quantity: '', batchNumber: '', toCentreId: '', reason: '' }); }
+              else flash(r.error || 'Failed');
+            }} disabled={!xferForm.drugId || !xferForm.quantity || !xferForm.toCentreId}
+              className="w-full py-1.5 bg-blue-600 text-white text-xs rounded disabled:opacity-40">Transfer</button></div>
+          </div>
+        </div>
+        {/* Transfer list */}
+        {transfers.loading ? <div className="animate-pulse h-24 bg-gray-200 rounded-xl" /> :
+        transfers.transfers.length === 0 ? <div className="text-center py-8 bg-white rounded-xl border text-gray-400 text-sm">No transfers</div> :
+        <div className="bg-white rounded-xl border overflow-hidden">
+          <table className="w-full text-xs"><thead><tr className="bg-gray-50 border-b">
+            <th className="p-2 text-left">Drug</th><th className="p-2">Qty</th><th className="p-2">From</th><th className="p-2">To</th><th className="p-2">Status</th><th className="p-2">Date</th><th className="p-2"></th>
+          </tr></thead><tbody>{transfers.transfers.map((t: any) => (
+            <tr key={t.id} className="border-b"><td className="p-2 font-medium">{t.drug?.drug_name}</td>
+              <td className="p-2 text-center">{t.quantity}</td>
+              <td className="p-2 text-center">{t.from_centre?.code}</td><td className="p-2 text-center">{t.to_centre?.code}</td>
+              <td className="p-2 text-center"><span className={`px-1.5 py-0.5 rounded text-[9px] ${t.status === 'received' ? 'bg-green-100 text-green-700' : t.status === 'initiated' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100'}`}>{t.status}</span></td>
+              <td className="p-2 text-center text-gray-400">{new Date(t.created_at).toLocaleDateString('en-IN')}</td>
+              <td className="p-2">{t.status === 'initiated' && t.to_centre_id === centreId && <button onClick={() => { transfers.receiveTransfer(t.id, staffId); flash('Transfer received'); }} className="px-1.5 py-0.5 bg-green-100 text-green-700 rounded text-[9px]">Receive</button>}</td>
+            </tr>
+          ))}</tbody></table>
+        </div>}
+      </div>}
+
+      {tab === 'controlled' && <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div><h2 className="font-bold text-sm">Controlled Substance Register</h2><p className="text-xs text-gray-500">Schedule H, H1, X drugs — every unit tracked with witness</p></div>
+          <div className="flex gap-2">
+            {controlled.stats.unwitnessed > 0 && <span className="text-[10px] bg-red-100 text-red-700 px-2 py-1 rounded font-bold">{controlled.stats.unwitnessed} unwitnessed entries</span>}
+          </div>
+        </div>
+        {/* Entry form */}
+        <div className="bg-white rounded-xl border p-4 space-y-3">
+          <h3 className="text-xs font-bold text-gray-500">Log Entry</h3>
+          <div className="grid grid-cols-6 gap-2">
+            <div className="relative"><label className="text-[9px] text-gray-500">Drug</label>
+              <input type="text" value={ctrlForm.drugSearch} onChange={e => setCtrlForm(f => ({ ...f, drugSearch: e.target.value }))}
+                className="w-full px-2 py-1.5 border rounded text-xs" placeholder="Search..." />
+              {ctrlForm.drugSearch.length >= 2 && <div className="absolute top-full left-0 right-0 mt-1 bg-white border rounded shadow-lg z-10 max-h-32 overflow-y-auto">
+                {drugMaster.search(ctrlForm.drugSearch).slice(0, 5).map((d: any) => (
+                  <button key={d.id} onClick={() => setCtrlForm(f => ({ ...f, drugId: d.id, drugName: d.drug_name || d.generic_name, drugSearch: '' }))}
+                    className="w-full text-left px-2 py-1 text-[10px] hover:bg-blue-50 border-b">{d.drug_name || d.generic_name}</button>
+                ))}
+              </div>}
+              {ctrlForm.drugId && <div className="text-[10px] text-blue-600 mt-0.5">{ctrlForm.drugName}</div>}
+            </div>
+            <div><label className="text-[9px] text-gray-500">Type</label>
+              <select value={ctrlForm.transactionType} onChange={e => setCtrlForm(f => ({ ...f, transactionType: e.target.value }))} className="w-full px-2 py-1.5 border rounded text-xs">
+                {['received', 'dispensed', 'returned', 'destroyed', 'wastage'].map(t => <option key={t} value={t}>{t}</option>)}
+              </select></div>
+            <div><label className="text-[9px] text-gray-500">Qty</label>
+              <input type="number" value={ctrlForm.quantity} onChange={e => setCtrlForm(f => ({ ...f, quantity: e.target.value }))} className="w-full px-2 py-1.5 border rounded text-xs" /></div>
+            <div><label className="text-[9px] text-gray-500">Batch</label>
+              <input type="text" value={ctrlForm.batchNumber} onChange={e => setCtrlForm(f => ({ ...f, batchNumber: e.target.value }))} className="w-full px-2 py-1.5 border rounded text-xs" /></div>
+            <div><label className="text-[9px] text-gray-500 text-red-600">Witness *</label>
+              <input type="text" value={ctrlForm.witnessId} onChange={e => setCtrlForm(f => ({ ...f, witnessId: e.target.value }))} className="w-full px-2 py-1.5 border border-red-200 rounded text-xs" placeholder="Witness staff ID" /></div>
+            <div className="flex items-end"><button onClick={async () => {
+              const r = await controlled.addEntry({ drugId: ctrlForm.drugId, quantity: parseInt(ctrlForm.quantity), batchNumber: ctrlForm.batchNumber, transactionType: ctrlForm.transactionType as any, administeredBy: staffId, witnessedBy: ctrlForm.witnessId, notes: ctrlForm.notes });
+              if (r.success) { flash('Entry logged'); setCtrlForm({ drugSearch: '', drugId: '', drugName: '', quantity: '', batchNumber: '', transactionType: 'dispensed', witnessId: '', notes: '' }); }
+              else flash(r.error || 'Failed');
+            }} disabled={!ctrlForm.drugId || !ctrlForm.quantity || !ctrlForm.witnessId}
+              className="w-full py-1.5 bg-red-600 text-white text-xs rounded disabled:opacity-40">Log</button></div>
+          </div>
+        </div>
+        {/* Register */}
+        {controlled.loading ? <div className="animate-pulse h-24 bg-gray-200 rounded-xl" /> :
+        <div className="bg-white rounded-xl border overflow-hidden">
+          <table className="w-full text-xs"><thead><tr className="bg-gray-50 border-b">
+            <th className="p-2 text-left">Drug</th><th className="p-2">Type</th><th className="p-2">Qty</th><th className="p-2">Batch</th><th className="p-2">By</th><th className="p-2">Witness</th><th className="p-2">Date/Time</th>
+          </tr></thead><tbody>{controlled.register.slice(0, 50).map((r: any) => (
+            <tr key={r.id} className={`border-b ${r.transaction_type === 'wastage' ? 'bg-red-50' : ''}`}>
+              <td className="p-2 font-medium">{r.drug?.drug_name}</td>
+              <td className="p-2 text-center"><span className={`px-1 py-0.5 rounded text-[9px] ${r.transaction_type === 'dispensed' ? 'bg-blue-100 text-blue-700' : r.transaction_type === 'received' ? 'bg-green-100 text-green-700' : r.transaction_type === 'wastage' ? 'bg-red-100 text-red-700' : 'bg-gray-100'}`}>{r.transaction_type}</span></td>
+              <td className="p-2 text-center font-bold">{r.quantity}</td>
+              <td className="p-2 text-center text-gray-400">{r.batch_number}</td>
+              <td className="p-2 text-[10px]">{r.staff?.full_name}</td>
+              <td className="p-2 text-[10px]">{r.witness?.full_name || <span className="text-red-600 font-bold">NO WITNESS</span>}</td>
+              <td className="p-2 text-center text-gray-400 text-[10px]">{new Date(r.created_at).toLocaleString('en-IN')}</td>
+            </tr>
+          ))}</tbody></table>
+        </div>}
+      </div>}
+
+      {tab === 'returns' && <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="font-bold text-sm">Returns & Write-offs</h2>
+          <div className="flex gap-2 text-[10px]">
+            <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded">Patient returns: {returns.stats.patientReturns}</span>
+            <span className="bg-red-100 text-red-700 px-2 py-1 rounded">Expiry write-off: {returns.stats.expiryWriteOff}</span>
+            <span className="bg-green-100 text-green-700 px-2 py-1 rounded">Total refund: ₹{fmt(returns.stats.totalRefund)}</span>
+          </div>
+        </div>
+        {/* Return form */}
+        <div className="bg-white rounded-xl border p-4 space-y-3">
+          <h3 className="text-xs font-bold text-gray-500">Process Return / Write-off</h3>
+          <div className="grid grid-cols-6 gap-2">
+            <div className="relative"><label className="text-[9px] text-gray-500">Drug</label>
+              <input type="text" value={retForm.drugSearch} onChange={e => { setRetForm(f => ({ ...f, drugSearch: e.target.value })); }}
+                className="w-full px-2 py-1.5 border rounded text-xs" placeholder="Search..." />
+              {retForm.drugSearch.length >= 2 && <div className="absolute top-full left-0 right-0 mt-1 bg-white border rounded shadow-lg z-10 max-h-32 overflow-y-auto">
+                {drugMaster.search(retForm.drugSearch).slice(0, 5).map((d: any) => (
+                  <button key={d.id} onClick={() => setRetForm(f => ({ ...f, drugId: d.id, drugName: d.drug_name || d.generic_name, drugSearch: '' }))}
+                    className="w-full text-left px-2 py-1 text-[10px] hover:bg-blue-50 border-b">{d.drug_name || d.generic_name}</button>
+                ))}
+              </div>}
+              {retForm.drugId && <div className="text-[10px] text-blue-600 mt-0.5">{retForm.drugName}</div>}
+            </div>
+            <div><label className="text-[9px] text-gray-500">Type</label>
+              <select value={retForm.returnType} onChange={e => setRetForm(f => ({ ...f, returnType: e.target.value }))} className="w-full px-2 py-1.5 border rounded text-xs">
+                {['patient_return', 'supplier_return', 'expiry_write_off', 'damage'].map(t => <option key={t} value={t}>{t.replace(/_/g, ' ')}</option>)}
+              </select></div>
+            <div><label className="text-[9px] text-gray-500">Qty</label>
+              <input type="number" value={retForm.quantity} onChange={e => setRetForm(f => ({ ...f, quantity: e.target.value }))} className="w-full px-2 py-1.5 border rounded text-xs" /></div>
+            <div><label className="text-[9px] text-gray-500">Batch</label>
+              <input type="text" value={retForm.batchNumber} onChange={e => setRetForm(f => ({ ...f, batchNumber: e.target.value }))} className="w-full px-2 py-1.5 border rounded text-xs" /></div>
+            <div><label className="text-[9px] text-gray-500">Reason</label>
+              <input type="text" value={retForm.reason} onChange={e => setRetForm(f => ({ ...f, reason: e.target.value }))} className="w-full px-2 py-1.5 border rounded text-xs" placeholder="Reason" /></div>
+            <div className="flex items-end"><button onClick={async () => {
+              const r = await returns.processReturn({ drugId: retForm.drugId, quantity: parseInt(retForm.quantity), batchNumber: retForm.batchNumber, returnType: retForm.returnType as any, reason: retForm.reason, amount: parseFloat(retForm.amount) || 0, staffId });
+              if (r.success) { flash('Return processed'); setRetForm({ drugSearch: '', drugId: '', drugName: '', quantity: '', batchNumber: '', returnType: 'patient_return', reason: '', amount: '' }); }
+              else flash(r.error || 'Failed');
+            }} disabled={!retForm.drugId || !retForm.quantity || !retForm.reason}
+              className="w-full py-1.5 bg-orange-600 text-white text-xs rounded disabled:opacity-40">Process</button></div>
+          </div>
+        </div>
+        {/* Returns list */}
+        {returns.loading ? <div className="animate-pulse h-24 bg-gray-200 rounded-xl" /> :
+        returns.returns.length === 0 ? <div className="text-center py-8 bg-white rounded-xl border text-gray-400 text-sm">No returns processed</div> :
+        <div className="bg-white rounded-xl border overflow-hidden">
+          <table className="w-full text-xs"><thead><tr className="bg-gray-50 border-b">
+            <th className="p-2 text-left">Drug</th><th className="p-2">Type</th><th className="p-2">Qty</th><th className="p-2">Batch</th><th className="p-2">Reason</th><th className="p-2 text-right">Refund</th><th className="p-2">By</th><th className="p-2">Date</th>
+          </tr></thead><tbody>{returns.returns.slice(0, 50).map((r: any) => (
+            <tr key={r.id} className="border-b"><td className="p-2 font-medium">{r.drug?.drug_name}</td>
+              <td className="p-2 text-center"><span className={`px-1 py-0.5 rounded text-[9px] ${r.return_type === 'patient_return' ? 'bg-blue-100 text-blue-700' : r.return_type === 'expiry_write_off' ? 'bg-red-100 text-red-700' : 'bg-gray-100'}`}>{r.return_type?.replace(/_/g, ' ')}</span></td>
+              <td className="p-2 text-center">{r.quantity}</td><td className="p-2 text-center text-gray-400">{r.batch_number}</td>
+              <td className="p-2 text-gray-500 text-[10px]">{r.reason}</td>
+              <td className="p-2 text-right font-bold">{parseFloat(r.refund_amount) > 0 ? `₹${fmt(parseFloat(r.refund_amount))}` : '—'}</td>
+              <td className="p-2 text-[10px]">{r.staff?.full_name}</td>
+              <td className="p-2 text-center text-gray-400 text-[10px]">{new Date(r.created_at).toLocaleDateString('en-IN')}</td>
+            </tr>
+          ))}</tbody></table>
+        </div>}
+      </div>}
     </div>
   );
 }
