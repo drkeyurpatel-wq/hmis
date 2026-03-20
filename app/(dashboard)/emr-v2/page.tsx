@@ -4,6 +4,7 @@ import { useSearchParams } from 'next/navigation';
 import { useEMR } from '@/lib/emr/use-emr';
 import { useAuthStore } from '@/lib/store/auth';
 import { createClient } from '@/lib/supabase/client';
+import { printEncounterSummary, openPrintWindow } from '@/components/ui/shared';
 import PatientBanner from '@/components/emr-v2/patient-banner';
 import VitalsPanel from '@/components/emr-v2/vitals-panel';
 import ComplaintBuilder from '@/components/emr-v2/complaint-builder';
@@ -286,6 +287,44 @@ function EMRInner() {
                 <button onClick={() => saveEncounter(false)} disabled={saving} className="px-6 py-2.5 bg-gray-200 text-sm rounded-lg disabled:opacity-40">{saving ? 'Saving...' : 'Save Draft'}</button>
                 <button onClick={() => saveEncounter(true)} disabled={saving || !complaints.length}
                   className="px-8 py-2.5 bg-green-600 text-white text-sm rounded-lg font-medium disabled:opacity-40">{saving ? 'Signing...' : 'Sign & Complete'}</button>
+                {prescriptions.length > 0 && <button onClick={() => {
+                  const rxRows = prescriptions.map((p, i) =>
+                    `<tr><td style="padding:4px 6px;border:1px solid #ddd;text-align:center;font-size:10px">${i+1}</td><td style="padding:4px 6px;border:1px solid #ddd;font-size:10px"><b>${p.drug}</b> (${p.generic}) ${p.dose}</td><td style="padding:4px 6px;border:1px solid #ddd;text-align:center;font-size:10px">${p.route}</td><td style="padding:4px 6px;border:1px solid #ddd;text-align:center;font-size:10px">${p.frequency}</td><td style="padding:4px 6px;border:1px solid #ddd;text-align:center;font-size:10px">${p.duration}</td><td style="padding:4px 6px;border:1px solid #ddd;font-size:9px">${p.instructions}</td></tr>`
+                  ).join('');
+                  const dxLine = diagnoses.map(d => `${d.name} (${d.code})`).join(', ');
+                  openPrintWindow(`<div style="max-width:600px;margin:0 auto;font-family:Segoe UI,Arial;color:#1a1a1a">
+                    <div style="text-align:center;border-bottom:3px solid #1e40af;padding-bottom:8px;margin-bottom:10px">
+                      <div style="font-size:16px;font-weight:700;color:#1e40af">Health1 Super Speciality Hospital</div>
+                      <div style="font-size:8px;color:#666">Shilaj, Ahmedabad | NABH Accredited</div>
+                      <div style="font-size:12px;font-weight:700;margin-top:4px;color:#dc2626">℞ PRESCRIPTION</div>
+                    </div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;font-size:10px;padding:6px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:4px;margin-bottom:10px">
+                      <div><b>Patient:</b> ${patient.name}</div><div><b>UHID:</b> ${patient.uhid}</div>
+                      <div><b>Age/Sex:</b> ${patient.age}/${patient.gender}</div><div><b>Date:</b> ${new Date().toLocaleDateString('en-IN')}</div>
+                      <div><b>Doctor:</b> Dr. ${staff?.full_name || ''}</div>${dxLine ? `<div><b>Dx:</b> ${dxLine}</div>` : ''}
+                    </div>
+                    <table style="width:100%;border-collapse:collapse;margin-bottom:10px"><thead><tr style="background:#eff6ff">
+                      <th style="padding:4px;border:1px solid #ddd;font-size:9px;width:30px">#</th><th style="padding:4px;border:1px solid #ddd;text-align:left;font-size:9px">Medication</th><th style="padding:4px;border:1px solid #ddd;font-size:9px">Route</th><th style="padding:4px;border:1px solid #ddd;font-size:9px">Freq</th><th style="padding:4px;border:1px solid #ddd;font-size:9px">Duration</th><th style="padding:4px;border:1px solid #ddd;font-size:9px">Instructions</th>
+                    </tr></thead><tbody>${rxRows}</tbody></table>
+                    ${advice ? `<div style="font-size:9px;padding:6px;background:#fef3c7;border:1px solid #fbbf24;border-radius:4px;margin-bottom:8px"><b>Advice:</b> ${advice}</div>` : ''}
+                    ${followUpDate ? `<div style="font-size:9px;margin-bottom:8px"><b>Follow-up:</b> ${new Date(followUpDate).toLocaleDateString('en-IN', { weekday: 'long', day: '2-digit', month: 'short', year: 'numeric' })}</div>` : ''}
+                    <div style="margin-top:40px;text-align:right;font-size:10px"><div style="border-top:1px solid #000;display:inline-block;padding-top:4px;min-width:200px">Dr. ${staff?.full_name || ''}<br/>${staff?.specialisation || ''}</div></div>
+                  </div>`, `Rx-${patient.uhid}`);
+                }} className="px-4 py-2.5 bg-amber-500 text-white text-sm rounded-lg">Print Rx Pad</button>}
+                <button onClick={() => {
+                  printEncounterSummary({
+                    patientName: patient.name, uhid: patient.uhid, ageGender: `${patient.age}/${patient.gender}`,
+                    doctorName: staff?.full_name || '', date: new Date().toLocaleDateString('en-IN'),
+                    encounterType: 'OPD', status: 'Completed',
+                    vitals: { systolic: vitals.systolic, diastolic: vitals.diastolic, heartRate: vitals.heartRate, spo2: vitals.spo2, temperature: vitals.temperature, weight: vitals.weight },
+                    complaints: complaints.map(c => `${c.complaint} — ${c.severity} — ${c.duration}`),
+                    examFindings: examEntries.map(e => ({ system: e.system, findings: e.findings })),
+                    diagnoses: diagnoses.map(d => ({ code: d.code, label: d.name, type: d.type })),
+                    investigations: investigations.map(inv => ({ name: inv.name, urgency: inv.urgency })),
+                    prescriptions: prescriptions.map(p => ({ brand: p.drug, generic: p.generic, strength: p.dose, dose: p.dose, frequency: p.frequency, duration: p.duration, instructions: p.instructions })),
+                    advice: advice ? [advice] : [], followUp: followUpDate || '',
+                  }, { name: 'Health1 Super Speciality Hospital', address: 'Shilaj, Ahmedabad', phone: '', tagline: 'NABH Accredited' });
+                }} className="px-4 py-2.5 bg-blue-600 text-white text-sm rounded-lg">Print Summary</button>
               </div>
             </div>
           )}

@@ -1,6 +1,7 @@
 'use client';
 import React, { useState, useEffect, useCallback } from 'react';
 import { RoleGuard, TableSkeleton, StatusBadge, printLabReport } from '@/components/ui/shared';
+import { exportToCSV } from '@/lib/utils/data-export';
 import { useAuthStore } from '@/lib/store/auth';
 import { useLabWorklist, useSamples, useResultEntry, useCriticalAlerts, useOutsourcedLab, type LabOrder } from '@/lib/lab/lims-hooks';
 import { printBarcodeLabel } from '@/components/lab/barcode-label';

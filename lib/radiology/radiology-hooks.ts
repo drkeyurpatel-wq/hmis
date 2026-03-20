@@ -254,6 +254,15 @@ export function useRadiologyWorklist(centreId: string | null) {
 
   useEffect(() => { load(); }, [load]);
 
+  // Real-time: worklist auto-refreshes on order changes
+  useEffect(() => {
+    if (!centreId || !sb()) return;
+    const ch = sb().channel('radiology-worklist-' + centreId)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'hmis_radiology_orders', filter: `centre_id=eq.${centreId}` }, () => load())
+      .subscribe();
+    return () => { sb().removeChannel(ch); };
+  }, [centreId, load]);
+
   // ---- Stats ----
   const stats = useMemo(() => {
     const s = {

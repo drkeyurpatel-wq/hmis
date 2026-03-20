@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { exportToCSV } from '@/lib/utils/data-export';
 import { createClient } from '@/lib/supabase/client';
 import { useAuthStore } from '@/lib/store/auth';
 import { formatDate, calculateAge, getInitials, cn } from '@/lib/utils';
@@ -64,7 +65,8 @@ export default function PatientsPage() {
           <h1 className="text-xl font-display font-bold text-gray-900">Patients</h1>
           <p className="text-sm text-gray-500 mt-0.5">{patients.length} registered patients</p>
         </div>
-        <button onClick={() => setShowRegister(true)} className="flex items-center gap-2 px-4 py-2.5 bg-health1-teal text-white text-sm font-semibold rounded-lg hover:bg-teal-700 transition-all shadow-sm hover:shadow-md">
+        <button onClick={() => exportToCSV(patients.map(p => ({ uhid: p.uhid, first_name: p.first_name, last_name: p.last_name, gender: p.gender, age: p.age_years, phone: p.phone_primary, city: p.city, registered: p.created_at?.split("T")[0] })), "patients")} className="px-3 py-2 bg-gray-100 text-sm rounded-lg border">Export CSV</button>
+          <button onClick={() => setShowRegister(true)} className="flex items-center gap-2 px-4 py-2.5 bg-health1-teal text-white text-sm font-semibold rounded-lg hover:bg-teal-700 transition-all shadow-sm hover:shadow-md">
           <UserPlus size={16} /> New registration
         </button>
       </div>
@@ -89,7 +91,8 @@ export default function PatientsPage() {
           <div className="flex flex-col items-center justify-center h-48 text-gray-400">
             <User size={32} className="mb-3 text-gray-300" />
             <p className="text-sm font-medium">No patients found</p>
-            <button onClick={() => setShowRegister(true)} className="mt-2 text-sm text-brand-600 hover:underline font-medium">Register first patient</button>
+            <button onClick={() => exportToCSV(patients.map(p => ({ uhid: p.uhid, first_name: p.first_name, last_name: p.last_name, gender: p.gender, age: p.age_years, phone: p.phone_primary, city: p.city, registered: p.created_at?.split("T")[0] })), "patients")} className="px-3 py-2 bg-gray-100 text-sm rounded-lg border">Export CSV</button>
+          <button onClick={() => setShowRegister(true)} className="mt-2 text-sm text-brand-600 hover:underline font-medium">Register first patient</button>
           </div>
         ) : (
           <div className="divide-y divide-gray-100">

@@ -7,6 +7,7 @@ import Link from 'next/link';
 import PatientImagingPanel from '@/components/radiology/patient-imaging-panel';
 import PatientLabHistory from '@/components/lab/patient-lab-history';
 import { usePatientDocuments, useEmergencyContacts, usePatientInsurance } from '@/lib/appointments/appointment-hooks';
+import { exportPatientData } from '@/lib/utils/data-export';
 
 let _sb: any = null;
 function sb() { if (typeof window === 'undefined') return null as any; if (!_sb) { try { _sb = createClient(); } catch { return null; } } return _sb; }

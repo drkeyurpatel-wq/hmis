@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { RoleGuard } from '@/components/ui/shared';
 import { useAuthStore } from '@/lib/store/auth';
 import { useIncidentReporting, useQualityIndicators, useAuditTrail, NABH_INDICATORS } from '@/lib/quality/quality-hooks';
+import { exportToCSV } from '@/lib/utils/data-export';
 
 type Tab = 'dashboard' | 'incidents' | 'indicators' | 'audit_trail';
 
@@ -253,6 +254,7 @@ function QualityInner() {
           <span className="text-xs text-gray-400 self-center">to</span>
           <input type="date" value={auditFilter.dateTo} onChange={e => setAuditFilter(f => ({ ...f, dateTo: e.target.value }))} className="px-2 py-1 border rounded text-xs" />
           <button onClick={() => audit.load(auditFilter.entityType || auditFilter.dateFrom ? auditFilter : undefined)} className="px-3 py-1 bg-blue-600 text-white text-xs rounded">Filter</button>
+          <button onClick={() => exportToCSV(audit.logs.map((l: any) => ({ timestamp: l.created_at, user: l.user?.full_name, action: l.action, entity_type: l.entity_type, details: l.entity_label, changes: l.changes ? JSON.stringify(l.changes) : "" })), "audit_trail")} className="px-3 py-1 bg-gray-100 text-xs rounded border">Export CSV</button>
         </div>
 
         {audit.loading ? <div className="animate-pulse h-48 bg-gray-200 rounded-xl" /> :

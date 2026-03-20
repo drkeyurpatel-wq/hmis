@@ -152,6 +152,28 @@ export function useNursingStation(centreId: string | null, wardFilter?: string) 
 
   useEffect(() => { load(); }, [load]);
 
+  // Real-time: auto-refresh on admission/bed/MAR changes
+  useEffect(() => {
+    if (!centreId || !sb()) return;
+    const ch = sb().channel('nursing-station-' + centreId)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'hmis_admissions', filter: `centre_id=eq.${centreId}` }, () => load())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'hmis_mar', filter: `scheduled_date=eq.${new Date().toISOString().split('T')[0]}` }, () => load())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'hmis_beds' }, () => load())
+      .subscribe();
+    return () => { sb().removeChannel(ch); };
+  }, [centreId, load]);
+
+  // Real-time: auto-refresh when admissions/beds/MAR change
+  useEffect(() => {
+    if (!centreId || !sb()) return;
+    const ch = sb().channel('nursing-station-' + centreId)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'hmis_admissions', filter: `centre_id=eq.${centreId}` }, () => load())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'hmis_mar' }, () => load())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'hmis_beds', filter: `centre_id=eq.${centreId}` }, () => load())
+      .subscribe();
+    return () => { sb().removeChannel(ch); };
+  }, [centreId, load]);
+
   const stats = useMemo(() => ({
     totalPatients: patients.length,
     icuPatients: patients.filter(p => p.wardType === 'icu' || p.wardType === 'transplant_icu').length,

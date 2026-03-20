@@ -112,6 +112,16 @@ export function useBedManagement(centreId: string | null) {
 
   useEffect(() => { load(); }, [load]);
 
+  // Real-time: beds update when admissions/discharges happen
+  useEffect(() => {
+    if (!centreId || !sb()) return;
+    const ch = sb().channel('bed-board-' + centreId)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'hmis_beds', filter: `centre_id=eq.${centreId}` }, () => load())
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'hmis_admissions', filter: `centre_id=eq.${centreId}` }, () => load())
+      .subscribe();
+    return () => { sb().removeChannel(ch); };
+  }, [centreId, load]);
+
   // ---- WARD TREE ----
   const wards = useMemo((): WardSummary[] => {
     const wardMap = new Map<string, WardSummary>();

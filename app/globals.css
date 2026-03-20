@@ -44,6 +44,54 @@
   :root { --sidebar-width: 0px !important; }
   aside { transform: translateX(-100%); }
   aside.open { transform: translateX(0); z-index: 40; }
+
+  /* KPI strips: scroll horizontally instead of wrapping */
+  .grid-cols-5, .grid-cols-6, .grid-cols-7, .grid-cols-8 {
+    display: flex !important;
+    overflow-x: auto !important;
+    gap: 8px !important;
+    -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x mandatory;
+  }
+  .grid-cols-5 > *, .grid-cols-6 > *, .grid-cols-7 > *, .grid-cols-8 > * {
+    min-width: 120px !important;
+    flex-shrink: 0 !important;
+    scroll-snap-align: start;
+  }
+
+  /* Form grids: stack on mobile */
+  .grid-cols-3, .grid-cols-4 {
+    grid-template-columns: 1fr 1fr !important;
+  }
+
+  /* Tables: horizontal scroll */
+  table { display: block; overflow-x: auto; white-space: nowrap; -webkit-overflow-scrolling: touch; }
+  thead, tbody, tr { display: table; width: 100%; table-layout: auto; }
+
+  /* Tab bars: horizontal scroll */
+  .flex.gap-1, .flex.gap-2 {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+    flex-wrap: nowrap !important;
+    scrollbar-width: none;
+  }
+  .flex.gap-1::-webkit-scrollbar, .flex.gap-2::-webkit-scrollbar { display: none; }
+
+  /* Modal forms: full width */
+  .max-w-7xl { max-width: 100% !important; padding-left: 8px !important; padding-right: 8px !important; }
+
+  /* Cards: single column */
+  .grid-cols-2 { grid-template-columns: 1fr !important; }
+
+  /* Text: slightly smaller on mobile */
+  .text-xl { font-size: 1rem !important; }
+  .text-3xl, .text-4xl { font-size: 1.5rem !important; }
+}
+
+/* Tablet: 2 columns for most grids */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .grid-cols-4, .grid-cols-5 { grid-template-columns: repeat(3, 1fr) !important; }
+  .grid-cols-8 { grid-template-columns: repeat(4, 1fr) !important; }
 }
 
 /* Print: hide sidebar and navigation */
@@ -51,4 +99,36 @@
   aside, nav, .no-print { display: none !important; }
   main { margin-left: 0 !important; }
   body { background: white; }
+}
+
+/* Mobile: horizontal scroll for tables */
+table { display: table; }
+.overflow-x-auto { -webkit-overflow-scrolling: touch; }
+
+@media (max-width: 768px) {
+  /* All tables scroll horizontally */
+  table { min-width: 600px; }
+  .bg-white.rounded-xl.border.overflow-hidden { overflow-x: auto; }
+
+  /* Tab bars scroll */
+  .flex.gap-1, .flex.gap-1.border-b { overflow-x: auto; white-space: nowrap; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+  .flex.gap-1::-webkit-scrollbar, .flex.gap-1.border-b::-webkit-scrollbar { display: none; }
+
+  /* Form grids stack */
+  .grid-cols-3, .grid-cols-4, .grid-cols-5, .grid-cols-6 {
+    grid-template-columns: 1fr 1fr !important;
+  }
+
+  /* KPI strips: 2 per row */
+  .grid-cols-8 { grid-template-columns: repeat(2, 1fr) !important; }
+
+  /* Modals: full width */
+  .fixed.inset-0 > .bg-white { width: 100% !important; max-width: 100% !important; margin: 0 !important; border-radius: 0 !important; }
+
+  /* Inputs: bigger touch targets */
+  input, select, textarea { min-height: 40px; font-size: 16px !important; /* prevents iOS zoom */ }
+  button { min-height: 36px; }
+
+  /* Sidebar overlay higher z-index */
+  aside { z-index: 50 !important; }
 }

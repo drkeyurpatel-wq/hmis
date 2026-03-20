@@ -7,6 +7,7 @@ import { ToastProvider } from '@/components/ui/shared';
 import { ErrorBoundary } from '@/components/ui/error-boundary';
 import { useAuthStore } from '@/lib/store/auth';
 import { createClient } from '@/lib/supabase/client';
+import { useKeyboardShortcuts, ShortcutHelpModal } from '@/components/ui/keyboard-shortcuts';
 
 export default function DashboardLayout({
   children,
@@ -52,10 +53,12 @@ export default function DashboardLayout({
   }, [setStaff, setCentres]);
 
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { showHelp, setShowHelp } = useKeyboardShortcuts();
 
   return (
     <ToastProvider>
       <div className="min-h-screen bg-gray-50">
+        <ShortcutHelpModal show={showHelp} onClose={() => setShowHelp(false)} />
         <Sidebar mobileOpen={mobileOpen} onMobileClose={() => setMobileOpen(false)} />
         {/* Mobile hamburger */}
         <button onClick={() => setMobileOpen(true)}
