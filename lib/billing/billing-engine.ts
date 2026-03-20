@@ -14,7 +14,6 @@ export interface TariffItem {
   service_name: string;
   service_code: string;
   category: string;
-  sub_category: string;
   rate_self: number;
   rate_insurance: number;
   rate_pmjay: number;
@@ -67,7 +66,7 @@ export async function searchTariff(
 ): Promise<TariffItem[]> {
   if (!query || query.length < 2) return [];
   let q = sb().from('hmis_tariff_master')
-    .select('id, service_name, service_code, category, sub_category, rate_self, rate_insurance, rate_pmjay, rate_cghs')
+    .select('id, service_name, service_code, category, rate_self, rate_insurance, rate_pmjay, rate_cghs')
     .eq('centre_id', centreId).eq('is_active', true)
     .ilike('service_name', `%${query}%`)
     .order('category').limit(20);
