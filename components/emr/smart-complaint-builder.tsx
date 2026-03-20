@@ -1,336 +1,279 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { cn } from '@/lib/utils';
-import { Search, Plus, X, ChevronDown, ChevronRight } from 'lucide-react';
+import { Search, Plus, X, ChevronDown, ChevronRight, Sparkles, Star } from 'lucide-react';
+import {
+  COMPLAINT_TEMPLATES, searchTemplates, CATEGORIES,
+  type ComplaintTemplate, type AttributeDef,
+} from '@/lib/cdss/complaint-templates';
+import {
+  trackComplaintUsage, getAttributeScores, evolveTemplate, reorderChips,
+  type AttributeScore,
+} from '@/lib/cdss/ml-engine';
 
-// ══════════════════════════════════════
-// COMPLAINT TEMPLATES — Indian clinical terminology
-// ══════════════════════════════════════
-
-interface AttributeDef {
-  label: string;
-  type: 'chips' | 'scale' | 'duration' | 'text';
-  options?: string[];
-  multi?: boolean;
-}
-
-interface ComplaintTemplate {
-  name: string;
-  category: string;
-  attributes: Record<string, AttributeDef>;
-}
-
-const COMPLAINT_TEMPLATES: ComplaintTemplate[] = [
-  {
-    name: 'Chest Pain', category: 'Cardiovascular',
-    attributes: {
-      type: { label: 'Type', type: 'chips', options: ['Burning', 'Squeezing', 'Stabbing', 'Pressure-like', 'Heaviness', 'Dull ache', 'Pricking'] },
-      location: { label: 'Location', type: 'chips', options: ['Retrosternal', 'Left-sided', 'Right-sided', 'Precordial', 'Diffuse', 'Epigastric'] },
-      radiation: { label: 'Radiation', type: 'chips', options: ['Left arm', 'Right arm', 'Both arms', 'Jaw', 'Back', 'Neck', 'Shoulder', 'No radiation'], multi: true },
-      severity: { label: 'Severity', type: 'scale' },
-      onset: { label: 'Onset', type: 'chips', options: ['Sudden', 'Gradual', 'At rest', 'On exertion', 'Post-prandial', 'Nocturnal'] },
-      duration: { label: 'Duration', type: 'duration' },
-      aggravating: { label: 'Aggravating factors', type: 'chips', options: ['Exertion', 'Deep breathing', 'Lying flat', 'Eating', 'Stress', 'Cold weather'], multi: true },
-      relieving: { label: 'Relieving factors', type: 'chips', options: ['Rest', 'Sorbitrate SL', 'Sitting up', 'Antacids', 'Nothing'], multi: true },
-      associated: { label: 'Associated symptoms', type: 'chips', options: ['Sweating', 'Breathlessness', 'Nausea', 'Vomiting', 'Palpitations', 'Giddiness', 'Syncope', 'Cough'], multi: true },
-    },
-  },
-  {
-    name: 'Headache', category: 'Neuro',
-    attributes: {
-      type: { label: 'Type', type: 'chips', options: ['Throbbing', 'Pressure', 'Sharp', 'Dull', 'Band-like', 'Pulsating', 'Thunderclap'] },
-      location: { label: 'Location', type: 'chips', options: ['Frontal', 'Temporal', 'Occipital', 'Vertex', 'Hemi-cranial (L)', 'Hemi-cranial (R)', 'Diffuse', 'Retro-orbital'] },
-      severity: { label: 'Severity', type: 'scale' },
-      onset: { label: 'Onset', type: 'chips', options: ['Sudden', 'Gradual', 'Morning', 'Evening', 'With activity', 'Post-trauma'] },
-      duration: { label: 'Duration', type: 'duration' },
-      aggravating: { label: 'Aggravating factors', type: 'chips', options: ['Light', 'Noise', 'Coughing', 'Straining', 'Bending forward', 'Screen time', 'Stress'], multi: true },
-      relieving: { label: 'Relieving factors', type: 'chips', options: ['Rest', 'Sleep', 'Dark room', 'Paracetamol', 'Nothing'], multi: true },
-      associated: { label: 'Associated symptoms', type: 'chips', options: ['Nausea', 'Vomiting', 'Photophobia', 'Phonophobia', 'Aura', 'Visual disturbance', 'Neck stiffness', 'Fever', 'Seizure'], multi: true },
-    },
-  },
-  {
-    name: 'Fever', category: 'General',
-    attributes: {
-      grade: { label: 'Grade', type: 'chips', options: ['Low (99-100°F)', 'Moderate (100-102°F)', 'High (102-104°F)', 'Very high (>104°F)'] },
-      pattern: { label: 'Pattern', type: 'chips', options: ['Continuous', 'Intermittent', 'Remittent', 'Step-ladder', 'Pel-Ebstein', 'Quotidian', 'Tertian'] },
-      onset: { label: 'Onset', type: 'chips', options: ['Sudden', 'Gradual', 'With chills', 'Without chills'] },
-      duration: { label: 'Duration', type: 'duration' },
-      timing: { label: 'Timing', type: 'chips', options: ['Evening rise', 'Night rise', 'Morning', 'Throughout day', 'No fixed pattern'] },
-      associated: { label: 'Associated symptoms', type: 'chips', options: ['Chills', 'Rigors', 'Sweating', 'Body ache', 'Headache', 'Rash', 'Joint pain', 'Sore throat', 'Cough', 'Loose stools', 'Burning micturition', 'Altered sensorium'], multi: true },
-      treatment_taken: { label: 'Treatment taken', type: 'chips', options: ['Paracetamol', 'Antibiotics (self)', 'Home remedies', 'No treatment', 'Visited local doctor'], multi: true },
-    },
-  },
-  {
-    name: 'Breathlessness', category: 'Respiratory',
-    attributes: {
-      grade: { label: 'NYHA Grade', type: 'chips', options: ['Grade I (strenuous)', 'Grade II (moderate)', 'Grade III (mild activity)', 'Grade IV (at rest)'] },
-      onset: { label: 'Onset', type: 'chips', options: ['Sudden', 'Gradual', 'Progressive', 'Episodic'] },
-      duration: { label: 'Duration', type: 'duration' },
-      trigger: { label: 'Trigger', type: 'chips', options: ['Exertion', 'At rest', 'Lying flat (Orthopnea)', 'Night (PND)', 'Dust/smoke', 'Cold air', 'Emotional'], multi: true },
-      severity: { label: 'Severity', type: 'scale' },
-      associated: { label: 'Associated symptoms', type: 'chips', options: ['Cough', 'Wheeze', 'Chest pain', 'Palpitations', 'Pedal oedema', 'Hemoptysis', 'Fever', 'Stridor'], multi: true },
-    },
-  },
-  {
-    name: 'Abdominal Pain', category: 'GI',
-    attributes: {
-      location: { label: 'Location', type: 'chips', options: ['Epigastric', 'RUQ', 'LUQ', 'Umbilical', 'RIF', 'LIF', 'Suprapubic', 'Diffuse', 'Loin (R)', 'Loin (L)'] },
-      type: { label: 'Type', type: 'chips', options: ['Colicky', 'Burning', 'Dull aching', 'Sharp', 'Cramping', 'Dragging'] },
-      severity: { label: 'Severity', type: 'scale' },
-      onset: { label: 'Onset', type: 'chips', options: ['Sudden', 'Gradual', 'Post-prandial', 'Early morning', 'Night'] },
-      duration: { label: 'Duration', type: 'duration' },
-      radiation: { label: 'Radiation', type: 'chips', options: ['Back', 'Right shoulder', 'Groin', 'No radiation'], multi: true },
-      aggravating: { label: 'Aggravating factors', type: 'chips', options: ['Eating', 'Fasting', 'Spicy food', 'Fatty food', 'Movement', 'Lying flat'], multi: true },
-      relieving: { label: 'Relieving factors', type: 'chips', options: ['Vomiting', 'Antacids', 'Fasting', 'Lying still', 'Passing flatus', 'Nothing'], multi: true },
-      associated: { label: 'Associated symptoms', type: 'chips', options: ['Nausea', 'Vomiting', 'Loose stools', 'Constipation', 'Blood in stool', 'Distension', 'Fever', 'Jaundice', 'Burning micturition', 'Anorexia'], multi: true },
-    },
-  },
-  {
-    name: 'Cough', category: 'Respiratory',
-    attributes: {
-      type: { label: 'Type', type: 'chips', options: ['Dry', 'Productive', 'Barking', 'Whooping', 'Hacking'] },
-      duration: { label: 'Duration', type: 'duration' },
-      timing: { label: 'Timing', type: 'chips', options: ['Morning', 'Night', 'Continuous', 'Seasonal', 'Post-nasal drip'] },
-      sputum: { label: 'Sputum', type: 'chips', options: ['None (dry)', 'Mucoid (white)', 'Purulent (yellow-green)', 'Blood-tinged', 'Rusty', 'Frothy (pink)', 'Foul-smelling'] },
-      severity: { label: 'Severity', type: 'scale' },
-      associated: { label: 'Associated symptoms', type: 'chips', options: ['Fever', 'Breathlessness', 'Wheeze', 'Chest pain', 'Weight loss', 'Night sweats', 'Hemoptysis', 'Sore throat', 'Runny nose'], multi: true },
-    },
-  },
-  {
-    name: 'Vomiting', category: 'GI',
-    attributes: {
-      type: { label: 'Type', type: 'chips', options: ['Non-projectile', 'Projectile', 'Bilious', 'Feculent', 'Coffee-ground', 'Blood-stained'] },
-      frequency: { label: 'Frequency', type: 'chips', options: ['1-2 episodes', '3-5 episodes', '5-10 episodes', '>10 episodes', 'Continuous'] },
-      relation: { label: 'Relation to food', type: 'chips', options: ['Before food', 'Immediately after food', 'Few hours after food', 'No relation'] },
-      duration: { label: 'Duration', type: 'duration' },
-      associated: { label: 'Associated symptoms', type: 'chips', options: ['Nausea', 'Abdominal pain', 'Diarrhoea', 'Fever', 'Headache', 'Giddiness', 'Dehydration signs'], multi: true },
-    },
-  },
-  {
-    name: 'Joint Pain', category: 'Ortho',
-    attributes: {
-      joints: { label: 'Joint(s) affected', type: 'chips', options: ['Knee (R)', 'Knee (L)', 'Hip (R)', 'Hip (L)', 'Shoulder (R)', 'Shoulder (L)', 'Ankle', 'Wrist', 'Elbow', 'Small joints (hands)', 'Small joints (feet)', 'Spine', 'Multiple joints'], multi: true },
-      type: { label: 'Type', type: 'chips', options: ['Aching', 'Sharp', 'Stiffness', 'Locking', 'Giving way', 'Grinding'] },
-      severity: { label: 'Severity', type: 'scale' },
-      onset: { label: 'Onset', type: 'chips', options: ['Gradual', 'Sudden', 'Post-trauma', 'Post-activity'] },
-      duration: { label: 'Duration', type: 'duration' },
-      pattern: { label: 'Pattern', type: 'chips', options: ['Morning stiffness (<30 min)', 'Morning stiffness (>30 min)', 'Worse with activity', 'Worse at rest', 'Migratory', 'Additive'] },
-      associated: { label: 'Associated symptoms', type: 'chips', options: ['Swelling', 'Redness', 'Warmth', 'Restricted movement', 'Crepitus', 'Deformity', 'Fever', 'Rash', 'Weight loss'], multi: true },
-    },
-  },
-  {
-    name: 'Weakness / Fatigue', category: 'General',
-    attributes: {
-      type: { label: 'Type', type: 'chips', options: ['Generalized', 'Focal (one side)', 'Proximal', 'Distal', 'Lower limbs', 'Upper limbs'] },
-      onset: { label: 'Onset', type: 'chips', options: ['Sudden', 'Gradual', 'Progressive', 'Episodic'] },
-      duration: { label: 'Duration', type: 'duration' },
-      severity: { label: 'Severity', type: 'scale' },
-      associated: { label: 'Associated symptoms', type: 'chips', options: ['Weight loss', 'Anorexia', 'Fever', 'Pallor', 'Numbness', 'Tingling', 'Difficulty walking', 'Falls', 'Slurred speech', 'Visual disturbance'], multi: true },
-    },
-  },
-  {
-    name: 'Burning Micturition', category: 'Renal',
-    attributes: {
-      severity: { label: 'Severity', type: 'scale' },
-      duration: { label: 'Duration', type: 'duration' },
-      frequency: { label: 'Urinary frequency', type: 'chips', options: ['Normal', 'Increased', 'Very frequent (every 30 min)', 'Nocturia'] },
-      associated: { label: 'Associated symptoms', type: 'chips', options: ['Fever', 'Loin pain', 'Suprapubic pain', 'Hematuria', 'Urgency', 'Incomplete voiding', 'Foul-smelling urine', 'Vaginal/urethral discharge'], multi: true },
-    },
-  },
-  {
-    name: 'Giddiness / Vertigo', category: 'Neuro',
-    attributes: {
-      type: { label: 'Type', type: 'chips', options: ['Rotatory (room spinning)', 'Lightheadedness', 'Unsteadiness', 'Pre-syncope'] },
-      onset: { label: 'Onset', type: 'chips', options: ['Sudden', 'Gradual', 'Positional', 'On standing'] },
-      duration: { label: 'Duration', type: 'duration' },
-      severity: { label: 'Severity', type: 'scale' },
-      trigger: { label: 'Trigger', type: 'chips', options: ['Head turning', 'Standing up', 'Lying down', 'Looking up', 'No trigger'], multi: true },
-      associated: { label: 'Associated symptoms', type: 'chips', options: ['Nausea', 'Vomiting', 'Hearing loss', 'Tinnitus', 'Ear fullness', 'Headache', 'Visual disturbance', 'Syncope'], multi: true },
-    },
-  },
-  {
-    name: 'Swelling (Pedal/Facial)', category: 'General',
-    attributes: {
-      location: { label: 'Location', type: 'chips', options: ['Pedal (bilateral)', 'Pedal (unilateral R)', 'Pedal (unilateral L)', 'Facial (periorbital)', 'Facial (generalized)', 'Abdominal (ascites)', 'Generalized (anasarca)', 'Scrotal'] },
-      onset: { label: 'Onset', type: 'chips', options: ['Sudden', 'Gradual', 'Morning', 'Evening', 'Progressive'] },
-      type: { label: 'Type', type: 'chips', options: ['Pitting', 'Non-pitting', 'Dependent'] },
-      duration: { label: 'Duration', type: 'duration' },
-      associated: { label: 'Associated symptoms', type: 'chips', options: ['Breathlessness', 'Decreased urine', 'Frothy urine', 'Jaundice', 'Abdominal distension', 'Chest pain', 'Fever', 'Pain in swollen area'], multi: true },
-    },
-  },
-];
-
-// ══════════════════════════════════════
-// ACTIVE COMPLAINT STATE
-// ══════════════════════════════════════
-
+// ============================================================
+// EXPORTS (used by EMR v2 page)
+// ============================================================
 export interface ActiveComplaint {
   id: string;
   template: ComplaintTemplate;
   values: Record<string, string | string[] | number>;
+  startTime: number; // for ML tracking
 }
 
 export function generateComplaintText(complaint: ActiveComplaint): string {
   const { template, values } = complaint;
   const parts: string[] = [`C/O ${template.name}`];
-
   for (const [key, attr] of Object.entries(template.attributes)) {
     const val = values[key];
     if (!val || (Array.isArray(val) && val.length === 0)) continue;
-
-    if (attr.type === 'scale' && typeof val === 'number') {
+    if (attr.type === 'scale') {
       parts.push(`${attr.label}: ${val}/10`);
-    } else if (attr.type === 'duration' && typeof val === 'string') {
+    } else if (attr.type === 'duration') {
       parts.push(`since ${val}`);
     } else if (Array.isArray(val)) {
       parts.push(`${attr.label}: ${val.join(', ')}`);
-    } else if (typeof val === 'string') {
+    } else {
       parts.push(`${attr.label}: ${val}`);
     }
   }
-
-  return parts.join(' · ');
+  const freetext = values['_freetext'];
+  if (freetext && typeof freetext === 'string') parts.push(`[${freetext}]`);
+  return parts.join(' | ');
 }
 
-// ══════════════════════════════════════
-// SMART COMPLAINT BUILDER COMPONENT
-// ══════════════════════════════════════
-
+// ============================================================
+// COMPONENT
+// ============================================================
 export function SmartComplaintBuilder({ complaints, setComplaints }: {
   complaints: ActiveComplaint[];
-  setComplaints: (c: ActiveComplaint[]) => void;
+  setComplaints: React.Dispatch<React.SetStateAction<ActiveComplaint[]>>;
 }) {
   const [searchQ, setSearchQ] = useState('');
-  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [expanded, setExpanded] = useState<string | null>(null);
+  const [showCategories, setShowCategories] = useState(false);
+  const [mlScores, setMlScores] = useState<Record<string, AttributeScore[]>>({});
+  const [mlEvolved, setMlEvolved] = useState<Record<string, { primary: string[]; secondary: string[]; suggested_new_chips: Record<string, string[]> }>>({});
 
-  const filtered = useMemo(() => {
-    if (!searchQ.trim()) return COMPLAINT_TEMPLATES;
-    const q = searchQ.toLowerCase();
-    return COMPLAINT_TEMPLATES.filter(t => t.name.toLowerCase().includes(q) || t.category.toLowerCase().includes(q));
+  // Search results
+  const results = useMemo(() => {
+    if (!searchQ || searchQ.length < 2) return [];
+    return searchTemplates(searchQ);
   }, [searchQ]);
 
-  function addComplaint(template: ComplaintTemplate) {
-    const id = crypto.randomUUID();
-    setComplaints([...complaints, { id, template, values: {} }]);
-    setExpandedId(id);
+  // Add complaint from template
+  const addComplaint = (template: ComplaintTemplate) => {
+    const id = `c_${Date.now()}`;
+    setComplaints(prev => [...prev, { id, template, values: {}, startTime: Date.now() }]);
     setSearchQ('');
-  }
+    setExpanded(id);
+    // Load ML scores for this template
+    loadMLScores(template.name);
+  };
 
-  function updateValue(complaintId: string, key: string, value: string | string[] | number) {
-    setComplaints(complaints.map(c => c.id === complaintId ? { ...c, values: { ...c.values, [key]: value } } : c));
-  }
+  const removeComplaint = (id: string) => {
+    const complaint = complaints.find(c => c.id === id);
+    if (complaint) {
+      // Track usage before removing
+      trackUsage(complaint);
+    }
+    setComplaints(prev => prev.filter(c => c.id !== id));
+    if (expanded === id) setExpanded(null);
+  };
 
-  function removeComplaint(id: string) {
-    setComplaints(complaints.filter(c => c.id !== id));
-  }
+  const updateValue = (id: string, key: string, val: string | string[] | number) => {
+    setComplaints(prev => prev.map(c =>
+      c.id === id ? { ...c, values: { ...c.values, [key]: val } } : c
+    ));
+  };
+
+  // ML: Load scores for a complaint
+  const loadMLScores = async (complaintName: string) => {
+    try {
+      // For now use 'global' — in production, pass actual doctor_id
+      const scores = await getAttributeScores(complaintName, 'global');
+      if (scores.length > 0) {
+        setMlScores(prev => ({ ...prev, [complaintName]: scores }));
+        // Find the template
+        const template = COMPLAINT_TEMPLATES.find(t => t.name === complaintName);
+        if (template) {
+          const evolved = evolveTemplate(template.attributes, scores);
+          setMlEvolved(prev => ({ ...prev, [complaintName]: evolved }));
+        }
+      }
+    } catch { /* ML is optional — degrade gracefully */ }
+  };
+
+  // ML: Track usage when complaint is removed or encounter saved
+  const trackUsage = (complaint: ActiveComplaint) => {
+    const used: string[] = [];
+    const skipped: string[] = [];
+    const chipSelections: Record<string, string[]> = {};
+    const freeTextEntries: Record<string, string> = {};
+
+    for (const [key, attr] of Object.entries(complaint.template.attributes)) {
+      const val = complaint.values[key];
+      if (!val || (Array.isArray(val) && val.length === 0) || val === '') {
+        skipped.push(key);
+      } else {
+        used.push(key);
+        if (Array.isArray(val)) chipSelections[key] = val;
+      }
+    }
+    const ft = complaint.values['_freetext'];
+    if (ft && typeof ft === 'string') freeTextEntries['_freetext'] = ft;
+
+    trackComplaintUsage({
+      complaint_name: complaint.template.name,
+      doctor_id: 'global', // Replace with actual doctor_id in production
+      centre_id: 'global', // Replace with actual centre_id
+      attributes_used: used,
+      attributes_skipped: skipped,
+      chip_selections: chipSelections,
+      free_text_entries: freeTextEntries,
+      time_spent_ms: Date.now() - complaint.startTime,
+      timestamp: new Date().toISOString(),
+    });
+  };
+
+  // Get ordered attributes for a complaint (ML-evolved or default)
+  const getOrderedAttributes = (complaint: ActiveComplaint): { primary: string[]; secondary: string[] } => {
+    const evolved = mlEvolved[complaint.template.name];
+    if (evolved) return { primary: evolved.primary, secondary: evolved.secondary };
+    return { primary: Object.keys(complaint.template.attributes), secondary: [] };
+  };
+
+  // Get reordered chips for an attribute
+  const getChipOptions = (complaint: ActiveComplaint, attrKey: string, attr: AttributeDef): string[] => {
+    if (!attr.options) return [];
+    const scores = mlScores[complaint.template.name];
+    if (!scores) return attr.options;
+    const score = scores.find(s => s.attribute_key === attrKey);
+    if (!score) return attr.options;
+    const evolved = mlEvolved[complaint.template.name];
+    const suggested = evolved?.suggested_new_chips?.[attrKey] || [];
+    return reorderChips(attr.options, score.top_chips, suggested);
+  };
 
   return (
     <div className="space-y-3">
-      {/* Quick-add common complaints */}
-      <div className="flex flex-wrap gap-1.5 mb-2">
-        {['Chest Pain', 'Fever', 'Headache', 'Breathlessness', 'Abdominal Pain', 'Cough', 'Vomiting', 'Joint Pain'].map(name => {
-          const tmpl = COMPLAINT_TEMPLATES.find(t => t.name === name);
-          const alreadyAdded = complaints.some(c => c.template.name === name);
-          if (!tmpl) return null;
-          return (
-            <button key={name} onClick={() => !alreadyAdded && addComplaint(tmpl)} disabled={alreadyAdded}
-              className={cn('px-3 py-1.5 text-xs font-medium rounded-full border transition-colors',
-                alreadyAdded
-                  ? 'bg-green-50 border-green-200 text-green-600 cursor-default'
-                  : 'bg-white border-gray-200 text-gray-600 hover:bg-brand-50 hover:border-brand-300 hover:text-brand-700')}>
-              {alreadyAdded ? '✓ ' : '+ '}{name}
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Search for more complaints */}
+      {/* Search bar */}
       <div className="relative">
-        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-        <input value={searchQ} onChange={e => setSearchQ(e.target.value)}
-          placeholder="Search more complaints (e.g. burning micturition, giddiness, swelling)..."
-          className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-brand-500" />
-        {searchQ.trim() && filtered.length > 0 && (
-          <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-20 max-h-48 overflow-y-auto">
-            {filtered.map(t => {
-              const added = complaints.some(c => c.template.name === t.name);
-              return (
-                <button key={t.name} onClick={() => !added && addComplaint(t)} disabled={added}
-                  className={cn('w-full text-left px-3 py-2 flex items-center gap-3 text-sm border-b border-gray-50 last:border-0',
-                    added ? 'bg-green-50 text-green-600' : 'hover:bg-gray-50')}>
-                  <span className="text-[10px] uppercase text-gray-400 w-16">{t.category}</span>
-                  <span className="text-gray-700 flex-1">{t.name}</span>
-                  {added && <span className="text-xs text-green-600">Added</span>}
-                </button>
-              );
-            })}
+        <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+        <input
+          type="text" value={searchQ} onChange={e => setSearchQ(e.target.value)}
+          className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+          placeholder="Search 105+ complaints — type headache, chest pain, fever..."
+        />
+        {searchQ && (
+          <div className="absolute z-20 mt-1 w-full bg-white border border-gray-200 rounded-xl shadow-lg max-h-64 overflow-y-auto">
+            {results.length === 0 ? (
+              <div className="p-3 text-xs text-gray-400">No templates found — try different keywords</div>
+            ) : results.map(t => (
+              <button key={t.name} onClick={() => addComplaint(t)}
+                className="w-full text-left px-4 py-2.5 hover:bg-blue-50 flex items-center justify-between border-b border-gray-50 last:border-0">
+                <div>
+                  <div className="text-sm font-medium text-gray-800">{t.name}</div>
+                  <div className="text-[10px] text-gray-400">{Object.keys(t.attributes).length} follow-up questions • {t.category}</div>
+                </div>
+                <Plus size={14} className="text-blue-500" />
+              </button>
+            ))}
           </div>
         )}
       </div>
 
-      {/* Active complaints with attribute pickers */}
-      {complaints.map((complaint, idx) => {
-        const isExpanded = expandedId === complaint.id;
+      {/* Category browse */}
+      <div>
+        <button onClick={() => setShowCategories(!showCategories)} className="text-[10px] text-blue-600 hover:underline flex items-center gap-1">
+          {showCategories ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+          Browse by specialty ({COMPLAINT_TEMPLATES.length} templates)
+        </button>
+        {showCategories && (
+          <div className="mt-2 flex flex-wrap gap-1">
+            {CATEGORIES.map(cat => (
+              <div key={cat} className="group relative">
+                <button className="text-[10px] bg-gray-100 hover:bg-blue-100 px-2 py-1 rounded font-medium">{cat}</button>
+                <div className="absolute hidden group-hover:block z-30 top-full left-0 mt-1 bg-white border rounded-lg shadow-lg p-2 min-w-[200px] max-h-48 overflow-y-auto">
+                  {COMPLAINT_TEMPLATES.filter(t => t.category === cat).map(t => (
+                    <button key={t.name} onClick={() => { addComplaint(t); setShowCategories(false); }}
+                      className="block w-full text-left text-xs py-1.5 px-2 hover:bg-blue-50 rounded">
+                      {t.name} <span className="text-gray-400">({Object.keys(t.attributes).length}q)</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Active complaints */}
+      {complaints.map(complaint => {
+        const isExpanded = expanded === complaint.id;
         const summary = generateComplaintText(complaint);
-        const filledCount = Object.keys(complaint.values).filter(k => {
-          const v = complaint.values[k];
-          return v && (!Array.isArray(v) || v.length > 0);
-        }).length;
-        const totalAttrs = Object.keys(complaint.template.attributes).length;
+        const { primary, secondary } = getOrderedAttributes(complaint);
+        const hasML = !!mlScores[complaint.template.name];
 
         return (
-          <div key={complaint.id} className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-            {/* Complaint header */}
-            <div className="flex items-center gap-3 px-4 py-3 bg-gray-50 border-b border-gray-100 cursor-pointer hover:bg-gray-100"
-              onClick={() => setExpandedId(isExpanded ? null : complaint.id)}>
-              <span className="text-xs font-bold text-white bg-brand-600 w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0">{idx + 1}</span>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-bold text-gray-800">{complaint.template.name}</span>
-                  <span className="text-[10px] text-gray-400 uppercase">{complaint.template.category}</span>
-                  <span className="text-[10px] bg-gray-200 text-gray-600 px-1.5 py-0.5 rounded-full">{filledCount}/{totalAttrs}</span>
-                </div>
-                {!isExpanded && filledCount > 0 && (
-                  <p className="text-xs text-gray-500 truncate mt-0.5">{summary}</p>
-                )}
-              </div>
-              <button onClick={e => { e.stopPropagation(); removeComplaint(complaint.id); }}
-                className="text-gray-400 hover:text-red-500 p-1"><X size={14} /></button>
-              <ChevronRight size={16} className={cn('text-gray-400 transition-transform', isExpanded && 'rotate-90')} />
+          <div key={complaint.id} className={cn('border rounded-xl overflow-hidden transition-all', isExpanded ? 'border-blue-300 shadow-sm' : 'border-gray-200')}>
+            {/* Header */}
+            <div className="flex items-center gap-2 px-3 py-2.5 bg-gray-50 cursor-pointer" onClick={() => setExpanded(isExpanded ? null : complaint.id)}>
+              <span className="text-xs font-bold text-blue-700">{complaint.template.name}</span>
+              <span className="text-[9px] bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded">{complaint.template.category}</span>
+              {hasML && <Sparkles size={12} className="text-purple-500" />}
+              <span className="flex-1 text-[10px] text-gray-400 truncate ml-2">{summary.length > 20 ? summary : ''}</span>
+              <button onClick={e => { e.stopPropagation(); removeComplaint(complaint.id); }} className="text-gray-400 hover:text-red-500"><X size={14} /></button>
+              {isExpanded ? <ChevronDown size={14} className="text-gray-400" /> : <ChevronRight size={14} className="text-gray-400" />}
             </div>
 
-            {/* Attribute pickers */}
+            {/* Attributes */}
             {isExpanded && (
-              <div className="p-4 space-y-4">
-                {Object.entries(complaint.template.attributes).map(([key, attr]) => (
-                  <AttributePicker
-                    key={key}
-                    attr={attr}
-                    value={complaint.values[key]}
-                    onChange={val => updateValue(complaint.id, key, val)}
-                  />
-                ))}
+              <div className="px-4 py-3 space-y-3">
+                {/* Primary attributes (ML-promoted or all) */}
+                {primary.map(key => {
+                  const attr = complaint.template.attributes[key];
+                  if (!attr) return null;
+                  const chipOptions = getChipOptions(complaint, key, attr);
+                  return (
+                    <AttributeInput key={key} attr={attr} attrKey={key} chipOptions={chipOptions}
+                      value={complaint.values[key]} onChange={val => updateValue(complaint.id, key, val)} />
+                  );
+                })}
 
-                {/* Auto-generated summary preview */}
-                {filledCount > 0 && (
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg px-3 py-2">
-                    <span className="text-[10px] font-bold text-blue-600 uppercase tracking-wider">Auto-generated text</span>
-                    <p className="text-xs text-blue-800 mt-1 leading-relaxed">{summary}</p>
-                  </div>
+                {/* Secondary (ML-demoted) — collapsed */}
+                {secondary.length > 0 && (
+                  <details className="text-xs">
+                    <summary className="text-gray-400 cursor-pointer hover:text-gray-600">
+                      {secondary.length} more questions (rarely used by doctors)
+                    </summary>
+                    <div className="mt-2 space-y-3 pl-2 border-l-2 border-gray-100">
+                      {secondary.map(key => {
+                        const attr = complaint.template.attributes[key];
+                        if (!attr) return null;
+                        return (
+                          <AttributeInput key={key} attr={attr} attrKey={key} chipOptions={attr.options || []}
+                            value={complaint.values[key]} onChange={val => updateValue(complaint.id, key, val)} />
+                        );
+                      })}
+                    </div>
+                  </details>
                 )}
 
-                {/* Free text for anything chips don't cover */}
+                {/* Free text */}
                 <div>
-                  <label className="block text-xs font-semibold text-gray-500 mb-1.5">Additional notes (free text)</label>
+                  <label className="text-[10px] font-semibold text-gray-500">Additional notes</label>
                   <textarea
-                    value={typeof complaint.values._freetext === 'string' ? complaint.values._freetext : ''}
+                    className="w-full px-3 py-2 text-xs text-gray-800 border border-gray-200 rounded-lg resize-none outline-none focus:ring-2 focus:ring-blue-500"
+                    rows={2} value={(complaint.values['_freetext'] as string) || ''}
                     onChange={e => updateValue(complaint.id, '_freetext', e.target.value)}
-                    rows={2}
-                    placeholder="Anything not covered by the options above..."
-                    className="w-full px-3 py-2 text-xs text-gray-800 placeholder:text-gray-300 border border-gray-200 rounded-lg resize-none outline-none focus:ring-2 focus:ring-brand-500 leading-relaxed"
+                    placeholder="Any additional details not covered above..."
                   />
                 </div>
+
+                {/* Generated text preview */}
+                <div className="bg-blue-50 rounded-lg p-2.5 text-xs text-blue-800 font-mono">{summary}</div>
               </div>
             )}
           </div>
@@ -338,49 +281,49 @@ export function SmartComplaintBuilder({ complaints, setComplaints }: {
       })}
 
       {complaints.length === 0 && (
-        <div className="text-center py-6 text-sm text-gray-400">
-          Click a complaint above or search to start building the clinical note
+        <div className="text-center py-8 text-gray-400 text-sm">
+          Search for a complaint above — 105 clinical templates with 8-10 follow-up questions each.
+          <br /><span className="text-xs text-purple-400">Questions adapt based on what doctors actually use.</span>
         </div>
       )}
     </div>
   );
 }
 
-// ══════════════════════════════════════
-// ATTRIBUTE PICKER (chips, scale, duration)
-// ══════════════════════════════════════
-
-function AttributePicker({ attr, value, onChange }: {
-  attr: AttributeDef;
+// ============================================================
+// ATTRIBUTE INPUT COMPONENT
+// ============================================================
+function AttributeInput({ attr, attrKey, chipOptions, value, onChange }: {
+  attr: AttributeDef; attrKey: string; chipOptions: string[];
   value: string | string[] | number | undefined;
   onChange: (val: string | string[] | number) => void;
 }) {
   if (attr.type === 'chips') {
-    const selected = attr.multi ? (Array.isArray(value) ? value : []) : (typeof value === 'string' ? value : '');
-
+    const selected = Array.isArray(value) ? value : (value ? [value as string] : []);
+    const toggle = (chip: string) => {
+      const clean = chip.replace('★ ', '');
+      if (attr.multi) {
+        onChange(selected.includes(clean) ? selected.filter(s => s !== clean) : [...selected, clean]);
+      } else {
+        onChange(selected.includes(clean) ? [] : [clean]);
+      }
+    };
     return (
       <div>
-        <label className="block text-xs font-semibold text-gray-500 mb-1.5">{attr.label}</label>
-        <div className="flex flex-wrap gap-1.5">
-          {attr.options?.map(opt => {
-            const isSelected = attr.multi
-              ? (selected as string[]).includes(opt)
-              : selected === opt;
-
+        <label className="text-[10px] font-semibold text-gray-500">{attr.label}{attr.multi ? ' (multi)' : ''}</label>
+        <div className="flex flex-wrap gap-1 mt-1">
+          {chipOptions.map(chip => {
+            const clean = chip.replace('★ ', '');
+            const isSuggested = chip.startsWith('★');
+            const isActive = selected.includes(clean);
             return (
-              <button key={opt} onClick={() => {
-                if (attr.multi) {
-                  const arr = selected as string[];
-                  onChange(isSelected ? arr.filter(v => v !== opt) : [...arr, opt]);
-                } else {
-                  onChange(isSelected ? '' : opt);
-                }
-              }}
-                className={cn('px-3 py-1.5 text-xs font-medium rounded-lg border transition-all',
-                  isSelected
-                    ? 'bg-brand-600 border-brand-600 text-white shadow-sm'
-                    : 'bg-white border-gray-200 text-gray-600 hover:border-brand-300 hover:bg-brand-50')}>
-                {opt}
+              <button key={chip} onClick={() => toggle(chip)}
+                className={cn('px-2 py-1 text-[11px] rounded-full border transition-all',
+                  isActive ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-200 hover:border-blue-300',
+                  isSuggested && !isActive && 'border-purple-300 text-purple-700 bg-purple-50'
+                )}>
+                {isSuggested && <Star size={8} className="inline mr-0.5 text-purple-500" />}
+                {clean}
               </button>
             );
           })}
@@ -390,59 +333,39 @@ function AttributePicker({ attr, value, onChange }: {
   }
 
   if (attr.type === 'scale') {
-    const val = typeof value === 'number' ? value : 0;
+    const num = typeof value === 'number' ? value : 5;
     return (
       <div>
-        <label className="block text-xs font-semibold text-gray-500 mb-1.5">{attr.label}: <span className="text-brand-600 font-bold">{val}/10</span></label>
-        <div className="flex gap-1">
-          {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(n => (
-            <button key={n} onClick={() => onChange(n)}
-              className={cn('w-8 h-8 rounded-lg text-xs font-bold transition-all',
-                val === n ? (n <= 3 ? 'bg-green-500 text-white' : n <= 6 ? 'bg-amber-500 text-white' : 'bg-red-500 text-white')
-                : 'bg-gray-100 text-gray-500 hover:bg-gray-200')}>
-              {n}
-            </button>
-          ))}
-        </div>
-        <div className="flex justify-between mt-1 px-1">
-          <span className="text-[10px] text-green-600">Mild</span>
-          <span className="text-[10px] text-amber-600">Moderate</span>
-          <span className="text-[10px] text-red-600">Severe</span>
-        </div>
+        <label className="text-[10px] font-semibold text-gray-500">{attr.label}: {num}/10</label>
+        <input type="range" min="1" max="10" value={num} onChange={e => onChange(parseInt(e.target.value))}
+          className="w-full h-2 rounded-lg appearance-none cursor-pointer accent-blue-600" />
+        <div className="flex justify-between text-[8px] text-gray-400"><span>Mild</span><span>Moderate</span><span>Severe</span></div>
       </div>
     );
   }
 
   if (attr.type === 'duration') {
-    const val = typeof value === 'string' ? value : '';
-    const quickDurations = ['Few hours', '1 day', '2 days', '3 days', '1 week', '2 weeks', '1 month', '3 months', '6 months', '1 year', '>1 year'];
-
     return (
       <div>
-        <label className="block text-xs font-semibold text-gray-500 mb-1.5">{attr.label}</label>
-        <div className="flex flex-wrap gap-1.5 mb-2">
-          {quickDurations.map(d => (
-            <button key={d} onClick={() => onChange(d)}
-              className={cn('px-3 py-1.5 text-xs font-medium rounded-lg border transition-all',
-                val === d
-                  ? 'bg-brand-600 border-brand-600 text-white shadow-sm'
-                  : 'bg-white border-gray-200 text-gray-600 hover:border-brand-300 hover:bg-brand-50')}>
-              {d}
-            </button>
-          ))}
-        </div>
-        <input value={val} onChange={e => onChange(e.target.value)} placeholder="Or type custom duration..."
-          className="w-full px-3 py-1.5 text-xs border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-brand-500" />
+        <label className="text-[10px] font-semibold text-gray-500">{attr.label}</label>
+        <select value={(value as string) || ''} onChange={e => onChange(e.target.value)}
+          className="w-full px-2 py-1.5 border rounded-lg text-xs outline-none focus:ring-1 focus:ring-blue-500">
+          <option value="">Select duration</option>
+          <option>Few hours</option><option>1 day</option><option>2-3 days</option>
+          <option>4-7 days</option><option>1-2 weeks</option><option>2-4 weeks</option>
+          <option>1-3 months</option><option>3-6 months</option><option>6-12 months</option>
+          <option>1-2 years</option><option>More than 2 years</option>
+        </select>
       </div>
     );
   }
 
-  // Fallback: text input
+  // text
   return (
     <div>
-      <label className="block text-xs font-semibold text-gray-500 mb-1.5">{attr.label}</label>
-      <input value={typeof value === 'string' ? value : ''} onChange={e => onChange(e.target.value)}
-        className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-brand-500" />
+      <label className="text-[10px] font-semibold text-gray-500">{attr.label}</label>
+      <input type="text" value={(value as string) || ''} onChange={e => onChange(e.target.value)}
+        className="w-full px-2 py-1.5 border rounded-lg text-xs outline-none focus:ring-1 focus:ring-blue-500" />
     </div>
   );
 }
