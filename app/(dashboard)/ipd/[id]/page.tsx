@@ -18,12 +18,13 @@ import SmartProcedures from '@/components/ipd/smart-procedures';
 import PatientImagingPanel from '@/components/radiology/patient-imaging-panel';
 import PatientLabHistory from '@/components/lab/patient-lab-history';
 import IPDRunningBill from '@/components/billing/ipd-running-bill';
+import CPOEPanel from '@/components/ipd/cpoe-panel';
 import Link from 'next/link';
 
 let _sb: any = null;
 function sb() { if (typeof window === 'undefined') return null as any; if (!_sb) { try { _sb = createClient(); } catch { return null; } } return _sb; }
 
-type ClinicalTab = 'rounds' | 'icu' | 'trends' | 'io' | 'meds' | 'mar' | 'scores' | 'consents' | 'procedures' | 'nursing' | 'lab' | 'imaging' | 'billing' | 'discharge';
+type ClinicalTab = 'rounds' | 'icu' | 'trends' | 'io' | 'meds' | 'mar' | 'scores' | 'cpoe' | 'consents' | 'procedures' | 'nursing' | 'lab' | 'imaging' | 'billing' | 'discharge';
 
 function IPDClinicalInner() {
   const { id } = useParams();
@@ -69,6 +70,7 @@ function IPDClinicalInner() {
     ['meds', 'Meds', `${meds.orders.filter((m: any) => m.status === 'active').length}`],
     ['mar', 'MAR', `${mar.records.filter((r: any) => r.status === 'scheduled').length}`],
     ['scores', 'Scores', `${scores.scores.length}`],
+    ['cpoe', 'Orders (CPOE)', ''],
     ['consents', 'Consents', `${consents.consents.length}`],
     ['procedures', 'Procedures', `${procedures.notes.length}`],
     ['nursing', 'Nursing', ''],
@@ -136,6 +138,7 @@ function IPDClinicalInner() {
       {tab === 'meds' && <SmartMedOrders meds={meds.orders} admissionId={admissionId} staffId={staffId} admissionDx={admDx} onAdd={async (med: any) => { await meds.addOrder(med, staffId); }} onDiscontinue={async (id: string, reason: string) => { await meds.discontinue(id, staffId, reason); }} onFlash={flash} />}
       {tab === 'mar' && <SmartMAR records={mar.records} meds={meds.orders} admissionId={admissionId} staffId={staffId} onAdminister={async (id: string, sid: string) => { await mar.administer(id, sid); }} onHold={async (id: string, reason: string) => { await mar.holdDose(id, reason); }} onFlash={flash} />}
       {tab === 'scores' && <AutoICUScores scores={scores.scores} admissionId={admissionId} staffId={staffId} onSave={async (score: any, sid: string) => { await scores.addScore(score.scoreType, score.scoreValue, {}, score.interpretation, sid); }} onFlash={flash} />}
+      {tab === 'cpoe' && <CPOEPanel admissionId={admissionId} patientId={pt.id} onFlash={flash} />}
       {tab === 'consents' && <ConsentBuilder consents={consents.consents} patientId={pt.id} patientName={patientName} admissionId={admissionId} admissionDx={admDx} staffId={staffId} onSave={async (c: any, sid: string) => { await consents.addConsent(c, sid); }} onFlash={flash} />}
       {tab === 'procedures' && <SmartProcedures procedures={procedures.notes} admissionId={admissionId} staffId={staffId} onSave={async (proc: any, sid: string) => { await procedures.addNote(proc, sid); }} onFlash={flash} />}
       {tab === 'nursing' && <NursingShiftNotes admissionId={admissionId} staffId={staffId} patientName={patientName} onFlash={flash} />}
