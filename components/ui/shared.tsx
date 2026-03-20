@@ -133,34 +133,40 @@ export function useToast() {
 // ============================================================
 // ROLE GUARD
 // ============================================================
-const MODULE_ACCESS: Record<string, string[]> = {
-  // module: [allowed staff_types]
+// ============================================================
+// MODULE ACCESS — now reads from DB role permissions
+// Falls back to staff_type for backward compatibility
+// ============================================================
+const STAFF_TYPE_FALLBACK: Record<string, string[]> = {
   dashboard: ['doctor', 'nurse', 'admin', 'receptionist', 'pharmacist', 'lab_tech', 'accountant', 'support', 'technician'],
   patients: ['doctor', 'nurse', 'admin', 'receptionist', 'support'],
   opd: ['doctor', 'nurse', 'admin', 'receptionist'],
-  emr: ['doctor', 'nurse'],
-  'emr-v2': ['doctor', 'nurse'],
+  emr: ['doctor', 'nurse'], 'emr-v2': ['doctor', 'nurse'],
   billing: ['admin', 'receptionist', 'accountant'],
   pharmacy: ['pharmacist', 'admin', 'doctor'],
   lab: ['lab_tech', 'admin', 'doctor', 'nurse'],
   ipd: ['doctor', 'nurse', 'admin'],
   ot: ['doctor', 'nurse', 'admin'],
   radiology: ['technician', 'admin', 'doctor'],
-  insurance: ['admin', 'accountant'],
-  accounting: ['accountant', 'admin'],
   reports: ['admin', 'doctor', 'accountant'],
-  settings: ['admin'],
+  settings: ['admin'], quality: ['admin', 'doctor', 'nurse'],
+  mis: ['admin', 'doctor', 'accountant'],
 };
 
 export function RoleGuard({ module, children, fallback }: {
   module: string; children: React.ReactNode; fallback?: React.ReactNode;
 }) {
-  const { staff } = useAuthStore();
+  const { staff, hasPermission } = useAuthStore();
   const staffType = staff?.staff_type || '';
-  const allowed = MODULE_ACCESS[module] || [];
 
   // Super admin always has access
   if (staffType === 'admin') return <>{children}</>;
+
+  // Check DB role permissions first
+  if (hasPermission(module, 'view')) return <>{children}</>;
+
+  // Fallback: check staff_type (backward compat when roles not yet assigned)
+  const allowed = STAFF_TYPE_FALLBACK[module] || [];
   if (allowed.includes(staffType)) return <>{children}</>;
 
   return fallback ? <>{fallback}</> : (
@@ -168,16 +174,17 @@ export function RoleGuard({ module, children, fallback }: {
       <div className="text-4xl mb-3">🔒</div>
       <h2 className="text-lg font-semibold text-gray-900">Access restricted</h2>
       <p className="text-sm text-gray-500 mt-1">You don't have permission to access the {module} module.</p>
-      <p className="text-xs text-gray-400 mt-2">Your role: {staffType || 'unknown'}</p>
+      <p className="text-xs text-gray-400 mt-2">Contact admin to request access.</p>
     </div>
   );
 }
 
 export function useHasAccess(module: string): boolean {
-  const { staff } = useAuthStore();
+  const { staff, hasPermission } = useAuthStore();
   const staffType = staff?.staff_type || '';
   if (staffType === 'admin') return true;
-  return (MODULE_ACCESS[module] || []).includes(staffType);
+  if (hasPermission(module, 'view')) return true;
+  return (STAFF_TYPE_FALLBACK[module] || []).includes(staffType);
 }
 
 // ============================================================

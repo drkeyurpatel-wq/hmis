@@ -31,15 +31,17 @@ const navItems = [
   { href: '/homecare', label: 'Homecare', icon: Home, module: 'homecare' },
   { href: '/reports', label: 'MIS & Reports', icon: BarChart3, module: 'mis' },
   { href: '/quality', label: 'Quality & NABH', icon: Activity, module: 'mis' },
+  { href: '/staff', label: 'Staff & Access', icon: Settings, module: 'settings' },
   { href: '/settings', label: 'Settings', icon: Settings, module: null },
 ];
 
 export function Sidebar({ mobileOpen, onMobileClose }: { mobileOpen?: boolean; onMobileClose?: () => void } = {}) {
   const pathname = usePathname();
-  const { staff, centres, activeCentreId, setActiveCentre } = useAuthStore();
+  const { staff, centres, activeCentreId, setActiveCentre, hasPermission } = useAuthStore();
   const [centreOpen, setCentreOpen] = useState(false);
 
   const activeCentre = centres.find((c) => c.centre_id === activeCentreId);
+  const staffType = staff?.staff_type || '';
 
   return (
     <>
@@ -86,9 +88,11 @@ export function Sidebar({ mobileOpen, onMobileClose }: { mobileOpen?: boolean; o
       <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-0.5">
         {navItems.filter((item) => {
           if (!item.module) return true; // dashboard, settings always visible
-          const staffType = staff?.staff_type || 'admin';
           if (staffType === 'admin') return true;
-          const moduleAccess: Record<string, string[]> = {
+          // Check DB role permissions first
+          if (hasPermission(item.module, 'view')) return true;
+          // Fallback to staff_type when roles not yet assigned
+          const fallback: Record<string, string[]> = {
             patients: ['doctor','nurse','admin','receptionist','support'],
             opd: ['doctor','nurse','admin','receptionist'],
             emr: ['doctor','nurse'], 'emr-v2': ['doctor','nurse'],
@@ -98,11 +102,10 @@ export function Sidebar({ mobileOpen, onMobileClose }: { mobileOpen?: boolean; o
             ipd: ['doctor','nurse','admin'],
             ot: ['doctor','nurse','admin'],
             radiology: ['technician','admin','doctor'],
-            insurance: ['admin','accountant'],
-            accounting: ['accountant','admin'],
             mis: ['admin','doctor','accountant'],
+            settings: ['admin'],
           };
-          return (moduleAccess[item.module] || []).includes(staffType);
+          return (fallback[item.module] || []).includes(staffType);
         }).map((item) => {
           const isActive =
             item.href === '/'
