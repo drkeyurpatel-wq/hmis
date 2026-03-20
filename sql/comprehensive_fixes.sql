@@ -1,9 +1,10 @@
 -- ============================================================
 -- Health1 HMIS — Comprehensive Fixes
 -- Run in Supabase SQL Editor (project: bmuupgrzbfmddjwcqlss)
+-- SAFE: Every statement checks if table/column exists first
 -- ============================================================
 
--- 1. Auto-update updated_at trigger (apply to all tables that have the column)
+-- 1. Auto-update updated_at trigger function
 CREATE OR REPLACE FUNCTION update_updated_at()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -12,6 +13,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+-- Apply trigger only to tables that actually exist AND have updated_at
 DO $$
 DECLARE
     tbl text;
@@ -23,10 +25,9 @@ DECLARE
     ];
 BEGIN
     FOREACH tbl IN ARRAY tbls LOOP
-        -- Only create trigger if table and column exist
         IF EXISTS (
             SELECT 1 FROM information_schema.columns 
-            WHERE table_name = tbl AND column_name = 'updated_at'
+            WHERE table_schema = 'public' AND table_name = tbl AND column_name = 'updated_at'
         ) THEN
             EXECUTE format('DROP TRIGGER IF EXISTS trg_%s_updated_at ON %I', tbl, tbl);
             EXECUTE format('CREATE TRIGGER trg_%s_updated_at BEFORE UPDATE ON %I FOR EACH ROW EXECUTE FUNCTION update_updated_at()', tbl, tbl);
@@ -34,27 +35,30 @@ BEGIN
     END LOOP;
 END $$;
 
--- 2. Add appointment_id to OPD visits (for linking)
-ALTER TABLE hmis_opd_visits ADD COLUMN IF NOT EXISTS appointment_id uuid REFERENCES hmis_appointments(id);
-CREATE INDEX IF NOT EXISTS idx_opd_appointment ON hmis_opd_visits(appointment_id) WHERE appointment_id IS NOT NULL;
+-- 2. Add appointment_id to OPD visits (only if appointments table exists)
+DO $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'hmis_appointments') THEN
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'hmis_opd_visits' AND column_name = 'appointment_id') THEN
+            ALTER TABLE hmis_opd_visits ADD COLUMN appointment_id uuid REFERENCES hmis_appointments(id);
+            CREATE INDEX IF NOT EXISTS idx_opd_appointment ON hmis_opd_visits(appointment_id) WHERE appointment_id IS NOT NULL;
+        END IF;
+    END IF;
+END $$;
 
--- 3. Storage bucket for patient documents
--- NOTE: Run this in Supabase Dashboard → Storage → New Bucket
--- Bucket name: documents
--- Public: No (private — accessed via signed URLs)
--- File size limit: 10MB
--- Allowed MIME types: image/*, application/pdf, application/msword,
---   application/vnd.openxmlformats-officedocument.wordprocessingml.document
+-- 3. Ensure hmis_ipd_medication_orders has CPOE fields (only if table exists)
+DO $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'hmis_ipd_medication_orders') THEN
+        ALTER TABLE hmis_ipd_medication_orders ADD COLUMN IF NOT EXISTS ordered_by uuid REFERENCES hmis_staff(id);
+        ALTER TABLE hmis_ipd_medication_orders ADD COLUMN IF NOT EXISTS patient_id uuid REFERENCES hmis_patients(id);
+    END IF;
+END $$;
 
--- If using SQL (requires service role):
--- INSERT INTO storage.buckets (id, name, public, file_size_limit)
--- VALUES ('documents', 'documents', false, 10485760)
--- ON CONFLICT (id) DO NOTHING;
-
--- 4. Fix: Ensure hmis_ipd_medication_orders has the fields CPOE writes to
-ALTER TABLE hmis_ipd_medication_orders ADD COLUMN IF NOT EXISTS ordered_by uuid REFERENCES hmis_staff(id);
-ALTER TABLE hmis_ipd_medication_orders ADD COLUMN IF NOT EXISTS patient_id uuid REFERENCES hmis_patients(id);
-
--- 5. Bill number uniqueness enforcement
+-- 4. Bill number uniqueness
 ALTER TABLE hmis_bills DROP CONSTRAINT IF EXISTS hmis_bills_bill_number_key;
 ALTER TABLE hmis_bills ADD CONSTRAINT hmis_bills_bill_number_key UNIQUE (bill_number);
+
+-- 5. Storage bucket note
+-- Go to Supabase Dashboard → Storage → New Bucket
+-- Name: documents | Public: No | Size limit: 10MB
