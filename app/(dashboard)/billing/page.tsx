@@ -21,11 +21,12 @@ import RefundManager from '@/components/billing/refund-manager';
 import CreditNoteManager from '@/components/billing/credit-note-manager';
 import PackageBuilder from '@/components/billing/package-builder';
 import OPDBilling from '@/components/billing/opd-billing';
+import ServiceBillingEngine from '@/components/billing/service-billing-engine';
 
 let _sb: any = null;
 function sb() { if (typeof window === 'undefined') return null as any; if (!_sb) { try { _sb = createClient(); } catch { return null; } } return _sb; }
 
-type Tab = 'dashboard'|'bills'|'opd_billing'|'charges'|'barcode'|'auto_charges'|'final_bill'|'cashless'|'corporate'|'ipd_billing'|'ar'|'estimates'|'advances'|'settlements'|'refunds'|'credit_notes'|'govt'|'loyalty'|'tariffs'|'packages'|'day_end'|'integrations';
+type Tab = 'dashboard'|'new_bill'|'bills'|'opd_billing'|'charges'|'barcode'|'auto_charges'|'final_bill'|'cashless'|'corporate'|'ipd_billing'|'ar'|'estimates'|'advances'|'settlements'|'refunds'|'credit_notes'|'govt'|'loyalty'|'tariffs'|'packages'|'day_end'|'integrations';
 
 function BillingInner() {
   const { staff, activeCentreId } = useAuthStore();
@@ -105,7 +106,7 @@ function BillingInner() {
   const reloadBills = () => billing.load({dateFrom, dateTo, status:statusFilter, payorType:payorFilter, billType:typeFilter});
 
   const tabs: [Tab,string,string][] = [
-    ['dashboard','Dashboard','📊'],['bills','Bills','📄'],['opd_billing','OPD Billing','🏥'],['charges','Charge Capture','⚡'],['barcode','Barcode Scan','📡'],['auto_charges','Auto Charges','🔄'],
+    ['dashboard','Dashboard','📊'],['new_bill','New Bill','💵'],['bills','Bills','📄'],['opd_billing','OPD Billing','🏥'],['charges','Charge Capture','⚡'],['barcode','Barcode Scan','📡'],['auto_charges','Auto Charges','🔄'],
     ['final_bill','IPD Final Bill','🧾'],['cashless','Insurance/Cashless','🏥'],['corporate','Corporate','🏢'],
     ['ipd_billing','IPD Running','🛏️'],['ar','Accounts Receivable','📑'],['estimates','Estimates','📋'],['advances','Advances','💰'],
     ['settlements','Settlements','🤝'],['refunds','Refunds','↩️'],['credit_notes','Credit Notes','📝'],['govt','Govt Schemes','🇮🇳'],['loyalty','Loyalty','💳'],['tariffs','Tariff Master','💲'],
@@ -117,7 +118,7 @@ function BillingInner() {
       {toast && <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-green-600 text-white px-4 py-2 rounded-lg shadow-lg text-sm">{toast}</div>}
       <div className="flex items-center justify-between mb-3">
         <div><h1 className="text-xl font-bold text-gray-900">Revenue Cycle Management</h1><p className="text-xs text-gray-500">Health1 Super Speciality — Multi-centre, Multi-payor Billing</p></div>
-        <button onClick={() => {setShowNewBill(true); setTab('bills');}} className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg font-medium">+ New Bill</button>
+        <button onClick={() => setTab('new_bill')} className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg font-medium">+ New Bill</button>
       </div>
 
       <div className="flex gap-0.5 mb-4 border-b pb-px overflow-x-auto">
@@ -127,6 +128,10 @@ function BillingInner() {
 
       {/* ===== DASHBOARD ===== */}
       {tab === 'dashboard' && <RevenueDashboard bills={billing.bills} />}
+
+      {/* ===== NEW BILL — Full Service Billing Engine ===== */}
+      {tab === 'new_bill' && <ServiceBillingEngine centreId={centreId} staffId={staffId} mode="general"
+        onDone={() => { billing.load(); setTab('bills'); }} onFlash={flash} />}
 
       {/* ===== BILLS ===== */}
       {tab === 'bills' && <div>
