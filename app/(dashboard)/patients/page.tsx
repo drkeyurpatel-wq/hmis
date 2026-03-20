@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { exportToCSV } from '@/lib/utils/data-export';
 import { createClient } from '@/lib/supabase/client';
 import { useAuthStore } from '@/lib/store/auth';
@@ -23,40 +23,44 @@ const relationships = ['Spouse', 'Parent', 'Child', 'Sibling', 'Relative', 'Frie
 const severities = ['mild', 'moderate', 'severe'];
 const indianStates = ['Andhra Pradesh','Arunachal Pradesh','Assam','Bihar','Chhattisgarh','Goa','Gujarat','Haryana','Himachal Pradesh','Jharkhand','Karnataka','Kerala','Madhya Pradesh','Maharashtra','Manipur','Meghalaya','Mizoram','Nagaland','Odisha','Punjab','Rajasthan','Sikkim','Tamil Nadu','Telangana','Tripura','Uttar Pradesh','Uttarakhand','West Bengal','Delhi','Jammu & Kashmir','Ladakh'];
 
+// ARCHITECTURE: PatientsPage is a thin switch.
+// When registering → ONLY RegisterModal exists (no list, no effects, no subscriptions).
+// When browsing → ONLY PatientsList exists (no modal).
+// They NEVER coexist. This prevents any cross-contamination.
+
 export default function PatientsPage() {
+  const [mode, setMode] = useState<'list' | 'register'>('list');
+
+  if (mode === 'register') {
+    return <RegisterModal
+      onClose={() => setMode('list')}
+      onSuccess={() => setMode('list')}
+    />;
+  }
+
+  return <PatientsList onRegister={() => setMode('register')} />;
+}
+
+function PatientsList({ onRegister }: { onRegister: () => void }) {
   const { activeCentreId } = useAuthStore();
   const [patients, setPatients] = useState<Patient[]>([]);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
-  const [showRegister, setShowRegister] = useState(false);
   const [filterGender, setFilterGender] = useState('');
 
-  // Use refs so loadPatients callback identity stays stable
-  const searchRef = useRef(search);
-  searchRef.current = search;
-  const filterRef = useRef(filterGender);
-  filterRef.current = filterGender;
-  const modalOpenRef = useRef(showRegister);
-  modalOpenRef.current = showRegister;
-
   const loadPatients = useCallback(async () => {
-    if (!activeCentreId || modalOpenRef.current) return;
+    if (!activeCentreId) return;
     setLoading(true);
     const supabase = createClient();
     let query = supabase.from('hmis_patients').select('*').eq('is_active', true).order('created_at', { ascending: false }).limit(50);
-    if (searchRef.current.trim()) query = query.or(`uhid.ilike.%${searchRef.current}%,phone_primary.ilike.%${searchRef.current}%,first_name.ilike.%${searchRef.current}%,last_name.ilike.%${searchRef.current}%`);
-    if (filterRef.current) query = query.eq('gender', filterRef.current);
+    if (search.trim()) query = query.or(`uhid.ilike.%${search}%,phone_primary.ilike.%${search}%,first_name.ilike.%${search}%,last_name.ilike.%${search}%`);
+    if (filterGender) query = query.eq('gender', filterGender);
     const { data } = await query;
     setPatients(data || []);
     setLoading(false);
-  }, [activeCentreId]);
+  }, [activeCentreId, search, filterGender]);
 
-  // Debounced search — only triggers on search/filter change, not on modal state
-  useEffect(() => {
-    if (showRegister) return; // Don't reload while registering
-    const t = setTimeout(loadPatients, 300);
-    return () => clearTimeout(t);
-  }, [search, filterGender, loadPatients, showRegister]);
+  useEffect(() => { const t = setTimeout(loadPatients, 300); return () => clearTimeout(t); }, [loadPatients]);
 
   return (
     <div>
@@ -66,7 +70,7 @@ export default function PatientsPage() {
           <p className="text-sm text-gray-500 mt-0.5">{patients.length} registered patients</p>
         </div>
         <button onClick={() => exportToCSV(patients.map(p => ({ uhid: p.uhid, first_name: p.first_name, last_name: p.last_name, gender: p.gender, age: p.age_years, phone: p.phone_primary, city: p.city, registered: p.created_at?.split("T")[0] })), "patients")} className="px-3 py-2 bg-gray-100 text-sm rounded-lg border">Export CSV</button>
-          <button onClick={() => setShowRegister(true)} className="flex items-center gap-2 px-4 py-2.5 bg-health1-teal text-white text-sm font-semibold rounded-lg hover:bg-teal-700 transition-all shadow-sm hover:shadow-md">
+          <button onClick={onRegister} className="flex items-center gap-2 px-4 py-2.5 bg-health1-teal text-white text-sm font-semibold rounded-lg hover:bg-teal-700 transition-all shadow-sm hover:shadow-md">
           <UserPlus size={16} /> New registration
         </button>
       </div>
@@ -92,7 +96,7 @@ export default function PatientsPage() {
             <User size={32} className="mb-3 text-gray-300" />
             <p className="text-sm font-medium">No patients found</p>
             <button onClick={() => exportToCSV(patients.map(p => ({ uhid: p.uhid, first_name: p.first_name, last_name: p.last_name, gender: p.gender, age: p.age_years, phone: p.phone_primary, city: p.city, registered: p.created_at?.split("T")[0] })), "patients")} className="px-3 py-2 bg-gray-100 text-sm rounded-lg border">Export CSV</button>
-          <button onClick={() => setShowRegister(true)} className="mt-2 text-sm text-brand-600 hover:underline font-medium">Register first patient</button>
+          <button onClick={onRegister} className="mt-2 text-sm text-brand-600 hover:underline font-medium">Register first patient</button>
           </div>
         ) : (
           <div className="divide-y divide-gray-100">
@@ -119,8 +123,6 @@ export default function PatientsPage() {
           </div>
         )}
       </div>
-
-      {showRegister && <RegisterModal onClose={() => setShowRegister(false)} onSuccess={() => { setShowRegister(false); loadPatients(); }} />}
     </div>
   );
 }
