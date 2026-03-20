@@ -9,6 +9,123 @@ let _sb: any = null;
 function sb() { if (typeof window === 'undefined') return null as any; if (!_sb) { try { _sb = createClient(); } catch { return null; } } return _sb; }
 
 // ============================================================
+// TARIFF LOOKUP — find real rate from hmis_tariff_master
+// ============================================================
+export async function lookupTariff(centreId: string, serviceName: string, payorType: string = 'self'): Promise<{ tariffId: string; rate: number; serviceName: string; category: string } | null> {
+  if (!sb()) return null;
+
+  // Try exact match first
+  let { data } = await sb().from('hmis_tariff_master')
+    .select('id, service_name, category, rate_self, rate_insurance, rate_pmjay, rate_cghs')
+    .eq('centre_id', centreId).eq('is_active', true)
+    .ilike('service_name', serviceName).limit(1).maybeSingle();
+
+  // Try fuzzy match
+  if (!data) {
+    const { data: fuzzy } = await sb().from('hmis_tariff_master')
+      .select('id, service_name, category, rate_self, rate_insurance, rate_pmjay, rate_cghs')
+      .eq('centre_id', centreId).eq('is_active', true)
+      .ilike('service_name', `%${serviceName}%`).limit(1).maybeSingle();
+    data = fuzzy;
+  }
+
+  // Try keyword match (first 2 significant words)
+  if (!data) {
+    const words = serviceName.split(/[\s\-\/]+/).filter(w => w.length > 2).slice(0, 2);
+    if (words.length > 0) {
+      const { data: keyword } = await sb().from('hmis_tariff_master')
+        .select('id, service_name, category, rate_self, rate_insurance, rate_pmjay, rate_cghs')
+        .eq('centre_id', centreId).eq('is_active', true)
+        .ilike('service_name', `%${words[0]}%`).limit(1).maybeSingle();
+      data = keyword;
+    }
+  }
+
+  if (!data) return null;
+
+  const rateMap: Record<string, string> = { self: 'rate_self', insurance: 'rate_insurance', cashless: 'rate_insurance', pmjay: 'rate_pmjay', cghs: 'rate_cghs', echs: 'rate_cghs' };
+  const rateField = rateMap[payorType] || 'rate_self';
+  const rate = parseFloat(data[rateField] || data.rate_self || 0);
+
+  return { tariffId: data.id, rate, serviceName: data.service_name, category: data.category };
+}
+
+// ============================================================
+// SMART AUTO-CHARGE — lookup tariff + post charge in one call
+// ============================================================
+export async function smartPostLabCharge(params: {
+  centreId: string; patientId: string; admissionId?: string;
+  labOrderId: string; testName: string; payorType?: string; staffId: string;
+}): Promise<{ posted: boolean; amount: number }> {
+  if (!sb()) return { posted: false, amount: 0 };
+  const tariff = await lookupTariff(params.centreId, params.testName, params.payorType || 'self');
+  const amount = tariff?.rate || 0;
+  if (amount <= 0) return { posted: false, amount: 0 };
+
+  await sb().from('hmis_charge_log').insert({
+    centre_id: params.centreId, patient_id: params.patientId,
+    admission_id: params.admissionId || null,
+    tariff_id: tariff?.tariffId || null,
+    description: `Lab: ${tariff?.serviceName || params.testName}`,
+    category: 'lab', quantity: 1, unit_rate: amount, amount,
+    source: 'lab', source_ref_id: params.labOrderId, source_ref_type: 'lab_order',
+    captured_by: params.staffId, service_date: new Date().toISOString().split('T')[0],
+    status: 'captured',
+  });
+  auditCreate(params.centreId, params.staffId, 'charge', '', `Lab: ${params.testName} → ₹${amount} (tariff: ${tariff?.serviceName})`);
+  return { posted: true, amount };
+}
+
+export async function smartPostRadiologyCharge(params: {
+  centreId: string; patientId: string; admissionId?: string;
+  radiologyOrderId: string; testName: string; payorType?: string; staffId: string;
+}): Promise<{ posted: boolean; amount: number }> {
+  if (!sb()) return { posted: false, amount: 0 };
+  const tariff = await lookupTariff(params.centreId, params.testName, params.payorType || 'self');
+  const amount = tariff?.rate || 0;
+  if (amount <= 0) return { posted: false, amount: 0 };
+
+  await sb().from('hmis_charge_log').insert({
+    centre_id: params.centreId, patient_id: params.patientId,
+    admission_id: params.admissionId || null,
+    tariff_id: tariff?.tariffId || null,
+    description: `Radiology: ${tariff?.serviceName || params.testName}`,
+    category: 'radiology', quantity: 1, unit_rate: amount, amount,
+    source: 'radiology', source_ref_id: params.radiologyOrderId, source_ref_type: 'radiology_order',
+    captured_by: params.staffId, service_date: new Date().toISOString().split('T')[0],
+    status: 'captured',
+  });
+  auditCreate(params.centreId, params.staffId, 'charge', '', `Radiology: ${params.testName} → ₹${amount} (tariff: ${tariff?.serviceName})`);
+  return { posted: true, amount };
+}
+
+export async function smartPostConsultationCharge(params: {
+  centreId: string; patientId: string;
+  doctorName: string; isSuper: boolean; visitType: string;
+  visitId: string; payorType?: string; staffId: string;
+}): Promise<{ posted: boolean; amount: number }> {
+  if (!sb()) return { posted: false, amount: 0 };
+  // Lookup consultation fee from tariff
+  const searchTerm = params.isSuper
+    ? (params.visitType === 'follow_up' ? 'OPD FOLLOW UP CONSULTATION (SUPER SPECIALIST)' : 'OPD CONSULTATION (SUPER SPECIALIST)')
+    : (params.visitType === 'follow_up' ? 'OPD FOLLOW UP CONSULTATION (SPECIALIST)' : 'OPD CONSULTATION (SPECIALIST)');
+
+  const tariff = await lookupTariff(params.centreId, searchTerm, params.payorType || 'self');
+  const amount = tariff?.rate || (params.isSuper ? 1500 : 1000); // Fallback from SOC
+
+  await sb().from('hmis_charge_log').insert({
+    centre_id: params.centreId, patient_id: params.patientId,
+    description: `Consultation: Dr. ${params.doctorName} (${params.isSuper ? 'Super Specialist' : 'Specialist'})`,
+    category: 'consultation', quantity: 1, unit_rate: amount, amount,
+    source: 'manual', source_ref_id: params.visitId, source_ref_type: 'opd_visit',
+    captured_by: params.staffId, service_date: new Date().toISOString().split('T')[0],
+    status: 'captured',
+  });
+  auditCreate(params.centreId, params.staffId, 'charge', '', `OPD Consult: Dr. ${params.doctorName} ₹${amount}`);
+  return { posted: true, amount };
+}
+
+// ============================================================
 // 1. PHARMACY DISPENSE → CHARGE LOG
 // Call after successful dispense
 // ============================================================

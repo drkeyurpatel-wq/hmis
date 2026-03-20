@@ -4,6 +4,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { auditCreate, auditUpdate, auditSign } from '@/lib/audit/audit-logger';
+import { smartPostLabCharge } from '@/lib/bridge/cross-module-bridge';
 
 let _sb: ReturnType<typeof createClient> | null = null;
 function sb() {
@@ -128,6 +129,18 @@ export function useSamples(centreId: string | null) {
       await sb().from('hmis_lab_orders').update({ status: 'sample_collected' }).eq('id', orderId);
       // Log
       if (sample) await sb().from('hmis_lab_sample_log').insert({ sample_id: sample.id, action: 'collected', performed_by: staffId, location: 'Collection counter' });
+      // Auto-post charge from tariff
+      const { data: order } = await sb().from('hmis_lab_orders')
+        .select('centre_id, patient_id, admission_id, test:hmis_lab_test_master(test_name), patient:hmis_patients!inner(payor_type)')
+        .eq('id', orderId).maybeSingle();
+      if (order?.test?.test_name) {
+        await smartPostLabCharge({
+          centreId: order.centre_id, patientId: order.patient_id,
+          admissionId: order.admission_id || undefined,
+          labOrderId: orderId, testName: order.test.test_name,
+          payorType: order.patient?.payor_type || 'self', staffId,
+        });
+      }
     }
     return { sample, barcode, error };
   }, [generateBarcode]);

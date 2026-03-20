@@ -19,11 +19,13 @@ import ChargeDashboard from '@/components/billing/charge-dashboard';
 import IPDFinalBill from '@/components/billing/ipd-final-bill';
 import RefundManager from '@/components/billing/refund-manager';
 import CreditNoteManager from '@/components/billing/credit-note-manager';
+import PackageBuilder from '@/components/billing/package-builder';
+import OPDBilling from '@/components/billing/opd-billing';
 
 let _sb: any = null;
 function sb() { if (typeof window === 'undefined') return null as any; if (!_sb) { try { _sb = createClient(); } catch { return null; } } return _sb; }
 
-type Tab = 'dashboard'|'bills'|'charges'|'barcode'|'auto_charges'|'final_bill'|'cashless'|'corporate'|'ipd_billing'|'ar'|'estimates'|'advances'|'settlements'|'refunds'|'credit_notes'|'govt'|'loyalty'|'tariffs'|'packages'|'day_end'|'integrations';
+type Tab = 'dashboard'|'bills'|'opd_billing'|'charges'|'barcode'|'auto_charges'|'final_bill'|'cashless'|'corporate'|'ipd_billing'|'ar'|'estimates'|'advances'|'settlements'|'refunds'|'credit_notes'|'govt'|'loyalty'|'tariffs'|'packages'|'day_end'|'integrations';
 
 function BillingInner() {
   const { staff, activeCentreId } = useAuthStore();
@@ -103,7 +105,7 @@ function BillingInner() {
   const reloadBills = () => billing.load({dateFrom, dateTo, status:statusFilter, payorType:payorFilter, billType:typeFilter});
 
   const tabs: [Tab,string,string][] = [
-    ['dashboard','Dashboard','📊'],['bills','Bills','📄'],['charges','Charge Capture','⚡'],['barcode','Barcode Scan','📡'],['auto_charges','Auto Charges','🔄'],
+    ['dashboard','Dashboard','📊'],['bills','Bills','📄'],['opd_billing','OPD Billing','🏥'],['charges','Charge Capture','⚡'],['barcode','Barcode Scan','📡'],['auto_charges','Auto Charges','🔄'],
     ['final_bill','IPD Final Bill','🧾'],['cashless','Insurance/Cashless','🏥'],['corporate','Corporate','🏢'],
     ['ipd_billing','IPD Running','🛏️'],['ar','Accounts Receivable','📑'],['estimates','Estimates','📋'],['advances','Advances','💰'],
     ['settlements','Settlements','🤝'],['refunds','Refunds','↩️'],['credit_notes','Credit Notes','📝'],['govt','Govt Schemes','🇮🇳'],['loyalty','Loyalty','💳'],['tariffs','Tariff Master','💲'],
@@ -189,6 +191,9 @@ function BillingInner() {
             <td className="p-2 text-center"><span className={`px-1.5 py-0.5 rounded text-[9px] ${stColor(b.status)}`}>{b.status?.replace('_',' ')}</span></td>
           </tr>))}</tbody></table></div></>}
       </div>}
+
+      {/* ===== OPD BILLING ===== */}
+      {tab === 'opd_billing' && <OPDBillingSelector centreId={centreId} staffId={staffId} onFlash={flash} />}
 
       {/* ===== CHARGE CAPTURE ===== */}
       {tab === 'charges' && <ChargeDashboard centreId={centreId} />}
@@ -294,13 +299,7 @@ function BillingInner() {
       </div>}
 
       {/* ===== PACKAGES ===== */}
-      {tab === 'packages' && <div>
-        <h2 className="font-semibold text-sm mb-3">Surgery / Treatment Packages</h2>
-        {packages.packages.length===0?<div className="text-center py-8 bg-white rounded-xl border text-gray-400 text-sm">No packages configured</div>:
-        <div className="grid grid-cols-2 gap-3">{packages.packages.map((p: any) => (
-          <div key={p.id} className="bg-white rounded-xl border p-4"><div className="flex justify-between"><div><div className="font-semibold">{p.package_name}</div><div className="text-[10px] text-gray-400">{p.package_code}</div></div>
-            <div className="text-lg font-bold text-blue-700">₹{fmt(p.total_amount)}</div></div></div>))}</div>}
-      </div>}
+      {tab === 'packages' && <PackageBuilder centreId={centreId} onFlash={flash} />}
 
       {/* ===== DAY END ===== */}
       {tab === 'day_end' && <DayEndSettlement bills={billing.bills} />}
@@ -349,6 +348,53 @@ function FinalBillSelector({ centreId, staffId, onFlash }: { centreId: string; s
           ))}
         </div>}
       </div>
+    </div>
+  );
+}
+
+// Inline: OPD visit selector → OPD Billing
+function OPDBillingSelector({ centreId, staffId, onFlash }: { centreId: string; staffId: string; onFlash: (m: string) => void }) {
+  const [selectedVisit, setSelectedVisit] = React.useState<any>(null);
+  const [visits, setVisits] = React.useState<any[]>([]);
+  const [loadingVisits, setLoadingVisits] = React.useState(true);
+
+  React.useEffect(() => {
+    if (!sb() || !centreId) return;
+    const today = new Date().toISOString().split('T')[0];
+    sb().from('hmis_opd_visits')
+      .select('id, status, created_at, visit_type, patient:hmis_patients!inner(id, first_name, last_name, uhid, phone_primary, age_years, gender), doctor:hmis_staff!inner(id, full_name, specialisation, staff_type)')
+      .eq('centre_id', centreId).gte('created_at', today + 'T00:00:00')
+      .in('status', ['completed', 'in_consultation']).order('created_at', { ascending: false }).limit(20)
+      .then(({ data }: any) => { setVisits(data || []); setLoadingVisits(false); });
+  }, [centreId]);
+
+  if (selectedVisit) {
+    const v = selectedVisit;
+    return <OPDBilling centreId={centreId} staffId={staffId}
+      patient={{ id: v.patient.id, name: `${v.patient.first_name} ${v.patient.last_name}`, uhid: v.patient.uhid, phone: v.patient.phone_primary, age: v.patient.age_years?.toString(), gender: v.patient.gender }}
+      doctor={{ id: v.doctor.id, name: v.doctor.full_name, isSuper: v.doctor.specialisation?.length > 0, specialisation: v.doctor.specialisation }}
+      visitId={v.id} visitType={v.visit_type || 'new'}
+      onFlash={onFlash} onDone={() => setSelectedVisit(null)} />;
+  }
+
+  return (
+    <div className="space-y-4">
+      <h2 className="font-bold text-sm">OPD Billing — Select Completed Visit</h2>
+      {loadingVisits ? <div className="animate-pulse h-24 bg-gray-200 rounded-xl" /> :
+      visits.length === 0 ? <div className="text-center py-12 bg-white rounded-xl border text-gray-400 text-sm">No completed OPD visits today</div> :
+      <div className="bg-white rounded-xl border overflow-hidden">
+        <table className="w-full text-xs"><thead><tr className="bg-gray-50 border-b">
+          <th className="p-2 text-left">Patient</th><th className="p-2">Doctor</th><th className="p-2">Type</th><th className="p-2">Time</th><th className="p-2"></th>
+        </tr></thead><tbody>{visits.map((v: any) => (
+          <tr key={v.id} className="border-b hover:bg-blue-50">
+            <td className="p-2"><span className="font-medium">{v.patient.first_name} {v.patient.last_name}</span><span className="text-gray-400 ml-1 text-[10px]">{v.patient.uhid}</span></td>
+            <td className="p-2">Dr. {v.doctor.full_name}</td>
+            <td className="p-2 text-center"><span className="text-[9px] bg-gray-100 px-1 py-0.5 rounded">{v.visit_type || 'new'}</span></td>
+            <td className="p-2 text-center text-gray-400">{new Date(v.created_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</td>
+            <td className="p-2"><button onClick={() => setSelectedVisit(v)} className="px-3 py-1 bg-green-600 text-white text-[10px] rounded">Bill →</button></td>
+          </tr>
+        ))}</tbody></table>
+      </div>}
     </div>
   );
 }

@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { auditCreate, auditSign } from '@/lib/audit/audit-logger';
+import { smartPostRadiologyCharge } from '@/lib/bridge/cross-module-bridge';
 
 let _sb: any = null;
 function sb() { if (typeof window === 'undefined') return null as any; if (!_sb) { try { _sb = createClient(); } catch { return null; } } return _sb; }
@@ -373,6 +374,13 @@ export function useRadiologyWorklist(centreId: string | null) {
 
     if (error) return { success: false, error: error.message };
     auditCreate(centreId, data.ordered_by || '', 'radiology_order', order?.id, `Radiology: ${test.modality} ${test.body_part} [${accession}]`);
+    // Auto-post charge from tariff
+    const { data: testDetail } = await sb().from('hmis_radiology_test_master').select('test_name').eq('id', data.test_id).maybeSingle();
+    await smartPostRadiologyCharge({
+      centreId, patientId: data.patient_id, admissionId: data.admission_id || undefined,
+      radiologyOrderId: order?.id, testName: testDetail?.test_name || `${test.modality} ${test.body_part}`,
+      payorType: 'self', staffId: data.ordered_by || '',
+    });
     load();
     return { success: true, order };
   }, [centreId, load]);
