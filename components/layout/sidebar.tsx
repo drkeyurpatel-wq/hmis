@@ -16,6 +16,7 @@ const navItems = [
   { href: '/command-centre', label: 'Command Centre', icon: Activity, module: null },
   { href: '/patients', label: 'Patients', icon: Users, module: 'patients' },
   { href: '/opd', label: 'OPD', icon: Calendar, module: 'opd' },
+  { href: '/appointments', label: 'Appointments', icon: Calendar, module: 'opd' },
   { href: '/ipd', label: 'IPD', icon: BedDouble, module: 'ipd' },
   { href: '/bed-management', label: 'Bed Management', icon: BedDouble, module: 'ipd' },
   { href: '/emr-v2', label: 'EMR', icon: Stethoscope, module: 'emr' },

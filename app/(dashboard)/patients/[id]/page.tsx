@@ -6,6 +6,7 @@ import { useAuthStore } from '@/lib/store/auth';
 import Link from 'next/link';
 import PatientImagingPanel from '@/components/radiology/patient-imaging-panel';
 import PatientLabHistory from '@/components/lab/patient-lab-history';
+import { usePatientDocuments, useEmergencyContacts, usePatientInsurance } from '@/lib/appointments/appointment-hooks';
 
 let _sb: any = null;
 function sb() { if (typeof window === 'undefined') return null as any; if (!_sb) { try { _sb = createClient(); } catch { return null; } } return _sb; }
@@ -24,6 +25,12 @@ export default function PatientDetailPage() {
   const [editForm, setEditForm] = useState<any>({});
   const [activeTab, setActiveTab] = useState('overview');
   const [toast, setToast] = useState('');
+  const docs = usePatientDocuments(patientId);
+  const emergencyContacts = useEmergencyContacts(patientId);
+  const insurance = usePatientInsurance(patientId);
+  const [docFile, setDocFile] = useState<File | null>(null);
+  const [docType, setDocType] = useState('other');
+  const [ecForm, setEcForm] = useState({ name: '', relationship: '', phone: '' });
 
   const flash = (msg: string) => { setToast(msg); setTimeout(() => setToast(''), 2500); };
 
@@ -119,7 +126,7 @@ export default function PatientDetailPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 mb-4 border-b">{[['overview','Overview'],['imaging','Imaging'],['lab','Lab Results'],['encounters','Encounters'],['billing','Billing'],['edit','Edit Details']].map(([k,l]) =>
+      <div className="flex gap-1 mb-4 border-b">{[['overview','Overview'],['imaging','Imaging'],['lab','Lab Results'],['documents','Documents'],['insurance','Insurance'],['emergency','Emergency Contacts'],['encounters','Encounters'],['billing','Billing'],['edit','Edit Details']].map(([k,l]) =>
         <button key={k} onClick={() => { setActiveTab(k); if (k === 'edit') setEditing(true); }}
           className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px ${activeTab === k ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>{l}</button>
       )}</div>
@@ -167,6 +174,84 @@ export default function PatientDetailPage() {
 
       {activeTab === 'lab' && (
         <PatientLabHistory patientId={patientId} />
+      )}
+
+      {/* DOCUMENTS */}
+      {activeTab === 'documents' && (
+        <div className="space-y-4">
+          <div className="bg-white rounded-xl border p-4">
+            <h3 className="text-sm font-bold mb-3">Upload Document</h3>
+            <div className="flex gap-3">
+              <select value={docType} onChange={e => setDocType(e.target.value)} className="px-3 py-2 border rounded-lg text-xs">
+                {['aadhaar','pan','voter_id','passport','driving_license','insurance_card','tpa_card','cghs_card','referral_letter','old_records','consent_form','discharge_summary','lab_report','prescription','photo','other'].map(t =>
+                  <option key={t} value={t}>{t.replace(/_/g, ' ')}</option>
+                )}
+              </select>
+              <input type="file" onChange={e => setDocFile(e.target.files?.[0] || null)} className="flex-1 text-xs" accept="image/*,.pdf,.doc,.docx" />
+              <button onClick={async () => { if (docFile) { const r = await docs.upload(docFile, docType, staff?.id || ''); if (r.success) { flash('Document uploaded'); setDocFile(null); } else flash(r.error || 'Upload failed'); }}}
+                disabled={!docFile} className="px-4 py-2 bg-blue-600 text-white text-xs rounded-lg disabled:opacity-40">Upload</button>
+            </div>
+          </div>
+          {docs.documents.length === 0 ? <div className="text-center py-8 bg-white rounded-xl border text-gray-400 text-sm">No documents uploaded</div> :
+          <div className="bg-white rounded-xl border overflow-hidden">
+            <table className="w-full text-xs"><thead><tr className="bg-gray-50 border-b">
+              <th className="p-2 text-left">Type</th><th className="p-2 text-left">Name</th><th className="p-2">Date</th><th className="p-2">Verified</th><th className="p-2"></th>
+            </tr></thead><tbody>{docs.documents.map((d: any) => (
+              <tr key={d.id} className="border-b"><td className="p-2 capitalize">{d.document_type?.replace(/_/g, ' ')}</td>
+                <td className="p-2">{d.document_name}</td>
+                <td className="p-2 text-center text-gray-400">{new Date(d.created_at).toLocaleDateString('en-IN')}</td>
+                <td className="p-2 text-center">{d.verified ? <span className="text-green-600">✓</span> : <span className="text-gray-300">—</span>}</td>
+                <td className="p-2"><a href={d.file_url} target="_blank" className="text-blue-600 text-[10px]">View</a></td></tr>
+            ))}</tbody></table>
+          </div>}
+        </div>
+      )}
+
+      {/* INSURANCE */}
+      {activeTab === 'insurance' && (
+        <div className="space-y-4">
+          {insurance.policies.length === 0 ? <div className="text-center py-8 bg-white rounded-xl border text-gray-400 text-sm">No insurance policies linked</div> :
+          <div className="space-y-2">{insurance.policies.map((p: any) => (
+            <div key={p.id} className="bg-white rounded-xl border p-4">
+              <div className="flex justify-between"><div className="font-bold text-sm">{p.insurance_company}</div>
+                <span className={`text-[9px] px-1.5 py-0.5 rounded ${p.valid_to && new Date(p.valid_to) > new Date() ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>{p.valid_to && new Date(p.valid_to) > new Date() ? 'Active' : 'Expired'}</span></div>
+              <div className="grid grid-cols-3 gap-2 text-xs mt-2 text-gray-600">
+                <div><b>Policy:</b> {p.policy_number}</div><div><b>TPA:</b> {p.tpa_name || '—'}</div><div><b>Card:</b> {p.card_number || '—'}</div>
+                <div><b>Valid:</b> {p.valid_from} to {p.valid_to}</div><div><b>Sum Insured:</b> ₹{parseFloat(p.sum_insured || 0).toLocaleString('en-IN')}</div><div><b>Relation:</b> {p.relation_to_primary}</div>
+              </div>
+            </div>
+          ))}</div>}
+        </div>
+      )}
+
+      {/* EMERGENCY CONTACTS */}
+      {activeTab === 'emergency' && (
+        <div className="space-y-4">
+          <div className="bg-white rounded-xl border p-4">
+            <h3 className="text-sm font-bold mb-3">Add Emergency Contact</h3>
+            <div className="flex gap-3">
+              <input type="text" value={ecForm.name} onChange={e => setEcForm(f => ({ ...f, name: e.target.value }))} className="flex-1 px-3 py-2 border rounded-lg text-xs" placeholder="Name" />
+              <select value={ecForm.relationship} onChange={e => setEcForm(f => ({ ...f, relationship: e.target.value }))} className="px-3 py-2 border rounded-lg text-xs">
+                <option value="">Relationship</option>
+                {['spouse','parent','sibling','child','friend','other'].map(r => <option key={r} value={r}>{r}</option>)}
+              </select>
+              <input type="text" value={ecForm.phone} onChange={e => setEcForm(f => ({ ...f, phone: e.target.value }))} className="w-36 px-3 py-2 border rounded-lg text-xs" placeholder="Phone" />
+              <button onClick={async () => { if (ecForm.name && ecForm.phone) { await emergencyContacts.add(ecForm.name, ecForm.relationship, ecForm.phone); setEcForm({ name: '', relationship: '', phone: '' }); flash('Contact added'); }}}
+                disabled={!ecForm.name || !ecForm.phone} className="px-4 py-2 bg-blue-600 text-white text-xs rounded-lg disabled:opacity-40">Add</button>
+            </div>
+          </div>
+          {emergencyContacts.contacts.length === 0 ? <div className="text-center py-8 bg-white rounded-xl border text-gray-400 text-sm">No emergency contacts</div> :
+          <div className="bg-white rounded-xl border overflow-hidden">
+            <table className="w-full text-xs"><thead><tr className="bg-gray-50 border-b">
+              <th className="p-2 text-left">Name</th><th className="p-2">Relationship</th><th className="p-2">Phone</th><th className="p-2">Primary</th><th className="p-2"></th>
+            </tr></thead><tbody>{emergencyContacts.contacts.map((c: any) => (
+              <tr key={c.id} className="border-b"><td className="p-2 font-medium">{c.name}</td>
+                <td className="p-2 text-center capitalize">{c.relationship}</td><td className="p-2 text-center">{c.phone}</td>
+                <td className="p-2 text-center">{c.is_primary ? <span className="text-green-600 font-bold">✓</span> : '—'}</td>
+                <td className="p-2"><button onClick={() => emergencyContacts.remove(c.id)} className="text-red-500 text-[10px]">Remove</button></td></tr>
+            ))}</tbody></table>
+          </div>}
+        </div>
       )}
 
       {activeTab === 'encounters' && (
