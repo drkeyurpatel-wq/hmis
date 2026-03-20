@@ -14,7 +14,7 @@ RETURNS uuid[] AS $$
   FROM hmis_staff s
   JOIN hmis_staff_centres sc ON sc.staff_id = s.id
   WHERE s.auth_user_id = auth.uid()
-    AND sc.is_active = true;
+    AND s.is_active = true;
 $$ LANGUAGE sql SECURITY DEFINER STABLE;
 
 -- 2. Helper: returns current staff id
@@ -31,7 +31,7 @@ RETURNS boolean AS $$
     JOIN hmis_staff_centres sc ON sc.staff_id = s.id
     JOIN hmis_roles r ON r.id = sc.role_id
     WHERE s.auth_user_id = auth.uid()
-      AND sc.is_active = true
+      AND s.is_active = true
       AND (r.name ILIKE role_name OR r.name = 'admin' OR r.name = 'super_admin')
   );
 $$ LANGUAGE sql SECURITY DEFINER STABLE;
