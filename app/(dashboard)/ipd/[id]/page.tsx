@@ -16,12 +16,13 @@ import DischargeEngine from '@/components/ipd/discharge-engine';
 import ConsentBuilder from '@/components/ipd/consent-builder';
 import SmartProcedures from '@/components/ipd/smart-procedures';
 import PatientImagingPanel from '@/components/radiology/patient-imaging-panel';
+import PatientLabHistory from '@/components/lab/patient-lab-history';
 import Link from 'next/link';
 
 let _sb: any = null;
 function sb() { if (typeof window === 'undefined') return null as any; if (!_sb) { try { _sb = createClient(); } catch { return null; } } return _sb; }
 
-type ClinicalTab = 'rounds' | 'icu' | 'trends' | 'io' | 'meds' | 'mar' | 'scores' | 'consents' | 'procedures' | 'nursing' | 'imaging' | 'discharge';
+type ClinicalTab = 'rounds' | 'icu' | 'trends' | 'io' | 'meds' | 'mar' | 'scores' | 'consents' | 'procedures' | 'nursing' | 'lab' | 'imaging' | 'discharge';
 
 function IPDClinicalInner() {
   const { id } = useParams();
@@ -70,6 +71,7 @@ function IPDClinicalInner() {
     ['consents', 'Consents', `${consents.consents.length}`],
     ['procedures', 'Procedures', `${procedures.notes.length}`],
     ['nursing', 'Nursing', ''],
+    ['lab', 'Lab', ''],
     ['imaging', 'Imaging', ''],
     ['discharge', 'Discharge', ''],
   ];
@@ -135,6 +137,7 @@ function IPDClinicalInner() {
       {tab === 'consents' && <ConsentBuilder consents={consents.consents} patientId={pt.id} patientName={patientName} admissionId={admissionId} admissionDx={admDx} staffId={staffId} onSave={async (c: any, sid: string) => { await consents.addConsent(c, sid); }} onFlash={flash} />}
       {tab === 'procedures' && <SmartProcedures procedures={procedures.notes} admissionId={admissionId} staffId={staffId} onSave={async (proc: any, sid: string) => { await procedures.addNote(proc, sid); }} onFlash={flash} />}
       {tab === 'nursing' && <NursingShiftNotes admissionId={admissionId} staffId={staffId} patientName={patientName} onFlash={flash} />}
+      {tab === 'lab' && <PatientLabHistory patientId={pt.id} admissionId={admissionId} />}
       {tab === 'imaging' && <PatientImagingPanel patientId={pt.id} admissionId={admissionId} />}
       {tab === 'discharge' && <DischargeEngine admissionId={admissionId} patientId={pt.id} staffId={staffId} admission={admission} onFlash={flash} />}
     </div>

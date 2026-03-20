@@ -13,6 +13,7 @@ import PrescriptionBuilder from '@/components/emr-v2/prescription-builder';
 import InvestigationPanel from '@/components/emr-v2/investigation-panel';
 import AICopilot from '@/components/emr-v2/ai-copilot';
 import PatientImagingPanel from '@/components/radiology/patient-imaging-panel';
+import PatientLabHistory from '@/components/lab/patient-lab-history';
 
 let _sb: any = null;
 function sb() { if (typeof window === 'undefined') return null as any; if (!_sb) { try { _sb = createClient(); } catch { return null; } } return _sb; }
@@ -66,6 +67,7 @@ function EMRInner() {
   // Past encounters
   const [showHistory, setShowHistory] = useState(false);
   const [showImaging, setShowImaging] = useState(false);
+  const [showLab, setShowLab] = useState(false);
   const [showCopilot, setShowCopilot] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -197,6 +199,7 @@ function EMRInner() {
             <div className="flex gap-1">
               {patient.id && <button onClick={() => setShowHistory(!showHistory)} className={`px-2 py-1 text-[10px] rounded border ${showHistory ? 'bg-blue-600 text-white' : 'bg-white'}`}>History</button>}
               {patient.id && <button onClick={() => setShowImaging(!showImaging)} className={`px-2 py-1 text-[10px] rounded border ${showImaging ? 'bg-blue-600 text-white' : 'bg-white'}`}>Imaging</button>}
+              {patient.id && <button onClick={() => setShowLab(!showLab)} className={`px-2 py-1 text-[10px] rounded border ${showLab ? 'bg-blue-600 text-white' : 'bg-white'}`}>Lab</button>}
               <button onClick={() => setShowCopilot(!showCopilot)} className={`px-2 py-1 text-[10px] rounded border ${showCopilot ? 'bg-purple-600 text-white' : 'bg-white text-purple-700'}`}>AI Copilot</button>
             </div>
           </div>
@@ -296,7 +299,7 @@ function EMRInner() {
         </div>
 
         {/* Right sidebar */}
-        {(showHistory || showImaging || showCopilot) && (
+        {(showHistory || showImaging || showLab || showCopilot) && (
           <div className="w-80 flex-shrink-0 space-y-3">
             {showHistory && <div className="bg-white rounded-xl border p-3 max-h-96 overflow-y-auto">
               <h3 className="text-xs font-bold text-gray-500 mb-2">Past Encounters ({emr.pastEncounters.length})</h3>
@@ -315,6 +318,8 @@ function EMRInner() {
             </div>}
 
             {showImaging && patient.id && <div className="max-h-96 overflow-y-auto"><PatientImagingPanel patientId={patient.id} compact /></div>}
+
+            {showLab && patient.id && <div className="max-h-96 overflow-y-auto"><PatientLabHistory patientId={patient.id} compact /></div>}
 
             {showCopilot && <AICopilot
               patient={{ name: patient.name, age: patient.age, gender: patient.gender, allergies: patient.allergies }}
