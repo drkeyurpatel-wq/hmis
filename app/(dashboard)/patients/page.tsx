@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useAuthStore } from '@/lib/store/auth';
 import { formatDate, calculateAge, getInitials, cn } from '@/lib/utils';
@@ -30,19 +30,32 @@ export default function PatientsPage() {
   const [showRegister, setShowRegister] = useState(false);
   const [filterGender, setFilterGender] = useState('');
 
+  // Use refs so loadPatients callback identity stays stable
+  const searchRef = useRef(search);
+  searchRef.current = search;
+  const filterRef = useRef(filterGender);
+  filterRef.current = filterGender;
+  const modalOpenRef = useRef(showRegister);
+  modalOpenRef.current = showRegister;
+
   const loadPatients = useCallback(async () => {
-    if (!activeCentreId) return;
+    if (!activeCentreId || modalOpenRef.current) return;
     setLoading(true);
     const supabase = createClient();
     let query = supabase.from('hmis_patients').select('*').eq('is_active', true).order('created_at', { ascending: false }).limit(50);
-    if (search.trim()) query = query.or(`uhid.ilike.%${search}%,phone_primary.ilike.%${search}%,first_name.ilike.%${search}%,last_name.ilike.%${search}%`);
-    if (filterGender) query = query.eq('gender', filterGender);
+    if (searchRef.current.trim()) query = query.or(`uhid.ilike.%${searchRef.current}%,phone_primary.ilike.%${searchRef.current}%,first_name.ilike.%${searchRef.current}%,last_name.ilike.%${searchRef.current}%`);
+    if (filterRef.current) query = query.eq('gender', filterRef.current);
     const { data } = await query;
     setPatients(data || []);
     setLoading(false);
-  }, [activeCentreId, search, filterGender]);
+  }, [activeCentreId]);
 
-  useEffect(() => { const t = setTimeout(loadPatients, 300); return () => clearTimeout(t); }, [loadPatients]);
+  // Debounced search — only triggers on search/filter change, not on modal state
+  useEffect(() => {
+    if (showRegister) return; // Don't reload while registering
+    const t = setTimeout(loadPatients, 300);
+    return () => clearTimeout(t);
+  }, [search, filterGender, loadPatients, showRegister]);
 
   return (
     <div>
