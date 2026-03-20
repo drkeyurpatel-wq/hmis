@@ -4,6 +4,9 @@
 -- rate_pmjay = base Tier3 package
 
 -- Widen rate columns to handle high-value transplants
+-- Widen service_code for PMJAY codes
+ALTER TABLE hmis_tariff_master ALTER COLUMN service_code TYPE varchar(50);
+
 ALTER TABLE hmis_tariff_master ALTER COLUMN rate_self TYPE decimal(12,2);
 ALTER TABLE hmis_tariff_master ALTER COLUMN rate_insurance TYPE decimal(12,2);
 ALTER TABLE hmis_tariff_master ALTER COLUMN rate_pmjay TYPE decimal(12,2);
@@ -2623,8 +2626,8 @@ Startification', 'pmjay_urology', 27500, 27500, 25000, 25000),
   ('PMJAY-SV065GJA', 'Major Vessels', 'pmjay_ctvs', 25300, 25300, 23000, 23000),
   ('PMJAY-SV065GJB', 'Minor Vessels', 'pmjay_ctvs', 22000, 22000, 20000, 20000),
   ('PMJAY-SV066GJA', 'Vascular Tumors', 'pmjay_ctvs', 50600, 50600, 46000, 46000),
-  ('PMJAY-New Added (removed by NHA in 1991)', 'Pre-mature delivery', 'pmjay_obgyn', 12650, 12650, 11500, 11500),
-  ('PMJAY-New Added', 'FISTULECTOMY for Low anal Fistula (Inculding dressing and post operative Infection t/t)', 'pmjay_gen_surgery', 16500, 16500, 15000, 15000),
+  ('PMJAY-OBGYN-NEW01', 'Pre-mature delivery', 'pmjay_obgyn', 12650, 12650, 11500, 11500),
+  ('PMJAY-GS-NEW01', 'FISTULECTOMY for Low anal Fistula (Inculding dressing and post operative Infection t/t)', 'pmjay_gen_surgery', 16500, 16500, 15000, 15000),
   ('PMJAY-OT048GJA', 'Heart  transplant', 'pmjay_ctvs', 990000, 990000, 900000, 900000),
   ('PMJAY-OT049GJA', 'UTERINE TRANSPLANT', 'pmjay_transplant', 396000, 396000, 360000, 360000),
   ('PMJAY-IN002', 'Spinal AVM embolization - Using Histoacryl 
