@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { RoleGuard } from '@/components/ui/shared';
 import { useAuthStore } from '@/lib/store/auth';
-import { useIncidentReporting, useQualityIndicators, useAuditTrail, NABH_INDICATORS } from '@/lib/quality/quality-hooks';
+import { useIncidentReporting, useQualityIndicators, useAutoCalcKPIs, useAuditTrail, NABH_INDICATORS } from '@/lib/quality/quality-hooks';
 import { exportToCSV } from '@/lib/utils/data-export';
 
 type Tab = 'dashboard' | 'incidents' | 'indicators' | 'audit_trail';
@@ -33,6 +33,7 @@ function QualityInner() {
   const staffId = staff?.id || '';
   const incidents = useIncidentReporting(centreId);
   const qi = useQualityIndicators(centreId);
+  const autoKPI = useAutoCalcKPIs(centreId);
   const audit = useAuditTrail(centreId);
 
   const [tab, setTab] = useState<Tab>('dashboard');
@@ -76,8 +77,11 @@ function QualityInner() {
 
   // Group QI entries by indicator
   const qiByCode = NABH_INDICATORS.map(ind => {
+    const auto = autoKPI.kpis[ind.code];
     const latest = qi.entries.find((e: any) => e.indicator_code === ind.code);
-    return { ...ind, latest: latest ? parseFloat(latest.value) : null, metTarget: latest?.met_target };
+    const value = auto ? auto.value : latest ? parseFloat(latest.value) : null;
+    const met = value !== null ? (ind.code === 'QI-13' ? value >= ind.target : value <= ind.target) : null;
+    return { ...ind, latest: value, metTarget: met, isAuto: !!auto, numerator: auto?.numerator, denominator: auto?.denominator };
   });
 
   return (

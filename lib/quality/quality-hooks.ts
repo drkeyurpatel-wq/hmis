@@ -114,6 +114,98 @@ export function useQualityIndicators(centreId: string | null) {
 }
 
 // ============================================================
+// AUTO-CALCULATE KPIs from live hospital data
+// ============================================================
+export function useAutoCalcKPIs(centreId: string | null) {
+  const [kpis, setKpis] = useState<Record<string, { value: number; numerator: number; denominator: number; autoCalc: true }>>({});
+  const [loading, setLoading] = useState(false);
+
+  const calculate = useCallback(async (period?: string) => {
+    if (!centreId || !sb()) return;
+    setLoading(true);
+    const now = new Date();
+    const monthStart = period ? `${period}-01` : new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+    const monthEnd = period ? `${period}-31` : now.toISOString().split('T')[0];
+    const result: typeof kpis = {};
+
+    // QI-11: Hospital Mortality Rate
+    const { count: totalDischarges } = await sb().from('hmis_ipd_admissions').select('id', { count: 'exact', head: true })
+      .eq('centre_id', centreId).eq('status', 'discharged').gte('discharge_date', monthStart).lte('discharge_date', monthEnd);
+    const { count: deaths } = await sb().from('hmis_ipd_admissions').select('id', { count: 'exact', head: true })
+      .eq('centre_id', centreId).eq('discharge_type', 'death').gte('discharge_date', monthStart).lte('discharge_date', monthEnd);
+    const denom11 = totalDischarges || 0;
+    const num11 = deaths || 0;
+    result['QI-11'] = { value: denom11 > 0 ? Math.round((num11 / denom11) * 10000) / 100 : 0, numerator: num11, denominator: denom11, autoCalc: true };
+
+    // QI-12: Average Length of Stay
+    const { data: admissions } = await sb().from('hmis_ipd_admissions')
+      .select('admission_date, discharge_date')
+      .eq('centre_id', centreId).eq('status', 'discharged').gte('discharge_date', monthStart).lte('discharge_date', monthEnd).not('discharge_date', 'is', null);
+    const losArr = (admissions || []).map((a: any) => {
+      const diff = new Date(a.discharge_date).getTime() - new Date(a.admission_date).getTime();
+      return Math.max(1, Math.round(diff / (1000 * 60 * 60 * 24)));
+    });
+    const avgLOS = losArr.length > 0 ? Math.round((losArr.reduce((s: number, d: number) => s + d, 0) / losArr.length) * 100) / 100 : 0;
+    result['QI-12'] = { value: avgLOS, numerator: losArr.reduce((s: number, d: number) => s + d, 0), denominator: losArr.length, autoCalc: true };
+
+    // QI-13: Bed Occupancy Rate
+    const { count: totalBeds } = await sb().from('hmis_beds').select('id', { count: 'exact', head: true })
+      .eq('centre_id', centreId).eq('is_active', true);
+    const { count: occupiedBeds } = await sb().from('hmis_beds').select('id', { count: 'exact', head: true })
+      .eq('centre_id', centreId).eq('status', 'occupied');
+    const tb = totalBeds || 0;
+    const ob = occupiedBeds || 0;
+    result['QI-13'] = { value: tb > 0 ? Math.round((ob / tb) * 10000) / 100 : 0, numerator: ob, denominator: tb, autoCalc: true };
+
+    // QI-15: Discharge TAT (hours from discharge_initiated to discharged)
+    const { data: discharged } = await sb().from('hmis_ipd_admissions')
+      .select('discharge_initiated_at, discharge_date')
+      .eq('centre_id', centreId).eq('status', 'discharged').gte('discharge_date', monthStart).lte('discharge_date', monthEnd)
+      .not('discharge_initiated_at', 'is', null);
+    const tatArr = (discharged || []).map((a: any) => {
+      if (!a.discharge_initiated_at || !a.discharge_date) return 0;
+      return (new Date(a.discharge_date).getTime() - new Date(a.discharge_initiated_at).getTime()) / (1000 * 60 * 60);
+    }).filter((h: number) => h > 0 && h < 72);
+    const avgTAT = tatArr.length > 0 ? Math.round((tatArr.reduce((s: number, h: number) => s + h, 0) / tatArr.length) * 100) / 100 : 0;
+    result['QI-15'] = { value: avgTAT, numerator: Math.round(tatArr.reduce((s: number, h: number) => s + h, 0)), denominator: tatArr.length, autoCalc: true };
+
+    // QI-06: Patient Fall Rate (per 1000 patient days)
+    const { count: falls } = await sb().from('hmis_incidents').select('id', { count: 'exact', head: true })
+      .eq('centre_id', centreId).eq('category', 'fall').gte('created_at', monthStart + 'T00:00:00').lte('created_at', monthEnd + 'T23:59:59');
+    const patientDays = losArr.reduce((s: number, d: number) => s + d, 0) || 1;
+    result['QI-06'] = { value: Math.round(((falls || 0) / patientDays) * 1000 * 100) / 100, numerator: falls || 0, denominator: patientDays, autoCalc: true };
+
+    // QI-09: Unplanned Return to OT
+    const { count: totalOT } = await sb().from('hmis_ot_bookings').select('id', { count: 'exact', head: true })
+      .eq('centre_id', centreId).gte('scheduled_date', monthStart).lte('scheduled_date', monthEnd).in('status', ['completed', 'in_progress']);
+    const { count: reOT } = await sb().from('hmis_ot_bookings').select('id', { count: 'exact', head: true })
+      .eq('centre_id', centreId).eq('is_unplanned_return', true).gte('scheduled_date', monthStart).lte('scheduled_date', monthEnd);
+    const tOT = totalOT || 0;
+    const rOT = reOT || 0;
+    result['QI-09'] = { value: tOT > 0 ? Math.round((rOT / tOT) * 10000) / 100 : 0, numerator: rOT, denominator: tOT, autoCalc: true };
+
+    // QI-14: OPD Wait Time (avg minutes from check-in to consultation start)
+    const { data: opds } = await sb().from('hmis_opd_visits')
+      .select('check_in_time, consultation_start_time')
+      .eq('centre_id', centreId).gte('check_in_time', monthStart + 'T00:00:00').lte('check_in_time', monthEnd + 'T23:59:59')
+      .not('consultation_start_time', 'is', null);
+    const waitArr = (opds || []).map((v: any) => {
+      if (!v.check_in_time || !v.consultation_start_time) return 0;
+      return (new Date(v.consultation_start_time).getTime() - new Date(v.check_in_time).getTime()) / (1000 * 60);
+    }).filter((m: number) => m > 0 && m < 300);
+    const avgWait = waitArr.length > 0 ? Math.round(waitArr.reduce((s: number, m: number) => s + m, 0) / waitArr.length) : 0;
+    result['QI-14'] = { value: avgWait, numerator: Math.round(waitArr.reduce((s: number, m: number) => s + m, 0)), denominator: waitArr.length, autoCalc: true };
+
+    setKpis(result);
+    setLoading(false);
+  }, [centreId]);
+
+  useEffect(() => { calculate(); }, [calculate]);
+
+  return { kpis, loading, calculate };
+}
+
+// ============================================================
 // AUDIT TRAIL — comprehensive clinical change logging
 // ============================================================
 export function useAuditTrail(centreId: string | null) {
