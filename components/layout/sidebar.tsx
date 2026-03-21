@@ -9,7 +9,7 @@ import {
   LayoutDashboard, Users, Calendar, BedDouble, Stethoscope,
   CreditCard, Pill, FlaskConical, ScanLine, Scissors, BarChart3,
   Settings, LogOut, Building2, ChevronDown, ChevronRight, Droplets,
-  Home, Activity, Truck, FileText, Shield, Heart, PanelLeftClose, PanelLeft,
+  Home, Activity, Truck, FileText, Shield, Heart, PanelLeftClose, PanelLeft, Target,
 } from 'lucide-react';
 
 interface NavItem { href: string; label: string; icon: any; module: string | null; badge?: string }
@@ -38,6 +38,7 @@ const NAV: NavGroup[] = [
   ]},
   { key: 'revenue', label: 'REVENUE', items: [
     { href: '/billing', label: 'Billing', icon: CreditCard, module: 'billing' },
+    { href: '/crm', label: 'CRM & Leads', icon: Target, module: 'billing' },
     { href: '/accounting', label: 'Accounting', icon: FileText, module: 'billing' },
   ]},
   { key: 'operations', label: 'OPERATIONS', items: [
