@@ -10,12 +10,15 @@ import IPDBillingTab from '@/components/billing/ipd-billing-tab';
 import InsuranceCashless from '@/components/billing/insurance-cashless';
 import RefundManager from '@/components/billing/refund-manager';
 import CreditNoteManager from '@/components/billing/credit-note-manager';
-import { useCashlessWorkflow } from '@/lib/billing/revenue-cycle-hooks';
+import EstimateGenerator from '@/components/billing/estimate-generator';
+import ARManagement from '@/components/billing/ar-management';
+import { useCashlessWorkflow, useAccountsReceivable } from '@/lib/billing/revenue-cycle-hooks';
+import { useTariffs, useEstimates } from '@/lib/billing/billing-hooks';
 
 function sb() { return createBrowserClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!); }
 const fmt = (n: number) => Math.round(n).toLocaleString('en-IN');
 
-type Tab = 'dashboard' | 'new_bill' | 'bills' | 'ipd' | 'cashless' | 'refunds' | 'credit_notes' | 'advances';
+type Tab = 'dashboard' | 'new_bill' | 'bills' | 'ipd' | 'cashless' | 'estimates' | 'ar' | 'advances' | 'refunds' | 'credit_notes';
 
 function BillingInner() {
   const { staff, activeCentreId } = useAuthStore();
@@ -32,6 +35,9 @@ function BillingInner() {
 
   // Cashless
   const cashless = useCashlessWorkflow(centreId);
+  const ar = useAccountsReceivable(centreId);
+  const tariffs = useTariffs(centreId);
+  const estimates = useEstimates(centreId);
 
   // Advances
   const [advances, setAdvances] = useState<any[]>([]);
@@ -92,6 +98,8 @@ function BillingInner() {
     ['bills', `📄 Bills (${bills.length})`],
     ['ipd', '🛏️ IPD Billing'],
     ['cashless', '🏥 Insurance'],
+    ['estimates', '📋 Estimates'],
+    ['ar', '📊 AR / Outstanding'],
     ['advances', '💰 Advances'],
     ['refunds', '↩️ Refunds'],
     ['credit_notes', '📝 Credit Notes'],
@@ -166,6 +174,15 @@ function BillingInner() {
         onInitPreAuth={cashless.submitPreAuth}
         onUpdateStatus={async (claimId: string, status: string, data?: any) => { await cashless.updateClaim(claimId, { status, ...data }); }}
         onLoad={cashless.loadClaims} onFlash={flash} />}
+
+      {/* Estimates */}
+      {tab === 'estimates' && <EstimateGenerator estimates={estimates.estimates} centreId={centreId} staffId={staffId}
+        tariffs={tariffs} onCreate={estimates.create} onFlash={flash} />}
+
+      {/* AR / Outstanding */}
+      {tab === 'ar' && <ARManagement entries={ar.entries} loading={ar.loading} aging={ar.stats}
+        totalOutstanding={ar.entries.reduce((s: number, e: any) => s + parseFloat(e.balance_amount || 0), 0)}
+        staffId={staffId} onAddFollowup={ar.addFollowup} onWriteOff={ar.writeOff} onLoad={ar.load} onFlash={flash} />}
 
       {/* Advances */}
       {tab === 'advances' && <div className="space-y-4">

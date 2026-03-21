@@ -17,7 +17,7 @@ import ConsentBuilder from '@/components/ipd/consent-builder';
 import SmartProcedures from '@/components/ipd/smart-procedures';
 import PatientImagingPanel from '@/components/radiology/patient-imaging-panel';
 import PatientLabHistory from '@/components/lab/patient-lab-history';
-import IPDRunningBill from '@/components/billing/ipd-running-bill';
+import ServiceBillingEngine from '@/components/billing/service-billing-engine';
 import CPOEPanel from '@/components/ipd/cpoe-panel';
 import Link from 'next/link';
 
@@ -144,7 +144,9 @@ function IPDClinicalInner() {
       {tab === 'nursing' && <NursingShiftNotes admissionId={admissionId} staffId={staffId} patientName={patientName} onFlash={flash} />}
       {tab === 'lab' && <PatientLabHistory patientId={pt.id} admissionId={admissionId} />}
       {tab === 'imaging' && <PatientImagingPanel patientId={pt.id} admissionId={admissionId} />}
-      {tab === 'billing' && <IPDRunningBill admissionId={admissionId} centreId={admission.centre_id} onFlash={flash} />}
+      {tab === 'billing' && <ServiceBillingEngine centreId={admission.centre_id} staffId={staffId} mode="ipd"
+        patientId={pt.id} patientName={`${pt.first_name} ${pt.last_name} (${pt.uhid})`}
+        admissionId={admissionId} payorType={admission.payor_type || 'self'} onFlash={flash} />}
       {tab === 'discharge' && <DischargeEngine admissionId={admissionId} patientId={pt.id} staffId={staffId} admission={admission} onFlash={flash} />}
     </div>
   );
