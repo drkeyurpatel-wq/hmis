@@ -1,12 +1,14 @@
 // components/emr-v2/ai-copilot.tsx
 'use client';
 
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import {
   getDifferentialDiagnosis, reviewPrescription, getCopilotSuggestions,
   type DDxResult, type RxReviewResult, type CopilotResult,
 } from '@/lib/cdss/ai-engine';
+import { checkDrugInteractions, validateDose } from '@/lib/cdss/engine';
+import { checkAllergyConflict } from '@/lib/cdss/allergies';
 
 interface CopilotProps {
   patient: { name: string; age: number | string; gender: string; allergies: string[] };
@@ -73,6 +75,66 @@ export default function AICopilot({
     else if (result) setCopilotResult(result);
     setLoading(false);
   }, [patient, complaints, vitals, examFindings, diagnoses, investigations, prescriptions, advice, followUp]);
+
+  // Local CDSS checks — instant, no API call needed
+  const localRxAlerts = useMemo(() => {
+    if (prescriptions.length === 0) return [];
+    const alerts: { type: string; severity: string; drug: string; message: string }[] = [];
+    const drugNames = prescriptions.map((p: any) => p.generic || p.drug);
+
+    // Drug interactions (engine.ts — 50 critical pairs)
+    const interactions = checkDrugInteractions(drugNames);
+    for (const ix of interactions) {
+      alerts.push({
+        type: 'interaction', drug: `${ix.drug_a} + ${ix.drug_b}`,
+        severity: ix.severity === 'contraindicated' ? 'critical' : ix.severity === 'severe' ? 'critical' : 'warning',
+        message: `${ix.description}. ${ix.recommendation}`,
+      });
+    }
+
+    // Allergy conflicts (allergies.ts cross-reference)
+    for (const rx of prescriptions) {
+      const medName = (rx as any).generic || (rx as any).drug;
+      const conflicts = checkAllergyConflict(patient.allergies, medName);
+      for (const c of conflicts) {
+        alerts.push({
+          type: 'allergy', drug: (rx as any).drug,
+          severity: c.severity === 'contraindicated' ? 'critical' : 'warning',
+          message: c.warning,
+        });
+      }
+    }
+
+    // Dose validation (engine.ts — 19 common meds)
+    for (const rx of prescriptions) {
+      const medName = (rx as any).generic || (rx as any).drug;
+      const doseStr = (rx as any).dose || '';
+      const match = doseStr.match(/([\d.]+)\s*(mg|g|mcg)/i);
+      if (match) {
+        let doseMg = parseFloat(match[1]);
+        const unit = match[2].toLowerCase();
+        if (unit === 'g') doseMg *= 1000;
+        if (unit === 'mcg') doseMg /= 1000;
+        const freq = (rx as any).frequency || '';
+        let daily = 1;
+        if (freq.startsWith('BD')) daily = 2;
+        else if (freq.startsWith('TDS')) daily = 3;
+        else if (freq.startsWith('QID')) daily = 4;
+        else if (freq.startsWith('Q4H')) daily = 6;
+        else if (freq.startsWith('Q6H')) daily = 4;
+        else if (freq.startsWith('Q8H')) daily = 3;
+        const route = (rx as any).route || 'Oral';
+        const doseAlerts = validateDose(medName, doseMg, route, daily);
+        for (const da of doseAlerts) {
+          if (da.severity !== 'info') {
+            alerts.push({ type: 'dose', drug: (rx as any).drug, severity: da.severity, message: da.message });
+          }
+        }
+      }
+    }
+
+    return alerts;
+  }, [prescriptions, patient.allergies]);
 
   const scoreColor = (s: string) =>
     s === 'safe' ? 'bg-green-100 text-green-800' :
@@ -198,6 +260,37 @@ export default function AICopilot({
               </div>
             )}
           </div>
+        )}
+
+        {/* ===== Local CDSS Alerts (instant, no API) ===== */}
+        {tab === 'rx' && !loading && localRxAlerts.length > 0 && (
+          <div className="space-y-2 mb-3">
+            <div className="text-xs font-medium text-gray-500">Local CDSS Analysis (instant)</div>
+            {localRxAlerts.filter(a => a.severity === 'critical').map((a, i) => (
+              <div key={`crit-${i}`} className="bg-red-50 border border-red-300 rounded-lg p-2.5">
+                <div className="flex items-center gap-1.5 mb-0.5">
+                  <span className="text-sm">🔴</span>
+                  <span className="text-xs font-bold text-red-700">{a.drug}</span>
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-100 text-red-700">{a.type}</span>
+                </div>
+                <div className="text-xs text-red-600">{a.message}</div>
+              </div>
+            ))}
+            {localRxAlerts.filter(a => a.severity === 'warning').map((a, i) => (
+              <div key={`warn-${i}`} className="bg-amber-50 border border-amber-200 rounded-lg p-2.5">
+                <div className="flex items-center gap-1.5 mb-0.5">
+                  <span className="text-sm">🟡</span>
+                  <span className="text-xs font-medium text-amber-700">{a.drug}</span>
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-700">{a.type}</span>
+                </div>
+                <div className="text-xs text-amber-600">{a.message}</div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {tab === 'rx' && !loading && localRxAlerts.length === 0 && prescriptions.length > 0 && !rxResult && (
+          <div className="bg-green-50 rounded-lg p-3 mb-3 text-xs text-green-700 font-medium text-center">No local CDSS issues detected</div>
         )}
 
         {/* ===== Rx Review Results ===== */}

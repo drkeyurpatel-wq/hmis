@@ -5,6 +5,7 @@ import { useEMR } from '@/lib/emr/use-emr';
 import { useAuthStore } from '@/lib/store/auth';
 import { createClient } from '@/lib/supabase/client';
 import { printEncounterSummary, openPrintWindow } from '@/components/ui/shared';
+import { smartPostLabCharge, smartPostRadiologyCharge } from '@/lib/bridge/cross-module-bridge';
 import PatientBanner from '@/components/emr-v2/patient-banner';
 import VitalsPanel from '@/components/emr-v2/vitals-panel';
 import { SmartComplaintBuilder, generateComplaintText, type ActiveComplaint } from '@/components/emr/smart-complaint-builder';
@@ -44,7 +45,9 @@ function EMRInner() {
   const router = useRouter();
   const preselectedPatient = searchParams.get('patient');
   const emr = useEMR();
-  const { staff } = useAuthStore();
+  const { staff, activeCentreId } = useAuthStore();
+  const staffId = staff?.id || '';
+  const centreId = activeCentreId || '';
 
   const [step, setStep] = useState<Step>('vitals');
   const [patient, setPatient] = useState<Patient>({ id: '', name: '', age: '--', gender: '--', uhid: 'H1-00000', phone: '', allergies: [], bloodGroup: '' });
@@ -108,6 +111,51 @@ function EMRInner() {
 
     const result = await emr.saveEncounter(encounterData as any);
     if (result.success) {
+      // On sign (final save), create real orders in downstream modules
+      if (sign && sb() && centreId) {
+        // Create lab orders for each lab investigation
+        const labInvs = investigations.filter(i => i.type === 'lab');
+        for (const inv of labInvs) {
+          await sb().from('hmis_lab_orders').insert({
+            centre_id: centreId, patient_id: patient.id,
+            test_name: inv.name, status: 'ordered', ordered_by: staffId,
+            priority: inv.urgency === 'stat' ? 'stat' : inv.urgency === 'urgent' ? 'urgent' : 'routine',
+          });
+          await smartPostLabCharge({ centreId, patientId: patient.id, testName: inv.name, staffId });
+        }
+
+        // Create radiology orders for each radiology investigation
+        const radInvs = investigations.filter(i => i.type === 'radiology');
+        for (const inv of radInvs) {
+          await sb().from('hmis_radiology_orders').insert({
+            centre_id: centreId, patient_id: patient.id,
+            modality: inv.name.split(' ')[0] || inv.name,
+            body_part: inv.name.replace(/^(X-Ray|CT|MRI|USG|HRCT)\s*/i, '') || inv.name,
+            clinical_indication: diagnoses.map(d => d.name).join(', '),
+            status: 'ordered', ordered_by: staffId,
+            urgency: inv.urgency === 'stat' ? 'stat' : 'routine',
+          });
+          await smartPostRadiologyCharge({ centreId, patientId: patient.id, testName: inv.name, staffId });
+        }
+
+        // Create pharmacy dispensing record for prescriptions
+        if (prescriptions.length > 0) {
+          await sb().from('hmis_pharmacy_dispensing').insert({
+            centre_id: centreId, patient_id: patient.id,
+            prescription_data: prescriptions.map(p => ({
+              drug: p.drug, generic: p.generic, dose: p.dose,
+              route: p.route, frequency: p.frequency, duration: p.duration,
+              instructions: p.instructions,
+            })),
+            status: 'pending',
+          });
+        }
+
+        if (labInvs.length + radInvs.length > 0) {
+          flash(`Signed + ${labInvs.length} lab orders + ${radInvs.length} radiology orders created`);
+        }
+      }
+
       flash(sign ? 'Encounter signed & saved' : (result.offline ? 'Saved offline — will sync' : 'Encounter saved'));
       if (sign) {
         // Reset for next patient
@@ -215,7 +263,7 @@ function EMRInner() {
           {step === 'complaints' && <SmartComplaintBuilder complaints={complaints} setComplaints={setComplaints} />}
           {step === 'exam' && <SmartExamBuilder findings={examFindings} setFindings={setExamFindings} />}
           {step === 'diagnosis' && <DiagnosisBuilder diagnoses={diagnoses} onChange={setDiagnoses} />}
-          {step === 'rx' && <PrescriptionBuilder prescriptions={prescriptions} onChange={setPrescriptions} allergies={patient.allergies} onFlash={flash} />}
+          {step === 'rx' && <PrescriptionBuilder prescriptions={prescriptions} onChange={setPrescriptions} allergies={patient.allergies} patientId={patient.id} staffId={staffId} centreId={centreId} onFlash={flash} />}
           {step === 'investigations' && <InvestigationPanel investigations={investigations} onChange={setInvestigations} />}
 
           {step === 'followup' && (
