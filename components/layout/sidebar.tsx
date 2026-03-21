@@ -9,7 +9,7 @@ import {
   LayoutDashboard, Users, Calendar, BedDouble, Stethoscope,
   CreditCard, Pill, FlaskConical, ScanLine, Scissors, BarChart3,
   Settings, LogOut, Building2, ChevronDown, ChevronRight, Droplets,
-  Home, Activity, Truck, FileText, Shield, Heart, PanelLeftClose, PanelLeft, Target,
+  Home, Activity, Truck, FileText, Shield, Heart, PanelLeftClose, PanelLeft, Target, Radio, Mic,
 } from 'lucide-react';
 
 interface NavItem { href: string; label: string; icon: any; module: string | null; badge?: string }
@@ -18,6 +18,7 @@ interface NavGroup { key: string; label: string; items: NavItem[] }
 const NAV: NavGroup[] = [
   { key: 'core', label: '', items: [
     { href: '/', label: 'Dashboard', icon: LayoutDashboard, module: null },
+    { href: '/pulse', label: 'Hospital Pulse', icon: Radio, module: null },
     { href: '/command-centre', label: 'Command Centre', icon: Activity, module: null },
   ]},
   { key: 'clinical', label: 'CLINICAL', items: [
@@ -25,6 +26,7 @@ const NAV: NavGroup[] = [
     { href: '/opd', label: 'OPD', icon: Calendar, module: 'opd' },
     { href: '/appointments', label: 'Appointments', icon: Calendar, module: 'opd' },
     { href: '/emr-v2', label: 'EMR', icon: Stethoscope, module: 'emr' },
+    { href: '/voice-notes', label: 'Voice Notes', icon: Mic, module: 'emr' },
     { href: '/ipd', label: 'IPD', icon: BedDouble, module: 'ipd' },
     { href: '/bed-management', label: 'Beds', icon: BedDouble, module: 'ipd' },
     { href: '/nursing-station', label: 'Nursing', icon: Heart, module: 'ipd' },
