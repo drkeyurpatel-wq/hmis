@@ -10,7 +10,7 @@ import {
   CreditCard, Pill, FlaskConical, ScanLine, Scissors, BarChart3,
   Settings, LogOut, Building2, ChevronDown, ChevronRight, Droplets,
   Home, Activity, Truck, FileText, Shield, Heart, PanelLeftClose, PanelLeft,
-  Target, Radio, Mic, AlertTriangle, UtensilsCrossed, Package,
+  Smartphone, ShieldCheck,
 } from 'lucide-react';
 
 interface NavItem { href: string; label: string; icon: any; module: string | null; badge?: string }
@@ -19,27 +19,18 @@ interface NavGroup { key: string; label: string; items: NavItem[] }
 const NAV: NavGroup[] = [
   { key: 'core', label: '', items: [
     { href: '/', label: 'Dashboard', icon: LayoutDashboard, module: null },
-    { href: '/pulse', label: 'Hospital Pulse', icon: Radio, module: null },
     { href: '/command-centre', label: 'Command Centre', icon: Activity, module: null },
   ]},
   { key: 'clinical', label: 'CLINICAL', items: [
     { href: '/patients', label: 'Patients', icon: Users, module: 'patients' },
-    { href: '/emergency', label: 'Emergency', icon: AlertTriangle, module: 'opd' },
     { href: '/opd', label: 'OPD', icon: Calendar, module: 'opd' },
     { href: '/appointments', label: 'Appointments', icon: Calendar, module: 'opd' },
     { href: '/emr-v2', label: 'EMR', icon: Stethoscope, module: 'emr' },
-    { href: '/voice-notes', label: 'Voice Notes', icon: Mic, module: 'emr' },
     { href: '/ipd', label: 'IPD', icon: BedDouble, module: 'ipd' },
-    { href: '/handover', label: 'Shift Handover', icon: FileText, module: 'ipd' },
     { href: '/bed-management', label: 'Beds', icon: BedDouble, module: 'ipd' },
     { href: '/nursing-station', label: 'Nursing', icon: Heart, module: 'ipd' },
+    { href: '/emr-mobile', label: 'Mobile EMR', icon: Smartphone, module: 'emr' },
     { href: '/ot', label: 'OT', icon: Scissors, module: 'ot' },
-    { href: '/cathlab', label: 'Cath Lab', icon: Heart, module: 'ot' },
-    { href: '/endoscopy', label: 'Endoscopy', icon: ScanLine, module: 'ot' },
-    { href: '/dialysis', label: 'Dialysis', icon: Activity, module: 'ipd' },
-    { href: '/physiotherapy', label: 'Physio & Rehab', icon: Activity, module: 'ipd' },
-    { href: '/cssd', label: 'CSSD', icon: Shield, module: 'ot' },
-    { href: '/dietary', label: 'Dietary', icon: UtensilsCrossed, module: 'ipd' },
   ]},
   { key: 'diagnostics', label: 'DIAGNOSTICS', items: [
     { href: '/lab', label: 'Laboratory', icon: FlaskConical, module: 'lab' },
@@ -49,26 +40,16 @@ const NAV: NavGroup[] = [
   ]},
   { key: 'revenue', label: 'REVENUE', items: [
     { href: '/billing', label: 'Billing', icon: CreditCard, module: 'billing' },
-    { href: '/crm', label: 'CRM & Leads', icon: Target, module: 'billing' },
-    { href: '/referrals', label: 'Referrals', icon: Users, module: 'billing' },
-    { href: '/packages', label: 'Packages', icon: FileText, module: 'billing' },
+    { href: '/insurance', label: 'Insurance', icon: ShieldCheck, module: 'billing' },
     { href: '/accounting', label: 'Accounting', icon: FileText, module: 'billing' },
-    { href: '/revenue-leakage', label: 'Leakage Detector', icon: AlertTriangle, module: 'billing' },
   ]},
   { key: 'operations', label: 'OPERATIONS', items: [
     { href: '/vpms', label: 'Procurement', icon: Truck, module: null },
     { href: '/homecare', label: 'Homecare', icon: Home, module: 'homecare' },
-    { href: '/ambulance', label: 'Ambulance', icon: Truck, module: 'opd' },
-    { href: '/visitors', label: 'Visitors', icon: Users, module: 'ipd' },
     { href: '/quality', label: 'Quality', icon: Shield, module: 'mis' },
-    { href: '/infection-control', label: 'HICC', icon: AlertTriangle, module: 'mis' },
   ]},
   { key: 'admin', label: 'ADMIN', items: [
     { href: '/reports', label: 'Reports', icon: BarChart3, module: 'mis' },
-    { href: '/assets', label: 'Assets', icon: Package, module: null },
-    { href: '/documents', label: 'Documents', icon: FileText, module: null },
-    { href: '/grievances', label: 'Grievances', icon: AlertTriangle, module: null },
-    { href: '/telemedicine', label: 'Telemedicine', icon: Stethoscope, module: 'opd' },
     { href: '/staff', label: 'Staff', icon: Users, module: 'settings' },
     { href: '/settings', label: 'Settings', icon: Settings, module: null },
   ]},
