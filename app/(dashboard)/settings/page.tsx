@@ -7,7 +7,7 @@ import { createClient } from '@/lib/supabase/client';
 let _sb: any = null;
 function sb() { if (typeof window === 'undefined') return null as any; if (!_sb) { try { _sb = createClient(); } catch { return null; } } return _sb; }
 
-type Tab = 'centres' | 'staff' | 'departments' | 'wards' | 'tariffs' | 'auto_charges' | 'notifications' | 'roles' | 'system';
+type Tab = 'centres' | 'staff' | 'departments' | 'wards' | 'tariffs' | 'auto_charges' | 'notifications' | 'reports' | 'roles' | 'system';
 
 const EVENT_LABELS: Record<string, string> = {
   appointment_reminder: 'Appointment Reminder',
@@ -34,10 +34,15 @@ function SettingsInner() {
   const [tariffs, setTariffs] = useState<any[]>([]);
   const [autoRules, setAutoRules] = useState<any[]>([]);
   const [notifPrefs, setNotifPrefs] = useState<any[]>([]);
+  const [smsPrefs, setSmsPrefs] = useState<any[]>([]);
   const [notifLogs, setNotifLogs] = useState<any[]>([]);
+  const [reportSubs, setReportSubs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [testPhone, setTestPhone] = useState('');
   const [testSending, setTestSending] = useState('');
+  const [newSubEmail, setNewSubEmail] = useState('');
+  const [newSubType, setNewSubType] = useState('daily_summary');
+  const [newSubFreq, setNewSubFreq] = useState('daily');
 
   // Forms
   const [showForm, setShowForm] = useState(false);
@@ -55,13 +60,16 @@ function SettingsInner() {
       centreId ? sb().from('hmis_tariff_master').select('*').eq('centre_id', centreId).eq('is_active', true).order('category, service_name') : { data: [] },
       centreId ? sb().from('hmis_billing_auto_rules').select('*').eq('centre_id', centreId).order('trigger_type, ward_type') : { data: [] },
     ]);
-    const [np, nl] = await Promise.all([
+    const [np, sp, nl, rs] = await Promise.all([
       centreId ? sb().from('hmis_notification_preferences').select('*').eq('centre_id', centreId).eq('channel', 'whatsapp').order('event_type') : { data: [] },
+      centreId ? sb().from('hmis_notification_preferences').select('*').eq('centre_id', centreId).eq('channel', 'sms').order('event_type') : { data: [] },
       centreId ? sb().from('hmis_notification_log').select('*').eq('centre_id', centreId).order('created_at', { ascending: false }).limit(20) : { data: [] },
+      centreId ? sb().from('hmis_report_subscriptions').select('*').eq('centre_id', centreId).order('created_at', { ascending: false }) : { data: [] },
     ]);
     setCentres(c.data || []); setStaffList(s.data || []); setDepartments(d.data || []);
     setWards(w.data || []); setTariffs(t.data || []); setAutoRules(ar.data || []);
-    setNotifPrefs(np.data || []); setNotifLogs(nl.data || []);
+    setNotifPrefs(np.data || []); setSmsPrefs(sp.data || []);
+    setNotifLogs(nl.data || []); setReportSubs(rs.data || []);
     setLoading(false);
   }, [centreId]);
 
@@ -96,6 +104,35 @@ function SettingsInner() {
   const updateTemplate = async (id: string, text: string) => {
     await sb().from('hmis_notification_preferences').update({ template_text: text }).eq('id', id);
     flash('Template updated');
+  };
+
+  const toggleSmsPref = async (id: string, isEnabled: boolean) => {
+    await sb().from('hmis_notification_preferences').update({ is_enabled: isEnabled }).eq('id', id);
+    setSmsPrefs(prev => prev.map(p => p.id === id ? { ...p, is_enabled: isEnabled } : p));
+    flash(`SMS ${isEnabled ? 'enabled' : 'disabled'}`);
+  };
+
+  const addReportSub = async () => {
+    if (!newSubEmail || !newSubEmail.includes('@')) { flash('Enter a valid email'); return; }
+    if (!centreId) return;
+    await sb().from('hmis_report_subscriptions').insert({
+      centre_id: centreId, email: newSubEmail, report_type: newSubType,
+      frequency: newSubFreq, is_active: true,
+    });
+    setNewSubEmail('');
+    flash('Subscription added'); load();
+  };
+
+  const toggleReportSub = async (id: string, isActive: boolean) => {
+    await sb().from('hmis_report_subscriptions').update({ is_active: isActive }).eq('id', id);
+    setReportSubs(prev => prev.map(s => s.id === id ? { ...s, is_active: isActive } : s));
+    flash(`Subscription ${isActive ? 'activated' : 'paused'}`);
+  };
+
+  const deleteReportSub = async (id: string) => {
+    await sb().from('hmis_report_subscriptions').delete().eq('id', id);
+    setReportSubs(prev => prev.filter(s => s.id !== id));
+    flash('Subscription removed');
   };
 
   const sendTestNotification = async (eventType: string) => {
@@ -142,7 +179,7 @@ function SettingsInner() {
   const tabs: [Tab, string][] = [
     ['centres', 'Centres'], ['staff', 'Staff'], ['departments', 'Departments'],
     ['wards', 'Wards & Rooms'], ['tariffs', 'Tariff Master'], ['auto_charges', 'Auto-Charge Rules'],
-    ['notifications', 'Notifications'], ['roles', 'Roles & Access'], ['system', 'System'],
+    ['notifications', 'Notifications'], ['reports', 'Report Emails'], ['roles', 'Roles & Access'], ['system', 'System'],
   ];
 
   return (
@@ -255,8 +292,8 @@ function SettingsInner() {
           <div className="bg-white rounded-xl border overflow-hidden">
             <div className="px-4 py-3 bg-gray-50 border-b flex items-center justify-between">
               <div>
-                <h3 className="font-bold text-sm">WhatsApp Notification Preferences</h3>
-                <p className="text-[10px] text-gray-500">Toggle which events trigger WhatsApp messages for this centre</p>
+                <h3 className="font-bold text-sm">Notification Channel Preferences</h3>
+                <p className="text-[10px] text-gray-500">Toggle WhatsApp and SMS per event type for this centre</p>
               </div>
               <div className="flex items-center gap-2">
                 <input type="text" value={testPhone} onChange={e => setTestPhone(e.target.value)} placeholder="Test phone (e.g. 9876543210)" className="px-2 py-1 border rounded text-xs w-48" />
@@ -265,32 +302,45 @@ function SettingsInner() {
             <table className="w-full text-xs">
               <thead><tr className="bg-gray-50 border-b">
                 <th className="p-2 text-left">Event</th>
-                <th className="p-2 text-left">Template Preview</th>
-                <th className="p-2 text-center">Enabled</th>
+                <th className="p-2 text-center">WhatsApp</th>
+                <th className="p-2 text-center">SMS</th>
+                <th className="p-2 text-left">Template</th>
                 <th className="p-2 text-center">Test</th>
               </tr></thead>
-              <tbody>{notifPrefs.map(p => (
-                <tr key={p.id} className={`border-b ${!p.is_enabled ? 'opacity-50' : ''}`}>
-                  <td className="p-2 font-medium">{EVENT_LABELS[p.event_type] || p.event_type}</td>
-                  <td className="p-2"><input type="text" defaultValue={p.template_text || ''} onBlur={e => updateTemplate(p.id, e.target.value)} className="w-full px-2 py-1 border rounded text-[10px] text-gray-600" placeholder="Default template" /></td>
-                  <td className="p-2 text-center">
-                    <button onClick={() => toggleNotifPref(p.id, !p.is_enabled)} className={`w-8 h-4 rounded-full relative ${p.is_enabled ? 'bg-green-500' : 'bg-gray-300'}`}>
-                      <div className={`w-3 h-3 bg-white rounded-full absolute top-0.5 transition-all ${p.is_enabled ? 'right-0.5' : 'left-0.5'}`} />
-                    </button>
-                  </td>
-                  <td className="p-2 text-center">
-                    {['appointment_reminder', 'lab_ready', 'pharmacy_ready', 'discharge_summary'].includes(p.event_type) && (
-                      <button
-                        onClick={() => sendTestNotification(p.event_type)}
-                        disabled={testSending === p.event_type}
-                        className="px-2 py-0.5 bg-blue-600 text-white rounded text-[10px] hover:bg-blue-700 disabled:opacity-50"
-                      >{testSending === p.event_type ? 'Sending...' : 'Send Test'}</button>
-                    )}
-                  </td>
-                </tr>
-              ))}</tbody>
+              <tbody>{Object.keys(EVENT_LABELS).map(evType => {
+                const wp = notifPrefs.find(p => p.event_type === evType);
+                const sp = smsPrefs.find(p => p.event_type === evType);
+                return (
+                  <tr key={evType} className="border-b">
+                    <td className="p-2 font-medium">{EVENT_LABELS[evType]}</td>
+                    <td className="p-2 text-center">
+                      {wp ? <button onClick={() => toggleNotifPref(wp.id, !wp.is_enabled)} className={`w-8 h-4 rounded-full relative ${wp.is_enabled ? 'bg-green-500' : 'bg-gray-300'}`}>
+                        <div className={`w-3 h-3 bg-white rounded-full absolute top-0.5 transition-all ${wp.is_enabled ? 'right-0.5' : 'left-0.5'}`} />
+                      </button> : <span className="text-gray-300 text-[10px]">—</span>}
+                    </td>
+                    <td className="p-2 text-center">
+                      {sp ? <button onClick={() => toggleSmsPref(sp.id, !sp.is_enabled)} className={`w-8 h-4 rounded-full relative ${sp.is_enabled ? 'bg-blue-500' : 'bg-gray-300'}`}>
+                        <div className={`w-3 h-3 bg-white rounded-full absolute top-0.5 transition-all ${sp.is_enabled ? 'right-0.5' : 'left-0.5'}`} />
+                      </button> : <span className="text-gray-300 text-[10px]">—</span>}
+                    </td>
+                    <td className="p-2">{wp && <input type="text" defaultValue={wp.template_text || ''} onBlur={e => updateTemplate(wp.id, e.target.value)} className="w-full px-2 py-1 border rounded text-[10px] text-gray-600" placeholder="Default template" />}</td>
+                    <td className="p-2 text-center">
+                      {['appointment_reminder', 'lab_ready', 'pharmacy_ready', 'discharge_summary'].includes(evType) && (
+                        <button onClick={() => sendTestNotification(evType)} disabled={testSending === evType}
+                          className="px-2 py-0.5 bg-blue-600 text-white rounded text-[10px] hover:bg-blue-700 disabled:opacity-50"
+                        >{testSending === evType ? '...' : 'Test'}</button>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}</tbody>
             </table>
-            {notifPrefs.length === 0 && <div className="p-6 text-center text-xs text-gray-400">No notification preferences found. Run the SQL migration to seed defaults.</div>}
+            {notifPrefs.length === 0 && smsPrefs.length === 0 && <div className="p-6 text-center text-xs text-gray-400">No notification preferences found. Run the SQL migration to seed defaults.</div>}
+          </div>
+
+          {/* MSG91 Config Note */}
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-xs text-blue-700">
+            <b>SMS via MSG91:</b> Set <code className="bg-blue-100 px-1 rounded">MSG91_AUTH_KEY</code> and <code className="bg-blue-100 px-1 rounded">MSG91_SENDER_ID</code> in environment variables, or configure in <code className="bg-blue-100 px-1 rounded">hmis_integration_config</code> table (provider=&apos;msg91&apos;).
           </div>
 
           {notifLogs.length > 0 && <div className="bg-white rounded-xl border overflow-hidden">
@@ -301,6 +351,7 @@ function SettingsInner() {
               <thead><tr className="bg-gray-50 border-b">
                 <th className="p-2 text-left">Time</th>
                 <th className="p-2">Event</th>
+                <th className="p-2">Channel</th>
                 <th className="p-2">Phone</th>
                 <th className="p-2">Status</th>
                 <th className="p-2 text-left">Error</th>
@@ -309,6 +360,7 @@ function SettingsInner() {
                 <tr key={l.id} className="border-b">
                   <td className="p-2 text-gray-500">{new Date(l.created_at).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</td>
                   <td className="p-2 text-center">{EVENT_LABELS[l.event_type] || l.event_type}</td>
+                  <td className="p-2 text-center"><span className={`px-1 py-0.5 rounded text-[9px] ${l.channel === 'sms' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'}`}>{l.channel || 'whatsapp'}</span></td>
                   <td className="p-2 text-center font-mono">{l.phone ? `...${l.phone.slice(-4)}` : '—'}</td>
                   <td className="p-2 text-center"><span className={`px-1.5 py-0.5 rounded text-[9px] ${l.status === 'sent' ? 'bg-green-100 text-green-700' : l.status === 'failed' ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-600'}`}>{l.status}</span></td>
                   <td className="p-2 text-gray-400 truncate max-w-[200px]">{l.error_message || '—'}</td>
@@ -316,6 +368,71 @@ function SettingsInner() {
               ))}</tbody>
             </table>
           </div>}
+        </>}
+      </div>}
+
+      {/* REPORT SUBSCRIPTIONS */}
+      {tab === 'reports' && <div className="space-y-4">
+        {!centreId && <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-700">Select a centre to manage report subscriptions.</div>}
+        {centreId && <>
+          <div className="bg-white rounded-xl border overflow-hidden">
+            <div className="px-4 py-3 bg-gray-50 border-b">
+              <h3 className="font-bold text-sm">Automated Report Email Subscriptions</h3>
+              <p className="text-[10px] text-gray-500">Daily summary emails sent at 8:00 AM IST via Vercel Cron + Resend</p>
+            </div>
+
+            {/* Add subscription form */}
+            <div className="px-4 py-3 border-b bg-gray-50/50 flex items-end gap-2">
+              <div className="flex-1"><label className="text-[10px] text-gray-500">Email</label>
+                <input type="email" value={newSubEmail} onChange={e => setNewSubEmail(e.target.value)} className="w-full px-2 py-1.5 border rounded text-xs" placeholder="admin@hospital.com" /></div>
+              <div><label className="text-[10px] text-gray-500">Report</label>
+                <select value={newSubType} onChange={e => setNewSubType(e.target.value)} className="w-full px-2 py-1.5 border rounded text-xs">
+                  <option value="daily_summary">Daily Summary</option>
+                  <option value="revenue">Revenue</option>
+                  <option value="occupancy">Occupancy</option>
+                  <option value="lab_tat">Lab TAT</option>
+                  <option value="pharmacy">Pharmacy</option>
+                </select></div>
+              <div><label className="text-[10px] text-gray-500">Frequency</label>
+                <select value={newSubFreq} onChange={e => setNewSubFreq(e.target.value)} className="w-full px-2 py-1.5 border rounded text-xs">
+                  <option value="daily">Daily</option>
+                  <option value="weekly">Weekly</option>
+                  <option value="monthly">Monthly</option>
+                </select></div>
+              <button onClick={addReportSub} className="px-3 py-1.5 bg-teal-600 text-white text-xs rounded font-medium whitespace-nowrap">+ Add</button>
+            </div>
+
+            {/* Subscription list */}
+            <table className="w-full text-xs">
+              <thead><tr className="bg-gray-50 border-b">
+                <th className="p-2 text-left">Email</th>
+                <th className="p-2">Report</th>
+                <th className="p-2">Frequency</th>
+                <th className="p-2">Last Sent</th>
+                <th className="p-2 text-center">Active</th>
+                <th className="p-2"></th>
+              </tr></thead>
+              <tbody>{reportSubs.map(s => (
+                <tr key={s.id} className={`border-b ${!s.is_active ? 'opacity-40' : ''}`}>
+                  <td className="p-2 font-medium">{s.email}</td>
+                  <td className="p-2 text-center"><span className="px-1.5 py-0.5 rounded bg-teal-100 text-teal-700 text-[9px]">{s.report_type?.replace(/_/g, ' ')}</span></td>
+                  <td className="p-2 text-center">{s.frequency}</td>
+                  <td className="p-2 text-center text-gray-400">{s.last_sent_at ? new Date(s.last_sent_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }) : 'Never'}</td>
+                  <td className="p-2 text-center">
+                    <button onClick={() => toggleReportSub(s.id, !s.is_active)} className={`w-8 h-4 rounded-full relative ${s.is_active ? 'bg-green-500' : 'bg-gray-300'}`}>
+                      <div className={`w-3 h-3 bg-white rounded-full absolute top-0.5 transition-all ${s.is_active ? 'right-0.5' : 'left-0.5'}`} />
+                    </button>
+                  </td>
+                  <td className="p-2"><button onClick={() => deleteReportSub(s.id)} className="text-red-500 text-[10px] hover:text-red-700">Remove</button></td>
+                </tr>
+              ))}</tbody>
+            </table>
+            {reportSubs.length === 0 && <div className="p-6 text-center text-xs text-gray-400">No report subscriptions. Add one above.</div>}
+          </div>
+
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-xs text-blue-700">
+            <b>Email via Resend:</b> Set <code className="bg-blue-100 px-1 rounded">RESEND_API_KEY</code> in environment. Cron runs daily at 8:00 AM IST (2:30 UTC). Test by hitting <code className="bg-blue-100 px-1 rounded">/api/cron/daily-report</code> directly.
+          </div>
         </>}
       </div>}
 
