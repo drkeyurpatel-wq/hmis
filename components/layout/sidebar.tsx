@@ -9,7 +9,8 @@ import {
   LayoutDashboard, Users, Calendar, BedDouble, Stethoscope,
   CreditCard, Pill, FlaskConical, ScanLine, Scissors, BarChart3,
   Settings, LogOut, Building2, ChevronDown, ChevronRight, Droplets,
-  Home, Activity, Truck, FileText, Shield, Heart, PanelLeftClose, PanelLeft, Target, Radio, Mic,
+  Home, Activity, Truck, FileText, Shield, Heart, PanelLeftClose, PanelLeft,
+  Target, Radio, Mic, AlertTriangle, UtensilsCrossed,
 } from 'lucide-react';
 
 interface NavItem { href: string; label: string; icon: any; module: string | null; badge?: string }
@@ -23,6 +24,7 @@ const NAV: NavGroup[] = [
   ]},
   { key: 'clinical', label: 'CLINICAL', items: [
     { href: '/patients', label: 'Patients', icon: Users, module: 'patients' },
+    { href: '/emergency', label: 'Emergency', icon: AlertTriangle, module: 'opd' },
     { href: '/opd', label: 'OPD', icon: Calendar, module: 'opd' },
     { href: '/appointments', label: 'Appointments', icon: Calendar, module: 'opd' },
     { href: '/emr-v2', label: 'EMR', icon: Stethoscope, module: 'emr' },
@@ -31,6 +33,12 @@ const NAV: NavGroup[] = [
     { href: '/bed-management', label: 'Beds', icon: BedDouble, module: 'ipd' },
     { href: '/nursing-station', label: 'Nursing', icon: Heart, module: 'ipd' },
     { href: '/ot', label: 'OT', icon: Scissors, module: 'ot' },
+    { href: '/cathlab', label: 'Cath Lab', icon: Heart, module: 'ot' },
+    { href: '/endoscopy', label: 'Endoscopy', icon: ScanLine, module: 'ot' },
+    { href: '/dialysis', label: 'Dialysis', icon: Activity, module: 'ipd' },
+    { href: '/physiotherapy', label: 'Physio & Rehab', icon: Activity, module: 'ipd' },
+    { href: '/cssd', label: 'CSSD', icon: Shield, module: 'ot' },
+    { href: '/dietary', label: 'Dietary', icon: UtensilsCrossed, module: 'ipd' },
   ]},
   { key: 'diagnostics', label: 'DIAGNOSTICS', items: [
     { href: '/lab', label: 'Laboratory', icon: FlaskConical, module: 'lab' },
@@ -41,6 +49,8 @@ const NAV: NavGroup[] = [
   { key: 'revenue', label: 'REVENUE', items: [
     { href: '/billing', label: 'Billing', icon: CreditCard, module: 'billing' },
     { href: '/crm', label: 'CRM & Leads', icon: Target, module: 'billing' },
+    { href: '/referrals', label: 'Referrals', icon: Users, module: 'billing' },
+    { href: '/packages', label: 'Packages', icon: FileText, module: 'billing' },
     { href: '/accounting', label: 'Accounting', icon: FileText, module: 'billing' },
   ]},
   { key: 'operations', label: 'OPERATIONS', items: [
