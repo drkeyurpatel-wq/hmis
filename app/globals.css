@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,20 +6,24 @@
 
 @layer base {
   :root {
-    --sidebar-width: 260px;
-    --header-height: 56px;
+    --sidebar-width: 240px;
+    --sidebar-collapsed: 68px;
+    --header-height: 52px;
     --bg-primary: #ffffff;
-    --bg-secondary: #f9fafb;
-    --bg-tertiary: #f3f4f6;
-    --text-primary: #111827;
-    --text-secondary: #6b7280;
-    --text-muted: #9ca3af;
-    --border-color: #e5e7eb;
-    --brand-50: #eff6ff;
-    --brand-600: #2563eb;
-    --brand-700: #1d4ed8;
+    --bg-secondary: #f8fafc;
+    --bg-tertiary: #f1f5f9;
+    --text-primary: #0f172a;
+    --text-secondary: #475569;
+    --text-muted: #94a3b8;
+    --border-color: #e2e8f0;
+    --accent: #0d9488;
+    --accent-light: #ccfbf1;
+    --accent-dark: #115e59;
     --card-bg: #ffffff;
-    --card-border: #e5e7eb;
+    --card-border: #e2e8f0;
+    --card-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.04), 0 1px 2px -1px rgb(0 0 0 / 0.04);
+    --card-shadow-hover: 0 4px 6px -1px rgb(0 0 0 / 0.06), 0 2px 4px -2px rgb(0 0 0 / 0.06);
+    --radius: 12px;
   }
   .dark {
     --bg-primary: #0f172a;
@@ -29,36 +33,68 @@
     --text-secondary: #94a3b8;
     --text-muted: #64748b;
     --border-color: #334155;
-    --brand-50: #1e293b;
-    --brand-600: #3b82f6;
-    --brand-700: #60a5fa;
+    --accent: #14b8a6;
+    --accent-light: #1e293b;
+    --accent-dark: #5eead4;
     --card-bg: #1e293b;
     --card-border: #334155;
+    --card-shadow: none;
+    --card-shadow-hover: 0 4px 6px -1px rgb(0 0 0 / 0.3);
   }
   body {
     @apply antialiased;
     background: var(--bg-secondary);
     color: var(--text-primary);
+    font-family: 'DM Sans', system-ui, -apple-system, sans-serif;
   }
   .dark body { background: var(--bg-primary); }
+  h1, h2, h3, h4, h5, h6 { font-family: 'Plus Jakarta Sans', 'DM Sans', sans-serif; }
 }
 
 @layer components {
   .sidebar-item {
-    @apply flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors;
+    @apply flex items-center gap-2.5 px-2.5 py-[7px] rounded-lg text-[13px] font-medium transition-all duration-150;
     color: var(--text-secondary);
   }
   .sidebar-item:hover { background: var(--bg-tertiary); color: var(--text-primary); }
   .sidebar-item.active {
-    background: var(--brand-50);
-    color: var(--brand-700);
+    background: var(--accent-light);
+    color: var(--accent-dark);
     font-weight: 600;
   }
   .stat-card {
-    @apply rounded-xl border p-5 shadow-sm transition-all duration-200;
+    @apply rounded-xl border p-5 transition-all duration-200;
     background: var(--card-bg); border-color: var(--card-border);
+    box-shadow: var(--card-shadow);
   }
-  .stat-card:hover { @apply shadow-md -translate-y-0.5; }
+  .stat-card:hover { box-shadow: var(--card-shadow-hover); @apply -translate-y-0.5; }
+  .h1-card {
+    @apply rounded-2xl border p-5 transition-all duration-200;
+    background: var(--card-bg); border-color: var(--card-border);
+    box-shadow: var(--card-shadow);
+  }
+  .h1-card:hover { box-shadow: var(--card-shadow-hover); }
+  .h1-badge {
+    @apply inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold;
+  }
+  .h1-badge-green { @apply bg-emerald-50 text-emerald-700; }
+  .h1-badge-red { @apply bg-red-50 text-red-700; }
+  .h1-badge-amber { @apply bg-amber-50 text-amber-700; }
+  .h1-badge-blue { @apply bg-blue-50 text-blue-700; }
+  .h1-badge-purple { @apply bg-purple-50 text-purple-700; }
+  .h1-badge-gray { @apply bg-gray-100 text-gray-600; }
+  .h1-table {
+    @apply w-full text-xs;
+  }
+  .h1-table thead tr { @apply bg-gray-50/80 border-b; }
+  .h1-table th { @apply px-3 py-2.5 text-left text-[10px] font-semibold text-gray-500 uppercase tracking-wider; }
+  .h1-table td { @apply px-3 py-2.5; }
+  .h1-table tbody tr { @apply border-b border-gray-50 hover:bg-gray-50/50 transition-colors; }
+  /* Scrollbar styling */
+  .scrollbar-thin::-webkit-scrollbar { width: 4px; }
+  .scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
+  .scrollbar-thin::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 4px; }
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover { background: #cbd5e1; }
 
   /* Dark mode overrides for common patterns */
   .dark .bg-white { background: var(--card-bg) !important; }
