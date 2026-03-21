@@ -4,6 +4,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { openPrintWindow } from '@/components/ui/shared';
+import { downloadDischargePDF } from '@/lib/discharge/discharge-pdf';
 import { auditCreate, auditSign, auditPrint } from '@/lib/audit/audit-logger';
 import { triggerFinalBillOnDischarge } from '@/lib/bridge/cross-module-bridge';
 import { notifyDischarge } from '@/lib/notifications/notification-dispatcher';
@@ -268,6 +269,12 @@ RULES:
     </div>`, `Discharge Summary — ${pt?.uhid} — ${admission?.ipd_number}`);
   };
 
+  // Download discharge summary as PDF
+  const downloadPDF = () => {
+    downloadDischargePDF(ds, pt, admission);
+    auditPrint(admission?.centre_id || '', staffId, 'discharge_pdf', admissionId, `PDF downloaded: ${admission?.ipd_number}`);
+  };
+
   // Save discharge summary to admission
   const saveAndDischarge = async () => {
     if (!sb()) return;
@@ -501,6 +508,7 @@ RULES:
 
         <div className="flex gap-2">
           <button onClick={() => setStep(2)} className="px-4 py-2.5 bg-gray-100 text-gray-600 rounded-xl text-sm">← Edit</button>
+          <button onClick={downloadPDF} className="px-4 py-2.5 bg-teal-600 text-white rounded-xl text-sm font-medium">Download PDF</button>
           <button onClick={printDischargeSummary} className="flex-1 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-medium">Print Discharge Summary</button>
           <button onClick={() => { setClearances(c => ({...c, summaryApproved: true})); setStep(4); }} className="px-6 py-2.5 bg-green-600 text-white rounded-xl text-sm font-medium">Approve Summary →</button>
         </div>
@@ -634,6 +642,7 @@ RULES:
 
           <div className="flex gap-2 justify-center">
             <button onClick={() => setStep(4)} className="px-4 py-2.5 bg-gray-100 text-gray-600 rounded-xl text-sm">← Back</button>
+            <button onClick={downloadPDF} className="px-4 py-2.5 bg-teal-600 text-white rounded-xl text-sm">Download PDF</button>
             <button onClick={printDischargeSummary} className="px-4 py-2.5 bg-blue-600 text-white rounded-xl text-sm">Print Summary</button>
             <button onClick={saveAndDischarge}
               className="px-8 py-2.5 bg-green-600 text-white rounded-xl text-sm font-bold hover:bg-green-700 transition-colors">
@@ -649,6 +658,7 @@ RULES:
         <h2 className="text-xl font-bold text-green-700 mb-2">Patient Discharged Successfully</h2>
         <p className="text-sm text-gray-500 mb-6">{pt?.first_name} {pt?.last_name} | {admission?.ipd_number} | Bed freed</p>
         <div className="flex gap-3 justify-center">
+          <button onClick={downloadPDF} className="px-4 py-2.5 bg-teal-600 text-white rounded-xl text-sm">Download PDF</button>
           <button onClick={printDischargeSummary} className="px-4 py-2.5 bg-blue-600 text-white rounded-xl text-sm">Print Summary Again</button>
           <a href="/ipd" className="px-4 py-2.5 bg-gray-100 text-gray-600 rounded-xl text-sm">Back to IPD List</a>
         </div>

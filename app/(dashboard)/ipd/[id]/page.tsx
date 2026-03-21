@@ -14,6 +14,9 @@ import SmartMAR from '@/components/ipd/smart-mar';
 import AutoICUScores from '@/components/ipd/auto-icu-scores';
 import DischargeEngine from '@/components/ipd/discharge-engine';
 import ConsentBuilder from '@/components/ipd/consent-builder';
+import ConsentForm from '@/components/consent/consent-form';
+import ConsentList from '@/components/consent/consent-list';
+import { useConsentTemplates, usePatientConsents } from '@/lib/consent/consent-hooks';
 import SmartProcedures from '@/components/ipd/smart-procedures';
 import PatientImagingPanel from '@/components/radiology/patient-imaging-panel';
 import PatientLabHistory from '@/components/lab/patient-lab-history';
@@ -88,6 +91,9 @@ function IPDClinicalInner() {
   const meds = useMedicationOrders(admissionId);
   const mar = useMAR(admissionId);
   const consents = useConsents(admissionId, admission?.patient?.id);
+  const consentTemplates = useConsentTemplates();
+  const structuredConsents = usePatientConsents(admission?.patient?.id || null, admissionId);
+  const [showNewConsent, setShowNewConsent] = useState(false);
   const procedures = useProceduralNotes(admissionId);
 
   if (!admission) return <div className="text-center py-12 text-gray-400">Loading admission...</div>;
@@ -107,7 +113,7 @@ function IPDClinicalInner() {
     ['mar', 'MAR', `${mar.records.filter((r: any) => r.status === 'scheduled').length}`],
     ['scores', 'Scores', `${scores.scores.length}`],
     ['cpoe', 'Orders (CPOE)', ''],
-    ['consents', 'Consents', `${consents.consents.length}`],
+    ['consents', 'Consents', `${consents.consents.length + structuredConsents.consents.length}`],
     ['procedures', 'Procedures', `${procedures.notes.length}`],
     ['nursing', 'Nursing', ''],
     ['lab', 'Lab', ''],
@@ -236,7 +242,37 @@ function IPDClinicalInner() {
       {tab === 'mar' && <SmartMAR records={mar.records} meds={meds.orders} admissionId={admissionId} staffId={staffId} onAdminister={async (id: string, sid: string) => { await mar.administer(id, sid); }} onHold={async (id: string, reason: string) => { await mar.holdDose(id, reason); }} onFlash={flash} />}
       {tab === 'scores' && <AutoICUScores scores={scores.scores} admissionId={admissionId} staffId={staffId} onSave={async (score: any, sid: string) => { await scores.addScore(score.scoreType, score.scoreValue, {}, score.interpretation, sid); }} onFlash={flash} />}
       {tab === 'cpoe' && <CPOEPanel admissionId={admissionId} patientId={pt.id} onFlash={flash} />}
-      {tab === 'consents' && <ConsentBuilder consents={consents.consents} patientId={pt.id} patientName={patientName} admissionId={admissionId} admissionDx={admDx} staffId={staffId} onSave={async (c: any, sid: string) => { await consents.addConsent(c, sid); }} onFlash={flash} />}
+      {tab === 'consents' && <div className="space-y-4">
+        <div className="flex justify-between items-center">
+          <h3 className="font-semibold text-sm">Digital Consent Management</h3>
+          <button onClick={() => setShowNewConsent(!showNewConsent)}
+            className="px-3 py-1.5 bg-blue-600 text-white text-xs rounded-lg">{showNewConsent ? 'Cancel' : '+ New Consent'}</button>
+        </div>
+        {showNewConsent && <ConsentForm
+          templates={consentTemplates.templates}
+          patientName={patientName}
+          patientId={pt.id}
+          admissionId={admissionId}
+          admissionDx={admDx}
+          staffId={staffId}
+          centreId={admission?.centre_id}
+          onSign={structuredConsents.signConsent}
+          onFlash={flash}
+          onClose={() => setShowNewConsent(false)}
+        />}
+        <ConsentList
+          consents={structuredConsents.consents}
+          staffId={staffId}
+          onRevoke={structuredConsents.revokeConsent}
+          onFlash={flash}
+        />
+        {consents.consents.length > 0 && <>
+          <div className="border-t pt-3 mt-3">
+            <div className="text-xs text-gray-400 font-medium mb-2">Legacy Consents ({consents.consents.length})</div>
+            <ConsentBuilder consents={consents.consents} patientId={pt.id} patientName={patientName} admissionId={admissionId} admissionDx={admDx} staffId={staffId} onSave={async (c: any, sid: string) => { await consents.addConsent(c, sid); }} onFlash={flash} />
+          </div>
+        </>}
+      </div>}
       {tab === 'procedures' && <SmartProcedures procedures={procedures.notes} admissionId={admissionId} staffId={staffId} onSave={async (proc: any, sid: string) => { await procedures.addNote(proc, sid); }} onFlash={flash} />}
       {tab === 'nursing' && <NursingShiftNotes admissionId={admissionId} staffId={staffId} patientName={patientName} onFlash={flash} />}
       {tab === 'lab' && <PatientLabHistory patientId={pt.id} admissionId={admissionId} />}
