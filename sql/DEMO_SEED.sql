@@ -48,7 +48,7 @@ BEGIN
     FOR r IN 1..wrooms LOOP
       INSERT INTO hmis_rooms (ward_id,room_number,room_type,daily_rate) VALUES (w_id,wfloor||lpad(r::text,2,'0'),wtype,wrate) RETURNING id INTO r_id;
       FOR b IN 1..wbeds LOOP
-        INSERT INTO hmis_beds (room_id,bed_number,status) VALUES (r_id,wname||'-'||r||chr(64+b),'available');
+        INSERT INTO hmis_beds (room_id,bed_number,status) VALUES (r_id,wfloor||lpad(r::text,2,'0')||chr(64+b),'available');
       END LOOP;
     END LOOP;
   END LOOP;
@@ -60,7 +60,7 @@ BEGIN
       FOR r IN 1..wrooms LOOP
         INSERT INTO hmis_rooms (ward_id,room_number,room_type,daily_rate) VALUES (w_id,wfloor||lpad(r::text,2,'0'),wtype,wrate) RETURNING id INTO r_id;
         FOR b IN 1..wbeds LOOP
-          INSERT INTO hmis_beds (room_id,bed_number,status) VALUES (r_id,wname||'-'||r||chr(64+b),'available');
+          INSERT INTO hmis_beds (room_id,bed_number,status) VALUES (r_id,wfloor||lpad(r::text,2,'0')||chr(64+b),'available');
         END LOOP;
       END LOOP;
     END LOOP;
