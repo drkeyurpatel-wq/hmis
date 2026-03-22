@@ -304,16 +304,17 @@ BEGIN
   END LOOP;
 END $$;
 
--- ═══ PHARMACY DISPENSING (no admission_id/billing_done — not in schema) ═══
+-- ═══ PHARMACY DISPENSING ═══
 DO $$
 DECLARE
   rec RECORD;
 BEGIN
-  FOR rec IN SELECT v.id,v.centre_id,v.patient_id,v.created_at FROM hmis_opd_visits v WHERE v.status='completed' AND random()<0.4 LIMIT 80 LOOP
+  FOR rec IN SELECT e.id as enc_id, e.centre_id, e.patient_id, e.created_at FROM hmis_emr_encounters e WHERE random()<0.4 LIMIT 80 LOOP
     INSERT INTO hmis_pharmacy_dispensing (centre_id,patient_id,encounter_id,prescription_data,status,total_amount,dispensed_at,created_at)
-    VALUES (rec.centre_id,rec.patient_id,rec.id,('[{"drug":"Paracetamol 500mg","qty":20,"rate":2}]')::jsonb,'dispensed',100+(random()*900)::numeric(10,2),rec.created_at,rec.created_at);
+    VALUES (rec.centre_id,rec.patient_id,rec.enc_id,('[{"drug":"Paracetamol 500mg","qty":20,"rate":2}]')::jsonb,'dispensed',100+(random()*900)::numeric(10,2),rec.created_at,rec.created_at);
   END LOOP;
 END $$;
+
 
 -- ═══ ER VISITS (5 today at Shilaj) ═══
 DO $$
