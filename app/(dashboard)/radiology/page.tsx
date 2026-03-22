@@ -87,7 +87,7 @@ function RadiologyInner() {
       </div>
 
       {tab === 'worklist' && <RadiologyWorklist centreId={centreId} modalities={testMaster.modalities} pacsConfig={pacs.config}
-        onSelectOrder={o => setSelectedOrder(o)} onLinkStudy={o => setLinkOrder(o)} onFlash={flash} />}
+        staffId={staffId} onSelectOrder={o => setSelectedOrder(o)} onLinkStudy={o => setLinkOrder(o)} onFlash={flash} />}
 
       {tab === 'new_order' && <RadiologyOrderForm centreId={centreId} staffId={staffId}
         onComplete={(acc) => { setTab('worklist'); }} onFlash={flash} />}

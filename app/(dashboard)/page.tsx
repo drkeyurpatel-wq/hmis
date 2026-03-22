@@ -11,6 +11,8 @@ import {
   TrendingUp, TrendingDown, Users, BedDouble, CreditCard,
   FlaskConical, Pill, ScanLine, Scissors, Activity, Clock, ArrowUpRight,
 } from 'lucide-react';
+import { useAlerts } from '@/lib/alerts/alert-engine';
+import AlertBanner from '@/components/alerts/alert-banner';
 
 let _sb: any = null;
 function sb() { if (typeof window === 'undefined') return null as any; if (!_sb) { try { _sb = createClient(); } catch { return null; } } return _sb; }
@@ -25,6 +27,7 @@ export default function DashboardPage() {
   const centreId = activeCentreId || '';
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const alertSystem = useAlerts(centreId);
 
   const load = useCallback(async () => {
     if (!centreId || !sb()) { setLoading(false); return; }
@@ -132,10 +135,20 @@ export default function DashboardPage() {
 
   return (
     <div className="max-w-[1400px] mx-auto p-4 space-y-5">
+      {/* ALERT BANNER */}
+      <AlertBanner alerts={alertSystem.alerts.filter(a => a.severity === 'emergency' || a.severity === 'critical')} onAcknowledge={(id) => alertSystem.acknowledge(id, staff?.id || '')} />
+
       {/* HEADER */}
-      <div className="flex items-center justify-between">
+      <div className={`flex items-center justify-between ${alertSystem.counts.emergency > 0 ? 'mt-10' : ''}`}>
         <div><h1 className="text-2xl font-black tracking-tight text-gray-900">Health1 <span className="text-teal-600">Command</span></h1><p className="text-xs text-gray-400 mt-0.5">{new Date().toLocaleDateString('en-IN',{weekday:'long',day:'2-digit',month:'long',year:'numeric'})} · {staff?.full_name}</p></div>
-        <div className="flex items-center gap-2"><div className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 border border-emerald-200 rounded-full"><Pulse/><span className="text-[10px] font-bold text-emerald-700">LIVE</span></div><button onClick={load} className="px-3 py-1.5 text-xs bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors">↻</button></div>
+        <div className="flex items-center gap-2">
+          {alertSystem.counts.total > 0 && (
+            <Link href="/nursing-station" className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border ${alertSystem.counts.emergency > 0 ? 'bg-red-50 border-red-300' : alertSystem.counts.critical > 0 ? 'bg-amber-50 border-amber-300' : 'bg-blue-50 border-blue-200'}`}>
+              <span className={`relative flex h-2 w-2`}><span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${alertSystem.counts.emergency > 0 ? 'bg-red-500' : 'bg-amber-500'}`}/><span className={`relative inline-flex rounded-full h-2 w-2 ${alertSystem.counts.emergency > 0 ? 'bg-red-500' : 'bg-amber-500'}`}/></span>
+              <span className={`text-[10px] font-bold ${alertSystem.counts.emergency > 0 ? 'text-red-700' : 'text-amber-700'}`}>{alertSystem.counts.total} Alert{alertSystem.counts.total !== 1 ? 's' : ''}</span>
+            </Link>
+          )}
+          <div className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 border border-emerald-200 rounded-full"><Pulse/><span className="text-[10px] font-bold text-emerald-700">LIVE</span></div><button onClick={load} className="px-3 py-1.5 text-xs bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors">↻</button></div>
       </div>
 
       {/* ROW 1: HERO KPIs */}

@@ -21,7 +21,7 @@ export interface RadiologyOrder {
   is_contrast: boolean; contrast_allergy_checked: boolean;
   creatinine_value?: number; pregnancy_status?: string; lmp_date?: string;
   scheduled_date?: string; scheduled_time?: string;
-  room_id?: string; technician_id?: string; ordered_by?: string;
+  room_id?: string; technician_id?: string; ordered_by?: string; assigned_to?: string;
   status: 'ordered' | 'scheduled' | 'in_progress' | 'reported' | 'verified';
   pacs_study_uid?: string; pacs_accession?: string;
   stradus_viewer_url?: string;
@@ -29,7 +29,7 @@ export interface RadiologyOrder {
   tat_minutes?: number;
   created_at: string; updated_at: string;
   // Joined
-  test?: any; patient?: any; ordered_by_doc?: any; technician?: any;
+  test?: any; patient?: any; ordered_by_doc?: any; technician?: any; assigned_doc?: any;
   report?: any[];
 }
 
@@ -215,6 +215,7 @@ export function useRadiologyWorklist(centreId: string | null) {
         patient:hmis_patients!inner(id, first_name, last_name, uhid, age_years, gender, phone_primary, date_of_birth),
         ordered_by_doc:hmis_staff!hmis_radiology_orders_ordered_by_fkey(id, full_name),
         technician:hmis_staff!hmis_radiology_orders_technician_id_fkey(id, full_name),
+        assigned_doc:hmis_staff!hmis_radiology_orders_assigned_to_fkey(id, full_name),
         report:hmis_radiology_reports(id, findings, impression, is_critical, status, reported_by, verified_by, created_at, technique, comparison, clinical_history, is_addendum, verified_at, template_used, reporter:hmis_staff!hmis_radiology_reports_reported_by_fkey(full_name), verifier:hmis_staff!hmis_radiology_reports_verified_by_fkey(full_name))`)
       .eq('centre_id', centreId)
       .order('created_at', { ascending: false })
@@ -451,10 +452,22 @@ export function useRadiologyWorklist(centreId: string | null) {
     return { success: true };
   }, [load]);
 
+  // ---- Assign Radiologist ----
+  const assignRadiologist = useCallback(async (orderId: string, radiologistId: string): Promise<{ success: boolean; error?: string }> => {
+    if (!sb()) return { success: false, error: 'Not ready' };
+    const { error } = await sb().from('hmis_radiology_orders').update({
+      assigned_to: radiologistId || null,
+      updated_at: new Date().toISOString(),
+    }).eq('id', orderId);
+    if (error) return { success: false, error: error.message };
+    load();
+    return { success: true };
+  }, [load]);
+
   return {
     orders, loading, stats, filters,
     load, setFilters: (f: WorklistFilters) => { setFilters(f); load(f); },
-    createOrder, updateStatus, linkStudy, assignTechnician,
+    createOrder, updateStatus, linkStudy, assignTechnician, assignRadiologist,
   };
 }
 

@@ -1,403 +1,405 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { RoleGuard } from '@/components/ui/shared';
 import { useAuthStore } from '@/lib/store/auth';
-import { useNursingStation, recordVitals, recordIO, saveNursingNote, type NursingPatient, type NursingTask } from '@/lib/nursing/nursing-station-hooks';
+import { useNursingStation, useNursingVitals, type NursingPatient } from '@/lib/nursing/nursing-station-hooks';
+import { useMAR, useMedicationOrders, useIOChart } from '@/lib/ipd/clinical-hooks';
+import { calculateNEWS2 } from '@/lib/cdss/news2';
+import SmartMAR from '@/components/ipd/smart-mar';
+import SmartIOChart from '@/components/ipd/smart-io-chart';
+import NursingShiftNotes from '@/components/ipd/nursing-shift-notes';
 import Link from 'next/link';
 
-const NEWS2_COLORS: Record<string, string> = { low: 'bg-green-100 text-green-800', low_med: 'bg-yellow-100 text-yellow-800', medium: 'bg-orange-100 text-orange-800', high: 'bg-red-600 text-white animate-pulse' };
-const WARD_COLORS: Record<string, string> = { icu: 'bg-red-100 text-red-700', transplant_icu: 'bg-red-100 text-red-700', nicu: 'bg-pink-100 text-pink-700', general: 'bg-gray-100 text-gray-700', private: 'bg-purple-100 text-purple-700', semi_private: 'bg-blue-100 text-blue-700', isolation: 'bg-amber-100 text-amber-700' };
-const TASK_COLORS: Record<string, string> = { overdue: 'bg-red-50 border-red-300', due_now: 'bg-amber-50 border-amber-300', upcoming: 'bg-blue-50 border-blue-200', completed: 'bg-green-50 border-green-200' };
-const TASK_ICONS: Record<string, string> = { vitals: '🩺', medication: '💊', io: '🥤', lab_collect: '🧪', wound_care: '🩹', positioning: '🔄', assessment: '📋', custom: '📌' };
+const WARD_COLORS: Record<string, string> = {
+  icu: 'bg-red-100 text-red-700', transplant_icu: 'bg-red-100 text-red-700',
+  general: 'bg-gray-100 text-gray-700', private: 'bg-purple-100 text-purple-700',
+  semi_private: 'bg-blue-100 text-blue-700', nicu: 'bg-pink-100 text-pink-700',
+};
 
-type ViewMode = 'patients' | 'tasks' | 'handoff';
+type Tab = 'ward' | 'vitals' | 'mar' | 'io' | 'notes';
+const TABS: { key: Tab; label: string; icon: string }[] = [
+  { key: 'ward', label: 'Ward View', icon: '🏥' },
+  { key: 'vitals', label: 'Vitals', icon: '🩺' },
+  { key: 'mar', label: 'MAR', icon: '💊' },
+  { key: 'io', label: 'IO Chart', icon: '🥤' },
+  { key: 'notes', label: 'Notes', icon: '📋' },
+];
+
+// ---------- GCS helpers ----------
+const GCS_EYE = [{ v: 4, l: 'Spontaneous' }, { v: 3, l: 'To voice' }, { v: 2, l: 'To pain' }, { v: 1, l: 'None' }];
+const GCS_VERBAL = [{ v: 5, l: 'Oriented' }, { v: 4, l: 'Confused' }, { v: 3, l: 'Inappropriate' }, { v: 2, l: 'Incomprehensible' }, { v: 1, l: 'None' }];
+const GCS_MOTOR = [{ v: 6, l: 'Obeys' }, { v: 5, l: 'Localizes' }, { v: 4, l: 'Withdraws' }, { v: 3, l: 'Flexion' }, { v: 2, l: 'Extension' }, { v: 1, l: 'None' }];
 
 function NursingStationInner() {
   const { staff, activeCentreId } = useAuthStore();
   const centreId = activeCentreId || '';
-  const [wardFilter, setWardFilter] = useState('');
-  const [view, setView] = useState<ViewMode>('patients');
-  const station = useNursingStation(centreId, wardFilter || undefined);
-  const [toast, setToast] = useState('');
-  const flash = (m: string) => { setToast(m); setTimeout(() => setToast(''), 3000); };
-
-  // Modals
-  const [vitalsModal, setVitalsModal] = useState<NursingPatient | null>(null);
-  const [ioModal, setIOModal] = useState<NursingPatient | null>(null);
-  const [noteModal, setNoteModal] = useState<NursingPatient | null>(null);
-
-  // Vitals form
-  const [vf, setVf] = useState({ temperature: '', pulse: '', bp_systolic: '', bp_diastolic: '', resp_rate: '', spo2: '', gcs: '15', pain_scale: '', blood_sugar: '' });
-  const resetVf = () => setVf({ temperature: '', pulse: '', bp_systolic: '', bp_diastolic: '', resp_rate: '', spo2: '', gcs: '15', pain_scale: '', blood_sugar: '' });
-
-  // IO form
-  const [iof, setIof] = useState({ shift: 'morning' as 'morning'|'evening'|'night', oral_intake_ml: '', iv_fluid_ml: '', blood_products_ml: '', urine_ml: '', drain_1_ml: '', ryles_aspirate_ml: '', vomit_ml: '', stool_count: '' });
-
-  // Note form
-  const [noteText, setNoteText] = useState('');
-  const [noteShift, setNoteShift] = useState<'morning'|'evening'|'night'>('morning');
-
-  // Handoff
-  const [handoff, setHandoff] = useState({ outgoing: 'morning', incoming: 'evening', critical: '', notes: '' });
-
   const staffId = staff?.id || '';
+  const [wardFilter, setWardFilter] = useState('');
+  const [tab, setTab] = useState<Tab>('ward');
+  const [toast, setToast] = useState('');
+  const flash = (m: string) => { setToast(m); setTimeout(() => setToast(''), 2500); };
 
-  // ── Save vitals ──
-  const handleSaveVitals = async () => {
-    if (!vitalsModal || !staffId) return;
-    const vitals: any = {};
-    if (vf.temperature) vitals.temperature = parseFloat(vf.temperature);
-    if (vf.pulse) vitals.pulse = parseInt(vf.pulse);
-    if (vf.bp_systolic) vitals.bp_systolic = parseInt(vf.bp_systolic);
-    if (vf.bp_diastolic) vitals.bp_diastolic = parseInt(vf.bp_diastolic);
-    if (vf.resp_rate) vitals.resp_rate = parseInt(vf.resp_rate);
-    if (vf.spo2) vitals.spo2 = parseFloat(vf.spo2);
-    if (vf.gcs) vitals.gcs = parseInt(vf.gcs);
-    if (vf.pain_scale) vitals.pain_scale = parseInt(vf.pain_scale);
-    if (vf.blood_sugar) vitals.blood_sugar = parseFloat(vf.blood_sugar);
-    if (Object.keys(vitals).length === 0) { flash('Enter at least one vital'); return; }
-    const { error } = await recordVitals(vitalsModal.patientId, vitalsModal.admissionId, staffId, vitals);
-    if (error) { flash('Error: ' + error); return; }
-    flash(`Vitals saved for ${vitalsModal.patientName}`);
-    setVitalsModal(null); resetVf(); station.load();
+  // Selected patient for vitals/MAR/IO/Notes
+  const [selectedPt, setSelectedPt] = useState<NursingPatient | null>(null);
+
+  const station = useNursingStation(centreId, wardFilter || undefined);
+
+  // Per-patient hooks (activate when patient selected)
+  const vitals = useNursingVitals(selectedPt?.patientId || null, selectedPt?.admissionId || null);
+  const mar = useMAR(selectedPt?.admissionId || null);
+  const meds = useMedicationOrders(selectedPt?.admissionId || null);
+  const ioChart = useIOChart(selectedPt?.admissionId || null);
+
+  // Vitals form state
+  const initVitals = { bpSystolic: '', bpDiastolic: '', heartRate: '', temperature: '', spo2: '', respiratoryRate: '', gcsE: 4, gcsV: 5, gcsM: 6, painScore: '', bloodSugar: '', urineOutput: '' };
+  const [vf, setVf] = useState(initVitals);
+  const [news2, setNews2] = useState<ReturnType<typeof calculateNEWS2>>(null);
+
+  const selectPatient = (p: NursingPatient, openTab?: Tab) => {
+    setSelectedPt(p);
+    setTab(openTab || 'vitals');
+    setVf(initVitals);
+    setNews2(null);
   };
 
-  // ── Save IO ──
-  const handleSaveIO = async () => {
-    if (!ioModal || !staffId) return;
-    const data: any = {};
-    if (iof.oral_intake_ml) data.oral_intake_ml = parseInt(iof.oral_intake_ml);
-    if (iof.iv_fluid_ml) data.iv_fluid_ml = parseInt(iof.iv_fluid_ml);
-    if (iof.blood_products_ml) data.blood_products_ml = parseInt(iof.blood_products_ml);
-    if (iof.urine_ml) data.urine_ml = parseInt(iof.urine_ml);
-    if (iof.drain_1_ml) data.drain_1_ml = parseInt(iof.drain_1_ml);
-    if (iof.ryles_aspirate_ml) data.ryles_aspirate_ml = parseInt(iof.ryles_aspirate_ml);
-    if (iof.vomit_ml) data.vomit_ml = parseInt(iof.vomit_ml);
-    if (iof.stool_count) data.stool_count = parseInt(iof.stool_count);
-    const { error } = await recordIO(ioModal.admissionId, staffId, iof.shift, data);
-    if (error) { flash('Error: ' + error); return; }
-    flash(`I/O saved for ${ioModal.patientName}`);
-    setIOModal(null); station.load();
+  const saveVitals = async () => {
+    if (!selectedPt) return;
+    const gcs = vf.gcsE + vf.gcsV + vf.gcsM;
+    const result = await vitals.record({
+      bpSystolic: vf.bpSystolic ? Number(vf.bpSystolic) : undefined,
+      bpDiastolic: vf.bpDiastolic ? Number(vf.bpDiastolic) : undefined,
+      heartRate: vf.heartRate ? Number(vf.heartRate) : undefined,
+      temperature: vf.temperature ? Number(vf.temperature) : undefined,
+      spo2: vf.spo2 ? Number(vf.spo2) : undefined,
+      respiratoryRate: vf.respiratoryRate ? Number(vf.respiratoryRate) : undefined,
+      gcsScore: gcs < 15 ? gcs : undefined,
+      painScore: vf.painScore ? Number(vf.painScore) : undefined,
+      bloodSugar: vf.bloodSugar ? Number(vf.bloodSugar) : undefined,
+      urineOutput: vf.urineOutput ? Number(vf.urineOutput) : undefined,
+    }, staffId);
+    if (result && !result.error) {
+      // Calculate NEWS2
+      const n2 = calculateNEWS2({
+        respiratoryRate: vf.respiratoryRate ? Number(vf.respiratoryRate) : undefined,
+        spo2: vf.spo2 ? Number(vf.spo2) : undefined,
+        systolic: vf.bpSystolic ? Number(vf.bpSystolic) : undefined,
+        heartRate: vf.heartRate ? Number(vf.heartRate) : undefined,
+        temperature: vf.temperature ? Number(vf.temperature) : undefined,
+        isAlert: gcs >= 15,
+      });
+      setNews2(n2);
+      flash('Vitals saved');
+      setVf(initVitals);
+    }
   };
 
-  // ── Save note ──
-  const handleSaveNote = async () => {
-    if (!noteModal || !staffId || !noteText.trim()) return;
-    const { error } = await saveNursingNote(noteModal.admissionId, staffId, noteShift, noteText);
-    if (error) { flash('Error: ' + error); return; }
-    flash('Note saved');
-    setNoteModal(null); setNoteText('');
-  };
+  // Last 3 vitals
+  const last3 = useMemo(() => vitals.history.slice(0, 3), [vitals.history]);
 
-  // ── Format vitals inline ──
-  const VitalsLine = ({ p }: { p: NursingPatient }) => {
-    const v = p.lastVitals;
-    if (!v) return <span className="text-[10px] text-gray-400 italic">No vitals recorded</span>;
-    const items: string[] = [];
-    if (v.bp_systolic) items.push(`BP ${v.bp_systolic}/${v.bp_diastolic || '?'}`);
-    if (v.pulse) items.push(`HR ${v.pulse}`);
-    if (v.spo2) items.push(`SpO2 ${v.spo2}%`);
-    if (v.temperature) items.push(`T ${v.temperature}°`);
-    if (v.resp_rate) items.push(`RR ${v.resp_rate}`);
-    const ago = p.hoursSinceVitals < 1 ? `${Math.round(p.hoursSinceVitals * 60)}m ago` : `${Math.round(p.hoursSinceVitals)}h ago`;
-    return <span className="text-[10px] text-gray-600">{items.join(' · ')} <span className={p.vitalsDue ? 'text-red-600 font-bold' : 'text-gray-400'}>({ago})</span></span>;
-  };
+  const fmtTime = (d: string) => new Date(d).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
 
   return (
     <div className="max-w-7xl mx-auto space-y-4">
-      {toast && <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-emerald-600 text-white px-4 py-2 rounded-xl shadow-lg text-sm font-medium">{toast}</div>}
+      {toast && <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-teal-600 text-white px-4 py-2 rounded-lg shadow-lg text-sm">{toast}</div>}
 
-      {/* Header */}
+      {/* Header + Ward Selector */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold">Nursing Station</h1>
-          <p className="text-xs text-gray-500">{staff?.full_name} — {new Date().toLocaleDateString('en-IN', { weekday: 'long', day: '2-digit', month: 'long' })}, {new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</p>
+          <h1 className="text-xl font-bold font-[family-name:var(--font-plus-jakarta)]">Nursing Station</h1>
+          <p className="text-xs text-gray-500">{staff?.full_name} — {new Date().toLocaleDateString('en-IN', { weekday: 'long', day: '2-digit', month: 'long' })}</p>
         </div>
-        <div className="flex gap-2">
-          <select value={wardFilter} onChange={e => setWardFilter(e.target.value)} className="px-3 py-1.5 border rounded-lg text-xs">
+        <div className="flex items-center gap-2">
+          <select value={wardFilter} onChange={e => { setWardFilter(e.target.value); setSelectedPt(null); setTab('ward'); }}
+            className="px-3 py-1.5 border rounded-xl text-xs bg-white">
             <option value="">All Wards</option>
             {station.wards.map((w: any) => <option key={w.id} value={w.id}>{w.name} ({w.type?.replace('_', ' ')})</option>)}
           </select>
-          <button onClick={station.load} className="px-3 py-1.5 bg-gray-100 text-xs rounded-lg hover:bg-gray-200">↻ Refresh</button>
+          <button onClick={() => station.load()} className="px-3 py-1.5 bg-gray-100 text-xs rounded-xl hover:bg-gray-200">Refresh</button>
         </div>
       </div>
 
       {/* KPI Strip */}
-      <div className="grid grid-cols-5 lg:grid-cols-10 gap-2">
-        {[
-          { label: 'Total', val: station.stats.totalPatients, bg: 'bg-white' },
-          { label: 'ICU', val: station.stats.icuPatients, bg: 'bg-red-50' },
-          { label: 'Vitals Due', val: station.stats.vitalsDue, bg: station.stats.vitalsDue > 0 ? 'bg-amber-50' : 'bg-green-50' },
-          { label: 'Meds Due', val: station.stats.medsDue, bg: station.stats.medsDue > 0 ? 'bg-blue-50' : 'bg-green-50' },
-          { label: 'Meds Late', val: station.stats.medsOverdue, bg: station.stats.medsOverdue > 0 ? 'bg-red-50' : 'bg-green-50' },
-          { label: 'Labs Pending', val: station.stats.pendingLabs, bg: 'bg-white' },
-          { label: 'I/O Pending', val: station.stats.ioPending, bg: station.stats.ioPending > 0 ? 'bg-amber-50' : 'bg-white' },
-          { label: 'Critical', val: station.stats.criticalAlerts, bg: station.stats.criticalAlerts > 0 ? 'bg-red-50 border-red-300' : 'bg-green-50' },
-          { label: 'NEWS≥5', val: station.stats.highNEWS, bg: station.stats.highNEWS > 0 ? 'bg-red-50' : 'bg-white' },
-          { label: 'Overdue', val: station.stats.overdueTasks, bg: station.stats.overdueTasks > 0 ? 'bg-red-50' : 'bg-white' },
-        ].map(k => (
-          <div key={k.label} className={`${k.bg} rounded-xl border p-2 text-center`}>
-            <div className="text-[9px] text-gray-500 leading-tight">{k.label}</div>
-            <div className="text-lg font-bold">{k.val}</div>
-          </div>
+      <div className="grid grid-cols-6 gap-2">
+        <div className="bg-white rounded-2xl border p-2 text-center"><div className="text-2xl font-bold">{station.stats.totalPatients}</div><div className="text-[9px] text-gray-500">Patients</div></div>
+        <div className="bg-red-50 rounded-2xl border p-2 text-center"><div className="text-2xl font-bold text-red-700">{station.stats.icuPatients}</div><div className="text-[9px] text-gray-500">ICU</div></div>
+        <div className={`rounded-2xl border p-2 text-center ${station.stats.vitalsDue > 0 ? 'bg-amber-50' : 'bg-green-50'}`}><div className={`text-2xl font-bold ${station.stats.vitalsDue > 0 ? 'text-amber-700' : 'text-green-700'}`}>{station.stats.vitalsDue}</div><div className="text-[9px] text-gray-500">Vitals Due</div></div>
+        <div className={`rounded-2xl border p-2 text-center ${station.stats.medsDue > 0 ? 'bg-blue-50' : 'bg-green-50'}`}><div className={`text-2xl font-bold ${station.stats.medsDue > 0 ? 'text-blue-700' : 'text-green-700'}`}>{station.stats.medsDue}</div><div className="text-[9px] text-gray-500">Meds Due</div></div>
+        <div className={`rounded-2xl border p-2 text-center ${station.stats.criticalAlerts > 0 ? 'bg-red-50 border-red-300' : 'bg-green-50'}`}><div className={`text-2xl font-bold ${station.stats.criticalAlerts > 0 ? 'text-red-700 animate-pulse' : 'text-green-700'}`}>{station.stats.criticalAlerts}</div><div className="text-[9px] text-gray-500">Critical</div></div>
+        <div className="bg-white rounded-2xl border p-2 text-center"><div className="text-2xl font-bold">{station.stats.pendingLabs}</div><div className="text-[9px] text-gray-500">Labs Pending</div></div>
+      </div>
+
+      {/* Tab Bar */}
+      <div className="flex gap-1 bg-gray-100 p-1 rounded-xl">
+        {TABS.map(t => (
+          <button key={t.key} onClick={() => { if (t.key !== 'ward' && !selectedPt) { flash('Select a patient first'); return; } setTab(t.key); }}
+            className={`flex-1 py-2 text-xs font-medium rounded-xl transition-colors ${tab === t.key ? 'bg-teal-600 text-white shadow-sm' : 'text-gray-600 hover:bg-white'}`}>
+            {t.icon} {t.label}
+          </button>
         ))}
       </div>
 
-      {/* View toggle */}
-      <div className="flex gap-1">
-        {(['patients', 'tasks', 'handoff'] as ViewMode[]).map(v =>
-          <button key={v} onClick={() => setView(v)} className={`px-4 py-2 text-xs font-medium rounded-lg transition-colors ${view === v ? 'bg-teal-600 text-white' : 'bg-white border hover:bg-gray-50'}`}>
-            {v === 'patients' ? `Patient Board (${station.patients.length})` : v === 'tasks' ? `Tasks (${station.tasks.length})` : 'Shift Handoff'}
-          </button>
-        )}
-      </div>
-
-      {station.loading ? <div className="animate-pulse space-y-3">{[1,2,3].map(i => <div key={i} className="h-24 bg-gray-200 rounded-xl" />)}</div> : <>
-
-      {/* ===== PATIENT BOARD ===== */}
-      {view === 'patients' && (
-        station.patients.length === 0
-          ? <div className="text-center py-12 bg-white rounded-xl border text-gray-400 text-sm">No active patients{wardFilter ? ' in selected ward' : ''}</div>
-          : <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-            {station.patients.map((p: NursingPatient) => (
-              <div key={p.admissionId} className={`bg-white rounded-xl border p-4 transition-shadow hover:shadow-md ${p.criticalAlerts.length > 0 ? 'border-red-300 ring-1 ring-red-100' : ''}`}>
-                {/* Row 1: Bed + Name + Ward + Day */}
-                <div className="flex items-center justify-between mb-1.5">
-                  <div className="flex items-center gap-2">
-                    <span className="bg-teal-700 text-white px-2 py-0.5 rounded text-[10px] font-bold min-w-[48px] text-center">{p.bedNumber}</span>
-                    <Link href={`/ipd/${p.admissionId}`} className="font-bold text-sm text-gray-900 hover:text-teal-700">{p.patientName}</Link>
-                    <span className="text-[10px] text-gray-400">{p.uhid} · {p.age}y {p.gender?.charAt(0).toUpperCase()}</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <span className={`px-1.5 py-0.5 rounded text-[9px] font-medium ${WARD_COLORS[p.wardType] || 'bg-gray-100'}`}>{p.wardName}</span>
-                    <span className="text-[10px] text-gray-400">D{p.daysSince}</span>
-                    <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${NEWS2_COLORS[p.news2Risk]}`}>N{p.news2}</span>
-                  </div>
-                </div>
-
-                {/* Row 2: Doctor + Dept + Diagnosis */}
-                <div className="text-[10px] text-gray-500 mb-1.5">
-                  {p.doctorName} · {p.department} · <span className="italic">{p.diagnosis || p.ipdNumber}</span> · <span className="uppercase text-[9px]">{p.payorType}</span>
-                </div>
-
-                {/* Row 3: Last vitals inline */}
-                <div className="mb-2"><VitalsLine p={p} /></div>
-
-                {/* Row 4: Alert badges */}
-                {p.criticalAlerts.length > 0 && (
-                  <div className="flex flex-wrap gap-1 mb-2">
-                    {p.criticalAlerts.map((a, i) => <span key={i} className="px-2 py-0.5 bg-red-100 text-red-700 rounded text-[9px] font-medium">{a}</span>)}
-                  </div>
-                )}
-
-                {/* Row 5: Status badges */}
-                <div className="flex flex-wrap gap-1.5 mb-2">
-                  {p.vitalsDue && <span className="px-2 py-0.5 bg-amber-100 text-amber-700 rounded text-[10px] font-medium">🩺 Vitals due</span>}
-                  {p.medsOverdueCount > 0 && <span className="px-2 py-0.5 bg-red-100 text-red-700 rounded text-[10px] font-medium">💊 {p.medsOverdueCount} overdue</span>}
-                  {p.medsDueCount > 0 && p.medsOverdueCount === 0 && <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-[10px] font-medium">💊 {p.medsDueCount} due</span>}
-                  {p.pendingLabs > 0 && <span className="px-2 py-0.5 bg-purple-100 text-purple-700 rounded text-[10px] font-medium">🧪 {p.pendingLabs} labs</span>}
-                  {p.ioPending && <span className="px-2 py-0.5 bg-gray-100 text-gray-600 rounded text-[10px]">🥤 No I/O</span>}
-                  {!p.ioPending && <span className="px-2 py-0.5 bg-green-50 text-green-700 rounded text-[10px]">I: {p.todayIntake}ml O: {p.todayOutput}ml</span>}
-                  {p.activeMeds.length > 0 && <span className="px-2 py-0.5 bg-gray-50 text-gray-600 rounded text-[10px]">{p.activeMeds.length} active Rx</span>}
-                </div>
-
-                {/* Row 6: Actions */}
-                <div className="flex gap-1 pt-2 border-t border-gray-100">
-                  <button onClick={() => { setVitalsModal(p); resetVf(); }} className="px-2.5 py-1.5 bg-amber-50 text-amber-700 text-[10px] rounded-lg font-medium hover:bg-amber-100 transition-colors">🩺 Vitals</button>
-                  <Link href={`/ipd/${p.admissionId}`} className="px-2.5 py-1.5 bg-blue-50 text-blue-700 text-[10px] rounded-lg font-medium hover:bg-blue-100 transition-colors">💊 Meds</Link>
-                  <button onClick={() => setIOModal(p)} className="px-2.5 py-1.5 bg-green-50 text-green-700 text-[10px] rounded-lg font-medium hover:bg-green-100 transition-colors">🥤 I/O</button>
-                  <button onClick={() => { setNoteModal(p); setNoteText(''); }} className="px-2.5 py-1.5 bg-gray-50 text-gray-700 text-[10px] rounded-lg font-medium hover:bg-gray-100 transition-colors">📝 Note</button>
-                  <Link href={`/ipd/${p.admissionId}`} className="px-2.5 py-1.5 bg-gray-50 text-gray-700 text-[10px] rounded-lg font-medium hover:bg-gray-100 transition-colors ml-auto">Open Chart →</Link>
-                </div>
-              </div>
-            ))}
+      {/* Selected patient banner */}
+      {selectedPt && tab !== 'ward' && (
+        <div className="bg-teal-50 border border-teal-200 rounded-2xl p-3 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <span className="bg-teal-600 text-white px-2.5 py-1 rounded-lg text-xs font-bold">{selectedPt.bedNumber}</span>
+            <div>
+              <span className="font-bold text-sm">{selectedPt.patientName}</span>
+              <span className="text-xs text-gray-500 ml-2">{selectedPt.uhid} · {selectedPt.ipdNumber} · Dr. {selectedPt.doctorName}</span>
+            </div>
+            <span className={`px-1.5 py-0.5 rounded text-[9px] ${WARD_COLORS[selectedPt.wardType] || 'bg-gray-100'}`}>{selectedPt.wardType.replace('_', ' ')}</span>
           </div>
+          <button onClick={() => { setSelectedPt(null); setTab('ward'); }} className="text-xs text-gray-400 hover:text-gray-600">← Back to Ward</button>
+        </div>
       )}
 
-      {/* ===== TASK BOARD ===== */}
-      {view === 'tasks' && (
-        station.tasks.length === 0
-          ? <div className="text-center py-12 bg-white rounded-xl border text-gray-400 text-sm">No pending tasks</div>
-          : <div className="space-y-2">
-            {station.tasks.map((t: NursingTask) => (
-              <div key={t.id} className={`rounded-xl border p-3 flex items-center justify-between ${TASK_COLORS[t.status]}`}>
-                <div className="flex items-center gap-3">
-                  <span className="text-xl">{TASK_ICONS[t.type]}</span>
-                  <div>
-                    <div className="text-sm font-medium">{t.description}</div>
-                    <div className="text-xs text-gray-500"><span className="font-bold">{t.bedNumber}</span> — {t.patientName} <span className="text-gray-400">{t.uhid}</span></div>
-                  </div>
-                </div>
+      {station.loading ? <div className="animate-pulse space-y-3">{[1,2,3].map(i => <div key={i} className="h-20 bg-gray-200 rounded-2xl" />)}</div> : <>
+
+      {/* ===== WARD VIEW — Patient Cards ===== */}
+      {tab === 'ward' && (
+        station.patients.length === 0 ? <div className="text-center py-12 bg-white rounded-2xl border text-gray-400 text-sm">No active patients in selected ward</div> :
+        <div className="grid grid-cols-2 gap-3">
+          {station.patients.map((p: NursingPatient) => (
+            <div key={p.admissionId} className={`bg-white rounded-2xl border p-4 hover:shadow-md transition-shadow cursor-pointer ${p.criticalAlerts > 0 ? 'border-red-300 bg-red-50/30' : ''}`}
+              onClick={() => selectPatient(p)}>
+              <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
-                  <span className={`px-2 py-0.5 rounded text-[9px] font-bold ${t.status === 'overdue' ? 'bg-red-600 text-white' : t.status === 'due_now' ? 'bg-amber-500 text-white' : 'bg-blue-100 text-blue-700'}`}>{t.status.replace('_', ' ')}</span>
-                  {t.type === 'vitals' && <button onClick={() => { const p = station.patients.find(x => x.admissionId === t.admissionId); if (p) { setVitalsModal(p); resetVf(); } }} className="px-2 py-1 bg-white border rounded text-[10px] hover:bg-amber-50 font-medium">Record</button>}
-                  {t.type === 'io' && <button onClick={() => { const p = station.patients.find(x => x.admissionId === t.admissionId); if (p) setIOModal(p); }} className="px-2 py-1 bg-white border rounded text-[10px] hover:bg-green-50 font-medium">Record</button>}
-                  <Link href={`/ipd/${t.admissionId}`} className="px-2 py-1 bg-white border rounded text-[10px] hover:bg-blue-50">Chart →</Link>
+                  <span className="bg-blue-100 text-blue-800 px-2 py-0.5 rounded-lg text-[10px] font-bold">{p.bedNumber}</span>
+                  <span className="font-bold text-sm">{p.patientName}</span>
+                  <span className="text-[10px] font-mono text-gray-400">{p.uhid}</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <span className={`px-1.5 py-0.5 rounded text-[8px] ${WARD_COLORS[p.wardType] || 'bg-gray-100'}`}>{p.wardType.replace('_', ' ')}</span>
+                  <span className="text-[10px] text-gray-400">Day {p.daysSince}</span>
                 </div>
               </div>
-            ))}
-          </div>
-      )}
-
-      {/* ===== SHIFT HANDOFF ===== */}
-      {view === 'handoff' && (
-        <div className="bg-white rounded-xl border p-5 space-y-4">
-          <h2 className="font-bold text-sm">Shift Handoff Report</h2>
-          <div className="grid grid-cols-2 gap-4">
-            <div><label className="text-xs text-gray-500">Outgoing Shift</label>
-              <select value={handoff.outgoing} onChange={e => setHandoff(h => ({...h, outgoing: e.target.value}))} className="w-full px-3 py-2 border rounded-lg text-sm"><option value="morning">Morning (7 AM – 2 PM)</option><option value="evening">Evening (2 PM – 9 PM)</option><option value="night">Night (9 PM – 7 AM)</option></select></div>
-            <div><label className="text-xs text-gray-500">Incoming Shift</label>
-              <select value={handoff.incoming} onChange={e => setHandoff(h => ({...h, incoming: e.target.value}))} className="w-full px-3 py-2 border rounded-lg text-sm"><option value="morning">Morning (7 AM – 2 PM)</option><option value="evening">Evening (2 PM – 9 PM)</option><option value="night">Night (9 PM – 7 AM)</option></select></div>
-          </div>
-
-          {/* Auto summary */}
-          <div className="bg-gray-50 rounded-lg p-4 space-y-2">
-            <h3 className="text-xs font-bold text-gray-700">Ward Summary (auto-generated)</h3>
-            <div className="grid grid-cols-5 gap-2 text-xs">
-              <div>Patients: <b>{station.stats.totalPatients}</b></div>
-              <div>ICU: <b>{station.stats.icuPatients}</b></div>
-              <div>Vitals due: <b className={station.stats.vitalsDue > 0 ? 'text-red-700' : ''}>{station.stats.vitalsDue}</b></div>
-              <div>Meds due: <b className={station.stats.medsDue > 0 ? 'text-red-700' : ''}>{station.stats.medsDue}</b></div>
-              <div>Labs pending: <b>{station.stats.pendingLabs}</b></div>
-            </div>
-            {station.patients.filter(p => p.criticalAlerts.length > 0).length > 0 && (
-              <div className="mt-2"><div className="text-[10px] font-bold text-red-700 mb-1">Critical patients:</div>
-                {station.patients.filter(p => p.criticalAlerts.length > 0).map(p => (
-                  <div key={p.admissionId} className="text-xs text-red-600">• {p.bedNumber} — {p.patientName}: {p.criticalAlerts.join('; ')}</div>
-                ))}
+              <div className="text-xs text-gray-500 mb-2">Dr. {p.doctorName} | {p.department} | {p.ipdNumber} | {p.payorType}</div>
+              {/* Alert badges */}
+              <div className="flex flex-wrap gap-1.5 mb-2">
+                {p.vitalsDueAt && <span className="px-2 py-1 bg-amber-100 text-amber-700 rounded-lg text-[10px] font-medium">🩺 Vitals due</span>}
+                {p.medsDueCount > 0 && <span className={`px-2 py-1 rounded-lg text-[10px] font-medium ${p.criticalAlerts > 0 ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'}`}>💊 {p.medsDueCount} meds {p.criticalAlerts > 0 ? '(OVERDUE)' : 'due'}</span>}
+                {p.pendingLabs > 0 && <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded-lg text-[10px] font-medium">🧪 {p.pendingLabs} labs</span>}
+                {p.news2Score !== null && p.news2Score >= 5 && <span className="px-2 py-1 bg-red-600 text-white rounded-lg text-[10px] font-bold animate-pulse">NEWS2: {p.news2Score}</span>}
               </div>
-            )}
-          </div>
-
-          <div><label className="text-xs text-gray-500">Additional Notes</label>
-            <textarea value={handoff.notes} onChange={e => setHandoff(h => ({...h, notes: e.target.value}))} rows={4} className="w-full px-3 py-2 border rounded-lg text-sm" placeholder="Pending tasks, expected discharges, new admissions, equipment issues..." /></div>
-
-          <button onClick={async () => {
-            if (!staffId) return;
-            const report = `SHIFT HANDOFF: ${handoff.outgoing} → ${handoff.incoming}\n\nTotal: ${station.stats.totalPatients} | ICU: ${station.stats.icuPatients} | Vitals due: ${station.stats.vitalsDue} | Meds due: ${station.stats.medsDue}\n\nCritical:\n${station.patients.filter(p => p.criticalAlerts.length > 0).map(p => `${p.bedNumber} ${p.patientName}: ${p.criticalAlerts.join('; ')}`).join('\n')}\n\n${handoff.notes}`;
-            // Save as nursing note for each active admission (group note)
-            const firstAdm = station.patients[0]?.admissionId;
-            if (firstAdm) {
-              await saveNursingNote(firstAdm, staffId, handoff.outgoing as any, report);
-            }
-            flash('Handoff report saved');
-          }} className="px-6 py-2.5 bg-emerald-600 text-white text-sm rounded-lg font-medium hover:bg-emerald-700 transition-colors">Save Handoff Report</button>
+              {/* Quick action buttons */}
+              <div className="flex gap-1 pt-2 border-t">
+                <button onClick={e => { e.stopPropagation(); selectPatient(p, 'vitals'); }} className="px-2 py-1.5 bg-amber-50 text-amber-700 text-[10px] rounded-lg hover:bg-amber-100 font-medium">🩺 Vitals</button>
+                <button onClick={e => { e.stopPropagation(); selectPatient(p, 'mar'); }} className="px-2 py-1.5 bg-blue-50 text-blue-700 text-[10px] rounded-lg hover:bg-blue-100 font-medium">💊 MAR</button>
+                <button onClick={e => { e.stopPropagation(); selectPatient(p, 'io'); }} className="px-2 py-1.5 bg-green-50 text-green-700 text-[10px] rounded-lg hover:bg-green-100 font-medium">🥤 I/O</button>
+                <button onClick={e => { e.stopPropagation(); selectPatient(p, 'notes'); }} className="px-2 py-1.5 bg-purple-50 text-purple-700 text-[10px] rounded-lg hover:bg-purple-100 font-medium">📋 Notes</button>
+                <Link href={`/ipd/${p.admissionId}`} onClick={e => e.stopPropagation()} className="px-2 py-1.5 bg-gray-50 text-gray-600 text-[10px] rounded-lg hover:bg-gray-100 ml-auto">Chart →</Link>
+              </div>
+            </div>
+          ))}
         </div>
       )}
+
+      {/* ===== VITALS ENTRY ===== */}
+      {tab === 'vitals' && selectedPt && (
+        <div className="space-y-4">
+          {/* Vitals Input Form — large touch-friendly */}
+          <div className="bg-white rounded-2xl border p-5">
+            <h2 className="font-bold text-sm mb-4 font-[family-name:var(--font-plus-jakarta)]">Record Vitals</h2>
+            <div className="grid grid-cols-3 gap-4">
+              {/* BP */}
+              <div className="col-span-1">
+                <label className="text-xs text-gray-500 block mb-1">Blood Pressure</label>
+                <div className="flex gap-1 items-center">
+                  <input type="number" placeholder="Sys" value={vf.bpSystolic} onChange={e => setVf(f => ({ ...f, bpSystolic: e.target.value }))}
+                    className="w-full px-3 py-3 border rounded-xl text-lg font-bold text-center" />
+                  <span className="text-gray-400 font-bold">/</span>
+                  <input type="number" placeholder="Dia" value={vf.bpDiastolic} onChange={e => setVf(f => ({ ...f, bpDiastolic: e.target.value }))}
+                    className="w-full px-3 py-3 border rounded-xl text-lg font-bold text-center" />
+                </div>
+                <div className="text-[10px] text-gray-400 text-center mt-0.5">mmHg</div>
+              </div>
+              {/* Heart Rate */}
+              <div>
+                <label className="text-xs text-gray-500 block mb-1">Heart Rate</label>
+                <input type="number" placeholder="HR" value={vf.heartRate} onChange={e => setVf(f => ({ ...f, heartRate: e.target.value }))}
+                  className="w-full px-3 py-3 border rounded-xl text-lg font-bold text-center" />
+                <div className="text-[10px] text-gray-400 text-center mt-0.5">bpm</div>
+              </div>
+              {/* Temperature */}
+              <div>
+                <label className="text-xs text-gray-500 block mb-1">Temperature</label>
+                <input type="number" step="0.1" placeholder="Temp" value={vf.temperature} onChange={e => setVf(f => ({ ...f, temperature: e.target.value }))}
+                  className="w-full px-3 py-3 border rounded-xl text-lg font-bold text-center" />
+                <div className="text-[10px] text-gray-400 text-center mt-0.5">°C</div>
+              </div>
+              {/* SpO2 */}
+              <div>
+                <label className="text-xs text-gray-500 block mb-1">SpO2</label>
+                <input type="number" placeholder="SpO2" value={vf.spo2} onChange={e => setVf(f => ({ ...f, spo2: e.target.value }))}
+                  className="w-full px-3 py-3 border rounded-xl text-lg font-bold text-center" />
+                <div className="text-[10px] text-gray-400 text-center mt-0.5">%</div>
+              </div>
+              {/* Respiratory Rate */}
+              <div>
+                <label className="text-xs text-gray-500 block mb-1">Respiratory Rate</label>
+                <input type="number" placeholder="RR" value={vf.respiratoryRate} onChange={e => setVf(f => ({ ...f, respiratoryRate: e.target.value }))}
+                  className="w-full px-3 py-3 border rounded-xl text-lg font-bold text-center" />
+                <div className="text-[10px] text-gray-400 text-center mt-0.5">/min</div>
+              </div>
+              {/* Pain */}
+              <div>
+                <label className="text-xs text-gray-500 block mb-1">Pain (0-10)</label>
+                <div className="flex gap-0.5">
+                  {[0,1,2,3,4,5,6,7,8,9,10].map(n => (
+                    <button key={n} onClick={() => setVf(f => ({ ...f, painScore: String(n) }))}
+                      className={`flex-1 py-2.5 rounded-lg text-xs font-bold transition-colors ${
+                        String(n) === vf.painScore
+                          ? n <= 3 ? 'bg-green-500 text-white' : n <= 6 ? 'bg-amber-500 text-white' : 'bg-red-500 text-white'
+                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      }`}>{n}</button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* GCS */}
+            <div className="mt-4 border-t pt-4">
+              <label className="text-xs text-gray-500 mb-2 block">GCS (E{vf.gcsE} + V{vf.gcsV} + M{vf.gcsM} = <b>{vf.gcsE + vf.gcsV + vf.gcsM}</b>/15)</label>
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <div className="text-[10px] text-gray-400 mb-1">Eye Opening</div>
+                  <div className="flex gap-0.5">{GCS_EYE.map(g => (
+                    <button key={g.v} onClick={() => setVf(f => ({ ...f, gcsE: g.v }))}
+                      className={`flex-1 py-2 rounded-lg text-[10px] ${vf.gcsE === g.v ? 'bg-teal-600 text-white font-bold' : 'bg-gray-100'}`} title={g.l}>{g.v}</button>
+                  ))}</div>
+                </div>
+                <div>
+                  <div className="text-[10px] text-gray-400 mb-1">Verbal</div>
+                  <div className="flex gap-0.5">{GCS_VERBAL.map(g => (
+                    <button key={g.v} onClick={() => setVf(f => ({ ...f, gcsV: g.v }))}
+                      className={`flex-1 py-2 rounded-lg text-[10px] ${vf.gcsV === g.v ? 'bg-teal-600 text-white font-bold' : 'bg-gray-100'}`} title={g.l}>{g.v}</button>
+                  ))}</div>
+                </div>
+                <div>
+                  <div className="text-[10px] text-gray-400 mb-1">Motor</div>
+                  <div className="flex gap-0.5">{GCS_MOTOR.map(g => (
+                    <button key={g.v} onClick={() => setVf(f => ({ ...f, gcsM: g.v }))}
+                      className={`flex-1 py-2 rounded-lg text-[10px] ${vf.gcsM === g.v ? 'bg-teal-600 text-white font-bold' : 'bg-gray-100'}`} title={g.l}>{g.v}</button>
+                  ))}</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Blood Sugar + Urine Output */}
+            <div className="grid grid-cols-2 gap-4 mt-4 border-t pt-4">
+              <div>
+                <label className="text-xs text-gray-500 block mb-1">Blood Sugar</label>
+                <input type="number" placeholder="mg/dL" value={vf.bloodSugar} onChange={e => setVf(f => ({ ...f, bloodSugar: e.target.value }))}
+                  className="w-full px-3 py-3 border rounded-xl text-lg font-bold text-center" />
+                <div className="text-[10px] text-gray-400 text-center mt-0.5">mg/dL</div>
+              </div>
+              <div>
+                <label className="text-xs text-gray-500 block mb-1">Urine Output</label>
+                <input type="number" placeholder="ml" value={vf.urineOutput} onChange={e => setVf(f => ({ ...f, urineOutput: e.target.value }))}
+                  className="w-full px-3 py-3 border rounded-xl text-lg font-bold text-center" />
+                <div className="text-[10px] text-gray-400 text-center mt-0.5">ml</div>
+              </div>
+            </div>
+
+            <button onClick={saveVitals} className="w-full mt-4 py-3 bg-teal-600 text-white rounded-xl text-sm font-bold hover:bg-teal-700 transition-colors">
+              Save Vitals
+            </button>
+          </div>
+
+          {/* NEWS2 result */}
+          {news2 && (
+            <div className={`rounded-2xl border-2 p-4 ${
+              news2.color === 'red' ? 'bg-red-50 border-red-400' :
+              news2.color === 'orange' ? 'bg-orange-50 border-orange-400' :
+              news2.color === 'yellow' ? 'bg-yellow-50 border-yellow-400' : 'bg-green-50 border-green-400'
+            }`}>
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="font-bold text-sm">NEWS2 Score</h3>
+                <span className={`px-3 py-1 rounded-xl text-sm font-bold ${
+                  news2.color === 'red' ? 'bg-red-600 text-white' :
+                  news2.color === 'orange' ? 'bg-orange-500 text-white' :
+                  news2.color === 'yellow' ? 'bg-yellow-500 text-white' : 'bg-green-500 text-white'
+                }`}>{news2.total} — {news2.label}</span>
+              </div>
+              <p className="text-xs mb-2">{news2.action}</p>
+              <div className="flex flex-wrap gap-2">
+                {news2.breakdown.map(b => (
+                  <span key={b.param} className={`px-2 py-1 rounded-lg text-[10px] ${b.score >= 3 ? 'bg-red-200 text-red-800' : b.score >= 2 ? 'bg-orange-200 text-orange-800' : b.score >= 1 ? 'bg-yellow-200 text-yellow-800' : 'bg-green-100 text-green-700'}`}>
+                    {b.param}: {b.value} ({b.score})
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Last 3 vitals for trend */}
+          {last3.length > 0 && (
+            <div className="bg-white rounded-2xl border p-4">
+              <h3 className="font-bold text-xs mb-3">Recent Vitals (last {last3.length})</h3>
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs">
+                  <thead><tr className="bg-gray-50 border-b">
+                    <th className="p-2 text-left">Time</th><th className="p-2">BP</th><th className="p-2">HR</th>
+                    <th className="p-2">Temp</th><th className="p-2">SpO2</th><th className="p-2">RR</th>
+                    <th className="p-2">GCS</th><th className="p-2">Pain</th><th className="p-2">Sugar</th>
+                    <th className="p-2">Urine</th><th className="p-2 text-left">By</th>
+                  </tr></thead>
+                  <tbody>{last3.map(v => (
+                    <tr key={v.id} className="border-b">
+                      <td className="p-2 text-gray-500 whitespace-nowrap">{fmtTime(v.recorded_at)}</td>
+                      <td className="p-2 text-center font-medium">{v.bp_systolic && v.bp_diastolic ? `${v.bp_systolic}/${v.bp_diastolic}` : '—'}</td>
+                      <td className="p-2 text-center">{v.heart_rate ?? '—'}</td>
+                      <td className="p-2 text-center">{v.temperature ?? '—'}</td>
+                      <td className={`p-2 text-center ${v.spo2 !== null && v.spo2 < 94 ? 'text-red-700 font-bold' : ''}`}>{v.spo2 ?? '—'}</td>
+                      <td className="p-2 text-center">{v.respiratory_rate ?? '—'}</td>
+                      <td className="p-2 text-center">{v.gcs_score ?? '—'}</td>
+                      <td className={`p-2 text-center ${v.pain_score !== null && v.pain_score >= 7 ? 'text-red-700 font-bold' : ''}`}>{v.pain_score ?? '—'}</td>
+                      <td className="p-2 text-center">{v.blood_sugar ?? '—'}</td>
+                      <td className="p-2 text-center">{v.urine_output ?? '—'}</td>
+                      <td className="p-2 text-gray-500">{v.recorder?.full_name || '—'}</td>
+                    </tr>
+                  ))}</tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ===== MAR ===== */}
+      {tab === 'mar' && selectedPt && (
+        <div className="bg-white rounded-2xl border p-5">
+          <SmartMAR
+            records={mar.records} meds={meds.orders} admissionId={selectedPt.admissionId} staffId={staffId}
+            onAdminister={async (id, sid) => { await mar.administer(id, sid); }}
+            onHold={async (id, reason) => { await mar.holdDose(id, reason); }}
+            onFlash={flash}
+          />
+        </div>
+      )}
+
+      {/* ===== IO CHART ===== */}
+      {tab === 'io' && selectedPt && (
+        <div className="bg-white rounded-2xl border p-5">
+          <SmartIOChart
+            entries={ioChart.entries} admissionId={selectedPt.admissionId} staffId={staffId}
+            onAdd={async (entry, sid) => { await ioChart.addEntry(entry, sid); }}
+            onFlash={flash}
+          />
+        </div>
+      )}
+
+      {/* ===== NOTES ===== */}
+      {tab === 'notes' && selectedPt && (
+        <div className="bg-white rounded-2xl border p-5">
+          <NursingShiftNotes
+            admissionId={selectedPt.admissionId} staffId={staffId}
+            patientName={selectedPt.patientName} onFlash={flash}
+          />
+        </div>
+      )}
+
       </>}
-
-      {/* ===== VITALS MODAL ===== */}
-      {vitalsModal && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center" onClick={() => setVitalsModal(null)}>
-          <div className="bg-white rounded-xl w-[520px] max-h-[90vh] overflow-y-auto p-5 shadow-2xl" onClick={e => e.stopPropagation()}>
-            <div className="flex justify-between items-center mb-4">
-              <div>
-                <h3 className="font-bold text-sm">Record Vitals</h3>
-                <p className="text-xs text-gray-500">{vitalsModal.bedNumber} — {vitalsModal.patientName} ({vitalsModal.uhid})</p>
-              </div>
-              <button onClick={() => setVitalsModal(null)} className="text-gray-400 hover:text-gray-600 text-lg">×</button>
-            </div>
-
-            {vitalsModal.lastVitals && (
-              <div className="bg-gray-50 rounded-lg p-3 mb-4 text-xs text-gray-600">
-                <span className="font-medium">Previous:</span> BP {vitalsModal.lastVitals.bp_systolic}/{vitalsModal.lastVitals.bp_diastolic} · HR {vitalsModal.lastVitals.pulse} · SpO2 {vitalsModal.lastVitals.spo2}% · T {vitalsModal.lastVitals.temperature}° · RR {vitalsModal.lastVitals.resp_rate}
-                <span className="text-gray-400 ml-2">({Math.round(vitalsModal.hoursSinceVitals)}h ago)</span>
-              </div>
-            )}
-
-            <div className="grid grid-cols-3 gap-3">
-              {[
-                { label: 'BP Systolic', key: 'bp_systolic', ph: '120', unit: 'mmHg' },
-                { label: 'BP Diastolic', key: 'bp_diastolic', ph: '80', unit: 'mmHg' },
-                { label: 'Heart Rate', key: 'pulse', ph: '72', unit: 'bpm' },
-                { label: 'SpO2', key: 'spo2', ph: '98', unit: '%' },
-                { label: 'Temperature', key: 'temperature', ph: '98.6', unit: '°F' },
-                { label: 'Resp Rate', key: 'resp_rate', ph: '16', unit: '/min' },
-                { label: 'GCS', key: 'gcs', ph: '15', unit: '/15' },
-                { label: 'Pain Scale', key: 'pain_scale', ph: '0', unit: '/10' },
-                { label: 'Blood Sugar', key: 'blood_sugar', ph: '110', unit: 'mg/dL' },
-              ].map(f => (
-                <div key={f.key}>
-                  <label className="text-[10px] text-gray-500">{f.label}</label>
-                  <div className="relative">
-                    <input type="number" step="any" value={(vf as any)[f.key]} onChange={e => setVf(v => ({...v, [f.key]: e.target.value}))}
-                      className="w-full px-3 py-2 border rounded-lg text-sm pr-12" placeholder={f.ph} />
-                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[9px] text-gray-400">{f.unit}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-            <div className="flex gap-2 mt-4">
-              <button onClick={handleSaveVitals} className="flex-1 py-2.5 bg-teal-600 text-white text-sm rounded-lg font-medium hover:bg-teal-700">Save Vitals</button>
-              <button onClick={() => setVitalsModal(null)} className="px-4 py-2.5 bg-gray-100 text-sm rounded-lg hover:bg-gray-200">Cancel</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ===== I/O MODAL ===== */}
-      {ioModal && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center" onClick={() => setIOModal(null)}>
-          <div className="bg-white rounded-xl w-[500px] max-h-[90vh] overflow-y-auto p-5 shadow-2xl" onClick={e => e.stopPropagation()}>
-            <div className="flex justify-between items-center mb-4">
-              <div>
-                <h3 className="font-bold text-sm">I/O Chart Entry</h3>
-                <p className="text-xs text-gray-500">{ioModal.bedNumber} — {ioModal.patientName}</p>
-              </div>
-              <button onClick={() => setIOModal(null)} className="text-gray-400 hover:text-gray-600 text-lg">×</button>
-            </div>
-            <div className="mb-3">
-              <label className="text-xs text-gray-500">Shift</label>
-              <select value={iof.shift} onChange={e => setIof(f => ({...f, shift: e.target.value as any}))} className="w-full px-3 py-2 border rounded-lg text-sm">
-                <option value="morning">Morning</option><option value="evening">Evening</option><option value="night">Night</option>
-              </select>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <h4 className="text-xs font-bold text-green-700">INTAKE (ml)</h4>
-                {[['oral_intake_ml','Oral'],['iv_fluid_ml','IV Fluids'],['blood_products_ml','Blood Products']].map(([k,l]) => (
-                  <div key={k}><label className="text-[10px] text-gray-500">{l}</label>
-                    <input type="number" value={(iof as any)[k]} onChange={e => setIof(f => ({...f, [k]: e.target.value}))} className="w-full px-3 py-2 border rounded-lg text-sm" placeholder="0" /></div>
-                ))}
-              </div>
-              <div className="space-y-2">
-                <h4 className="text-xs font-bold text-red-700">OUTPUT (ml)</h4>
-                {[['urine_ml','Urine'],['drain_1_ml','Drain'],['ryles_aspirate_ml','Ryles Aspirate'],['vomit_ml','Vomitus'],['stool_count','Stool Count']].map(([k,l]) => (
-                  <div key={k}><label className="text-[10px] text-gray-500">{l}</label>
-                    <input type="number" value={(iof as any)[k]} onChange={e => setIof(f => ({...f, [k]: e.target.value}))} className="w-full px-3 py-2 border rounded-lg text-sm" placeholder="0" /></div>
-                ))}
-              </div>
-            </div>
-            <div className="flex gap-2 mt-4">
-              <button onClick={handleSaveIO} className="flex-1 py-2.5 bg-teal-600 text-white text-sm rounded-lg font-medium hover:bg-teal-700">Save I/O</button>
-              <button onClick={() => setIOModal(null)} className="px-4 py-2.5 bg-gray-100 text-sm rounded-lg hover:bg-gray-200">Cancel</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ===== NOTE MODAL ===== */}
-      {noteModal && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center" onClick={() => setNoteModal(null)}>
-          <div className="bg-white rounded-xl w-[450px] p-5 shadow-2xl" onClick={e => e.stopPropagation()}>
-            <div className="flex justify-between items-center mb-4">
-              <div><h3 className="font-bold text-sm">Nursing Note</h3><p className="text-xs text-gray-500">{noteModal.bedNumber} — {noteModal.patientName}</p></div>
-              <button onClick={() => setNoteModal(null)} className="text-gray-400 hover:text-gray-600 text-lg">×</button>
-            </div>
-            <div className="mb-3">
-              <label className="text-xs text-gray-500">Shift</label>
-              <select value={noteShift} onChange={e => setNoteShift(e.target.value as any)} className="w-full px-3 py-2 border rounded-lg text-sm">
-                <option value="morning">Morning</option><option value="evening">Evening</option><option value="night">Night</option>
-              </select>
-            </div>
-            <textarea value={noteText} onChange={e => setNoteText(e.target.value)} rows={5} className="w-full px-3 py-2 border rounded-lg text-sm" placeholder="Patient condition, observations, interventions..." />
-            <div className="flex gap-2 mt-3">
-              <button onClick={handleSaveNote} className="flex-1 py-2.5 bg-teal-600 text-white text-sm rounded-lg font-medium hover:bg-teal-700">Save Note</button>
-              <button onClick={() => setNoteModal(null)} className="px-4 py-2.5 bg-gray-100 text-sm rounded-lg hover:bg-gray-200">Cancel</button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

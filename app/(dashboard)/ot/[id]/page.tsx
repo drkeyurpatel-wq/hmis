@@ -4,12 +4,15 @@ import { useParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { useAuthStore } from '@/lib/store/auth';
 import AnaesthesiaForm from '@/components/ot/anaesthesia-form';
+import ConsentForm from '@/components/consent/consent-form';
+import ConsentList from '@/components/consent/consent-list';
+import { useConsentTemplates, usePatientConsents } from '@/lib/consent/consent-hooks';
 import Link from 'next/link';
 
 let _sb: any = null;
 function sb() { if (typeof window === 'undefined') return null as any; if (!_sb) { try { _sb = createClient(); } catch { return null; } } return _sb; }
 
-type Tab = 'who' | 'pre_op' | 'intra_op' | 'post_op' | 'anaesthesia' | 'implants';
+type Tab = 'who' | 'pre_op' | 'intra_op' | 'post_op' | 'anaesthesia' | 'consents' | 'implants';
 
 export default function OTDetailPage() {
   const { id } = useParams();
@@ -28,6 +31,13 @@ export default function OTDetailPage() {
   // Implants
   const [implants, setImplants] = useState<any[]>([]);
   const [implantForm, setImplantForm] = useState({ implant_name: '', manufacturer: '', catalogue_number: '', lot_number: '', serial_number: '', size: '', quantity: 1, cost: '', mrp: '' });
+  // Consents
+  const [showConsentForm, setShowConsentForm] = useState(false);
+  const patientId = booking?.patient?.patient?.id || '';
+  const admissionIdForConsent = booking?.admission_id || '';
+  const consentTemplates = useConsentTemplates();
+  const patientConsents = usePatientConsents(patientId || null, admissionIdForConsent || null);
+
   // Errors
   const [actionError, setActionError] = useState('');
 
@@ -134,7 +144,7 @@ export default function OTDetailPage() {
     booking.actual_end ? { label: 'Surgery End', time: new Date(booking.actual_end).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }), done: true } : null,
   ].filter(Boolean);
 
-  const tabs: [Tab, string][] = [['who', 'WHO Safety Checklist'], ['pre_op', 'Pre-Op Assessment'], ['intra_op', 'Intra-Op Notes'], ['post_op', 'Post-Op Orders'], ['anaesthesia', 'Anaesthesia Record'], ['implants', `Implants (${implants.length})`]];
+  const tabs: [Tab, string][] = [['who', 'WHO Safety Checklist'], ['pre_op', 'Pre-Op Assessment'], ['intra_op', 'Intra-Op Notes'], ['post_op', 'Post-Op Orders'], ['anaesthesia', 'Anaesthesia Record'], ['consents', `Consents (${patientConsents.consents.length})`], ['implants', `Implants (${implants.length})`]];
 
   return (
     <div className="max-w-5xl mx-auto space-y-4">
@@ -333,6 +343,37 @@ export default function OTDetailPage() {
 
       {/* ===== ANAESTHESIA ===== */}
       {tab === 'anaesthesia' && <AnaesthesiaForm bookingId={bookingId} staffId={staffId} patientName={patientName} onFlash={flash} />}
+
+      {/* ===== CONSENTS ===== */}
+      {tab === 'consents' && <div className="space-y-3">
+        <div className="flex justify-between items-center">
+          <h3 className="font-semibold text-sm">Consent Forms</h3>
+          <div className="flex gap-2">
+            {!patientConsents.consents.some((c: any) => c.consent_type === 'surgical' && c.is_valid) && (
+              <span className="px-2 py-1 bg-red-50 text-red-700 text-[10px] rounded-lg font-medium border border-red-200">Surgical consent required before proceeding</span>
+            )}
+            <button onClick={() => setShowConsentForm(!showConsentForm)}
+              className="px-3 py-1.5 bg-blue-600 text-white text-xs rounded-lg">{showConsentForm ? 'Cancel' : '+ New Consent'}</button>
+          </div>
+        </div>
+        {showConsentForm && <ConsentForm
+          templates={consentTemplates.templates}
+          patientName={patientName}
+          patientId={patientId}
+          admissionId={admissionIdForConsent}
+          admissionDx={booking?.procedure_name || ''}
+          staffId={staffId}
+          onSign={patientConsents.signConsent}
+          onFlash={flash}
+          onClose={() => setShowConsentForm(false)}
+        />}
+        <ConsentList
+          consents={patientConsents.consents}
+          staffId={staffId}
+          onRevoke={patientConsents.revokeConsent}
+          onFlash={flash}
+        />
+      </div>}
 
       {/* ===== IMPLANTS ===== */}
       {tab === 'implants' && <div className="space-y-4">

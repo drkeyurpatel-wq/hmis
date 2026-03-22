@@ -4,6 +4,7 @@ import { RoleGuard } from '@/components/ui/shared';
 import { useAuthStore } from '@/lib/store/auth';
 import { useReportEngine, type ReportFilters } from '@/lib/reports/report-engine';
 import { exportToExcel, type ExcelSheet, type ExcelColumn } from '@/lib/reports/excel-export';
+import { exportToPDF } from '@/lib/reports/pdf-export';
 import { createClient } from '@/lib/supabase/client';
 
 let _sb: any = null;
@@ -61,13 +62,12 @@ function ReportsInner() {
 
   const d = engine.data;
 
-  // ---- EXCEL EXPORT per report type ----
-  const exportReport = () => {
-    if (!d) return;
+  // ---- BUILD SHEETS for export ----
+  const buildSheets = (): { sheets: ExcelSheet[]; title: string } => {
+    if (!d) return { sheets: [], title: '' };
     const centreLabel = centreId ? centres.find(c => c.id === centreId)?.name || 'Centre' : 'All Centres';
     const period = `${dateFrom} to ${dateTo}`;
     const title = `Health1 — ${REPORT_META[report].label} — ${centreLabel} — ${period}`;
-
     const sheets: ExcelSheet[] = [];
 
     if (report === 'revenue') {
@@ -135,9 +135,17 @@ function ReportsInner() {
       ], data: d.centres });
     }
 
-    if (sheets.length > 0) {
-      exportToExcel(sheets, `Health1_${report}_${dateFrom}_${dateTo}`);
-    }
+    return { sheets, title };
+  };
+
+  const exportReport = () => {
+    const { sheets } = buildSheets();
+    if (sheets.length > 0) exportToExcel(sheets, `Health1_${report}_${dateFrom}_${dateTo}`);
+  };
+
+  const exportPDFReport = () => {
+    const { sheets, title } = buildSheets();
+    if (sheets.length > 0) exportToPDF(sheets, title);
   };
 
   // Render helpers
@@ -157,7 +165,10 @@ function ReportsInner() {
     <div className="max-w-7xl mx-auto space-y-4">
       <div className="flex items-center justify-between">
         <div><h1 className="text-xl font-bold text-gray-900">Reports &amp; MIS</h1><p className="text-xs text-gray-500">Health1 Super Speciality — Multi-centre Analytics</p></div>
-        <button onClick={exportReport} disabled={!d} className="px-4 py-2 bg-emerald-600 text-white text-sm rounded-lg disabled:opacity-40">Export to Excel</button>
+        <div className="flex gap-2">
+          <button onClick={exportPDFReport} disabled={!d} className="px-4 py-2 bg-red-600 text-white text-sm rounded-lg disabled:opacity-40">Export PDF</button>
+          <button onClick={exportReport} disabled={!d} className="px-4 py-2 bg-green-600 text-white text-sm rounded-lg disabled:opacity-40">Export to Excel</button>
+        </div>
       </div>
 
       {/* Filters */}
@@ -177,7 +188,7 @@ function ReportsInner() {
           <option value="">All Centres</option>
           {centres.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
         </select>
-        <button onClick={() => runReport(report)} className="px-4 py-1.5 bg-teal-600 text-white text-xs rounded-lg ml-auto">Run Report</button>
+        <button onClick={() => runReport(report)} className="px-4 py-1.5 bg-blue-600 text-white text-xs rounded-lg ml-auto">Run Report</button>
       </div>
 
       {/* Report selector */}
@@ -198,7 +209,7 @@ function ReportsInner() {
         {/* ===== REVENUE ===== */}
         {report === 'revenue' && d.totals && <div className="space-y-4">
           <div className="grid grid-cols-5 gap-2">
-            <KPI label="Bills" value={fmtN(d.totals.count)} /><KPI label="Gross" value={fmt(d.totals.gross)} color="text-teal-700" />
+            <KPI label="Bills" value={fmtN(d.totals.count)} /><KPI label="Gross" value={fmt(d.totals.gross)} color="text-blue-700" />
             <KPI label="Net Revenue" value={fmt(d.totals.net)} color="text-green-700" /><KPI label="Collected" value={fmt(d.totals.paid)} color="text-green-700" />
             <KPI label="Outstanding" value={fmt(d.totals.balance)} color="text-red-700" />
           </div>
@@ -221,9 +232,9 @@ function ReportsInner() {
         {/* ===== OCCUPANCY ===== */}
         {report === 'occupancy' && <div className="space-y-4">
           <div className="grid grid-cols-5 gap-2">
-            <KPI label="Total Beds" value={d.totalBeds} /><KPI label="Occupied" value={d.occupied} color="text-teal-700" />
+            <KPI label="Total Beds" value={d.totalBeds} /><KPI label="Occupied" value={d.occupied} color="text-blue-700" />
             <KPI label="Available" value={d.available} color="text-green-700" />
-            <KPI label="Occupancy" value={d.totalBeds > 0 ? Math.round(d.occupied / d.totalBeds * 100) + '%' : '0%'} color="text-teal-700" />
+            <KPI label="Occupancy" value={d.totalBeds > 0 ? Math.round(d.occupied / d.totalBeds * 100) + '%' : '0%'} color="text-blue-700" />
             <KPI label="Avg LOS" value={d.alos + 'd'} />
           </div>
           <div className="grid grid-cols-2 gap-4">
@@ -237,7 +248,7 @@ function ReportsInner() {
         {/* ===== OPD ===== */}
         {report === 'opd' && <div className="space-y-4">
           <div className="grid grid-cols-3 gap-2">
-            <KPI label="Total Visits" value={fmtN(d.total)} color="text-teal-700" /><KPI label="Completed" value={fmtN(d.completed)} color="text-green-700" />
+            <KPI label="Total Visits" value={fmtN(d.total)} color="text-blue-700" /><KPI label="Completed" value={fmtN(d.completed)} color="text-green-700" />
             <KPI label="Avg Wait" value={d.avgWaitMin + ' min'} color={d.avgWaitMin > 30 ? 'text-red-700' : 'text-green-700'} />
           </div>
           <div className="grid grid-cols-3 gap-4">
@@ -258,7 +269,7 @@ function ReportsInner() {
         {/* ===== INSURANCE ===== */}
         {report === 'insurance' && d.claims && <div className="space-y-4">
           <div className="grid grid-cols-5 gap-2">
-            <KPI label="Claims" value={d.total} /><KPI label="Claimed" value={fmt(d.totalClaimed)} color="text-teal-700" />
+            <KPI label="Claims" value={d.total} /><KPI label="Claimed" value={fmt(d.totalClaimed)} color="text-blue-700" />
             <KPI label="Settled" value={fmt(d.totalSettled)} color="text-green-700" /><KPI label="Disallowance" value={fmt(d.totalDisallowance)} color="text-red-700" />
             <KPI label="Avg TAT" value={d.avgTAT + 'd'} color={d.avgTAT > 30 ? 'text-red-700' : 'text-green-700'} />
           </div>
@@ -268,7 +279,7 @@ function ReportsInner() {
         {/* ===== PHARMACY ===== */}
         {report === 'pharmacy' && <div className="space-y-4">
           <div className="grid grid-cols-4 gap-2">
-            <KPI label="Total Items" value={fmtN(d.totalItems)} /><KPI label="Stock Value" value={fmt(d.totalStockValue)} color="text-teal-700" />
+            <KPI label="Total Items" value={fmtN(d.totalItems)} /><KPI label="Stock Value" value={fmt(d.totalStockValue)} color="text-blue-700" />
             <KPI label="Expiring 30d" value={d.expiring30} color={d.expiring30 > 0 ? 'text-amber-700' : 'text-green-700'} />
             <KPI label="Expired" value={d.expiredCount} sub={fmt(d.expiredValue)} color={d.expiredCount > 0 ? 'text-red-700' : 'text-green-700'} />
           </div>
@@ -306,7 +317,7 @@ function ReportsInner() {
         {/* ===== CHARGES ===== */}
         {report === 'charges' && <div className="space-y-4">
           <div className="grid grid-cols-4 gap-2">
-            <KPI label="Total Charges" value={fmt(d.total)} color="text-teal-700" /><KPI label="Count" value={fmtN(d.count)} />
+            <KPI label="Total Charges" value={fmt(d.total)} color="text-blue-700" /><KPI label="Count" value={fmtN(d.count)} />
             <KPI label="Captured" value={fmtN(d.captured)} color="text-amber-700" /><KPI label="Posted" value={fmtN(d.posted)} color="text-green-700" />
           </div>
           <div className="grid grid-cols-2 gap-4">
