@@ -106,12 +106,12 @@ ON CONFLICT DO NOTHING;
 
 -- ═══ BASIC SETTINGS (Shilaj) ═══
 INSERT INTO hmis_settings (centre_id, key, value) VALUES
-    ('c0000001-0000-0000-0000-000000000001', 'billing.gst_rate', '18'),
-    ('c0000001-0000-0000-0000-000000000001', 'billing.bill_prefix', 'H1S'),
-    ('c0000001-0000-0000-0000-000000000001', 'billing.consultation_rate', '500'),
-    ('c0000001-0000-0000-0000-000000000001', 'hospital.hfr_id', 'IN2410013685'),
-    ('c0000001-0000-0000-0000-000000000001', 'hospital.phone', '+91-79-4893-1111'),
-    ('c0000001-0000-0000-0000-000000000001', 'hospital.email', 'info@health1.in')
+    ('c0000001-0000-0000-0000-000000000001', 'billing.gst_rate', '"18"'),
+    ('c0000001-0000-0000-0000-000000000001', 'billing.bill_prefix', '"H1S"'),
+    ('c0000001-0000-0000-0000-000000000001', 'billing.consultation_rate', '"500"'),
+    ('c0000001-0000-0000-0000-000000000001', 'hospital.hfr_id', '"IN2410013685"'),
+    ('c0000001-0000-0000-0000-000000000001', 'hospital.phone', '"+91-79-4893-1111"'),
+    ('c0000001-0000-0000-0000-000000000001', 'hospital.email', '"info@health1.in"')
 ON CONFLICT DO NOTHING;
 
 -- ═══ DONE ═══
