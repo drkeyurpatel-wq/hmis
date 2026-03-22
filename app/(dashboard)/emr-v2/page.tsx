@@ -113,35 +113,76 @@ function EMRInner() {
     if (result.success) {
       // On sign (final save), create real orders in downstream modules
       if (sign && sb() && centreId) {
-        // Create lab orders for each lab investigation
+        const encounterId = result.id || null;
+        const clinicalIndication = diagnoses.map(d => d.name).join(', ');
+
+        // Create lab orders — resolve test_id from hmis_lab_test_master so worklist picks them up
         const labInvs = investigations.filter(i => i.type === 'lab');
         for (const inv of labInvs) {
-          await sb().from('hmis_lab_orders').insert({
+          // Lookup test_id by name (exact → fuzzy)
+          let testId: string | null = null;
+          const { data: testExact } = await sb().from('hmis_lab_test_master')
+            .select('id').ilike('test_name', inv.name).eq('is_active', true).limit(1).maybeSingle();
+          if (testExact) { testId = testExact.id; }
+          else {
+            const keyword = inv.name.split(/[\s\-\/\(\)]+/).filter((w: string) => w.length > 2)[0];
+            if (keyword) {
+              const { data: testFuzzy } = await sb().from('hmis_lab_test_master')
+                .select('id').ilike('test_name', `%${keyword}%`).eq('is_active', true).limit(1).maybeSingle();
+              if (testFuzzy) testId = testFuzzy.id;
+            }
+          }
+          const { data: labOrder } = await sb().from('hmis_lab_orders').insert({
             centre_id: centreId, patient_id: patient.id,
-            test_name: inv.name, status: 'ordered', ordered_by: staffId,
+            test_id: testId, test_name: inv.name,
+            encounter_id: encounterId,
+            clinical_info: clinicalIndication || inv.notes || null,
+            status: 'ordered', ordered_by: staffId,
             priority: inv.urgency === 'stat' ? 'stat' : inv.urgency === 'urgent' ? 'urgent' : 'routine',
+          }).select('id').maybeSingle();
+          await smartPostLabCharge({
+            centreId, patientId: patient.id, testName: inv.name, staffId,
+            labOrderId: labOrder?.id,
           });
-          await smartPostLabCharge({ centreId, patientId: patient.id, testName: inv.name, staffId });
         }
 
-        // Create radiology orders for each radiology investigation
+        // Create radiology orders — resolve test_id from hmis_radiology_test_master
         const radInvs = investigations.filter(i => i.type === 'radiology');
         for (const inv of radInvs) {
-          await sb().from('hmis_radiology_orders').insert({
+          const modality = inv.name.split(' ')[0] || inv.name;
+          const bodyPart = inv.name.replace(/^(X-Ray|CT|MRI|USG|HRCT|2D)\s*/i, '').trim() || inv.name;
+          // Lookup test_id
+          let radTestId: string | null = null;
+          const { data: radExact } = await sb().from('hmis_radiology_test_master')
+            .select('id').ilike('test_name', inv.name).eq('is_active', true).limit(1).maybeSingle();
+          if (radExact) { radTestId = radExact.id; }
+          else {
+            const { data: radFuzzy } = await sb().from('hmis_radiology_test_master')
+              .select('id').ilike('test_name', `%${bodyPart}%`).eq('modality', modality).eq('is_active', true).limit(1).maybeSingle();
+            if (radFuzzy) radTestId = radFuzzy.id;
+          }
+          const accession = `RAD-${new Date().toISOString().slice(2, 10).replace(/-/g, '')}-${Date.now().toString(36).slice(-4).toUpperCase()}`;
+          const { data: radOrder } = await sb().from('hmis_radiology_orders').insert({
             centre_id: centreId, patient_id: patient.id,
-            modality: inv.name.split(' ')[0] || inv.name,
-            body_part: inv.name.replace(/^(X-Ray|CT|MRI|USG|HRCT)\s*/i, '') || inv.name,
-            clinical_indication: diagnoses.map(d => d.name).join(', '),
+            test_id: radTestId, test_name: inv.name,
+            accession_number: accession,
+            modality, body_part: bodyPart,
+            encounter_id: encounterId,
+            clinical_indication: clinicalIndication || inv.notes || null,
             status: 'ordered', ordered_by: staffId,
             urgency: inv.urgency === 'stat' ? 'stat' : 'routine',
+          }).select('id').maybeSingle();
+          await smartPostRadiologyCharge({
+            centreId, patientId: patient.id, testName: inv.name, staffId,
+            radiologyOrderId: radOrder?.id,
           });
-          await smartPostRadiologyCharge({ centreId, patientId: patient.id, testName: inv.name, staffId });
         }
 
-        // Create pharmacy dispensing record for prescriptions
+        // Create pharmacy dispensing record — linked to encounter
         if (prescriptions.length > 0) {
           await sb().from('hmis_pharmacy_dispensing').insert({
             centre_id: centreId, patient_id: patient.id,
+            encounter_id: encounterId,
             prescription_data: prescriptions.map(p => ({
               drug: p.drug, generic: p.generic, dose: p.dose,
               route: p.route, frequency: p.frequency, duration: p.duration,
@@ -151,9 +192,13 @@ function EMRInner() {
           });
         }
 
-        if (labInvs.length + radInvs.length > 0) {
-          flash(`Signed + ${labInvs.length} lab orders + ${radInvs.length} radiology orders created`);
-        }
+        const orderCount = labInvs.length + radInvs.length;
+        const rxCount = prescriptions.length;
+        const parts = [];
+        if (labInvs.length > 0) parts.push(`${labInvs.length} lab`);
+        if (radInvs.length > 0) parts.push(`${radInvs.length} radiology`);
+        if (rxCount > 0) parts.push(`${rxCount} Rx to pharmacy`);
+        if (parts.length > 0) flash(`Signed + ${parts.join(' + ')} orders created`);
       }
 
       flash(sign ? 'Encounter signed & saved' : (result.offline ? 'Saved offline — will sync' : 'Encounter saved'));

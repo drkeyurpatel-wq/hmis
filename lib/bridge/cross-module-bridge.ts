@@ -230,33 +230,60 @@ export async function routeCPOEOrder(params: {
   }
 
   if (params.orderType === 'lab' && params.details?.tests) {
-    // Create lab orders + AUTO-POST CHARGES
+    // Create lab orders + resolve test_id so worklist picks them up
     for (const testName of (params.details.tests || [params.orderText])) {
-      await sb().from('hmis_lab_orders').insert({
+      let testId: string | null = null;
+      const { data: testExact } = await sb().from('hmis_lab_test_master')
+        .select('id').ilike('test_name', testName).eq('is_active', true).limit(1).maybeSingle();
+      if (testExact) { testId = testExact.id; }
+      else {
+        const keyword = testName.split(/[\s\-\/\(\)]+/).filter((w: string) => w.length > 2)[0];
+        if (keyword) {
+          const { data: testFuzzy } = await sb().from('hmis_lab_test_master')
+            .select('id').ilike('test_name', `%${keyword}%`).eq('is_active', true).limit(1).maybeSingle();
+          if (testFuzzy) testId = testFuzzy.id;
+        }
+      }
+      const { data: labOrder } = await sb().from('hmis_lab_orders').insert({
         centre_id: params.centreId, patient_id: params.patientId,
         admission_id: params.admissionId,
-        test_name: testName, status: 'ordered', ordered_by: params.staffId,
+        test_id: testId, test_name: testName,
+        status: 'ordered', ordered_by: params.staffId,
         priority: params.priority === 'stat' ? 'stat' : params.priority === 'urgent' ? 'urgent' : 'routine',
-      });
+      }).select('id').maybeSingle();
       // Auto-post charge from tariff
-      await smartPostLabCharge({ centreId: params.centreId, patientId: params.patientId, admissionId: params.admissionId, testName, staffId: params.staffId });
+      await smartPostLabCharge({ centreId: params.centreId, patientId: params.patientId, admissionId: params.admissionId, testName, staffId: params.staffId, labOrderId: labOrder?.id });
     }
     auditCreate(params.centreId, params.staffId, 'lab_order', '', `CPOE→Lab+Charge: ${params.orderText}`);
     return { success: true, routed: true };
   }
 
   if (params.orderType === 'radiology' && params.details?.modality) {
+    // Resolve test_id from radiology test master
+    let radTestId: string | null = null;
+    const bodyPart = params.details.bodyPart || '';
+    const { data: radExact } = await sb().from('hmis_radiology_test_master')
+      .select('id').ilike('test_name', `${params.details.modality} ${bodyPart}`.trim()).eq('is_active', true).limit(1).maybeSingle();
+    if (radExact) { radTestId = radExact.id; }
+    else {
+      const { data: radFuzzy } = await sb().from('hmis_radiology_test_master')
+        .select('id').eq('modality', params.details.modality).ilike('test_name', `%${bodyPart}%`).eq('is_active', true).limit(1).maybeSingle();
+      if (radFuzzy) radTestId = radFuzzy.id;
+    }
+    const testName = `${params.details.modality} ${bodyPart}`.trim();
+    const accession = `RAD-${new Date().toISOString().slice(2, 10).replace(/-/g, '')}-${Date.now().toString(36).slice(-4).toUpperCase()}`;
     const { data, error } = await sb().from('hmis_radiology_orders').insert({
       centre_id: params.centreId, patient_id: params.patientId,
       admission_id: params.admissionId,
-      modality: params.details.modality, body_part: params.details.bodyPart,
+      test_id: radTestId, test_name: testName,
+      accession_number: accession,
+      modality: params.details.modality, body_part: bodyPart,
       status: 'ordered', ordered_by: params.staffId,
       urgency: params.priority === 'stat' ? 'stat' : 'routine',
     }).select('id').maybeSingle();
     if (!error && data) {
       // Auto-post charge from tariff
-      const testName = `${params.details.modality} ${params.details.bodyPart || ''}`.trim();
-      await smartPostRadiologyCharge({ centreId: params.centreId, patientId: params.patientId, admissionId: params.admissionId, testName, staffId: params.staffId });
+      await smartPostRadiologyCharge({ centreId: params.centreId, patientId: params.patientId, admissionId: params.admissionId, radiologyOrderId: data.id, testName, staffId: params.staffId });
       auditCreate(params.centreId, params.staffId, 'radiology_order', data.id, `CPOE→Radiology+Charge: ${params.orderText}`);
       return { success: true, routed: true, targetId: data.id };
     }
