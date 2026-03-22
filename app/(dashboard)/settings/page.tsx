@@ -2,15 +2,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuthStore } from '@/lib/store/auth';
 import { RoleGuard } from '@/components/ui/shared';
-import { createClient } from '@/lib/supabase/client';
+import { sb } from '@/lib/supabase/browser';
 import HospitalSetup from '@/components/settings/hospital-setup';
 import IntegrationsConfig from '@/components/settings/integrations-config';
 import NotificationsConfig from '@/components/settings/notifications-config';
 import BillingConfig from '@/components/settings/billing-config';
 import DepartmentsConfig from '@/components/settings/departments-config';
-
-let _sb: any = null;
-function sb() { if (typeof window === 'undefined') return null as any; if (!_sb) { try { _sb = createClient(); } catch { return null; } } return _sb; }
 
 type Tab = 'hospital' | 'integrations' | 'notifications' | 'billing' | 'departments' | 'staff' | 'wards' | 'tariffs' | 'auto_charges' | 'reports' | 'roles' | 'system';
 

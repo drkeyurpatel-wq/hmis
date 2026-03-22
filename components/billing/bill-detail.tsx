@@ -2,11 +2,8 @@
 'use client';
 import React, { useState, useEffect, useCallback } from 'react';
 import { useBillItems, usePaymentsV2, useAdvances } from '@/lib/billing/billing-hooks';
-import { createClient } from '@/lib/supabase/client';
+import { sb } from '@/lib/supabase/browser';
 import { printBillInvoice, printPaymentReceipt } from '@/components/billing/bill-pdf';
-
-let _sb: any = null;
-function sb() { if (typeof window === 'undefined') return null as any; if (!_sb) { try { _sb = createClient(); } catch { return null; } } return _sb; }
 
 interface Props {
   bill: any; staffId: string; centreId: string;

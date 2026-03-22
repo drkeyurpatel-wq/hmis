@@ -1,15 +1,12 @@
 'use client';
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@/lib/supabase/client';
+import { sb } from '@/lib/supabase/browser';
 import {
   Search, Users, Calendar, BedDouble, CreditCard, FlaskConical, Pill,
   FileText, Settings, BarChart3, Activity, Stethoscope, Scissors, Plus,
   ArrowRight, Mic, Heart, Shield, Truck, AlertTriangle,
 } from 'lucide-react';
-
-let _sb: any = null;
-function sb() { if (typeof window === 'undefined') return null as any; if (!_sb) { try { _sb = createClient(); } catch { return null; } } return _sb; }
 
 interface CommandItem {
   id: string;

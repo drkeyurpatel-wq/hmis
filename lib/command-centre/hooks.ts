@@ -2,10 +2,7 @@
 // Production-grade multi-centre dashboard data layer
 // Strategy: 4 parallel RPC calls (server-side aggregation) with client-side fallback
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { createClient } from '@/lib/supabase/client';
-
-let _sb: any = null;
-function sb() { if (typeof window === 'undefined') return null as any; if (!_sb) { try { _sb = createClient(); } catch { return null; } } return _sb; }
+import { sb } from '@/lib/supabase/browser';
 
 // ============================================================
 // Types

@@ -2,13 +2,10 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { createClient } from '@/lib/supabase/client';
+import { sb } from '@/lib/supabase/browser';
 import Link from 'next/link';
 import { DarkModeToggle } from '@/components/ui/dark-mode-toggle';
 import { NotificationBell } from '@/components/ui/notification-bell';
-
-let _sb: any = null;
-function sb() { if (typeof window === 'undefined') return null as any; if (!_sb) { try { _sb = createClient(); } catch { return null; } } return _sb; }
 
 export function GlobalHeader() {
   const [searchQ, setSearchQ] = useState('');

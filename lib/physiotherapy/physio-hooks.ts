@@ -1,9 +1,6 @@
 // lib/physiotherapy/physio-hooks.ts — Sports medicine + therapeutic rehab
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { createClient } from '@/lib/supabase/client';
-
-let _sb: any = null;
-function sb() { if (typeof window === 'undefined') return null as any; if (!_sb) { try { _sb = createClient(); } catch { return null; } } return _sb; }
+import { sb } from '@/lib/supabase/browser';
 
 export const BODY_REGIONS = ['knee','shoulder','spine_cervical','spine_lumbar','spine_thoracic','hip','ankle','foot','wrist','hand','elbow','neck','jaw_tmj','pelvis'];
 export const SPORTS = ['cricket','football','running','gym_fitness','tennis','badminton','swimming','kabaddi','basketball','hockey','volleyball','cycling','boxing_mma','yoga','dance','athletics'];

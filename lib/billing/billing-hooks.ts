@@ -1,10 +1,7 @@
 // lib/billing/billing-hooks.ts
 import { useState, useEffect, useCallback } from 'react';
-import { createClient } from '@/lib/supabase/client';
+import { sb } from '@/lib/supabase/browser';
 import { auditCreate, auditUpdate } from '@/lib/audit/audit-logger';
-
-let _sb: any = null;
-function sb() { if (typeof window === 'undefined') return null as any; if (!_sb) { try { _sb = createClient(); } catch { return null; } } return _sb; }
 
 // ============================================================
 // BILLS

@@ -6,10 +6,7 @@ import { searchMedications, checkInteractions } from '@/lib/cdss/medications';
 import { checkDrugInteractions, validateDose, type DrugInteraction, type DoseAlert } from '@/lib/cdss/engine';
 import { checkAllergyConflict, type AllergyEntry } from '@/lib/cdss/allergies';
 import { MED_SETS } from '@/lib/cdss/med-sets';
-import { createClient } from '@/lib/supabase/client';
-
-let _sb: any = null;
-function sb() { if (typeof window === 'undefined') return null as any; if (!_sb) { try { _sb = createClient(); } catch { return null; } } return _sb; }
+import { sb } from '@/lib/supabase/browser';
 
 interface RxEntry {
   drug: string; generic: string; dose: string; route: string;

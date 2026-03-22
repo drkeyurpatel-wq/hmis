@@ -1,16 +1,13 @@
 'use client';
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
-import { createClient } from '@/lib/supabase/client';
+import { sb } from '@/lib/supabase/browser';
 import { useAuthStore } from '@/lib/store/auth';
 import AnaesthesiaForm from '@/components/ot/anaesthesia-form';
 import ConsentForm from '@/components/consent/consent-form';
 import ConsentList from '@/components/consent/consent-list';
 import { useConsentTemplates, usePatientConsents } from '@/lib/consent/consent-hooks';
 import Link from 'next/link';
-
-let _sb: any = null;
-function sb() { if (typeof window === 'undefined') return null as any; if (!_sb) { try { _sb = createClient(); } catch { return null; } } return _sb; }
 
 type Tab = 'who' | 'pre_op' | 'intra_op' | 'post_op' | 'anaesthesia' | 'consents' | 'implants';
 

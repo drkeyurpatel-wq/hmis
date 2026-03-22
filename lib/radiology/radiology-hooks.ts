@@ -1,12 +1,9 @@
 // lib/radiology/radiology-hooks.ts
 // Complete radiology hooks — worklist, orders, reports, PACS links, patient imaging, templates, TAT
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { createClient } from '@/lib/supabase/client';
+import { sb } from '@/lib/supabase/browser';
 import { auditCreate, auditSign } from '@/lib/audit/audit-logger';
 import { smartPostRadiologyCharge } from '@/lib/bridge/cross-module-bridge';
-
-let _sb: any = null;
-function sb() { if (typeof window === 'undefined') return null as any; if (!_sb) { try { _sb = createClient(); } catch { return null; } } return _sb; }
 
 // ============================================================
 // TYPES

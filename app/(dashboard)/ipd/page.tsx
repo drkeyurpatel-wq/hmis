@@ -4,12 +4,9 @@ import { useIPD, type Admission } from '@/lib/revenue/phase2-hooks';
 import { useDoctors } from '@/lib/revenue/hooks';
 import { RoleGuard, TableSkeleton } from '@/components/ui/shared';
 import { useAuthStore } from '@/lib/store/auth';
-import { createClient } from '@/lib/supabase/client';
+import { sb } from '@/lib/supabase/browser';
 import { Plus, Search, X, BedDouble, Users, Clock, Activity } from 'lucide-react';
 import Link from 'next/link';
-
-let _sb: any = null;
-function sb() { if (typeof window === 'undefined') return null as any; if (!_sb) { try { _sb = createClient(); } catch { return null; } } return _sb; }
 
 function IPDPageInner() {
   const { staff, activeCentreId } = useAuthStore();

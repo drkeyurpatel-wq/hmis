@@ -2,11 +2,8 @@
 // Build billing packages from real tariff items
 'use client';
 import React, { useState, useEffect, useMemo } from 'react';
-import { createClient } from '@/lib/supabase/client';
+import { sb } from '@/lib/supabase/browser';
 import { useAuthStore } from '@/lib/store/auth';
-
-let _sb: any = null;
-function sb() { if (typeof window === 'undefined') return null as any; if (!_sb) { try { _sb = createClient(); } catch { return null; } } return _sb; }
 const fmt = (n: number) => '₹' + Math.round(n).toLocaleString('en-IN');
 
 interface PackageItem { tariffId: string; serviceName: string; category: string; rate: number; quantity: number; days: number; total: number; }

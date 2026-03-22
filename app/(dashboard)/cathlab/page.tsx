@@ -3,10 +3,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { RoleGuard } from '@/components/ui/shared';
 import { useAuthStore } from '@/lib/store/auth';
 import { useCathLab, useCathLabInventory, useCathLabMonitoring, type CathProcedure, type VesselFinding, type StentEntry } from '@/lib/cathlab/cathlab-hooks';
-import { createClient } from '@/lib/supabase/client';
-
-let _sb: any = null;
-function sb() { if (typeof window === 'undefined') return null as any; if (!_sb) { try { _sb = createClient(); } catch { return null; } } return _sb; }
+import { sb } from '@/lib/supabase/browser';
 
 const STATUS_COLORS: Record<string, string> = { scheduled: 'bg-blue-100 text-blue-700', in_progress: 'bg-amber-100 text-amber-700', completed: 'bg-green-100 text-green-700', abandoned: 'bg-red-100 text-red-700', complication: 'bg-red-100 text-red-700' };
 const TYPE_COLORS: Record<string, string> = { cag: 'bg-blue-600', ptca: 'bg-red-600', pci: 'bg-red-600', ppi: 'bg-purple-600', icd: 'bg-purple-600', crt: 'bg-purple-600', ep_study: 'bg-indigo-600', tavi: 'bg-amber-600', bmc: 'bg-teal-600', structural: 'bg-orange-600' };

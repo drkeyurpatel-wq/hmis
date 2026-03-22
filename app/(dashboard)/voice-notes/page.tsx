@@ -2,15 +2,12 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { RoleGuard } from '@/components/ui/shared';
 import { useAuthStore } from '@/lib/store/auth';
-import { createClient } from '@/lib/supabase/client';
+import { sb } from '@/lib/supabase/browser';
 import {
   Mic, MicOff, Square, Play, Pause, Wand2, Check, X, Edit3,
   Stethoscope, Activity, Pill, FlaskConical, FileText, ChevronRight,
   Loader2, Volume2, Sparkles, RotateCcw,
 } from 'lucide-react';
-
-let _sb: any = null;
-function sb() { if (typeof window === 'undefined') return null as any; if (!_sb) { try { _sb = createClient(); } catch { return null; } } return _sb; }
 
 interface StructuredNote {
   chief_complaints: string[];

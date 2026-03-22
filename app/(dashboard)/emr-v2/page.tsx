@@ -3,7 +3,7 @@ import React, { useState, useCallback, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useEMR } from '@/lib/emr/use-emr';
 import { useAuthStore } from '@/lib/store/auth';
-import { createClient } from '@/lib/supabase/client';
+import { sb } from '@/lib/supabase/browser';
 import { printEncounterSummary, openPrintWindow } from '@/components/ui/shared';
 import { smartPostLabCharge, smartPostRadiologyCharge } from '@/lib/bridge/cross-module-bridge';
 import PatientBanner from '@/components/emr-v2/patient-banner';
@@ -16,9 +16,6 @@ import InvestigationPanel from '@/components/emr-v2/investigation-panel';
 import AICopilot from '@/components/emr-v2/ai-copilot';
 import PatientImagingPanel from '@/components/radiology/patient-imaging-panel';
 import PatientLabHistory from '@/components/lab/patient-lab-history';
-
-let _sb: any = null;
-function sb() { if (typeof window === 'undefined') return null as any; if (!_sb) { try { _sb = createClient(); } catch { return null; } } return _sb; }
 
 // Types matching component interfaces
 interface Patient { id: string; name: string; age: string; gender: string; uhid: string; phone: string; allergies: string[]; bloodGroup: string; }

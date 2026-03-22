@@ -1,9 +1,6 @@
 // lib/appointments/appointment-hooks.ts — Rebuilt to match actual schema
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { createClient } from '@/lib/supabase/client';
-
-let _sb: any = null;
-function sb() { if (typeof window === 'undefined') return null as any; if (!_sb) { try { _sb = createClient(); } catch { return null; } } return _sb; }
+import { sb } from '@/lib/supabase/browser';
 
 export interface DoctorSchedule {
   id: string; doctorId: string; doctorName: string; specialisation: string;

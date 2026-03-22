@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { exportToCSV } from '@/lib/utils/data-export';
-import { createClient } from '@/lib/supabase/client';
+import { sb } from '@/lib/supabase/browser';
 import { useAuthStore } from '@/lib/store/auth';
 import { formatDate, calculateAge, getInitials, cn } from '@/lib/utils';
 import {
@@ -11,8 +11,6 @@ import {
 import Link from 'next/link';
 import type { Patient } from '@/types/database';
 
-let _sb: any = null;
-function sb() { if (typeof window === 'undefined') return null as any; if (!_sb) { try { _sb = createClient(); } catch { return null; } } return _sb; }
 
 const genderOptions = [{ value: 'male', label: 'Male' }, { value: 'female', label: 'Female' }, { value: 'other', label: 'Other' }];
 

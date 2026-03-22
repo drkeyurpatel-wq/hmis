@@ -1,12 +1,9 @@
 // lib/pharmacy/pharmacy-hooks.ts
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { createClient } from '@/lib/supabase/client';
+import { sb } from '@/lib/supabase/browser';
 import { postPharmacyCharge } from '@/lib/bridge/cross-module-bridge';
 import { auditCreate } from '@/lib/audit/audit-logger';
 import { notifyPharmacyReady } from '@/lib/notifications/notification-dispatcher';
-
-let _sb: any = null;
-function sb() { if (typeof window === 'undefined') return null as any; if (!_sb) { try { _sb = createClient(); } catch { return null; } } return _sb; }
 
 // ============================================================
 // DRUG MASTER

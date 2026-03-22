@@ -3,11 +3,8 @@ import React, { useState, useEffect } from 'react';
 import { RoleGuard } from '@/components/ui/shared';
 import { useAuthStore } from '@/lib/store/auth';
 import { useTeleconsults } from '@/lib/telemedicine/telemedicine-hooks';
-import { createClient } from '@/lib/supabase/client';
+import { sb } from '@/lib/supabase/browser';
 import { Plus, X, Video, Phone, Clock, ExternalLink, Search } from 'lucide-react';
-
-let _sb: any = null;
-function sb() { if (typeof window === 'undefined') return null as any; if (!_sb) { try { _sb = createClient(); } catch { return null; } } return _sb; }
 
 type Tab = 'today' | 'schedule' | 'call';
 const STATUS_B: Record<string, string> = { scheduled: 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-50 text-blue-700', waiting: 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-700', in_progress: 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-purple-50 text-purple-700', completed: 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700', no_show: 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-red-50 text-red-700', cancelled: 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-100 text-gray-600' };
@@ -132,7 +129,7 @@ function TeleInner() {
                   {c.status === 'in_progress' && (
                     <button onClick={() => joinCall(c)} className="px-4 py-2 bg-purple-600 text-white text-xs rounded-xl font-semibold hover:bg-purple-700 flex items-center gap-1.5 animate-pulse"><Video size={13} /> Rejoin</button>
                   )}
-                  {c.room_url && <a href={c.room_url} target="_blank" className="p-2 bg-gray-100 rounded-xl hover:bg-gray-200"><ExternalLink size={14} className="text-gray-500" /></a>}
+                  {c.room_url && <a href={c.room_url} target="_blank" rel="noopener noreferrer" className="p-2 bg-gray-100 rounded-xl hover:bg-gray-200"><ExternalLink size={14} className="text-gray-500" /></a>}
                 </div>
               </div>
             );

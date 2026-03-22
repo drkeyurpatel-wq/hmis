@@ -1,10 +1,7 @@
 // components/billing/insurance-cashless.tsx
 'use client';
 import React, { useState, useMemo, useEffect } from 'react';
-import { createClient } from '@/lib/supabase/client';
-
-let _sb: any = null;
-function sb() { if (typeof window === 'undefined') return null as any; if (!_sb) { try { _sb = createClient(); } catch { return null; } } return _sb; }
+import { sb } from '@/lib/supabase/browser';
 
 interface Props {
   claims: any[]; loading: boolean; stats: any; centreId: string; staffId: string;

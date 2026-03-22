@@ -1,9 +1,6 @@
 // lib/reports/report-engine.ts
 import { useState, useCallback } from 'react';
-import { createClient } from '@/lib/supabase/client';
-
-let _sb: any = null;
-function sb() { if (typeof window === 'undefined') return null as any; if (!_sb) { try { _sb = createClient(); } catch { return null; } } return _sb; }
+import { sb } from '@/lib/supabase/browser';
 
 // Helper: conditionally add centre_id filter
 function cq(query: any, centreId?: string, col: string = 'centre_id') {

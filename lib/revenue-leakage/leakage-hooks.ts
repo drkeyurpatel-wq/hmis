@@ -1,9 +1,6 @@
 // lib/revenue-leakage/leakage-hooks.ts — Revenue leakage detection engine
 import { useState, useCallback, useMemo } from 'react';
-import { createClient } from '@/lib/supabase/client';
-
-let _sb: any = null;
-function sb() { if (typeof window === 'undefined') return null as any; if (!_sb) { try { _sb = createClient(); } catch { return null; } } return _sb; }
+import { sb } from '@/lib/supabase/browser';
 
 export interface Leak {
   id: string; type: string; severity: 'critical' | 'high' | 'medium' | 'low';

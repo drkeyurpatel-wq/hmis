@@ -3,11 +3,8 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useOPDQueue, useDoctors, type OPDVisit } from '@/lib/revenue/hooks';
 import { RoleGuard } from '@/components/ui/shared';
 import { useAuthStore } from '@/lib/store/auth';
-import { createClient } from '@/lib/supabase/client';
+import { sb } from '@/lib/supabase/browser';
 import { Plus, Search, X, ChevronRight, Stethoscope, UserPlus } from 'lucide-react';
-
-let _sb: any = null;
-function sb() { if (typeof window === 'undefined') return null as any; if (!_sb) { try { _sb = createClient(); } catch { return null; } } return _sb; }
 
 const STATUS_FLOW = ['waiting', 'checked_in', 'with_doctor', 'completed'];
 const SC: Record<string, { label: string; badge: string; dot: string }> = {

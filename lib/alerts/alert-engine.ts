@@ -298,18 +298,15 @@ export async function persistAlerts(sb: any, alerts: AlertRecord[]): Promise<num
 // CLIENT-SIDE HOOK — useAlerts()
 // ============================================================
 import { useState, useEffect, useCallback } from 'react';
-import { createClient } from '@/lib/supabase/client';
-
-let _sb: any = null;
-function clientSb() { if (typeof window === 'undefined') return null as any; if (!_sb) { try { _sb = createClient(); } catch { return null; } } return _sb; }
+import { sb } from '@/lib/supabase/browser';
 
 export function useAlerts(centreId: string, admissionId?: string | null) {
   const [alerts, setAlerts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
-    if (!clientSb() || !centreId) return;
-    let query = clientSb()
+    if (!sb() || !centreId) return;
+    let query = sb()
       .from('hmis_clinical_alerts')
       .select('*, patient:hmis_patients!inner(first_name, last_name, uhid), ack_staff:hmis_staff!hmis_clinical_alerts_acknowledged_by_fkey(full_name)')
       .eq('centre_id', centreId)
@@ -328,8 +325,8 @@ export function useAlerts(centreId: string, admissionId?: string | null) {
 
   // Realtime subscription
   useEffect(() => {
-    if (!clientSb() || !centreId) return;
-    const channel = clientSb()
+    if (!sb() || !centreId) return;
+    const channel = sb()
       .channel(`alerts-${centreId}`)
       .on('postgres_changes', {
         event: '*',
@@ -339,12 +336,12 @@ export function useAlerts(centreId: string, admissionId?: string | null) {
       }, () => { load(); })
       .subscribe();
 
-    return () => { clientSb().removeChannel(channel); };
+    return () => { sb().removeChannel(channel); };
   }, [centreId, load]);
 
   const acknowledge = useCallback(async (alertId: string, staffId: string) => {
-    if (!clientSb()) return;
-    await clientSb().from('hmis_clinical_alerts').update({
+    if (!sb()) return;
+    await sb().from('hmis_clinical_alerts').update({
       status: 'acknowledged',
       acknowledged_by: staffId,
       acknowledged_at: new Date().toISOString(),
@@ -353,8 +350,8 @@ export function useAlerts(centreId: string, admissionId?: string | null) {
   }, [load]);
 
   const resolve = useCallback(async (alertId: string, staffId: string, note?: string) => {
-    if (!clientSb()) return;
-    await clientSb().from('hmis_clinical_alerts').update({
+    if (!sb()) return;
+    await sb().from('hmis_clinical_alerts').update({
       status: 'resolved',
       resolved_by: staffId,
       resolved_at: new Date().toISOString(),

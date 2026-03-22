@@ -2,6 +2,7 @@
 // Multi-channel dispatcher with proper result tracking
 // Notifications should never block clinical workflow — all errors are caught and logged.
 
+<<<<<<< HEAD
 import { sendAppointmentReminder, sendOPDTokenConfirmation, sendLabResultsReady, sendPharmacyReady, sendDischargeAlert, sendPaymentReceipt, sendFollowUpReminder } from './whatsapp';
 import { smsAppointmentReminder, smsOPDToken, smsLabReady, smsPharmacyReady, smsDischargeAlert, smsPaymentReceipt, smsFollowUpReminder } from './sms';
 import { type NotificationResult } from './notification-status';
@@ -9,6 +10,9 @@ import { createClient } from '@/lib/supabase/client';
 
 let _sb: any = null;
 function sb() { if (typeof window === 'undefined') return null as any; if (!_sb) { try { _sb = createClient(); } catch { return null; } } return _sb; }
+=======
+import { sb } from '@/lib/supabase/browser';
+>>>>>>> 59535101d2b66be5dbf4ba30e9219cd56e9332f3
 
 interface DispatchResult {
   whatsapp?: NotificationResult;

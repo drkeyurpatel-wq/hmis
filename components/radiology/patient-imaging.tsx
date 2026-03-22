@@ -272,8 +272,8 @@ export default function PatientImaging({ patientId, patientUhid }: PatientImagin
         </div>
         <div className="flex items-center gap-2">
           {/* View all images in Stradus */}
-          {patientUhid && pacs.config && (
-            <a href={pacs.getPatientViewerUrl(patientUhid) || '#'} target="_blank" rel="noopener noreferrer"
+          {patientUhid && pacs.config && pacs.getPatientViewerUrl(patientUhid) && (
+            <a href={pacs.getPatientViewerUrl(patientUhid)!} target="_blank" rel="noopener noreferrer"
               className="px-3 py-1.5 bg-blue-600 text-white text-xs rounded-lg flex items-center gap-1.5">
               <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
               All Images in Stradus
@@ -345,8 +345,8 @@ export function PatientImagingCompact({ patientId, patientUhid }: PatientImaging
     <div className="bg-white rounded-xl border p-3">
       <div className="flex items-center justify-between mb-2">
         <h4 className="text-xs font-bold text-gray-700">Imaging ({stats.total})</h4>
-        {patientUhid && pacs.config && (
-          <a href={pacs.getPatientViewerUrl(patientUhid) || '#'} target="_blank" rel="noopener noreferrer"
+        {patientUhid && pacs.config && pacs.getPatientViewerUrl(patientUhid) && (
+          <a href={pacs.getPatientViewerUrl(patientUhid)!} target="_blank" rel="noopener noreferrer"
             className="text-[10px] text-blue-600 hover:underline">All in PACS →</a>
         )}
       </div>

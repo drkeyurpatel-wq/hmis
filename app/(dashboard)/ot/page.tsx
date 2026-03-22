@@ -3,11 +3,8 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { RoleGuard } from '@/components/ui/shared';
 import { useAuthStore } from '@/lib/store/auth';
 import { useOTSchedule, useOTNotes, useOTUtilization } from '@/lib/ot/ot-hooks';
-import { createClient } from '@/lib/supabase/client';
+import { sb } from '@/lib/supabase/browser';
 import Link from 'next/link';
-
-let _sb: any = null;
-function sb() { if (typeof window === 'undefined') return null as any; if (!_sb) { try { _sb = createClient(); } catch { return null; } } return _sb; }
 
 const fmt = (n: number) => n.toLocaleString('en-IN', { maximumFractionDigits: 0 });
 type Tab = 'board'|'list'|'new_booking'|'utilization'|'rooms'|'implants'|'safety';

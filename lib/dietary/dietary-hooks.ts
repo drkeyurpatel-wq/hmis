@@ -1,9 +1,6 @@
 // lib/dietary/dietary-hooks.ts — Indian hospital dietary management
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { createClient } from '@/lib/supabase/client';
-
-let _sb: any = null;
-function sb() { if (typeof window === 'undefined') return null as any; if (!_sb) { try { _sb = createClient(); } catch { return null; } } return _sb; }
+import { sb } from '@/lib/supabase/browser';
 
 export const MEAL_SCHEDULE = [
   { key: 'early_tea', label: 'Early Tea', time: '6:00 AM', hour: 6 },

@@ -1,7 +1,7 @@
 'use client';
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
-import { createClient } from '@/lib/supabase/client';
+import { sb } from '@/lib/supabase/browser';
 import { useAuthStore } from '@/lib/store/auth';
 import Link from 'next/link';
 import PatientImagingPanel from '@/components/radiology/patient-imaging-panel';
@@ -10,8 +10,6 @@ import { usePatientDocuments, useEmergencyContacts, usePatientInsurance } from '
 import { exportPatientData } from '@/lib/utils/data-export';
 import { PatientTimeline } from '@/components/patient/patient-timeline';
 
-let _sb: any = null;
-function sb() { if (typeof window === 'undefined') return null as any; if (!_sb) { try { _sb = createClient(); } catch { return null; } } return _sb; }
 
 export default function PatientDetailPage() {
   const { id } = useParams();
@@ -210,7 +208,7 @@ export default function PatientDetailPage() {
                 <td className="p-2">{d.document_name}</td>
                 <td className="p-2 text-center text-gray-400">{new Date(d.created_at).toLocaleDateString('en-IN')}</td>
                 <td className="p-2 text-center">{d.verified ? <span className="text-green-600">✓</span> : <span className="text-gray-300">—</span>}</td>
-                <td className="p-2"><a href={d.file_url} target="_blank" className="text-teal-600 text-[10px]">View</a></td></tr>
+                <td className="p-2"><a href={d.file_url} target="_blank" rel="noopener noreferrer" className="text-teal-600 text-[10px]">View</a></td></tr>
             ))}</tbody></table>
           </div>}
         </div>

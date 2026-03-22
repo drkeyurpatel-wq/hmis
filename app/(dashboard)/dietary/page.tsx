@@ -3,10 +3,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { RoleGuard } from '@/components/ui/shared';
 import { useAuthStore } from '@/lib/store/auth';
 import { useDietary, MEAL_SCHEDULE, DIET_TYPES, FOOD_PREFS, TEXTURES, getCurrentMeal, type DietOrder } from '@/lib/dietary/dietary-hooks';
-import { createClient } from '@/lib/supabase/client';
-
-let _sb: any = null;
-function sb() { if (typeof window === 'undefined') return null as any; if (!_sb) { try { _sb = createClient(); } catch { return null; } } return _sb; }
+import { sb } from '@/lib/supabase/browser';
 
 const DIET_COLORS: Record<string, string> = { regular: 'bg-green-100 text-green-700', diabetic: 'bg-amber-100 text-amber-700', renal: 'bg-purple-100 text-purple-700', cardiac: 'bg-red-100 text-red-700', liver: 'bg-orange-100 text-orange-700', liquid: 'bg-blue-100 text-blue-700', clear_liquid: 'bg-blue-100 text-blue-700', soft: 'bg-teal-100 text-teal-700', npo: 'bg-red-600 text-white', high_protein: 'bg-green-100 text-green-700', low_sodium: 'bg-amber-100 text-amber-700', post_surgery: 'bg-indigo-100 text-indigo-700', tube_feed: 'bg-gray-100 text-gray-700' };
 const PREF_COLORS: Record<string, string> = { veg: 'bg-green-600 text-white', nonveg: 'bg-red-600 text-white', egg: 'bg-amber-500 text-white', jain: 'bg-orange-500 text-white', vegan: 'bg-green-700 text-white' };

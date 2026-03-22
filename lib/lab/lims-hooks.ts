@@ -2,17 +2,10 @@
 // Core LIMS hooks for Hospital Laboratory Module
 
 import { useState, useEffect, useCallback } from 'react';
-import { createClient } from '@/lib/supabase/client';
+import { sb } from '@/lib/supabase/browser';
 import { auditCreate, auditUpdate, auditSign } from '@/lib/audit/audit-logger';
 import { smartPostLabCharge } from '@/lib/bridge/cross-module-bridge';
 import { notifyLabReady } from '@/lib/notifications/notification-dispatcher';
-
-let _sb: ReturnType<typeof createClient> | null = null;
-function sb() {
-  if (typeof window === 'undefined') return null as any;
-  if (!_sb) { try { _sb = createClient(); } catch { return null as any; } }
-  return _sb;
-}
 
 // ============================================================
 // TEST MASTER with parameters

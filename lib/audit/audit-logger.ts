@@ -1,13 +1,6 @@
 // lib/audit/audit-logger.ts
 // Central audit trail writer — call from every clinical/billing action
-import { createClient } from '@/lib/supabase/client';
-
-let _sb: any = null;
-function sb() {
-  if (typeof window === 'undefined') return null as any;
-  if (!_sb) { try { _sb = createClient(); } catch { return null; } }
-  return _sb;
-}
+import { sb } from '@/lib/supabase/browser';
 
 export type AuditAction = 'create' | 'update' | 'delete' | 'view' | 'print' | 'sign' | 'cancel' | 'approve' | 'reject';
 

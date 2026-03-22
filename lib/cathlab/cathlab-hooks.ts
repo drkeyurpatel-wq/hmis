@@ -1,9 +1,6 @@
 // lib/cathlab/cathlab-hooks.ts
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { createClient } from '@/lib/supabase/client';
-
-let _sb: any = null;
-function sb() { if (typeof window === 'undefined') return null as any; if (!_sb) { try { _sb = createClient(); } catch { return null; } } return _sb; }
+import { sb } from '@/lib/supabase/browser';
 
 export interface CathProcedure {
   id: string; patient_id: string; patient_name: string; uhid: string; age: number; gender: string;

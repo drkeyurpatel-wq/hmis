@@ -2,10 +2,7 @@
 // Blood Bank / Blood Storage Unit hooks
 
 import { useState, useEffect, useCallback } from 'react';
-import { createClient } from '@/lib/supabase/client';
-
-let _sb: any = null;
-function sb() { if (typeof window === 'undefined') return null as any; if (!_sb) { try { _sb = createClient(); } catch { return null; } } return _sb; }
+import { sb } from '@/lib/supabase/browser';
 
 const BLOOD_GROUPS = ['A+','A-','B+','B-','AB+','AB-','O+','O-'] as const;
 const COMPONENT_TYPES = ['whole_blood','prbc','ffp','platelet_concentrate','cryoprecipitate','sdp','washed_rbc','leukoreduced_rbc','irradiated_rbc'] as const;

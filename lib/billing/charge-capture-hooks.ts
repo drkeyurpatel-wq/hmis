@@ -1,10 +1,7 @@
 // lib/billing/charge-capture-hooks.ts
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { createClient } from '@/lib/supabase/client';
+import { sb } from '@/lib/supabase/browser';
 import { auditCreate, auditCancel, auditUpdate } from '@/lib/audit/audit-logger';
-
-let _sb: any = null;
-function sb() { if (typeof window === 'undefined') return null as any; if (!_sb) { try { _sb = createClient(); } catch { return null; } } return _sb; }
 
 export interface ChargeEntry {
   id: string; centreId: string; patientId: string; admissionId?: string; billId?: string;

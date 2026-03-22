@@ -1,10 +1,7 @@
 // lib/billing/billing-engine.ts
 // Core billing engine — every service from tariff → bill → payment → receipt
 
-import { createBrowserClient } from '@supabase/ssr';
-
-let _sb: any = null;
-function sb() { if (!_sb) _sb = createBrowserClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!); return _sb; }
+import { sb } from '@/lib/supabase/browser';
 
 // ============================================================
 // TYPES

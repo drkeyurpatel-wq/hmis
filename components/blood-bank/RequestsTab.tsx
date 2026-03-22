@@ -1,10 +1,7 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import { BLOOD_GROUPS, COMPONENT_TYPES } from '@/lib/lab/blood-bank-hooks';
-import { createClient } from '@/lib/supabase/client';
-
-let _sb: any = null;
-function sb() { if (typeof window === 'undefined') return null as any; if (!_sb) { try { _sb = createClient(); } catch { return null; } } return _sb; }
+import { sb } from '@/lib/supabase/browser';
 
 interface RequestsTabProps {
   requests: any[];

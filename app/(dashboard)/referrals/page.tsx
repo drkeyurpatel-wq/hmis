@@ -3,10 +3,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { RoleGuard } from '@/components/ui/shared';
 import { useAuthStore } from '@/lib/store/auth';
 import { useReferrals, useReferringDoctors, type Referral, type ReferringDoctor } from '@/lib/referrals/referral-hooks';
-import { createClient } from '@/lib/supabase/client';
-
-let _sb: any = null;
-function sb() { if (typeof window === 'undefined') return null as any; if (!_sb) { try { _sb = createClient(); } catch { return null; } } return _sb; }
+import { sb } from '@/lib/supabase/browser';
 
 const fmt = (n: number) => Math.round(n).toLocaleString('en-IN');
 const INR = (n: number) => n >= 100000 ? `₹${(n/100000).toFixed(1)}L` : `₹${fmt(n)}`;

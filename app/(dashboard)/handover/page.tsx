@@ -2,11 +2,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { RoleGuard } from '@/components/ui/shared';
 import { useAuthStore } from '@/lib/store/auth';
-import { createClient } from '@/lib/supabase/client';
+import { sb } from '@/lib/supabase/browser';
 import { Printer, RefreshCw, AlertTriangle, Activity, BedDouble, Pill, FlaskConical, Scissors, Clock } from 'lucide-react';
-
-let _sb: any = null;
-function sb() { if (typeof window === 'undefined') return null as any; if (!_sb) { try { _sb = createClient(); } catch { return null; } } return _sb; }
 
 interface HandoverData {
   generatedAt: string;
