@@ -67,8 +67,6 @@ export async function POST(request: NextRequest) {
           success: true,
           message: 'OTP sent to your phone',
           patientName: patient.first_name,
-          // REMOVE IN PRODUCTION — only for testing:
-          _debug_otp: process.env.NODE_ENV === 'development' ? otp : undefined,
         });
       }
 

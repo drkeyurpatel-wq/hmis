@@ -22,6 +22,7 @@ interface WhatsAppMessage {
 // ============================================================
 async function sendWhatsAppTemplate(msg: WhatsAppMessage): Promise<{ success: boolean; messageId?: string; error?: string }> {
   if (!WHATSAPP_API || !WHATSAPP_TOKEN) {
+    console.warn('[WhatsApp] Not configured. Set WHATSAPP_API_URL and WHATSAPP_ACCESS_TOKEN. Recipient:', msg.to, 'Template:', msg.templateName);
     return { success: false, error: 'WhatsApp API not configured. Set WHATSAPP_API_URL and WHATSAPP_ACCESS_TOKEN in environment.' };
   }
 
@@ -148,7 +149,8 @@ export async function sendFollowUpReminder(phone: string, patientName: string, d
 // ============================================================
 export async function sendPlainMessage(phone: string, message: string): Promise<{ success: boolean; error?: string }> {
   if (!WHATSAPP_API || !WHATSAPP_TOKEN) {
-    return { success: false, error: 'Not configured' };
+    console.warn('[WhatsApp] Not configured. Set WHATSAPP_API_URL and WHATSAPP_ACCESS_TOKEN. Recipient:', phone);
+    return { success: false, error: 'WhatsApp not configured' };
   }
 
   try {

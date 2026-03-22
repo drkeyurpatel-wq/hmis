@@ -96,8 +96,9 @@ export async function POST(req: NextRequest) {
         patient:hmis_patients!inner(first_name, last_name, uhid),
         items:hmis_bill_items(
           description, quantity, unit_rate, amount, net_amount, service_category,
-          billing_category, admission_id,
+          billing_category, admission_id, package_id,
           department:hmis_departments(name),
+          package:hmis_packages!hmis_bill_items_package_id_fkey(name),
           service_doctor:hmis_staff!hmis_bill_items_service_doctor_id_fkey(full_name),
           consulting_doctor:hmis_staff!hmis_bill_items_consulting_doctor_id_fkey(full_name),
           referring_doctor_name, ot_booking_id
@@ -185,7 +186,7 @@ export async function POST(req: NextRequest) {
             hospital_amt: 0, // MedPay engine calculates
             qty: parseFloat(item.quantity) || 1,
             billing_category: item.billing_category || bill.billing_category || '',
-            package_name: '', // TODO: resolve from package_id
+            package_name: item.package?.name || ''
             case_type: bill.case_type || 'Hospital Case',
             _bill_id: bill.id, // internal, stripped before insert
           });
