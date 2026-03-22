@@ -477,15 +477,38 @@ CREATE TABLE IF NOT EXISTS hmis_diet_orders (
 
 -- Referrals (can be from OPD or IPD)
 CREATE TABLE IF NOT EXISTS hmis_referrals (
-    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-    opd_visit_id uuid REFERENCES hmis_opd_visits(id),
-    admission_id uuid REFERENCES hmis_admissions(id),
-    from_doctor_id uuid NOT NULL REFERENCES hmis_staff(id),
-    to_doctor_id uuid REFERENCES hmis_staff(id),
-    to_department_id uuid NOT NULL REFERENCES hmis_departments(id),
-    reason text,
-    urgency varchar(10) NOT NULL DEFAULT 'routine' CHECK (urgency IN ('routine','urgent','emergency')),
-    created_at timestamptz NOT NULL DEFAULT now()
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  centre_id uuid REFERENCES hmis_centres(id),
+  patient_id uuid REFERENCES hmis_patients(id),
+  referral_type varchar(20) NOT NULL, -- internal, external_in, external_out
+  -- Referring
+  referring_doctor_name varchar(200),
+  referring_doctor_phone varchar(20),
+  referring_doctor_reg varchar(50), -- MCI/state reg number
+  referring_hospital varchar(200),
+  referring_city varchar(100),
+  -- Referred to
+  referred_to_doctor_id uuid REFERENCES hmis_staff(id),
+  referred_to_department varchar(100),
+  -- Clinical
+  reason text,
+  diagnosis varchar(200),
+  urgency varchar(10) DEFAULT 'routine', -- emergency, urgent, routine
+  -- Tracking
+  status varchar(20) DEFAULT 'received', -- received, appointment_made, visited, admitted, completed, lost
+  appointment_id uuid,
+  admission_id uuid REFERENCES hmis_admissions(id),
+  -- Revenue
+  expected_revenue decimal(12,2) DEFAULT 0,
+  actual_revenue decimal(12,2) DEFAULT 0,
+  referral_fee_pct decimal(5,2) DEFAULT 0,
+  referral_fee_amount decimal(12,2) DEFAULT 0,
+  fee_paid boolean DEFAULT false,
+  fee_paid_date date,
+  -- Meta
+  notes text,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now()
 );
 
 -- ============================================================
@@ -716,14 +739,19 @@ CREATE TABLE IF NOT EXISTS hmis_advances (
 
 CREATE TABLE IF NOT EXISTS hmis_refunds (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-    bill_id uuid REFERENCES hmis_bills(id),
-    advance_id uuid REFERENCES hmis_advances(id),
-    patient_id uuid NOT NULL REFERENCES hmis_patients(id),
-    amount decimal(12,2) NOT NULL,
+    centre_id uuid NOT NULL REFERENCES hmis_centres(id),
+    bill_id uuid NOT NULL REFERENCES hmis_bills(id),
+    refund_amount decimal(12,2) NOT NULL,
     reason text NOT NULL,
-    approved_by uuid NOT NULL REFERENCES hmis_staff(id),
-    refund_mode varchar(20) NOT NULL,
-    status varchar(15) NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','approved','processed')),
+    refund_mode varchar(20) NOT NULL CHECK (refund_mode IN ('cash','neft','cheque','upi')),
+    bank_details text,
+    status varchar(15) NOT NULL DEFAULT 'initiated' CHECK (status IN ('initiated','approved','processed','rejected','cancelled')),
+    initiated_by uuid NOT NULL REFERENCES hmis_staff(id),
+    approved_by uuid REFERENCES hmis_staff(id),
+    approved_at timestamptz,
+    processed_by uuid REFERENCES hmis_staff(id),
+    processed_at timestamptz,
+    utr_number varchar(50),
     created_at timestamptz NOT NULL DEFAULT now()
 );
 
@@ -1071,12 +1099,28 @@ CREATE TABLE IF NOT EXISTS hmis_homecare_visits (
 -- ============================================================
 
 CREATE TABLE IF NOT EXISTS hmis_ambulances (
-    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-    centre_id uuid NOT NULL REFERENCES hmis_centres(id),
-    vehicle_number varchar(20) NOT NULL UNIQUE,
-    type varchar(20) NOT NULL,
-    is_available boolean NOT NULL DEFAULT true,
-    created_at timestamptz NOT NULL DEFAULT now()
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  centre_id uuid REFERENCES hmis_centres(id),
+  vehicle_number varchar(20) NOT NULL,
+  type varchar(20) NOT NULL DEFAULT 'bls', -- als, bls, patient_transport, neonatal, mortuary
+  make varchar(50),
+  model varchar(50),
+  year integer,
+  driver_name varchar(200),
+  driver_phone varchar(20),
+  driver_license varchar(50),
+  emt_name varchar(200),
+  emt_phone varchar(20),
+  status varchar(20) DEFAULT 'available', -- available, on_trip, maintenance, out_of_service
+  current_location varchar(200),
+  fuel_level varchar(10), -- full, 3/4, half, 1/4, empty
+  last_sanitized timestamp with time zone,
+  insurance_expiry date,
+  fitness_expiry date,
+  equipment_checklist jsonb DEFAULT '{}', -- {oxygen: true, defibrillator: true, stretcher: true}
+  odometer_km integer,
+  is_active boolean DEFAULT true,
+  created_at timestamp with time zone DEFAULT now()
 );
 
 CREATE TABLE IF NOT EXISTS hmis_ambulance_trips (
@@ -2926,8 +2970,8 @@ CREATE TABLE IF NOT EXISTS hmis_pacs_config (
 
 -- Indexes
 CREATE INDEX IF NOT EXISTS idx_rad_orders_centre ON hmis_radiology_orders(centre_id, status);
-CREATE INDEX IF NOT EXISTS idx_rad_orders_accession ON hmis_radiology_orders(accession_number);
-CREATE INDEX IF NOT EXISTS idx_rad_orders_pacs ON hmis_radiology_orders(pacs_study_uid);
+-- [removed bad index on hmis_radiology_orders: columns ['accession_number'] not in table]
+-- [removed bad index on hmis_radiology_orders: columns ['pacs_study_uid'] not in table]
 
 -- RLS
 DO $$
