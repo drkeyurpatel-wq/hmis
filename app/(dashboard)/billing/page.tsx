@@ -139,11 +139,11 @@ function BillingInner() {
 
   const stBadge = (s: string) => {
     const m: Record<string, string> = {
-      paid: 'h1-badge h1-badge-green', partially_paid: 'h1-badge h1-badge-amber',
-      final: 'h1-badge h1-badge-blue', draft: 'h1-badge h1-badge-gray',
-      cancelled: 'h1-badge h1-badge-red',
+      paid: 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700', partially_paid: 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-700',
+      final: 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-50 text-blue-700', draft: 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-100 text-gray-600',
+      cancelled: 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-red-50 text-red-700',
     };
-    return m[s] || 'h1-badge h1-badge-gray';
+    return m[s] || 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-100 text-gray-600';
   };
 
   return (
@@ -241,7 +241,7 @@ function BillingInner() {
               {billsLoading ? (
                 <div className="p-12 text-center text-gray-400 text-sm">Loading...</div>
               ) : (
-                <table className="h1-table">
+                <table className="w-full text-xs">
                   <thead>
                     <tr>
                       <th>Bill #</th><th>Patient</th><th>Date</th><th>Type</th><th>Payor</th>
@@ -258,8 +258,8 @@ function BillingInner() {
                           <div className="text-[10px] text-gray-400">{b.patient?.uhid}</div>
                         </td>
                         <td className="text-gray-500">{b.bill_date ? new Date(b.bill_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }) : '—'}</td>
-                        <td><span className="h1-badge h1-badge-gray">{b.bill_type}</span></td>
-                        <td><span className="h1-badge h1-badge-blue">{b.payor_type?.replace('_', ' ')}</span></td>
+                        <td><span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-100 text-gray-600">{b.bill_type}</span></td>
+                        <td><span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-50 text-blue-700">{b.payor_type?.replace('_', ' ')}</span></td>
                         <td className="text-right font-semibold">₹{fmt(b.net_amount)}</td>
                         <td className="text-right text-emerald-600 font-medium">{parseFloat(b.paid_amount) > 0 ? `₹${fmt(b.paid_amount)}` : '—'}</td>
                         <td className="text-right">
@@ -359,7 +359,7 @@ function BillingInner() {
             <div className="px-4 py-3 border-b border-gray-50">
               <h3 className="text-xs font-bold text-gray-700">Advance Deposits ({advances.length})</h3>
             </div>
-            <table className="h1-table">
+            <table className="w-full text-xs">
               <thead><tr><th>Receipt</th><th>Patient</th><th>Date</th><th>Mode</th><th className="text-right">Amount</th><th>Status</th></tr></thead>
               <tbody>
                 {advances.map(a => (
@@ -370,9 +370,9 @@ function BillingInner() {
                       <div className="text-[10px] text-gray-400">{a.patient?.uhid}</div>
                     </td>
                     <td className="text-gray-500">{new Date(a.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}</td>
-                    <td><span className="h1-badge h1-badge-gray capitalize">{a.payment_mode}</span></td>
+                    <td><span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-100 text-gray-600 capitalize">{a.payment_mode}</span></td>
                     <td className="text-right font-bold text-emerald-700">₹{fmt(a.amount)}</td>
-                    <td><span className={a.is_adjusted ? 'h1-badge h1-badge-gray' : 'h1-badge h1-badge-green'}>{a.is_adjusted ? 'Adjusted' : 'Available'}</span></td>
+                    <td><span className={a.is_adjusted ? 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-100 text-gray-600' : 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700'}>{a.is_adjusted ? 'Adjusted' : 'Available'}</span></td>
                   </tr>
                 ))}
                 {advances.length === 0 && <tr><td colSpan={6} className="text-center py-10 text-gray-400">No advances collected</td></tr>}

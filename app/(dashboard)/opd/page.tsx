@@ -11,12 +11,12 @@ function sb() { if (typeof window === 'undefined') return null as any; if (!_sb)
 
 const STATUS_FLOW = ['waiting', 'checked_in', 'with_doctor', 'completed'];
 const SC: Record<string, { label: string; badge: string; dot: string }> = {
-  waiting: { label: 'Waiting', badge: 'h1-badge-amber', dot: 'bg-amber-500' },
-  checked_in: { label: 'Checked In', badge: 'h1-badge-blue', dot: 'bg-blue-500' },
-  with_doctor: { label: 'With Doctor', badge: 'h1-badge-purple', dot: 'bg-purple-500' },
-  completed: { label: 'Completed', badge: 'h1-badge-green', dot: 'bg-emerald-500' },
-  cancelled: { label: 'Cancelled', badge: 'h1-badge-red', dot: 'bg-red-500' },
-  no_show: { label: 'No Show', badge: 'h1-badge-gray', dot: 'bg-gray-400' },
+  waiting: { label: 'Waiting', badge: 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-700', dot: 'bg-amber-500' },
+  checked_in: { label: 'Checked In', badge: 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-50 text-blue-700', dot: 'bg-blue-500' },
+  with_doctor: { label: 'With Doctor', badge: 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-purple-50 text-purple-700', dot: 'bg-purple-500' },
+  completed: { label: 'Completed', badge: 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700', dot: 'bg-emerald-500' },
+  cancelled: { label: 'Cancelled', badge: 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-red-50 text-red-700', dot: 'bg-red-500' },
+  no_show: { label: 'No Show', badge: 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-100 text-gray-600', dot: 'bg-gray-400' },
 };
 type ViewMode = 'queue' | 'doctor' | 'list';
 
@@ -200,7 +200,7 @@ function OPDInner() {
                       <div className="text-sm font-bold text-gray-300 w-5 text-center">{i + 1}</div>
                       <span className={`w-2 h-2 rounded-full shrink-0 ${sc.dot}`} />
                       <div className="flex-1 min-w-0"><div className="text-xs font-semibold truncate">{v.patient?.name}</div><div className="text-[10px] text-gray-400">{v.patient?.uhid} · {waitTime(v)}</div></div>
-                      <span className={`h1-badge ${sc.badge} text-[8px]`}>{sc.label}</span>
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${sc.badge} text-[8px]`}>{sc.label}</span>
                       {v.status !== 'completed' && <button onClick={() => moveNext(v)} className="p-1 text-teal-500 hover:bg-teal-50 rounded"><ChevronRight size={14} /></button>}
                     </div>
                   );
@@ -215,10 +215,10 @@ function OPDInner() {
       {/* LIST */}
       {view === 'list' && (
         <div className="bg-white rounded-2xl border overflow-hidden">
-          <table className="h1-table"><thead><tr><th>Token</th><th>Patient</th><th>Complaint</th><th>Doctor</th><th>Wait</th><th>Status</th><th>Action</th></tr></thead>
+          <table className="w-full text-xs"><thead><tr><th>Token</th><th>Patient</th><th>Complaint</th><th>Doctor</th><th>Wait</th><th>Status</th><th>Action</th></tr></thead>
             <tbody>{filtered.map(v => {
               const sc = SC[v.status] || SC.waiting;
-              return (<tr key={v.id}><td className="text-sm font-bold text-teal-600">T{v.tokenNumber}</td><td><div className="font-semibold">{v.patient?.name}</div><div className="text-[10px] text-gray-400">{v.patient?.uhid} · {v.patient?.age}/{v.patient?.gender?.charAt(0)}</div></td><td className="text-[11px] text-gray-600 max-w-[200px] truncate">{v.chiefComplaint || '—'}</td><td className="text-[11px]">{v.doctor?.name?.split(' ').pop()}</td><td className="text-[11px] text-gray-500">{waitTime(v)}</td><td><span className={`h1-badge ${sc.badge}`}>{sc.label}</span></td><td>{v.status !== 'completed' && v.status !== 'cancelled' ? <select value={v.status} onChange={e => updateStatus(v.id, e.target.value)} className="text-[10px] border rounded-lg px-2 py-1">{STATUS_FLOW.map(s => <option key={s} value={s}>{SC[s].label}</option>)}<option value="no_show">No Show</option><option value="cancelled">Cancel</option></select> : '—'}</td></tr>);
+              return (<tr key={v.id}><td className="text-sm font-bold text-teal-600">T{v.tokenNumber}</td><td><div className="font-semibold">{v.patient?.name}</div><div className="text-[10px] text-gray-400">{v.patient?.uhid} · {v.patient?.age}/{v.patient?.gender?.charAt(0)}</div></td><td className="text-[11px] text-gray-600 max-w-[200px] truncate">{v.chiefComplaint || '—'}</td><td className="text-[11px]">{v.doctor?.name?.split(' ').pop()}</td><td className="text-[11px] text-gray-500">{waitTime(v)}</td><td><span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${sc.badge}`}>{sc.label}</span></td><td>{v.status !== 'completed' && v.status !== 'cancelled' ? <select value={v.status} onChange={e => updateStatus(v.id, e.target.value)} className="text-[10px] border rounded-lg px-2 py-1">{STATUS_FLOW.map(s => <option key={s} value={s}>{SC[s].label}</option>)}<option value="no_show">No Show</option><option value="cancelled">Cancel</option></select> : '—'}</td></tr>);
             })}{filtered.length === 0 && <tr><td colSpan={7} className="text-center py-12 text-gray-400">No visits</td></tr>}</tbody></table>
         </div>
       )}

@@ -2,12 +2,12 @@
 import React, { useState } from 'react';
 import { RoleGuard } from '@/components/ui/shared';
 import { useAuthStore } from '@/lib/store/auth';
-import { useDocuments } from '@/lib/modules/module-hooks-2';
+import { useDocuments } from '@/lib/documents/document-hooks';
 import { Plus, X, Search, FileText, Download, CheckCircle2, Clock, AlertTriangle } from 'lucide-react';
 
 const DOC_TYPES = ['policy', 'sop', 'protocol', 'guideline', 'form', 'manual', 'circular', 'memo'];
-const TYPE_BADGE: Record<string, string> = { policy: 'h1-badge-red', sop: 'h1-badge-blue', protocol: 'h1-badge-purple', guideline: 'h1-badge-green', form: 'h1-badge-gray', manual: 'h1-badge-amber', circular: 'h1-badge-blue', memo: 'h1-badge-gray' };
-const STATUS_BADGE: Record<string, string> = { draft: 'h1-badge-gray', under_review: 'h1-badge-amber', approved: 'h1-badge-green', superseded: 'h1-badge-purple', archived: 'h1-badge-gray' };
+const TYPE_BADGE: Record<string, string> = { policy: 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-red-50 text-red-700', sop: 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-50 text-blue-700', protocol: 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-purple-50 text-purple-700', guideline: 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700', form: 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-100 text-gray-600', manual: 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-700', circular: 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-50 text-blue-700', memo: 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-100 text-gray-600' };
+const STATUS_BADGE: Record<string, string> = { draft: 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-100 text-gray-600', under_review: 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-700', approved: 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700', superseded: 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-purple-50 text-purple-700', archived: 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-100 text-gray-600' };
 
 function DocsInner() {
   const { staff, activeCentreId } = useAuthStore();
@@ -60,7 +60,7 @@ function DocsInner() {
       <div className="flex gap-2 flex-wrap">
         {Object.entries(docs.stats.byType).map(([k, v]) => (
           <div key={k} className="bg-white rounded-xl border px-3 py-2 flex items-center gap-2">
-            <span className={`h1-badge ${TYPE_BADGE[k] || 'h1-badge-gray'} capitalize`}>{k}</span>
+            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${TYPE_BADGE[k] || 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-100 text-gray-600'} capitalize`}>{k}</span>
             <span className="font-bold text-sm">{v as number}</span>
           </div>
         ))}
@@ -74,17 +74,17 @@ function DocsInner() {
           <div className="flex gap-1">{['all', ...DOC_TYPES].map(t => <button key={t} onClick={() => { setTypeFilter(t); docs.load({ type: t, status: statusFilter, search }); }} className={`px-2 py-1.5 text-[10px] font-medium rounded-lg capitalize ${typeFilter === t ? 'bg-teal-50 text-teal-700 border border-teal-200' : 'bg-gray-50 text-gray-500'}`}>{t}</button>)}</div>
           <div className="flex gap-1">{['all', 'draft', 'under_review', 'approved'].map(s => <button key={s} onClick={() => { setStatusFilter(s); docs.load({ type: typeFilter, status: s, search }); }} className={`px-2 py-1.5 text-[10px] font-medium rounded-lg ${statusFilter === s ? 'bg-teal-50 text-teal-700 border border-teal-200' : 'bg-gray-50 text-gray-500'}`}>{s === 'all' ? 'All' : s.replace('_', ' ')}</button>)}</div>
         </div>
-        <table className="h1-table"><thead><tr><th>Doc#</th><th>Title</th><th>Type</th><th>Department</th><th>Version</th><th>Status</th><th>Review Date</th><th>NABH</th><th>Actions</th></tr></thead>
+        <table className="w-full text-xs"><thead><tr><th>Doc#</th><th>Title</th><th>Type</th><th>Department</th><th>Version</th><th>Status</th><th>Review Date</th><th>NABH</th><th>Actions</th></tr></thead>
           <tbody>{docs.documents.map(d => {
             const reviewOverdue = d.status === 'approved' && d.review_date && d.review_date < today;
             return (
               <tr key={d.id} className={reviewOverdue ? 'bg-red-50/50' : ''}>
                 <td className="font-mono text-[10px]">{d.doc_number}</td>
                 <td><div className="font-semibold">{d.title}</div>{d.tags?.length > 0 && <div className="flex gap-1 mt-0.5">{d.tags.slice(0, 3).map((t: string) => <span key={t} className="text-[8px] bg-gray-100 text-gray-500 px-1 rounded">{t}</span>)}</div>}</td>
-                <td><span className={`h1-badge ${TYPE_BADGE[d.doc_type] || 'h1-badge-gray'} capitalize`}>{d.doc_type}</span></td>
+                <td><span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${TYPE_BADGE[d.doc_type] || 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-100 text-gray-600'} capitalize`}>{d.doc_type}</span></td>
                 <td className="text-[11px]">{d.department || '—'}</td>
                 <td className="font-bold">v{d.version}</td>
-                <td><span className={`h1-badge ${STATUS_BADGE[d.status] || 'h1-badge-gray'}`}>{d.status?.replace('_', ' ')}</span></td>
+                <td><span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${STATUS_BADGE[d.status] || 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-100 text-gray-600'}`}>{d.status?.replace('_', ' ')}</span></td>
                 <td className="text-[11px]">
                   {d.review_date ? (
                     <span className={reviewOverdue ? 'text-red-600 font-bold flex items-center gap-1' : d.review_date <= new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0] ? 'text-amber-600' : 'text-gray-500'}>
@@ -93,7 +93,7 @@ function DocsInner() {
                     </span>
                   ) : '—'}
                 </td>
-                <td>{d.is_nabh_required ? <span className="h1-badge h1-badge-blue text-[8px]">{d.nabh_standard || 'NABH'}</span> : '—'}</td>
+                <td>{d.is_nabh_required ? <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-50 text-blue-700 text-[8px]">{d.nabh_standard || 'NABH'}</span> : '—'}</td>
                 <td>
                   <div className="flex gap-1">
                     {d.status === 'draft' && <button onClick={() => docs.update(d.id, { status: 'under_review' })} className="px-2 py-1 bg-amber-50 text-amber-700 text-[10px] rounded-lg font-medium">Submit</button>}

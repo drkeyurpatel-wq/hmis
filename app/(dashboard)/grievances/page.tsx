@@ -2,13 +2,13 @@
 import React, { useState } from 'react';
 import { RoleGuard } from '@/components/ui/shared';
 import { useAuthStore } from '@/lib/store/auth';
-import { useGrievances } from '@/lib/modules/module-hooks-2';
+import { useGrievances } from '@/lib/grievances/grievance-hooks';
 import { Plus, X, Search, Clock, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 
 const TYPES = ['clinical', 'billing', 'behavior', 'facility', 'food', 'delay', 'privacy', 'other'];
-const SEVERITY_BADGE: Record<string, string> = { minor: 'h1-badge-blue', major: 'h1-badge-amber', critical: 'h1-badge-red' };
-const STATUS_BADGE: Record<string, string> = { received: 'h1-badge-gray', acknowledged: 'h1-badge-blue', investigating: 'h1-badge-amber', resolved: 'h1-badge-green', closed: 'h1-badge-green', escalated: 'h1-badge-red', reopened: 'h1-badge-purple' };
+const SEVERITY_BADGE: Record<string, string> = { minor: 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-50 text-blue-700', major: 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-700', critical: 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-red-50 text-red-700' };
+const STATUS_BADGE: Record<string, string> = { received: 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-100 text-gray-600', acknowledged: 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-50 text-blue-700', investigating: 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-700', resolved: 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700', closed: 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700', escalated: 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-red-50 text-red-700', reopened: 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-purple-50 text-purple-700' };
 const C = ['#0d9488', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#10b981', '#475569'];
 
 function GrievanceInner() {
@@ -103,16 +103,16 @@ function GrievanceInner() {
         <div className="px-4 py-3 border-b flex items-center gap-3">
           {['all', 'received', 'acknowledged', 'investigating', 'resolved', 'escalated'].map(s => <button key={s} onClick={() => { setStatusFilter(s); grv.load({ status: s }); }} className={`px-2.5 py-1.5 text-[10px] font-medium rounded-lg ${statusFilter === s ? 'bg-teal-50 text-teal-700 border border-teal-200' : 'bg-gray-50 text-gray-500'}`}>{s === 'all' ? 'All' : s}</button>)}
         </div>
-        <table className="h1-table"><thead><tr><th>Ref#</th><th>Complainant</th><th>Type</th><th>Description</th><th>Severity</th><th>TAT</th><th>Status</th><th>Action</th></tr></thead>
+        <table className="w-full text-xs"><thead><tr><th>Ref#</th><th>Complainant</th><th>Type</th><th>Description</th><th>Severity</th><th>TAT</th><th>Status</th><th>Action</th></tr></thead>
           <tbody>{grv.grievances.map(g => (
             <tr key={g.id} className={g.status === 'received' && (Date.now() - new Date(g.created_at).getTime()) > 24 * 3600000 ? 'bg-red-50/50' : ''}>
               <td className="font-mono text-[10px]">{g.grievance_number}</td>
               <td><div className="font-semibold">{g.complainant_name}</div><div className="text-[10px] text-gray-400">{g.complainant_phone} · {g.complainant_relation}</div></td>
-              <td><span className="h1-badge h1-badge-gray capitalize">{g.complaint_type}</span></td>
+              <td><span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-100 text-gray-600 capitalize">{g.complaint_type}</span></td>
               <td className="max-w-[250px] truncate text-[11px] text-gray-600">{g.description}</td>
-              <td><span className={`h1-badge ${SEVERITY_BADGE[g.severity] || 'h1-badge-gray'}`}>{g.severity}</span></td>
+              <td><span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${SEVERITY_BADGE[g.severity] || 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-100 text-gray-600'}`}>{g.severity}</span></td>
               <td className="text-[11px] font-mono">{tatDisplay(g)}</td>
-              <td><span className={`h1-badge ${STATUS_BADGE[g.status] || 'h1-badge-gray'}`}>{g.status}</span></td>
+              <td><span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${STATUS_BADGE[g.status] || 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-100 text-gray-600'}`}>{g.status}</span></td>
               <td>
                 <div className="flex gap-1">
                   {g.status === 'received' && <button onClick={() => { grv.acknowledge(g.id, staffId); flash('Acknowledged'); }} className="px-2 py-1 bg-teal-50 text-teal-700 text-[10px] rounded-lg font-medium hover:bg-teal-100">Ack</button>}

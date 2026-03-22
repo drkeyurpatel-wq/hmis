@@ -293,15 +293,3 @@ export function useEstimates(centreId: string | null) {
 // ============================================================
 // PACKAGES
 // ============================================================
-export function usePackages(centreId: string | null) {
-  const [packages, setPackages] = useState<any[]>([]);
-
-  const load = useCallback(async () => {
-    if (!centreId || !sb()) return;
-    const { data } = await sb().from('hmis_package_master').select('*, department:hmis_departments(name)').eq('centre_id', centreId).eq('is_active', true).order('package_name');
-    setPackages(data || []);
-  }, [centreId]);
-
-  useEffect(() => { load(); }, [load]);
-  return { packages, load };
-}

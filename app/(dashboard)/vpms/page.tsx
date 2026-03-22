@@ -10,9 +10,9 @@ const INR = (n: number) => n >= 100000 ? `₹${(n / 100000).toFixed(1)}L` : `₹
 type Tab = 'indents' | 'po' | 'grn' | 'vendors';
 const DEPARTMENTS = ['Administration', 'OT', 'ICU', 'Emergency', 'Laboratory', 'Radiology', 'Pharmacy', 'OPD', 'IPD', 'Housekeeping', 'Kitchen', 'Maintenance', 'IT', 'Biomedical', 'CSSD'];
 const VENDOR_CATEGORIES = ['pharma', 'surgical', 'medical_equipment', 'it', 'facility', 'lab', 'consumables', 'other'];
-const INDENT_BADGE: Record<string, string> = { draft: 'h1-badge-gray', submitted: 'h1-badge-blue', approved: 'h1-badge-green', rejected: 'h1-badge-red', ordered: 'h1-badge-purple', partially_received: 'h1-badge-amber', received: 'h1-badge-green', cancelled: 'h1-badge-gray' };
-const PO_BADGE: Record<string, string> = { draft: 'h1-badge-gray', sent: 'h1-badge-blue', partial_received: 'h1-badge-amber', received: 'h1-badge-green', cancelled: 'h1-badge-red' };
-const GRN_BADGE: Record<string, string> = { pending: 'h1-badge-amber', verified: 'h1-badge-green', posted: 'h1-badge-green', rejected: 'h1-badge-red' };
+const INDENT_BADGE: Record<string, string> = { draft: 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-100 text-gray-600', submitted: 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-50 text-blue-700', approved: 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700', rejected: 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-red-50 text-red-700', ordered: 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-purple-50 text-purple-700', partially_received: 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-700', received: 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700', cancelled: 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-100 text-gray-600' };
+const PO_BADGE: Record<string, string> = { draft: 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-100 text-gray-600', sent: 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-50 text-blue-700', partial_received: 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-700', received: 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700', cancelled: 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-red-50 text-red-700' };
+const GRN_BADGE: Record<string, string> = { pending: 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-700', verified: 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700', posted: 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700', rejected: 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-red-50 text-red-700' };
 
 function VPMSInner() {
   const { staff, activeCentreId } = useAuthStore();
@@ -118,7 +118,7 @@ function VPMSInner() {
           ))}
         </div>
         <div className="bg-white rounded-2xl border overflow-hidden">
-          <table className="h1-table"><thead><tr><th>Indent#</th><th>Department</th><th>Items</th><th>Priority</th><th className="text-right">Est. Cost</th><th>Requested By</th><th>Date</th><th>Status</th><th>Actions</th></tr></thead>
+          <table className="w-full text-xs"><thead><tr><th>Indent#</th><th>Department</th><th>Items</th><th>Priority</th><th className="text-right">Est. Cost</th><th>Requested By</th><th>Date</th><th>Status</th><th>Actions</th></tr></thead>
             <tbody>{indents.indents.map(ind => {
               const items = Array.isArray(ind.items) ? ind.items : [];
               return (
@@ -126,11 +126,11 @@ function VPMSInner() {
                   <td><button onClick={() => setSelectedIndent(ind)} className="font-mono text-teal-600 hover:underline text-[11px] font-bold">{ind.indent_number}</button></td>
                   <td className="text-[11px]">{ind.department}</td>
                   <td className="text-[10px] text-gray-500 max-w-[180px] truncate">{items.length} item{items.length !== 1 ? 's' : ''}: {items.slice(0, 2).map((i: any) => i.item_name).join(', ')}{items.length > 2 ? '...' : ''}</td>
-                  <td><span className={`h1-badge ${ind.priority === 'emergency' ? 'h1-badge-red' : ind.priority === 'urgent' ? 'h1-badge-amber' : 'h1-badge-gray'} uppercase text-[8px]`}>{ind.priority}</span></td>
+                  <td><span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${ind.priority === 'emergency' ? 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-red-50 text-red-700' : ind.priority === 'urgent' ? 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-700' : 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-100 text-gray-600'} uppercase text-[8px]`}>{ind.priority}</span></td>
                   <td className="text-right text-[11px] font-semibold">₹{fmt(ind.total_estimated_cost || 0)}</td>
                   <td className="text-[11px]">{ind.requester?.full_name || '—'}</td>
                   <td className="text-[10px] text-gray-500">{new Date(ind.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}</td>
-                  <td><span className={`h1-badge ${INDENT_BADGE[ind.status] || 'h1-badge-gray'} capitalize`}>{ind.status?.replace('_', ' ')}</span></td>
+                  <td><span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${INDENT_BADGE[ind.status] || 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-100 text-gray-600'} capitalize`}>{ind.status?.replace('_', ' ')}</span></td>
                   <td><div className="flex gap-1">
                     {ind.status === 'draft' && <button onClick={() => { indents.submit(ind.id); flash('Submitted'); }} className="px-2 py-1 bg-blue-50 text-blue-700 text-[10px] rounded-lg font-medium">Submit</button>}
                     {ind.status === 'submitted' && <>
@@ -153,7 +153,7 @@ function VPMSInner() {
           ))}
         </div>
         <div className="bg-white rounded-2xl border overflow-hidden">
-          <table className="h1-table"><thead><tr><th>PO#</th><th>Supplier</th><th>Items</th><th>Order Date</th><th>Expected</th><th className="text-right">Amount</th><th>Created By</th><th>Status</th></tr></thead>
+          <table className="w-full text-xs"><thead><tr><th>PO#</th><th>Supplier</th><th>Items</th><th>Order Date</th><th>Expected</th><th className="text-right">Amount</th><th>Created By</th><th>Status</th></tr></thead>
             <tbody>{pos.orders.map(po => {
               const items = Array.isArray(po.items) ? po.items : [];
               return (
@@ -165,7 +165,7 @@ function VPMSInner() {
                   <td className="text-[10px]">{po.expected_date ? new Date(po.expected_date + 'T12:00:00').toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }) : '—'}</td>
                   <td className="text-right font-semibold text-[11px]">₹{fmt(po.total_amount || 0)}</td>
                   <td className="text-[10px]">{po.creator?.full_name || '—'}</td>
-                  <td><span className={`h1-badge ${PO_BADGE[po.status] || 'h1-badge-gray'} capitalize`}>{po.status?.replace('_', ' ')}</span></td>
+                  <td><span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${PO_BADGE[po.status] || 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-100 text-gray-600'} capitalize`}>{po.status?.replace('_', ' ')}</span></td>
                 </tr>);
             })}{pos.orders.length === 0 && <tr><td colSpan={8} className="text-center py-12 text-gray-400">No purchase orders</td></tr>}</tbody>
           </table>
@@ -182,7 +182,7 @@ function VPMSInner() {
           ))}
         </div>
         <div className="bg-white rounded-2xl border overflow-hidden">
-          <table className="h1-table"><thead><tr><th>GRN#</th><th>PO#</th><th>Supplier</th><th>Invoice#</th><th>Received</th><th className="text-right">Amount</th><th>Received By</th><th>Status</th></tr></thead>
+          <table className="w-full text-xs"><thead><tr><th>GRN#</th><th>PO#</th><th>Supplier</th><th>Invoice#</th><th>Received</th><th className="text-right">Amount</th><th>Received By</th><th>Status</th></tr></thead>
             <tbody>{grns.grns.map(g => (
               <tr key={g.id} className={g.status === 'pending' ? 'bg-amber-50/30' : ''}>
                 <td className="font-mono text-[11px] font-bold">{g.grn_number}</td>
@@ -192,7 +192,7 @@ function VPMSInner() {
                 <td className="text-[10px]">{g.received_date ? new Date(g.received_date + 'T12:00:00').toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: '2-digit' }) : '—'}</td>
                 <td className="text-right font-semibold text-[11px]">₹{fmt(g.total_amount || 0)}</td>
                 <td className="text-[10px]">{g.receiver?.full_name || '—'}</td>
-                <td><span className={`h1-badge ${GRN_BADGE[g.status] || 'h1-badge-gray'} capitalize`}>{g.status}</span></td>
+                <td><span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${GRN_BADGE[g.status] || 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-100 text-gray-600'} capitalize`}>{g.status}</span></td>
               </tr>
             ))}{grns.grns.length === 0 && <tr><td colSpan={8} className="text-center py-12 text-gray-400">No GRNs</td></tr>}</tbody>
           </table>
@@ -214,7 +214,7 @@ function VPMSInner() {
             <div key={v.id} className="bg-white rounded-xl border p-4 hover:shadow-sm transition-shadow">
               <div className="flex items-start justify-between mb-2">
                 <div><div className="font-bold text-sm">{v.name}</div>{v.code && <div className="text-[9px] text-gray-400 font-mono">{v.code}</div>}</div>
-                <span className="h1-badge h1-badge-gray capitalize text-[8px]">{v.category?.replace('_', ' ')}</span>
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-100 text-gray-600 capitalize text-[8px]">{v.category?.replace('_', ' ')}</span>
               </div>
               <div className="space-y-1 text-[11px] text-gray-600">
                 {v.contact_person && <div className="flex items-center gap-1.5"><Package size={10} className="text-gray-400" />{v.contact_person}</div>}
@@ -282,7 +282,7 @@ function VPMSInner() {
           <div className="bg-white rounded-2xl w-full max-w-lg p-6 max-h-[80vh] overflow-y-auto space-y-3" onClick={e => e.stopPropagation()}>
             <div className="flex justify-between items-start">
               <div><h2 className="text-lg font-bold">{selectedIndent.indent_number}</h2><div className="text-xs text-gray-400">{selectedIndent.department} · {selectedIndent.requester?.full_name}</div></div>
-              <div className="flex items-center gap-2"><span className={`h1-badge ${INDENT_BADGE[selectedIndent.status] || 'h1-badge-gray'} capitalize`}>{selectedIndent.status?.replace('_', ' ')}</span><button onClick={() => setSelectedIndent(null)}><X size={18} className="text-gray-400" /></button></div>
+              <div className="flex items-center gap-2"><span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${INDENT_BADGE[selectedIndent.status] || 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-100 text-gray-600'} capitalize`}>{selectedIndent.status?.replace('_', ' ')}</span><button onClick={() => setSelectedIndent(null)}><X size={18} className="text-gray-400" /></button></div>
             </div>
             <div className="grid grid-cols-3 gap-3 text-center">
               <div className="bg-gray-50 rounded-xl p-2.5"><div className="text-[9px] text-gray-400 uppercase">Priority</div><div className={`text-sm font-bold capitalize ${selectedIndent.priority === 'emergency' ? 'text-red-600' : selectedIndent.priority === 'urgent' ? 'text-amber-600' : 'text-gray-600'}`}>{selectedIndent.priority}</div></div>
@@ -290,7 +290,7 @@ function VPMSInner() {
               <div className="bg-gray-50 rounded-xl p-2.5"><div className="text-[9px] text-gray-400 uppercase">Est. Cost</div><div className="text-sm font-bold">₹{fmt(selectedIndent.total_estimated_cost || 0)}</div></div>
             </div>
             <div className="border rounded-xl overflow-hidden">
-              <table className="h1-table text-[11px]"><thead><tr><th>Item</th><th className="text-center">Qty</th><th>Unit</th><th>Spec</th><th className="text-right">Cost</th></tr></thead>
+              <table className="w-full text-xs text-[11px]"><thead><tr><th>Item</th><th className="text-center">Qty</th><th>Unit</th><th>Spec</th><th className="text-right">Cost</th></tr></thead>
                 <tbody>{(selectedIndent.items || []).map((item: any, i: number) => (
                   <tr key={i}><td className="font-semibold">{item.item_name}</td><td className="text-center font-bold">{item.qty}</td><td>{item.unit}</td><td className="text-gray-500">{item.specification || '—'}</td><td className="text-right">₹{fmt(parseFloat(item.estimated_cost || 0) * parseFloat(item.qty || 1))}</td></tr>
                 ))}</tbody>

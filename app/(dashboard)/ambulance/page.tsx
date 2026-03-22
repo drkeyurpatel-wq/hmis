@@ -2,11 +2,11 @@
 import React, { useState } from 'react';
 import { RoleGuard } from '@/components/ui/shared';
 import { useAuthStore } from '@/lib/store/auth';
-import { useAmbulances } from '@/lib/modules/module-hooks-3';
+import { useAmbulances } from '@/lib/ambulance/ambulance-hooks';
 import { Plus, X, Search, Truck, Phone, MapPin, Clock, ChevronRight } from 'lucide-react';
 
 type Tab = 'fleet' | 'dispatch' | 'history';
-const STATUS_BADGE: Record<string, string> = { requested: 'h1-badge-amber', dispatched: 'h1-badge-blue', en_route: 'h1-badge-blue', arrived: 'h1-badge-purple', patient_loaded: 'h1-badge-purple', returning: 'h1-badge-blue', completed: 'h1-badge-green', cancelled: 'h1-badge-red' };
+const STATUS_BADGE: Record<string, string> = { requested: 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-700', dispatched: 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-50 text-blue-700', en_route: 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-50 text-blue-700', arrived: 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-purple-50 text-purple-700', patient_loaded: 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-purple-50 text-purple-700', returning: 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-50 text-blue-700', completed: 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700', cancelled: 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-red-50 text-red-700' };
 const VEHICLE_STATUS: Record<string, { bg: string; border: string; text: string }> = {
   available: { bg: 'bg-emerald-50', border: 'border-emerald-200', text: 'text-emerald-700' },
   on_trip: { bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-700' },
@@ -75,7 +75,7 @@ function AmbulanceInner() {
               <div key={v.id} className={`rounded-2xl border-2 ${vs.border} ${vs.bg} p-4`}>
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-lg font-black text-gray-800">{v.vehicle_number}</span>
-                  <span className={`h1-badge ${v.status === 'available' ? 'h1-badge-green' : v.status === 'on_trip' ? 'h1-badge-amber' : 'h1-badge-red'} uppercase font-bold`}>{TYPE_LABELS[v.type] || v.type}</span>
+                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${v.status === 'available' ? 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700' : v.status === 'on_trip' ? 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-700' : 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-red-50 text-red-700'} uppercase font-bold`}>{TYPE_LABELS[v.type] || v.type}</span>
                 </div>
                 <div className="space-y-1 text-xs text-gray-600">
                   {v.driver_name && <div className="flex items-center gap-1.5"><Truck size={11} />{v.driver_name}</div>}
@@ -83,7 +83,7 @@ function AmbulanceInner() {
                   {v.make && <div className="text-[10px] text-gray-400">{v.make} {v.model} {v.year || ''}</div>}
                 </div>
                 <div className="mt-3 flex items-center justify-between">
-                  <span className={`h1-badge ${vs.text === 'text-emerald-700' ? 'h1-badge-green' : vs.text === 'text-amber-700' ? 'h1-badge-amber' : 'h1-badge-red'} capitalize`}>{v.status.replace('_', ' ')}</span>
+                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${vs.text === 'text-emerald-700' ? 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700' : vs.text === 'text-amber-700' ? 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-700' : 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-red-50 text-red-700'} capitalize`}>{v.status.replace('_', ' ')}</span>
                   {v.fuel_level && <span className="text-[9px] text-gray-400">Fuel: {v.fuel_level}</span>}
                 </div>
               </div>
@@ -105,15 +105,15 @@ function AmbulanceInner() {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-0.5">
                   <span className="font-bold text-sm">{r.patient_name || r.patient?.first_name + ' ' + r.patient?.last_name}</span>
-                  <span className={`h1-badge ${r.priority === 'emergency' ? 'h1-badge-red' : r.priority === 'urgent' ? 'h1-badge-amber' : 'h1-badge-gray'} uppercase text-[8px]`}>{r.priority}</span>
-                  <span className="h1-badge h1-badge-gray text-[8px] capitalize">{r.request_type?.replace(/_/g, ' ')}</span>
+                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${r.priority === 'emergency' ? 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-red-50 text-red-700' : r.priority === 'urgent' ? 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-700' : 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-100 text-gray-600'} uppercase text-[8px]`}>{r.priority}</span>
+                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-100 text-gray-600 text-[8px] capitalize">{r.request_type?.replace(/_/g, ' ')}</span>
                 </div>
                 <div className="flex items-center gap-1 text-[10px] text-gray-500"><MapPin size={10} />{r.pickup_location} → {r.drop_location}</div>
                 {r.ambulance?.vehicle_number && <div className="text-[10px] text-teal-600 font-medium mt-0.5">🚑 {r.ambulance.vehicle_number} · {r.driver_name || ''}</div>}
                 <div className="text-[9px] text-gray-400 mt-0.5">{r.request_number} · {timeAgo(r.requested_at)}</div>
               </div>
               <div className="flex flex-col items-end gap-2 shrink-0">
-                <span className={`h1-badge ${STATUS_BADGE[r.status] || 'h1-badge-gray'} capitalize`}>{r.status.replace('_', ' ')}</span>
+                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${STATUS_BADGE[r.status] || 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-100 text-gray-600'} capitalize`}>{r.status.replace('_', ' ')}</span>
                 <div className="flex gap-1">
                   {r.status === 'requested' && (
                     <button onClick={() => setShowDispatch(r.id)} className="px-3 py-1.5 bg-teal-600 text-white text-[10px] rounded-lg font-semibold hover:bg-teal-700">Dispatch</button>
@@ -133,17 +133,17 @@ function AmbulanceInner() {
       {/* HISTORY */}
       {tab === 'history' && (
         <div className="bg-white rounded-2xl border overflow-hidden">
-          <table className="h1-table"><thead><tr><th>Req#</th><th>Type</th><th>Patient</th><th>Route</th><th>Vehicle</th><th>Response</th><th>Total Time</th><th>Status</th></tr></thead>
+          <table className="w-full text-xs"><thead><tr><th>Req#</th><th>Type</th><th>Patient</th><th>Route</th><th>Vehicle</th><th>Response</th><th>Total Time</th><th>Status</th></tr></thead>
             <tbody>{completedRequests.map(r => (
               <tr key={r.id}>
                 <td className="font-mono text-[10px]">{r.request_number}</td>
-                <td><span className={`h1-badge ${r.priority === 'emergency' ? 'h1-badge-red' : 'h1-badge-gray'} capitalize text-[8px]`}>{r.request_type?.replace(/_/g, ' ')}</span></td>
+                <td><span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${r.priority === 'emergency' ? 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-red-50 text-red-700' : 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-100 text-gray-600'} capitalize text-[8px]`}>{r.request_type?.replace(/_/g, ' ')}</span></td>
                 <td className="font-semibold text-[11px]">{r.patient_name || (r.patient ? `${r.patient.first_name} ${r.patient.last_name}` : '—')}</td>
                 <td className="text-[10px] text-gray-500 max-w-[200px] truncate">{r.pickup_location} → {r.drop_location}</td>
                 <td className="text-[11px] font-medium">{r.ambulance?.vehicle_number || '—'}</td>
                 <td className="text-[11px]">{r.response_time_min ? `${r.response_time_min}m` : '—'}</td>
                 <td className="text-[11px]">{r.total_trip_time_min ? `${r.total_trip_time_min}m` : '—'}</td>
-                <td><span className={`h1-badge ${STATUS_BADGE[r.status]}`}>{r.status}</span></td>
+                <td><span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${STATUS_BADGE[r.status]}`}>{r.status}</span></td>
               </tr>
             ))}{completedRequests.length === 0 && <tr><td colSpan={8} className="text-center py-12 text-gray-400">No completed trips</td></tr>}</tbody>
           </table>

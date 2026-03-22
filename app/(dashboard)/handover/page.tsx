@@ -194,7 +194,7 @@ function HandoverInner() {
         {D.criticalPatients.length > 0 && (
           <div className="bg-white rounded-2xl border border-red-100 overflow-hidden">
             <div className="px-4 py-3 border-b bg-red-50"><h3 className="text-xs font-bold text-red-700">⚠️ Critical Patients ({D.criticalPatients.length})</h3></div>
-            <table className="h1-table"><thead><tr><th>Patient</th><th>UHID</th><th>Ward/Bed</th><th>Issues</th></tr></thead>
+            <table className="w-full text-xs"><thead><tr><th>Patient</th><th>UHID</th><th>Ward/Bed</th><th>Issues</th></tr></thead>
               <tbody>{D.criticalPatients.map((p, i) => <tr key={i} className="bg-red-50/30"><td className="font-bold">{p.name}</td><td className="text-[10px] text-gray-500">{p.uhid}</td><td>{p.ward}/{p.bed}</td><td className="text-red-600 font-semibold">{p.issues}</td></tr>)}</tbody></table>
           </div>
         )}
@@ -203,7 +203,7 @@ function HandoverInner() {
         {D.overdueMeds.length > 0 && (
           <div className="bg-white rounded-2xl border overflow-hidden">
             <div className="px-4 py-3 border-b"><h3 className="text-xs font-bold text-amber-700">💊 Overdue Medications ({D.overdueMeds.length})</h3></div>
-            <table className="h1-table"><thead><tr><th>Patient</th><th>Drug</th><th>Dose</th></tr></thead>
+            <table className="w-full text-xs"><thead><tr><th>Patient</th><th>Drug</th><th>Dose</th></tr></thead>
               <tbody>{D.overdueMeds.map((m, i) => <tr key={i}><td className="font-medium">{m.patient}</td><td>{m.drug}</td><td>{m.dose}</td></tr>)}</tbody></table>
           </div>
         )}
@@ -212,7 +212,7 @@ function HandoverInner() {
         {D.pendingLabs.length > 0 && (
           <div className="bg-white rounded-2xl border overflow-hidden">
             <div className="px-4 py-3 border-b"><h3 className="text-xs font-bold text-cyan-700">🧪 Pending Labs ({D.pendingLabs.length})</h3></div>
-            <table className="h1-table"><thead><tr><th>Patient</th><th>Test</th><th>Pending</th></tr></thead>
+            <table className="w-full text-xs"><thead><tr><th>Patient</th><th>Test</th><th>Pending</th></tr></thead>
               <tbody>{D.pendingLabs.map((l, i) => <tr key={i}><td className="font-medium">{l.patient}</td><td>{l.test}</td><td className={l.hours > 4 ? 'text-red-600 font-bold' : ''}>{l.hours}h</td></tr>)}</tbody></table>
           </div>
         )}
@@ -221,8 +221,8 @@ function HandoverInner() {
         {D.todaySurgeries.length > 0 && (
           <div className="bg-white rounded-2xl border overflow-hidden">
             <div className="px-4 py-3 border-b"><h3 className="text-xs font-bold text-rose-700">🔪 Surgeries Today ({D.todaySurgeries.length})</h3></div>
-            <table className="h1-table"><thead><tr><th>Procedure</th><th>Patient</th><th>Surgeon</th><th>OT</th><th>Status</th></tr></thead>
-              <tbody>{D.todaySurgeries.map((s, i) => <tr key={i}><td className="font-medium">{s.procedure}</td><td>{s.patient}</td><td>{s.surgeon || '—'}</td><td>{s.ot || '—'}</td><td><span className={`h1-badge ${s.status === 'completed' ? 'h1-badge-green' : s.status === 'in_progress' ? 'h1-badge-amber' : 'h1-badge-blue'}`}>{s.status}</span></td></tr>)}</tbody></table>
+            <table className="w-full text-xs"><thead><tr><th>Procedure</th><th>Patient</th><th>Surgeon</th><th>OT</th><th>Status</th></tr></thead>
+              <tbody>{D.todaySurgeries.map((s, i) => <tr key={i}><td className="font-medium">{s.procedure}</td><td>{s.patient}</td><td>{s.surgeon || '—'}</td><td>{s.ot || '—'}</td><td><span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${s.status === 'completed' ? 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700' : s.status === 'in_progress' ? 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-700' : 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-50 text-blue-700'}`}>{s.status}</span></td></tr>)}</tbody></table>
           </div>
         )}
 
@@ -230,7 +230,7 @@ function HandoverInner() {
         {D.pendingDischarges.length > 0 && (
           <div className="bg-white rounded-2xl border overflow-hidden">
             <div className="px-4 py-3 border-b"><h3 className="text-xs font-bold text-teal-700">🏠 Pending Discharges ({D.pendingDischarges.length})</h3></div>
-            <table className="h1-table"><thead><tr><th>Patient</th><th>UHID</th><th>Bed</th></tr></thead>
+            <table className="w-full text-xs"><thead><tr><th>Patient</th><th>UHID</th><th>Bed</th></tr></thead>
               <tbody>{D.pendingDischarges.map((d, i) => <tr key={i}><td className="font-medium">{d.patient}</td><td className="text-[10px]">{d.uhid}</td><td>{d.bed || '—'}</td></tr>)}</tbody></table>
           </div>
         )}

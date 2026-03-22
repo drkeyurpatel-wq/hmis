@@ -43,7 +43,6 @@ async function callClaude(systemPrompt: string, userMessage: string, maxTokens: 
       // Retry on 529 (overloaded) or 429 (rate limit)
       if ((response.status === 529 || response.status === 429) && attempt < MAX_RETRIES) {
         const wait = Math.pow(2, attempt + 1) * 1000; // 2s, 4s, 8s
-        console.log(`[CDSS] ${response.status} — retry ${attempt + 1}/${MAX_RETRIES} in ${wait}ms`);
         await new Promise(r => setTimeout(r, wait));
         continue;
       }

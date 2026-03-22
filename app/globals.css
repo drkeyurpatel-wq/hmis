@@ -74,23 +74,6 @@
     box-shadow: var(--card-shadow);
   }
   .h1-card:hover { box-shadow: var(--card-shadow-hover); }
-  .h1-badge {
-    @apply inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold;
-  }
-  .h1-badge-green { @apply bg-emerald-50 text-emerald-700; }
-  .h1-badge-red { @apply bg-red-50 text-red-700; }
-  .h1-badge-amber { @apply bg-amber-50 text-amber-700; }
-  .h1-badge-blue { @apply bg-blue-50 text-blue-700; }
-  .h1-badge-purple { @apply bg-purple-50 text-purple-700; }
-  .h1-badge-gray { @apply bg-gray-100 text-gray-600; }
-  .h1-table {
-    @apply w-full text-xs;
-  }
-  .h1-table thead tr { @apply bg-gray-50/80 border-b; }
-  .h1-table th { @apply px-3 py-2.5 text-left text-[10px] font-semibold text-gray-500 uppercase tracking-wider; }
-  .h1-table td { @apply px-3 py-2.5; }
-  .h1-table tbody tr { @apply border-b border-gray-50 hover:bg-gray-50/50 transition-colors; }
-  /* Scrollbar styling */
   .scrollbar-thin::-webkit-scrollbar { width: 4px; }
   .scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
   .scrollbar-thin::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 4px; }

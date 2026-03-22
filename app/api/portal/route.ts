@@ -61,7 +61,6 @@ export async function POST(request: NextRequest) {
             });
           } catch { /* Silent fail — OTP still stored in DB for verification */ }
         } else {
-          console.log(`[PORTAL OTP] Phone: ${cleanPhone}, OTP: ${otp} (WhatsApp not configured — set WHATSAPP_API_URL + WHATSAPP_API_TOKEN)`);
         }
 
         return NextResponse.json({

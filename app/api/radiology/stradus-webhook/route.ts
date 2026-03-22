@@ -72,7 +72,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Report must have accession number or study UID' }, { status: 400 });
     }
 
-    console.log(`[Stradus Webhook] Received ${event}: accession=${report.accessionNumber}, study=${report.studyInstanceUid}, status=${report.reportStatus}`);
 
     // Find the matching radiology order
     let orderQuery = sb.from('hmis_radiology_orders').select('id, patient_id, status, accession_number');

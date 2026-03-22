@@ -22,7 +22,6 @@ interface WhatsAppMessage {
 // ============================================================
 async function sendWhatsAppTemplate(msg: WhatsAppMessage): Promise<{ success: boolean; messageId?: string; error?: string }> {
   if (!WHATSAPP_API || !WHATSAPP_TOKEN) {
-    console.log('[WhatsApp] Not configured — message would be sent to:', msg.to, 'Template:', msg.templateName, 'Params:', msg.templateParams);
     return { success: false, error: 'WhatsApp API not configured. Set WHATSAPP_API_URL and WHATSAPP_ACCESS_TOKEN in environment.' };
   }
 
@@ -149,7 +148,6 @@ export async function sendFollowUpReminder(phone: string, patientName: string, d
 // ============================================================
 export async function sendPlainMessage(phone: string, message: string): Promise<{ success: boolean; error?: string }> {
   if (!WHATSAPP_API || !WHATSAPP_TOKEN) {
-    console.log('[WhatsApp] Plain msg to', phone, ':', message);
     return { success: false, error: 'Not configured' };
   }
 

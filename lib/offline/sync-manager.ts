@@ -113,7 +113,6 @@ export async function registerServiceWorker(): Promise<void> {
   if (typeof window === 'undefined' || !('serviceWorker' in navigator)) return;
   try {
     const reg = await navigator.serviceWorker.register('/sw.js');
-    console.log('[SW] Registered:', reg.scope);
 
     // Listen for sync messages from SW
     navigator.serviceWorker.addEventListener('message', async (event) => {
@@ -122,7 +121,6 @@ export async function registerServiceWorker(): Promise<void> {
         const { createClient } = await import('@/lib/supabase/client');
         const sb = createClient();
         const result = await syncAll(sb);
-        console.log(`[SYNC] ${result.synced} synced, ${result.failed} failed`);
       }
     });
 
@@ -132,7 +130,6 @@ export async function registerServiceWorker(): Promise<void> {
       const sb = createClient();
       const result = await syncAll(sb);
       if (result.synced > 0) {
-        console.log(`[SYNC] Auto-synced ${result.synced} items`);
       }
     });
 

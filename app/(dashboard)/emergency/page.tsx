@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { RoleGuard } from '@/components/ui/shared';
 import { useAuthStore } from '@/lib/store/auth';
 import { createClient } from '@/lib/supabase/client';
-import { useEmergency } from '@/lib/modules/module-hooks';
+import { useEmergency } from '@/lib/emergency/emergency-hooks';
 import { AlertTriangle, Plus, Phone, Clock, X, Search, Activity } from 'lucide-react';
 
 let _sb: any = null;
@@ -78,7 +78,7 @@ function ERInner() {
 
       {/* ER Board */}
       <div className="bg-white rounded-2xl border overflow-hidden">
-        <table className="h1-table">
+        <table className="w-full text-xs">
           <thead><tr><th>Time</th><th>Triage</th><th>Patient</th><th>Complaint</th><th>Vitals</th><th>Mode</th><th>Doctor</th><th>Status</th><th>Action</th></tr></thead>
           <tbody>
             {er.visits.map(v => {
@@ -90,13 +90,13 @@ function ERInner() {
                     <div className="text-[9px] text-gray-400">{elapsed}m ago</div></td>
                   <td><span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-bold ${tc.bg} ${tc.text}`}>
                     <span className="w-2 h-2 rounded-full bg-white/40" />{tc.label}</span>
-                    {v.is_mlc && <span className="ml-1 h1-badge h1-badge-amber text-[8px]">MLC</span>}</td>
+                    {v.is_mlc && <span className="ml-1 inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-700 text-[8px]">MLC</span>}</td>
                   <td><div className="font-semibold">{v.patient?.first_name} {v.patient?.last_name}</div><div className="text-[10px] text-gray-400">{v.patient?.uhid} · {v.patient?.age_years}/{v.patient?.gender?.charAt(0)}</div></td>
                   <td className="max-w-[200px] truncate text-gray-600">{v.chief_complaint || '—'}</td>
                   <td className="text-[10px]">{v.vitals?.bp && `BP:${v.vitals.bp}`} {v.vitals?.hr && `HR:${v.vitals.hr}`} {v.vitals?.spo2 && `SpO2:${v.vitals.spo2}%`}</td>
-                  <td><span className="h1-badge h1-badge-gray capitalize">{v.arrival_mode?.replace('_', ' ')}</span></td>
+                  <td><span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-100 text-gray-600 capitalize">{v.arrival_mode?.replace('_', ' ')}</span></td>
                   <td className="text-[11px]">{v.doctor?.full_name?.split(' ').pop() || '—'}</td>
-                  <td><span className={`h1-badge ${v.status === 'triaged' ? 'h1-badge-amber' : v.status === 'being_seen' ? 'h1-badge-blue' : v.status === 'admitted' ? 'h1-badge-green' : 'h1-badge-gray'}`}>{v.status?.replace('_', ' ')}</span></td>
+                  <td><span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${v.status === 'triaged' ? 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-700' : v.status === 'being_seen' ? 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-50 text-blue-700' : v.status === 'admitted' ? 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700' : 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-100 text-gray-600'}`}>{v.status?.replace('_', ' ')}</span></td>
                   <td>
                     <select value={v.status} onChange={e => er.updateStatus(v.id, e.target.value, e.target.value === 'discharged' ? { disposition: 'discharge', disposition_time: new Date().toISOString() } : {})}
                       className="text-[10px] border rounded-lg px-2 py-1">

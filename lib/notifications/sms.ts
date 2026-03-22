@@ -65,7 +65,6 @@ export async function sendSMS(
 ): Promise<{ success: boolean; requestId?: string; error?: string }> {
   const config = await getConfig();
   if (!config) {
-    console.log('[SMS] MSG91 not configured — would send to:', phone, 'template:', templateId, 'vars:', variables);
     return { success: false, error: 'MSG91 not configured. Set MSG91_AUTH_KEY in environment or hmis_integration_config.' };
   }
 

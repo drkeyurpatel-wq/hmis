@@ -156,7 +156,6 @@ export async function POST(request: NextRequest) {
         }).eq('id', orderId).in('status', ['sample_collected', 'ordered']);
 
         // Log instrument event
-        console.log(`[INSTRUMENT] ${instrumentId || 'unknown'}: ${savedResults.length} results for order ${orderId}, ${unmapped.length} unmapped, ${criticalAlerts.length} critical`);
 
         return NextResponse.json({
           success: true,

@@ -196,8 +196,6 @@ export async function GET(request: NextRequest) {
 
       for (const email of info.emails) {
         if (!resend) {
-          console.log(`[CRON] Would email ${email}: ${subject}`);
-          console.log('[CRON] Summary:', JSON.stringify(summary));
           errors.push(`${email}: Resend not configured`);
           failed++;
           continue;

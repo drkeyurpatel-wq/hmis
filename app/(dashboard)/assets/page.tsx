@@ -2,15 +2,15 @@
 import React, { useState, useMemo } from 'react';
 import { RoleGuard } from '@/components/ui/shared';
 import { useAuthStore } from '@/lib/store/auth';
-import { useAssets } from '@/lib/modules/module-hooks-3';
+import { useAssets } from '@/lib/assets/asset-hooks';
 import { Plus, X, Search, Package, AlertTriangle, Download } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 
 const fmt = (n: number) => Math.round(n).toLocaleString('en-IN');
 const INR = (n: number) => n >= 10000000 ? `₹${(n / 10000000).toFixed(2)}Cr` : n >= 100000 ? `₹${(n / 100000).toFixed(1)}L` : `₹${fmt(n)}`;
 const CAT_COLORS: Record<string, string> = { medical_equipment: '#0d9488', it_hardware: '#3b82f6', furniture: '#f59e0b', surgical_instrument: '#ef4444', electrical: '#8b5cf6', vehicle: '#06b6d4', building: '#475569', other: '#94a3b8' };
-const STATUS_BADGE: Record<string, string> = { in_use: 'h1-badge-green', in_storage: 'h1-badge-blue', under_maintenance: 'h1-badge-amber', condemned: 'h1-badge-red', disposed: 'h1-badge-gray', lost: 'h1-badge-red', transferred: 'h1-badge-purple' };
-const COND_BADGE: Record<string, string> = { new: 'h1-badge-green', good: 'h1-badge-green', fair: 'h1-badge-amber', poor: 'h1-badge-red', non_functional: 'h1-badge-red' };
+const STATUS_BADGE: Record<string, string> = { in_use: 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700', in_storage: 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-50 text-blue-700', under_maintenance: 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-700', condemned: 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-red-50 text-red-700', disposed: 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-100 text-gray-600', lost: 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-red-50 text-red-700', transferred: 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-purple-50 text-purple-700' };
+const COND_BADGE: Record<string, string> = { new: 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700', good: 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700', fair: 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-700', poor: 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-red-50 text-red-700', non_functional: 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-red-50 text-red-700' };
 
 type Tab = 'registry' | 'analytics';
 
@@ -85,7 +85,7 @@ function AssetInner() {
               <option value="all">All Status</option>{['in_use', 'in_storage', 'under_maintenance', 'condemned'].map(s => <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>)}</select>
             <span className="text-[10px] text-gray-400 ml-auto">{ast.assets.length} assets</span>
           </div>
-          <table className="h1-table"><thead><tr><th>Tag</th><th>Asset</th><th>Category</th><th>Department</th><th>Location</th><th className="text-right">Cost</th><th className="text-right">Book Value</th><th>Warranty</th><th>Condition</th><th>Status</th></tr></thead>
+          <table className="w-full text-xs"><thead><tr><th>Tag</th><th>Asset</th><th>Category</th><th>Department</th><th>Location</th><th className="text-right">Cost</th><th className="text-right">Book Value</th><th>Warranty</th><th>Condition</th><th>Status</th></tr></thead>
             <tbody>{ast.assets.map(a => {
               const today = new Date().toISOString().split('T')[0];
               const warrantyExpired = a.warranty_expiry && a.warranty_expiry < today;
@@ -100,8 +100,8 @@ function AssetInner() {
                   <td className="text-right text-[11px]">{a.purchase_cost ? `₹${fmt(a.purchase_cost)}` : '—'}</td>
                   <td className="text-right font-semibold text-[11px]">{a.current_book_value ? `₹${fmt(a.current_book_value)}` : '—'}</td>
                   <td className="text-[10px]">{a.warranty_expiry ? <span className={warrantyExpired ? 'text-red-600 font-bold' : ''}>{new Date(a.warranty_expiry).toLocaleDateString('en-IN', { month: 'short', year: '2-digit' })}</span> : '—'}{amcExpired && <div className="text-[8px] text-red-500 font-bold">AMC EXPIRED</div>}</td>
-                  <td><span className={`h1-badge ${COND_BADGE[a.condition] || 'h1-badge-gray'} capitalize text-[8px]`}>{a.condition}</span></td>
-                  <td><span className={`h1-badge ${STATUS_BADGE[a.status] || 'h1-badge-gray'} capitalize text-[8px]`}>{a.status?.replace(/_/g, ' ')}</span></td>
+                  <td><span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${COND_BADGE[a.condition] || 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-100 text-gray-600'} capitalize text-[8px]`}>{a.condition}</span></td>
+                  <td><span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${STATUS_BADGE[a.status] || 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-100 text-gray-600'} capitalize text-[8px]`}>{a.status?.replace(/_/g, ' ')}</span></td>
                 </tr>
               );
             })}{ast.assets.length === 0 && <tr><td colSpan={10} className="text-center py-12 text-gray-400">No assets found</td></tr>}</tbody>

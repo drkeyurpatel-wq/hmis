@@ -77,8 +77,8 @@ function IPDPageInner() {
     if (roomTypeFilter === 'all' || type === roomTypeFilter) bedGroups[key].push(b);
   });
 
-  const stBadge = (s: string) => s === 'active' ? 'h1-badge-green' : s === 'discharge_initiated' ? 'h1-badge-amber' : s === 'discharged' ? 'h1-badge-blue' : 'h1-badge-gray';
-  const typeBadge = (t: string) => t === 'emergency' ? 'h1-badge-red' : t === 'daycare' ? 'h1-badge-purple' : 'h1-badge-blue';
+  const stBadge = (s: string) => s === 'active' ? 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700' : s === 'discharge_initiated' ? 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-700' : s === 'discharged' ? 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-50 text-blue-700' : 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-100 text-gray-600';
+  const typeBadge = (t: string) => t === 'emergency' ? 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-red-50 text-red-700' : t === 'daycare' ? 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-purple-50 text-purple-700' : 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-50 text-blue-700';
   const daysSince = (d: string) => Math.ceil((Date.now() - new Date(d).getTime()) / 86400000);
 
   return (
@@ -144,18 +144,18 @@ function IPDPageInner() {
       {loading ? <TableSkeleton rows={6} cols={5} /> :
       filtered.length === 0 ? <div className="text-center py-12 bg-white rounded-2xl border text-gray-400">No admissions</div> :
       <div className="bg-white rounded-2xl border overflow-hidden">
-        <table className="h1-table"><thead><tr><th>IPD #</th><th>Patient</th><th>Doctor</th><th>Dept</th><th>Type</th><th>Payor</th><th>Admitted</th><th>LOS</th><th>Status</th><th>Actions</th></tr></thead>
+        <table className="w-full text-xs"><thead><tr><th>IPD #</th><th>Patient</th><th>Doctor</th><th>Dept</th><th>Type</th><th>Payor</th><th>Admitted</th><th>LOS</th><th>Status</th><th>Actions</th></tr></thead>
           <tbody>{filtered.map(a => (
             <tr key={a.id}>
               <td><Link href={`/ipd/${a.id}`} className="font-mono text-teal-600 hover:underline text-[11px] font-bold">{a.ipdNumber}</Link></td>
               <td><div className="font-semibold">{a.patientName}</div><div className="text-[10px] text-gray-400">{a.patientUhid}</div></td>
               <td className="text-[11px]">{a.primaryDoctor}</td>
               <td className="text-[11px]">{a.department}</td>
-              <td><span className={`h1-badge ${typeBadge(a.admissionType)} uppercase text-[8px]`}>{a.admissionType}</span></td>
+              <td><span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${typeBadge(a.admissionType)} uppercase text-[8px]`}>{a.admissionType}</span></td>
               <td className="text-[10px] capitalize">{a.payorType?.replace('_', ' ')}</td>
               <td className="text-[10px]">{new Date(a.admissionDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}</td>
               <td className="font-bold text-[11px]">{a.status === 'discharged' ? '—' : `${daysSince(a.admissionDate)}d`}</td>
-              <td><span className={`h1-badge ${stBadge(a.status)}`}>{a.status.replace('_',' ')}</span></td>
+              <td><span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${stBadge(a.status)}`}>{a.status.replace('_',' ')}</span></td>
               <td><div className="flex gap-1">
                 <Link href={`/ipd/${a.id}`} className="px-2 py-1 bg-teal-50 text-teal-700 text-[10px] rounded-lg font-medium hover:bg-teal-100">View</Link>
                 {a.status === 'active' && <button onClick={() => { initiateDischarge(a.id); flash('Discharge initiated'); }} className="px-2 py-1 bg-amber-50 text-amber-700 text-[10px] rounded-lg font-medium">Init Disch</button>}

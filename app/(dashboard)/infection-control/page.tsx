@@ -2,7 +2,7 @@
 import React, { useState, useMemo } from 'react';
 import { RoleGuard } from '@/components/ui/shared';
 import { useAuthStore } from '@/lib/store/auth';
-import { useHAISurveillance, useAntibiogramData, useHandHygiene } from '@/lib/modules/module-hooks-2';
+import { useHAISurveillance, useAntibiogramData, useHandHygiene } from '@/lib/infection-control/infection-hooks';
 import { Plus, Search, Shield, AlertTriangle } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 
@@ -71,17 +71,17 @@ function HICCInner() {
             <div className="px-4 py-3 border-b flex items-center gap-3">
               {['all', ...INFECTION_TYPES].map(t => <button key={t} onClick={() => { setTypeFilter(t); hai.load({ type: t }); }} className={`px-2.5 py-1.5 text-[10px] font-medium rounded-lg uppercase ${typeFilter === t ? 'bg-teal-50 text-teal-700 border border-teal-200' : 'bg-gray-50 text-gray-500'}`}>{t}</button>)}
             </div>
-            <table className="h1-table"><thead><tr><th>Date</th><th>Patient</th><th>Type</th><th>Organism</th><th>Ward</th><th>Device</th><th>Status</th><th>Outcome</th></tr></thead>
+            <table className="w-full text-xs"><thead><tr><th>Date</th><th>Patient</th><th>Type</th><th>Organism</th><th>Ward</th><th>Device</th><th>Status</th><th>Outcome</th></tr></thead>
               <tbody>{hai.cases.map(c => (
                 <tr key={c.id}>
                   <td className="text-[11px]">{c.onset_date ? new Date(c.onset_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }) : '—'}</td>
                   <td><div className="font-semibold">{c.patient?.first_name} {c.patient?.last_name}</div><div className="text-[10px] text-gray-400">{c.patient?.uhid}</div></td>
-                  <td><span className="h1-badge h1-badge-red uppercase font-bold">{c.infection_type}</span></td>
+                  <td><span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-red-50 text-red-700 uppercase font-bold">{c.infection_type}</span></td>
                   <td className="text-[11px] font-medium">{c.organism || '—'}</td>
                   <td className="text-[11px]">{c.ward || '—'}</td>
-                  <td>{c.device_related ? <span className="h1-badge h1-badge-amber">{c.device_type?.replace('_', ' ')}</span> : '—'}</td>
-                  <td><span className={`h1-badge ${c.status === 'confirmed' ? 'h1-badge-red' : c.status === 'suspected' ? 'h1-badge-amber' : 'h1-badge-green'}`}>{c.status}</span></td>
-                  <td><span className={`h1-badge ${c.outcome === 'death' ? 'h1-badge-red' : c.outcome === 'resolved' ? 'h1-badge-green' : 'h1-badge-gray'}`}>{c.outcome || 'ongoing'}</span></td>
+                  <td>{c.device_related ? <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-700">{c.device_type?.replace('_', ' ')}</span> : '—'}</td>
+                  <td><span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${c.status === 'confirmed' ? 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-red-50 text-red-700' : c.status === 'suspected' ? 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-700' : 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700'}`}>{c.status}</span></td>
+                  <td><span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${c.outcome === 'death' ? 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-red-50 text-red-700' : c.outcome === 'resolved' ? 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700' : 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-100 text-gray-600'}`}>{c.outcome || 'ongoing'}</span></td>
                 </tr>
               ))}{hai.cases.length === 0 && <tr><td colSpan={8} className="text-center py-12 text-gray-400">No HAI cases reported</td></tr>}</tbody>
             </table>

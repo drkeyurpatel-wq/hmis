@@ -2,14 +2,14 @@
 import React, { useState, useMemo } from 'react';
 import { RoleGuard } from '@/components/ui/shared';
 import { useAuthStore } from '@/lib/store/auth';
-import { useVisitors } from '@/lib/modules/module-hooks-3';
+import { useVisitors } from '@/lib/visitors/visitor-hooks';
 import { createClient } from '@/lib/supabase/client';
 import { Plus, X, Search, Users, LogIn, LogOut, Shield, Clock } from 'lucide-react';
 
 let _sb: any = null;
 function sb() { if (typeof window === 'undefined') return null as any; if (!_sb) { try { _sb = createClient(); } catch { return null; } } return _sb; }
-const PASS_BADGE: Record<string, string> = { regular: 'h1-badge-blue', icu: 'h1-badge-red', nicu: 'h1-badge-red', isolation: 'h1-badge-amber', emergency: 'h1-badge-red', attendant: 'h1-badge-purple' };
-const STATUS_BADGE: Record<string, string> = { active: 'h1-badge-green', checked_in: 'h1-badge-blue', checked_out: 'h1-badge-gray', expired: 'h1-badge-gray', revoked: 'h1-badge-red' };
+const PASS_BADGE: Record<string, string> = { regular: 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-50 text-blue-700', icu: 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-red-50 text-red-700', nicu: 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-red-50 text-red-700', isolation: 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-700', emergency: 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-red-50 text-red-700', attendant: 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-purple-50 text-purple-700' };
+const STATUS_BADGE: Record<string, string> = { active: 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700', checked_in: 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-50 text-blue-700', checked_out: 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-100 text-gray-600', expired: 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-100 text-gray-600', revoked: 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-red-50 text-red-700' };
 
 type Tab = 'active' | 'issue' | 'history';
 
@@ -99,8 +99,8 @@ function VisitorInner() {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <span className="font-bold text-sm">{p.visitor_name}</span>
-                  <span className={`h1-badge ${PASS_BADGE[p.pass_type] || 'h1-badge-gray'} uppercase text-[8px]`}>{p.pass_type}</span>
-                  <span className={`h1-badge ${STATUS_BADGE[p.status] || 'h1-badge-gray'} text-[8px]`}>{p.status === 'checked_in' ? 'IN' : p.status}</span>
+                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${PASS_BADGE[p.pass_type] || 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-100 text-gray-600'} uppercase text-[8px]`}>{p.pass_type}</span>
+                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${STATUS_BADGE[p.status] || 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-100 text-gray-600'} text-[8px]`}>{p.status === 'checked_in' ? 'IN' : p.status}</span>
                 </div>
                 <div className="text-[10px] text-gray-500 mt-0.5">
                   Visiting: <span className="font-medium">{p.patient?.first_name} {p.patient?.last_name}</span> ({p.patient?.uhid}) · {p.ward || ''} {p.bed || ''}
@@ -120,16 +120,16 @@ function VisitorInner() {
       {/* HISTORY */}
       {tab === 'history' && (
         <div className="bg-white rounded-2xl border overflow-hidden">
-          <table className="h1-table"><thead><tr><th>Pass#</th><th>Visitor</th><th>Patient</th><th>Type</th><th>Check In</th><th>Check Out</th><th>Status</th></tr></thead>
+          <table className="w-full text-xs"><thead><tr><th>Pass#</th><th>Visitor</th><th>Patient</th><th>Type</th><th>Check In</th><th>Check Out</th><th>Status</th></tr></thead>
             <tbody>{filtered.map(p => (
               <tr key={p.id}>
                 <td className="font-mono text-[10px]">{p.pass_number}</td>
                 <td><div className="font-semibold">{p.visitor_name}</div><div className="text-[10px] text-gray-400">{p.relation} · {p.visitor_phone}</div></td>
                 <td className="text-[11px]">{p.patient?.first_name} {p.patient?.last_name}</td>
-                <td><span className={`h1-badge ${PASS_BADGE[p.pass_type] || 'h1-badge-gray'} uppercase text-[8px]`}>{p.pass_type}</span></td>
+                <td><span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${PASS_BADGE[p.pass_type] || 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-100 text-gray-600'} uppercase text-[8px]`}>{p.pass_type}</span></td>
                 <td className="text-[10px] text-gray-500">{p.check_in_time ? new Date(p.check_in_time).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : '—'}</td>
                 <td className="text-[10px] text-gray-500">{p.check_out_time ? new Date(p.check_out_time).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : '—'}</td>
-                <td><span className={`h1-badge ${STATUS_BADGE[p.status] || 'h1-badge-gray'}`}>{p.status?.replace('_', ' ')}</span></td>
+                <td><span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${STATUS_BADGE[p.status] || 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-100 text-gray-600'}`}>{p.status?.replace('_', ' ')}</span></td>
               </tr>
             ))}{filtered.length === 0 && <tr><td colSpan={7} className="text-center py-12 text-gray-400">No history</td></tr>}</tbody>
           </table>

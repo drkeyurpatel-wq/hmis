@@ -151,7 +151,7 @@ function CRMInner() {
                     className="bg-white rounded-xl border border-gray-100 p-3 cursor-pointer hover:shadow-md hover:-translate-y-0.5 transition-all group">
                     <div className="flex items-center justify-between mb-1">
                       <span className="text-xs font-semibold text-gray-800 truncate">{lead.first_name} {lead.last_name || ''}</span>
-                      <span className={`h1-badge ${priorityBadge(lead.priority)} text-[8px]`}>{lead.priority}</span>
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${priorityBadge(lead.priority)} text-[8px]`}>{lead.priority}</span>
                     </div>
                     <div className="text-[10px] text-gray-400">{lead.phone}</div>
                     {lead.interested_department && <div className="text-[10px] text-teal-600 font-medium mt-0.5">{lead.interested_department}</div>}
@@ -188,7 +188,7 @@ function CRMInner() {
               </button>
             ))}
           </div>
-          <table className="h1-table">
+          <table className="w-full text-xs">
             <thead><tr><th>Lead</th><th>Phone</th><th>Source</th><th>Interest</th><th>Priority</th><th>Status</th><th>Assigned</th><th>Age</th><th>Actions</th></tr></thead>
             <tbody>
               {leads.leads.map(l => (
@@ -198,10 +198,10 @@ function CRMInner() {
                     {l.email && <div className="text-[10px] text-gray-400">{l.email}</div>}
                   </td>
                   <td className="font-mono text-[11px]">{l.phone}</td>
-                  <td><span className="h1-badge h1-badge-gray">{l.source?.replace('_', ' ')}</span></td>
+                  <td><span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-100 text-gray-600">{l.source?.replace('_', ' ')}</span></td>
                   <td className="text-teal-700 font-medium text-[11px]">{l.interested_department || '—'}</td>
-                  <td><span className={`h1-badge ${priorityBadge(l.priority)}`}>{l.priority}</span></td>
-                  <td><span className={`h1-badge ${PIPELINE_STAGES.find(s => s.key === l.status)?.color || 'h1-badge-gray'}`}>{l.status?.replace('_', ' ')}</span></td>
+                  <td><span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${priorityBadge(l.priority)}`}>{l.priority}</span></td>
+                  <td><span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${PIPELINE_STAGES.find(s => s.key === l.status)?.color || 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-100 text-gray-600'}`}>{l.status?.replace('_', ' ')}</span></td>
                   <td className="text-[11px] text-gray-500">{l.assigned?.full_name?.split(' ').pop() || '—'}</td>
                   <td className="text-[10px] text-gray-400">{timeAgo(l.created_at)}</td>
                   <td>
@@ -232,8 +232,8 @@ function CRMInner() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <span className="font-semibold text-sm text-gray-800">{f.lead?.first_name} {f.lead?.last_name || ''}</span>
-                    <span className={`h1-badge ${priorityBadge(f.lead?.priority)}`}>{f.lead?.priority}</span>
-                    {isOverdue && <span className="h1-badge h1-badge-red">OVERDUE</span>}
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${priorityBadge(f.lead?.priority)}`}>{f.lead?.priority}</span>
+                    {isOverdue && <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-red-50 text-red-700">OVERDUE</span>}
                   </div>
                   <div className="text-xs text-gray-500 mt-0.5">{f.lead?.phone} · {f.lead?.interested_department || 'General'} · {f.subject || f.description?.slice(0, 60) || 'Follow-up'}</div>
                   <div className="text-[10px] text-gray-400 mt-0.5">Due: {new Date(f.follow_up_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</div>
@@ -256,7 +256,7 @@ function CRMInner() {
             campaigns.campaigns.map(c => (
               <div key={c.id} className="bg-white rounded-2xl border border-gray-100 p-5">
                 <div className="flex items-center justify-between mb-2">
-                  <span className={`h1-badge ${c.status === 'active' ? 'h1-badge-green' : c.status === 'completed' ? 'h1-badge-blue' : 'h1-badge-gray'}`}>{c.status}</span>
+                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${c.status === 'active' ? 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700' : c.status === 'completed' ? 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-50 text-blue-700' : 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-100 text-gray-600'}`}>{c.status}</span>
                   <span className="text-[10px] text-gray-400">{c.type?.replace('_', ' ')}</span>
                 </div>
                 <h3 className="font-bold text-sm text-gray-800">{c.name}</h3>
@@ -417,8 +417,8 @@ function LeadDetail({ lead, centreId, staffId, doctors, onCall, onUpdate, onConv
           <div className="flex-1">
             <h2 className="text-lg font-bold text-gray-900">{lead.first_name} {lead.last_name || ''}</h2>
             <div className="flex items-center gap-2 mt-0.5">
-              <span className={`h1-badge ${PIPELINE_STAGES.find((s: any) => s.key === lead.status)?.color || ''}`}>{lead.status?.replace('_', ' ')}</span>
-              <span className={`h1-badge ${lead.priority === 'hot' ? 'h1-badge-red' : lead.priority === 'warm' ? 'h1-badge-amber' : 'h1-badge-gray'}`}>{lead.priority}</span>
+              <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${PIPELINE_STAGES.find((s: any) => s.key === lead.status)?.color || ''}`}>{lead.status?.replace('_', ' ')}</span>
+              <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${lead.priority === 'hot' ? 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-red-50 text-red-700' : lead.priority === 'warm' ? 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-700' : 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-100 text-gray-600'}`}>{lead.priority}</span>
             </div>
           </div>
         </div>
@@ -490,7 +490,7 @@ function LeadDetail({ lead, centreId, staffId, doctors, onCall, onUpdate, onConv
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-medium text-gray-800 capitalize">{a.activity_type.replace('_', ' ')}</span>
-                  {a.call_disposition && <span className="h1-badge h1-badge-gray text-[8px]">{a.call_disposition.replace('_', ' ')}</span>}
+                  {a.call_disposition && <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-100 text-gray-600 text-[8px]">{a.call_disposition.replace('_', ' ')}</span>}
                   <span className="text-[9px] text-gray-400 ml-auto">{timeAgo(a.performed_at)}</span>
                 </div>
                 {a.description && <div className="text-[11px] text-gray-600 mt-0.5">{a.description}</div>}

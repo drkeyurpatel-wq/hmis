@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { RoleGuard } from '@/components/ui/shared';
 import { useAuthStore } from '@/lib/store/auth';
-import { useTeleconsults } from '@/lib/modules/module-hooks-2';
+import { useTeleconsults } from '@/lib/telemedicine/telemedicine-hooks';
 import { createClient } from '@/lib/supabase/client';
 import { Plus, X, Video, Phone, Clock, ExternalLink, Search } from 'lucide-react';
 
@@ -10,7 +10,7 @@ let _sb: any = null;
 function sb() { if (typeof window === 'undefined') return null as any; if (!_sb) { try { _sb = createClient(); } catch { return null; } } return _sb; }
 
 type Tab = 'today' | 'schedule' | 'call';
-const STATUS_B: Record<string, string> = { scheduled: 'h1-badge-blue', waiting: 'h1-badge-amber', in_progress: 'h1-badge-purple', completed: 'h1-badge-green', no_show: 'h1-badge-red', cancelled: 'h1-badge-gray' };
+const STATUS_B: Record<string, string> = { scheduled: 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-50 text-blue-700', waiting: 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-700', in_progress: 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-purple-50 text-purple-700', completed: 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700', no_show: 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-red-50 text-red-700', cancelled: 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-100 text-gray-600' };
 
 function TeleInner() {
   const { staff, activeCentreId } = useAuthStore();
@@ -110,7 +110,7 @@ function TeleInner() {
               <div key={c.id} className={`bg-white rounded-xl border p-4 flex items-center gap-4 ${isNow ? 'border-teal-200 bg-teal-50/30' : ''}`}>
                 <div className="text-center w-16 shrink-0">
                   <div className="text-lg font-bold text-gray-800">{time}</div>
-                  <span className={`h1-badge ${STATUS_B[c.status] || 'h1-badge-gray'} text-[8px]`}>{c.status?.replace('_', ' ')}</span>
+                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${STATUS_B[c.status] || 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-100 text-gray-600'} text-[8px]`}>{c.status?.replace('_', ' ')}</span>
                 </div>
                 <div className="w-10 h-10 rounded-full bg-teal-100 flex items-center justify-center shrink-0">
                   <Video size={18} className="text-teal-700" />
