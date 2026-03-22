@@ -57,9 +57,13 @@ const NAV: NavGroup[] = [
     { href: '/vpms', label: 'Procurement', icon: Truck, module: null },
     { href: '/homecare', label: 'Homecare', icon: Home, module: 'homecare' },
     { href: '/quality', label: 'Quality', icon: Shield, module: 'mis' },
+    { href: '/infection-control', label: 'HICC', icon: AlertTriangle, module: 'mis' },
   ]},
   { key: 'admin', label: 'ADMIN', items: [
     { href: '/reports', label: 'Reports', icon: BarChart3, module: 'mis' },
+    { href: '/documents', label: 'Documents', icon: FileText, module: null },
+    { href: '/grievances', label: 'Grievances', icon: AlertTriangle, module: null },
+    { href: '/telemedicine', label: 'Telemedicine', icon: Stethoscope, module: 'opd' },
     { href: '/staff', label: 'Staff', icon: Users, module: 'settings' },
     { href: '/settings', label: 'Settings', icon: Settings, module: null },
   ]},
