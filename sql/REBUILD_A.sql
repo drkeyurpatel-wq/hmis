@@ -237,11 +237,30 @@ CREATE TABLE IF NOT EXISTS hmis_tpas (
     created_at timestamptz NOT NULL DEFAULT now()
 );
 
--- [removed: hmis_patient_insurance — better definition in later file]
+CREATE TABLE IF NOT EXISTS hmis_patient_insurance (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    patient_id uuid NOT NULL REFERENCES hmis_patients(id) ON DELETE CASCADE,
+    insurer_id uuid NOT NULL REFERENCES hmis_insurers(id),
+    tpa_id uuid REFERENCES hmis_tpas(id),
+    policy_number varchar(50) NOT NULL,
+    policy_type varchar(30),
+    sum_insured decimal(12,2),
+    valid_from date,
+    valid_to date,
+    is_primary boolean NOT NULL DEFAULT true,
+    scheme varchar(30), -- pmjay | cghs | esi | private | none
+    created_at timestamptz NOT NULL DEFAULT now()
+);
 
-
--- [removed: hmis_patient_documents — better definition in later file]
-
+CREATE TABLE IF NOT EXISTS hmis_patient_documents (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    patient_id uuid NOT NULL REFERENCES hmis_patients(id) ON DELETE CASCADE,
+    doc_type varchar(30) NOT NULL,
+    file_url text NOT NULL,
+    file_name varchar(200) NOT NULL,
+    uploaded_by uuid NOT NULL REFERENCES hmis_staff(id),
+    created_at timestamptz NOT NULL DEFAULT now()
+);
 
 CREATE TABLE IF NOT EXISTS hmis_patient_history (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -294,8 +313,19 @@ CREATE TABLE IF NOT EXISTS hmis_beds (
 -- MODULE: DOCTOR SCHEDULING (3 tables)
 -- ============================================================
 
--- [removed: hmis_doctor_schedules — better definition in later file]
-
+CREATE TABLE IF NOT EXISTS hmis_doctor_schedules (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    doctor_id uuid NOT NULL REFERENCES hmis_staff(id),
+    centre_id uuid NOT NULL REFERENCES hmis_centres(id),
+    department_id uuid NOT NULL REFERENCES hmis_departments(id),
+    day_of_week int NOT NULL CHECK (day_of_week BETWEEN 0 AND 6),
+    start_time time NOT NULL,
+    end_time time NOT NULL,
+    slot_duration_min int NOT NULL DEFAULT 15,
+    max_patients int,
+    is_active boolean NOT NULL DEFAULT true,
+    created_at timestamptz NOT NULL DEFAULT now()
+);
 
 CREATE TABLE IF NOT EXISTS hmis_appointment_slots (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -322,9 +352,25 @@ CREATE TABLE IF NOT EXISTS hmis_doctor_leaves (
 -- MODULE: OPD (5 tables)
 -- ============================================================
 
--- [removed: hmis_appointments — better definition in later file]
+CREATE TABLE IF NOT EXISTS hmis_appointments (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    centre_id uuid NOT NULL REFERENCES hmis_centres(id),
+    patient_id uuid NOT NULL REFERENCES hmis_patients(id),
+    doctor_id uuid NOT NULL REFERENCES hmis_staff(id),
+    department_id uuid NOT NULL REFERENCES hmis_departments(id),
+    slot_id uuid REFERENCES hmis_appointment_slots(id),
+    appointment_date date NOT NULL,
+    appointment_time time,
+    type varchar(20) NOT NULL CHECK (type IN ('new','followup','referral','emergency')),
+    status varchar(20) NOT NULL DEFAULT 'scheduled' CHECK (status IN ('scheduled','checked_in','in_progress','completed','no_show','cancelled')),
+    source varchar(20),
+    notes text,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now()
+);
 
-
+CREATE INDEX idx_appointments_date ON hmis_appointments(centre_id, appointment_date);
+CREATE INDEX idx_appointments_doctor ON hmis_appointments(doctor_id, appointment_date);
 
 CREATE TABLE IF NOT EXISTS hmis_opd_visits (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -418,12 +464,29 @@ CREATE TABLE IF NOT EXISTS hmis_nursing_notes (
     created_at timestamptz NOT NULL DEFAULT now()
 );
 
--- [removed: hmis_diet_orders — better definition in later file]
-
+CREATE TABLE IF NOT EXISTS hmis_diet_orders (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    admission_id uuid NOT NULL REFERENCES hmis_admissions(id),
+    ordered_by uuid NOT NULL REFERENCES hmis_staff(id),
+    diet_type varchar(30) NOT NULL,
+    instructions text,
+    effective_from timestamptz NOT NULL,
+    effective_to timestamptz,
+    created_at timestamptz NOT NULL DEFAULT now()
+);
 
 -- Referrals (can be from OPD or IPD)
--- [removed: hmis_referrals — better definition in later file]
-
+CREATE TABLE IF NOT EXISTS hmis_referrals (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    opd_visit_id uuid REFERENCES hmis_opd_visits(id),
+    admission_id uuid REFERENCES hmis_admissions(id),
+    from_doctor_id uuid NOT NULL REFERENCES hmis_staff(id),
+    to_doctor_id uuid REFERENCES hmis_staff(id),
+    to_department_id uuid NOT NULL REFERENCES hmis_departments(id),
+    reason text,
+    urgency varchar(10) NOT NULL DEFAULT 'routine' CHECK (urgency IN ('routine','urgent','emergency')),
+    created_at timestamptz NOT NULL DEFAULT now()
+);
 
 -- ============================================================
 -- MODULE: EMR / CLINICAL (7 tables)
@@ -651,8 +714,18 @@ CREATE TABLE IF NOT EXISTS hmis_advances (
     created_at timestamptz NOT NULL DEFAULT now()
 );
 
--- [removed: hmis_refunds — better definition in later file]
-
+CREATE TABLE IF NOT EXISTS hmis_refunds (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    bill_id uuid REFERENCES hmis_bills(id),
+    advance_id uuid REFERENCES hmis_advances(id),
+    patient_id uuid NOT NULL REFERENCES hmis_patients(id),
+    amount decimal(12,2) NOT NULL,
+    reason text NOT NULL,
+    approved_by uuid NOT NULL REFERENCES hmis_staff(id),
+    refund_mode varchar(20) NOT NULL,
+    status varchar(15) NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','approved','processed')),
+    created_at timestamptz NOT NULL DEFAULT now()
+);
 
 -- ============================================================
 -- MODULE: INSURANCE & TPA (3 tables — insurers/tpas already created above)
@@ -997,8 +1070,14 @@ CREATE TABLE IF NOT EXISTS hmis_homecare_visits (
 -- MODULE: AMBULANCE (2 tables)
 -- ============================================================
 
--- [removed: hmis_ambulances — better definition in later file]
-
+CREATE TABLE IF NOT EXISTS hmis_ambulances (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    centre_id uuid NOT NULL REFERENCES hmis_centres(id),
+    vehicle_number varchar(20) NOT NULL UNIQUE,
+    type varchar(20) NOT NULL,
+    is_available boolean NOT NULL DEFAULT true,
+    created_at timestamptz NOT NULL DEFAULT now()
+);
 
 CREATE TABLE IF NOT EXISTS hmis_ambulance_trips (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -1554,8 +1633,18 @@ CREATE TABLE IF NOT EXISTS hmis_pharmacy_grn (
 );
 
 -- 3. Stock Transfer between centres
--- [removed: hmis_pharmacy_transfers — better definition in later file]
-
+CREATE TABLE IF NOT EXISTS hmis_pharmacy_transfers (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    transfer_number varchar(20) NOT NULL,
+    from_centre_id uuid NOT NULL REFERENCES hmis_centres(id),
+    to_centre_id uuid NOT NULL REFERENCES hmis_centres(id),
+    status varchar(15) NOT NULL DEFAULT 'initiated' CHECK (status IN ('initiated','in_transit','received','cancelled')),
+    items jsonb NOT NULL DEFAULT '[]',
+    initiated_by uuid REFERENCES hmis_staff(id),
+    received_by uuid REFERENCES hmis_staff(id),
+    initiated_at timestamptz NOT NULL DEFAULT now(),
+    received_at timestamptz
+);
 
 -- 4. Controlled Substance Register (Schedule H, H1, X)
 CREATE TABLE IF NOT EXISTS hmis_pharmacy_controlled_log (
@@ -1577,8 +1666,23 @@ CREATE TABLE IF NOT EXISTS hmis_pharmacy_controlled_log (
 );
 
 -- 5. Drug Returns & Expiry Management
--- [removed: hmis_pharmacy_returns — better definition in later file]
-
+CREATE TABLE IF NOT EXISTS hmis_pharmacy_returns (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    centre_id uuid NOT NULL REFERENCES hmis_centres(id),
+    return_type varchar(15) NOT NULL CHECK (return_type IN ('patient_return','supplier_return','expiry_write_off','damage_write_off','adjustment')),
+    drug_id uuid NOT NULL REFERENCES hmis_drug_master(id),
+    batch_id uuid REFERENCES hmis_pharmacy_stock(id),
+    batch_number varchar(50),
+    quantity int NOT NULL,
+    reason text,
+    credit_note_number varchar(30),
+    credit_amount decimal(10,2) DEFAULT 0,
+    patient_id uuid REFERENCES hmis_patients(id),
+    supplier varchar(200),
+    processed_by uuid NOT NULL REFERENCES hmis_staff(id),
+    status varchar(15) NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','approved','processed','rejected')),
+    created_at timestamptz NOT NULL DEFAULT now()
+);
 
 -- 6. Reorder Level Configuration
 ALTER TABLE hmis_drug_master ADD COLUMN IF NOT EXISTS reorder_level int DEFAULT 20;
@@ -1912,3 +2016,932 @@ COMMENT ON TABLE hmis_icu_scores IS 'Score types:
 - qsofa: Quick SOFA (0-3)
 - curb65: CURB-65 Pneumonia Severity (0-5)';
 
+-- ═══ sql/lims_migration.sql ═══
+-- ============================================================
+-- Health1 LIMS — Core Laboratory Module Migration
+-- Run in Supabase SQL Editor (project: bmuupgrzbfmddjwcqlss)
+-- Session 1: Sample lifecycle, test parameters, auto-validation,
+--            critical alerts, TAT tracking, report templates
+-- ============================================================
+
+-- 1. Test Parameters (individual parameters within a test, with reference ranges)
+CREATE TABLE IF NOT EXISTS hmis_lab_test_parameters (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    test_id uuid NOT NULL REFERENCES hmis_lab_test_master(id) ON DELETE CASCADE,
+    parameter_code varchar(20) NOT NULL,
+    parameter_name varchar(100) NOT NULL,
+    unit varchar(20),
+    data_type varchar(10) NOT NULL DEFAULT 'numeric' CHECK (data_type IN ('numeric','text','option','formula')),
+    decimal_places int DEFAULT 1,
+    -- Reference ranges (default — overridden by age/gender rules below)
+    ref_range_min decimal(10,3),
+    ref_range_max decimal(10,3),
+    ref_range_text varchar(100),
+    -- Critical values
+    critical_low decimal(10,3),
+    critical_high decimal(10,3),
+    -- Delta check (% change from previous result)
+    delta_check_percent decimal(5,1),
+    -- Display order within test
+    sort_order int NOT NULL DEFAULT 0,
+    -- For formula type: e.g., "A/G Ratio = albumin / globulin"
+    formula text,
+    -- Options for 'option' type (e.g., "Positive,Negative,Equivocal")
+    option_values text,
+    is_reportable boolean NOT NULL DEFAULT true,
+    is_active boolean NOT NULL DEFAULT true,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    UNIQUE(test_id, parameter_code)
+);
+CREATE INDEX IF NOT EXISTS idx_lab_params_test ON hmis_lab_test_parameters(test_id, sort_order);
+
+-- 2. Age/Gender-specific Reference Ranges
+CREATE TABLE IF NOT EXISTS hmis_lab_ref_ranges (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    parameter_id uuid NOT NULL REFERENCES hmis_lab_test_parameters(id) ON DELETE CASCADE,
+    gender varchar(10) CHECK (gender IN ('male','female','all')),
+    age_min_years int DEFAULT 0,
+    age_max_years int DEFAULT 150,
+    ref_min decimal(10,3),
+    ref_max decimal(10,3),
+    ref_text varchar(100),
+    unit varchar(20),
+    created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_lab_ref_param ON hmis_lab_ref_ranges(parameter_id);
+
+-- 3. Lab Profiles (test groupings like "Liver Panel", "Renal Panel")
+CREATE TABLE IF NOT EXISTS hmis_lab_profiles (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    profile_code varchar(20) NOT NULL UNIQUE,
+    profile_name varchar(100) NOT NULL,
+    category varchar(50),
+    description text,
+    rate decimal(10,2),
+    is_active boolean NOT NULL DEFAULT true,
+    created_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS hmis_lab_profile_tests (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    profile_id uuid NOT NULL REFERENCES hmis_lab_profiles(id) ON DELETE CASCADE,
+    test_id uuid NOT NULL REFERENCES hmis_lab_test_master(id),
+    sort_order int DEFAULT 0,
+    UNIQUE(profile_id, test_id)
+);
+
+-- 4. Expanded Lab Orders (link to admission/encounter, priority, clinical info)
+-- Add columns to existing hmis_lab_orders if they don't exist
+DO $$ BEGIN
+    ALTER TABLE hmis_lab_orders ADD COLUMN IF NOT EXISTS admission_id uuid REFERENCES hmis_admissions(id);
+    ALTER TABLE hmis_lab_orders ADD COLUMN IF NOT EXISTS encounter_id uuid;
+    ALTER TABLE hmis_lab_orders ADD COLUMN IF NOT EXISTS priority varchar(10) DEFAULT 'routine' CHECK (priority IN ('stat','urgent','routine'));
+    ALTER TABLE hmis_lab_orders ADD COLUMN IF NOT EXISTS clinical_info text;
+    ALTER TABLE hmis_lab_orders ADD COLUMN IF NOT EXISTS fasting boolean DEFAULT false;
+    ALTER TABLE hmis_lab_orders ADD COLUMN IF NOT EXISTS specimen_source varchar(50);
+    ALTER TABLE hmis_lab_orders ADD COLUMN IF NOT EXISTS profile_id uuid REFERENCES hmis_lab_profiles(id);
+    ALTER TABLE hmis_lab_orders ADD COLUMN IF NOT EXISTS bill_id uuid REFERENCES hmis_bills(id);
+    ALTER TABLE hmis_lab_orders ADD COLUMN IF NOT EXISTS tat_deadline timestamptz;
+    ALTER TABLE hmis_lab_orders ADD COLUMN IF NOT EXISTS tat_met boolean;
+    ALTER TABLE hmis_lab_orders ADD COLUMN IF NOT EXISTS reported_at timestamptz;
+    ALTER TABLE hmis_lab_orders ADD COLUMN IF NOT EXISTS reported_by uuid REFERENCES hmis_staff(id);
+    ALTER TABLE hmis_lab_orders ADD COLUMN IF NOT EXISTS verified_at timestamptz;
+    ALTER TABLE hmis_lab_orders ADD COLUMN IF NOT EXISTS verified_by uuid REFERENCES hmis_staff(id);
+EXCEPTION WHEN duplicate_column THEN NULL;
+END $$;
+
+-- 5. Add columns to lab_results for validation workflow
+DO $$ BEGIN
+    ALTER TABLE hmis_lab_results ADD COLUMN IF NOT EXISTS parameter_id uuid REFERENCES hmis_lab_test_parameters(id);
+    ALTER TABLE hmis_lab_results ADD COLUMN IF NOT EXISTS is_auto_validated boolean DEFAULT false;
+    ALTER TABLE hmis_lab_results ADD COLUMN IF NOT EXISTS delta_flag boolean DEFAULT false;
+    ALTER TABLE hmis_lab_results ADD COLUMN IF NOT EXISTS delta_previous varchar(100);
+    ALTER TABLE hmis_lab_results ADD COLUMN IF NOT EXISTS delta_percent decimal(5,1);
+    ALTER TABLE hmis_lab_results ADD COLUMN IF NOT EXISTS machine_result varchar(100);
+    ALTER TABLE hmis_lab_results ADD COLUMN IF NOT EXISTS remarks text;
+    ALTER TABLE hmis_lab_results ADD COLUMN IF NOT EXISTS entered_by uuid REFERENCES hmis_staff(id);
+    ALTER TABLE hmis_lab_results ADD COLUMN IF NOT EXISTS entered_at timestamptz DEFAULT now();
+    ALTER TABLE hmis_lab_results ADD COLUMN IF NOT EXISTS rerun_count int DEFAULT 0;
+    ALTER TABLE hmis_lab_results ADD COLUMN IF NOT EXISTS interpretation text;
+EXCEPTION WHEN duplicate_column THEN NULL;
+END $$;
+
+-- 6. Sample rejection reasons
+CREATE TABLE IF NOT EXISTS hmis_lab_rejection_reasons (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    reason_code varchar(20) NOT NULL UNIQUE,
+    reason_text varchar(200) NOT NULL,
+    sample_type varchar(30),
+    is_active boolean NOT NULL DEFAULT true
+);
+
+
+-- 7. Sample tracking log (chain of custody)
+CREATE TABLE IF NOT EXISTS hmis_lab_sample_log (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    sample_id uuid NOT NULL REFERENCES hmis_lab_samples(id),
+    action varchar(30) NOT NULL CHECK (action IN ('collected','labeled','dispatched','received','rejected','processing_started','processing_complete','stored','disposed')),
+    performed_by uuid NOT NULL REFERENCES hmis_staff(id),
+    location varchar(50),
+    temperature varchar(20),
+    notes text,
+    created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_sample_log ON hmis_lab_sample_log(sample_id, created_at);
+
+-- 8. Critical value alerts
+CREATE TABLE IF NOT EXISTS hmis_lab_critical_alerts (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    lab_order_id uuid NOT NULL REFERENCES hmis_lab_orders(id),
+    result_id uuid NOT NULL REFERENCES hmis_lab_results(id),
+    parameter_name varchar(100) NOT NULL,
+    result_value varchar(100) NOT NULL,
+    critical_type varchar(10) NOT NULL CHECK (critical_type IN ('low','high')),
+    -- Communication tracking
+    notified_doctor_id uuid REFERENCES hmis_staff(id),
+    notified_at timestamptz,
+    notified_by uuid REFERENCES hmis_staff(id),
+    acknowledged_at timestamptz,
+    action_taken text,
+    status varchar(20) NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','notified','acknowledged','resolved')),
+    created_at timestamptz NOT NULL DEFAULT now()
+);
+
+-- 9. TAT Configuration per test
+CREATE TABLE IF NOT EXISTS hmis_lab_tat_config (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    test_id uuid NOT NULL REFERENCES hmis_lab_test_master(id),
+    priority varchar(10) NOT NULL DEFAULT 'routine',
+    tat_minutes int NOT NULL,
+    escalation_minutes int,
+    escalation_to uuid REFERENCES hmis_staff(id),
+    created_at timestamptz NOT NULL DEFAULT now(),
+    UNIQUE(test_id, priority)
+);
+
+-- 10. Report templates
+CREATE TABLE IF NOT EXISTS hmis_lab_report_templates (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    test_id uuid REFERENCES hmis_lab_test_master(id),
+    template_name varchar(100) NOT NULL,
+    header_text text,
+    footer_text text,
+    interpretation_guide text,
+    methodology text,
+    specimen_requirements text,
+    is_default boolean NOT NULL DEFAULT false,
+    created_at timestamptz NOT NULL DEFAULT now()
+);
+
+-- 11. Outsourced lab tracking
+CREATE TABLE IF NOT EXISTS hmis_lab_outsourced (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    lab_order_id uuid NOT NULL REFERENCES hmis_lab_orders(id),
+    external_lab_name varchar(100) NOT NULL,
+    dispatch_date date NOT NULL,
+    dispatch_ref varchar(50),
+    expected_return date,
+    actual_return date,
+    external_report_ref varchar(50),
+    status varchar(20) NOT NULL DEFAULT 'dispatched' CHECK (status IN ('dispatched','in_transit','received_by_lab','processing','reported','received_back')),
+    cost decimal(10,2),
+    created_at timestamptz NOT NULL DEFAULT now()
+);
+
+-- ============================================================
+-- RLS Policies
+-- ============================================================
+DO $$
+DECLARE tbl text;
+BEGIN
+    FOREACH tbl IN ARRAY ARRAY[
+        'hmis_lab_test_parameters','hmis_lab_ref_ranges','hmis_lab_profiles','hmis_lab_profile_tests',
+        'hmis_lab_rejection_reasons','hmis_lab_sample_log','hmis_lab_critical_alerts',
+        'hmis_lab_tat_config','hmis_lab_report_templates','hmis_lab_outsourced'
+    ] LOOP
+        EXECUTE format('ALTER TABLE %I ENABLE ROW LEVEL SECURITY', tbl);
+        EXECUTE format('CREATE POLICY %I_auth ON %I FOR ALL USING (auth.uid() IS NOT NULL)', tbl || '_pol', tbl);
+    END LOOP;
+END $$;
+
+-- ============================================================
+-- SEED: Test parameters with reference ranges for common tests
+-- ============================================================
+
+-- Lab profiles
+
+-- ═══ sql/lims_session2_migration.sql ═══
+-- ============================================================
+-- Health1 LIMS Session 2 — Microbiology + QC + Expanded Tests
+-- Run in Supabase SQL Editor (project: bmuupgrzbfmddjwcqlss)
+-- ============================================================
+
+-- ============================================================
+-- PART 1: MICROBIOLOGY MODULE
+-- ============================================================
+
+-- 1. Organism master
+CREATE TABLE IF NOT EXISTS hmis_lab_organisms (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    organism_code varchar(20) NOT NULL UNIQUE,
+    organism_name varchar(200) NOT NULL,
+    organism_type varchar(20) NOT NULL CHECK (organism_type IN ('bacteria_gp','bacteria_gn','fungi','mycobacteria','parasite','virus','other')),
+    gram_stain varchar(20) CHECK (gram_stain IN ('gram_positive','gram_negative','na')),
+    morphology varchar(50),
+    is_alert_organism boolean NOT NULL DEFAULT false,
+    is_active boolean NOT NULL DEFAULT true,
+    created_at timestamptz NOT NULL DEFAULT now()
+);
+
+-- 2. Antibiotic master
+CREATE TABLE IF NOT EXISTS hmis_lab_antibiotics (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    antibiotic_code varchar(20) NOT NULL UNIQUE,
+    antibiotic_name varchar(100) NOT NULL,
+    antibiotic_class varchar(50) NOT NULL,
+    route varchar(20) DEFAULT 'oral' CHECK (route IN ('oral','iv','im','topical','both')),
+    is_restricted boolean NOT NULL DEFAULT false,
+    sort_order int DEFAULT 0,
+    is_active boolean NOT NULL DEFAULT true,
+    created_at timestamptz NOT NULL DEFAULT now()
+);
+
+-- 3. Default antibiotic panels per organism type
+CREATE TABLE IF NOT EXISTS hmis_lab_antibiotic_panels (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    panel_name varchar(50) NOT NULL,
+    organism_type varchar(20) NOT NULL,
+    antibiotic_id uuid NOT NULL REFERENCES hmis_lab_antibiotics(id),
+    is_first_line boolean NOT NULL DEFAULT true,
+    sort_order int DEFAULT 0,
+    UNIQUE(panel_name, antibiotic_id)
+);
+
+-- 4. Culture results
+CREATE TABLE IF NOT EXISTS hmis_lab_cultures (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    order_id uuid NOT NULL REFERENCES hmis_lab_orders(id),
+    specimen_type varchar(50) NOT NULL,
+    specimen_source varchar(100),
+    collection_date timestamptz NOT NULL DEFAULT now(),
+    -- Gram stain
+    gram_stain_done boolean NOT NULL DEFAULT false,
+    gram_stain_result text,
+    -- Culture
+    culture_status varchar(20) NOT NULL DEFAULT 'incubating' CHECK (culture_status IN ('incubating','growth','no_growth','mixed_flora','contaminated','pending')),
+    incubation_start timestamptz,
+    incubation_hours int DEFAULT 24,
+    growth_description text,
+    colony_count varchar(50),
+    -- Final
+    is_sterile boolean DEFAULT false,
+    preliminary_report text,
+    final_report text,
+    reported_by uuid REFERENCES hmis_staff(id),
+    reported_at timestamptz,
+    verified_by uuid REFERENCES hmis_staff(id),
+    verified_at timestamptz,
+    created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_cultures_order ON hmis_lab_cultures(order_id);
+
+-- 5. Culture isolates (organisms found in a culture)
+CREATE TABLE IF NOT EXISTS hmis_lab_culture_isolates (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    culture_id uuid NOT NULL REFERENCES hmis_lab_cultures(id) ON DELETE CASCADE,
+    organism_id uuid NOT NULL REFERENCES hmis_lab_organisms(id),
+    isolate_number int NOT NULL DEFAULT 1,
+    colony_morphology text,
+    quantity varchar(20) CHECK (quantity IN ('few','moderate','heavy','very_heavy','countable')),
+    cfu_count varchar(50),
+    identification_method varchar(50),
+    is_significant boolean NOT NULL DEFAULT true,
+    notes text,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    UNIQUE(culture_id, organism_id, isolate_number)
+);
+
+-- 6. Antibiotic sensitivity results
+CREATE TABLE IF NOT EXISTS hmis_lab_sensitivity (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    isolate_id uuid NOT NULL REFERENCES hmis_lab_culture_isolates(id) ON DELETE CASCADE,
+    antibiotic_id uuid NOT NULL REFERENCES hmis_lab_antibiotics(id),
+    method varchar(20) DEFAULT 'disc_diffusion' CHECK (method IN ('disc_diffusion','mic','etest','vitek','manual')),
+    zone_diameter_mm decimal(5,1),
+    mic_value decimal(10,3),
+    mic_unit varchar(10) DEFAULT 'mcg/ml',
+    interpretation varchar(5) NOT NULL CHECK (interpretation IN ('S','I','R','SDD','NS')),
+    is_intrinsic_resistance boolean NOT NULL DEFAULT false,
+    breakpoint_source varchar(20) DEFAULT 'CLSI',
+    notes text,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    UNIQUE(isolate_id, antibiotic_id)
+);
+
+-- 7. Antibiogram (cumulative susceptibility data)
+CREATE TABLE IF NOT EXISTS hmis_lab_antibiogram (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    centre_id uuid NOT NULL REFERENCES hmis_centres(id),
+    period_start date NOT NULL,
+    period_end date NOT NULL,
+    organism_id uuid NOT NULL REFERENCES hmis_lab_organisms(id),
+    antibiotic_id uuid NOT NULL REFERENCES hmis_lab_antibiotics(id),
+    total_isolates int NOT NULL DEFAULT 0,
+    sensitive_count int NOT NULL DEFAULT 0,
+    intermediate_count int NOT NULL DEFAULT 0,
+    resistant_count int NOT NULL DEFAULT 0,
+    susceptibility_percent decimal(5,1) GENERATED ALWAYS AS (
+        CASE WHEN total_isolates > 0 THEN (sensitive_count::decimal / total_isolates * 100) ELSE 0 END
+    ) STORED,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    UNIQUE(centre_id, period_start, period_end, organism_id, antibiotic_id)
+);
+
+-- ============================================================
+-- PART 2: QC MODULE
+-- ============================================================
+
+-- 8. QC Lots (reagent/control material tracking)
+CREATE TABLE IF NOT EXISTS hmis_lab_qc_lots (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    lot_number varchar(50) NOT NULL,
+    material_name varchar(100) NOT NULL,
+    manufacturer varchar(100),
+    test_id uuid NOT NULL REFERENCES hmis_lab_test_master(id),
+    parameter_id uuid REFERENCES hmis_lab_test_parameters(id),
+    level varchar(10) NOT NULL CHECK (level IN ('L1','L2','L3','normal','abnormal')),
+    target_mean decimal(10,3) NOT NULL,
+    target_sd decimal(10,3) NOT NULL,
+    unit varchar(20),
+    expiry_date date NOT NULL,
+    opened_date date,
+    is_active boolean NOT NULL DEFAULT true,
+    centre_id uuid NOT NULL REFERENCES hmis_centres(id),
+    created_at timestamptz NOT NULL DEFAULT now(),
+    UNIQUE(lot_number, test_id, level)
+);
+
+-- 9. QC Results (daily QC runs)
+CREATE TABLE IF NOT EXISTS hmis_lab_qc_results (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    lot_id uuid NOT NULL REFERENCES hmis_lab_qc_lots(id),
+    run_date date NOT NULL DEFAULT CURRENT_DATE,
+    run_number int NOT NULL DEFAULT 1,
+    measured_value decimal(10,3) NOT NULL,
+    -- Calculated fields
+    z_score decimal(5,2),
+    sd_from_mean decimal(5,2),
+    -- Westgard violations
+    westgard_violation varchar(20),
+    is_accepted boolean NOT NULL DEFAULT true,
+    rejection_reason text,
+    -- Corrective action
+    corrective_action text,
+    -- Staff
+    performed_by uuid NOT NULL REFERENCES hmis_staff(id),
+    reviewed_by uuid REFERENCES hmis_staff(id),
+    created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_qc_results_lot ON hmis_lab_qc_results(lot_id, run_date DESC);
+
+-- 10. QC Rules configuration
+CREATE TABLE IF NOT EXISTS hmis_lab_qc_rules (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    rule_code varchar(10) NOT NULL UNIQUE,
+    rule_name varchar(50) NOT NULL,
+    description text,
+    is_warning boolean NOT NULL DEFAULT false,
+    is_rejection boolean NOT NULL DEFAULT false,
+    is_active boolean NOT NULL DEFAULT true,
+    sort_order int DEFAULT 0
+);
+
+-- ============================================================
+-- PART 3: RLS
+-- ============================================================
+DO $$
+DECLARE tbl text;
+BEGIN
+    FOREACH tbl IN ARRAY ARRAY[
+        'hmis_lab_organisms','hmis_lab_antibiotics','hmis_lab_antibiotic_panels',
+        'hmis_lab_cultures','hmis_lab_culture_isolates','hmis_lab_sensitivity',
+        'hmis_lab_antibiogram','hmis_lab_qc_lots','hmis_lab_qc_results','hmis_lab_qc_rules'
+    ] LOOP
+        EXECUTE format('ALTER TABLE %I ENABLE ROW LEVEL SECURITY', tbl);
+        EXECUTE format('CREATE POLICY %I_auth ON %I FOR ALL USING (auth.uid() IS NOT NULL)', tbl || '_pol', tbl);
+    END LOOP;
+END $$;
+
+-- ============================================================
+-- PART 4: SEED DATA
+-- ============================================================
+
+-- Westgard QC Rules
+
+-- Common Organisms
+
+-- Common Antibiotics
+
+-- Default antibiotic panels
+
+
+
+
+-- ============================================================
+-- PART 5: EXPANDED TEST MASTER (50+ tests)
+-- ============================================================
+
+-- Add parameters for key new tests
+
+-- ═══ sql/lims_session3_migration.sql ═══
+-- ============================================================
+-- Health1 LIMS Session 3 — Histopathology, NABL Audit Trail, Reflex Testing
+-- Run in Supabase SQL Editor (project: bmuupgrzbfmddjwcqlss)
+-- ============================================================
+
+-- ============================================================
+-- PART 1: HISTOPATHOLOGY MODULE
+-- ============================================================
+
+-- 1. Histopathology Cases
+CREATE TABLE IF NOT EXISTS hmis_lab_histo_cases (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    order_id uuid NOT NULL REFERENCES hmis_lab_orders(id),
+    case_number varchar(30) NOT NULL UNIQUE,
+    specimen_type varchar(50) NOT NULL,
+    specimen_site varchar(100),
+    laterality varchar(10) CHECK (laterality IN ('left','right','bilateral','midline','na')),
+    clinical_history text,
+    clinical_diagnosis text,
+    surgeon_name varchar(100),
+    -- Processing
+    received_at timestamptz NOT NULL DEFAULT now(),
+    received_by uuid NOT NULL REFERENCES hmis_staff(id),
+    grossing_done_at timestamptz,
+    grossing_by uuid REFERENCES hmis_staff(id),
+    blocks_count int DEFAULT 1,
+    slides_count int DEFAULT 1,
+    special_stains jsonb DEFAULT '[]',
+    ihc_markers jsonb DEFAULT '[]',
+    -- Gross description
+    gross_description text,
+    gross_measurements text,
+    gross_weight varchar(30),
+    gross_photo_urls jsonb DEFAULT '[]',
+    -- Microscopic description
+    micro_description text,
+    -- Diagnosis
+    histo_diagnosis text,
+    icd_code varchar(20),
+    tumor_grade varchar(30),
+    margin_status varchar(20) CHECK (margin_status IN ('clear','involved','close','not_applicable')),
+    lymph_node_status text,
+    tnm_staging text,
+    -- Synoptic report (CAP protocol style)
+    synoptic_data jsonb DEFAULT '{}',
+    -- Addendum / Amendment
+    addendum text,
+    addendum_date timestamptz,
+    addendum_by uuid REFERENCES hmis_staff(id),
+    -- Status
+    status varchar(20) NOT NULL DEFAULT 'accessioned' CHECK (status IN ('accessioned','grossing','processing','cutting','staining','reporting','verified','dispatched','amended')),
+    reported_by uuid REFERENCES hmis_staff(id),
+    reported_at timestamptz,
+    verified_by uuid REFERENCES hmis_staff(id),
+    verified_at timestamptz,
+    tat_hours_actual decimal(8,1),
+    created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_histo_order ON hmis_lab_histo_cases(order_id);
+CREATE INDEX IF NOT EXISTS idx_histo_status ON hmis_lab_histo_cases(status);
+
+-- 2. Histopathology case number sequence
+CREATE SEQUENCE IF NOT EXISTS hmis_histo_case_seq START 1;
+
+-- Function to generate case number: H1-HISTO-YYYYMM-NNNN
+CREATE OR REPLACE FUNCTION hmis_next_histo_case() RETURNS varchar AS $$
+DECLARE
+    seq_val int;
+    case_no varchar;
+BEGIN
+    seq_val := nextval('hmis_histo_case_seq');
+    case_no := 'H1-HP-' || to_char(now(), 'YYMM') || '-' || lpad(seq_val::text, 4, '0');
+    RETURN case_no;
+END;
+$$ LANGUAGE plpgsql;
+
+-- 3. Cytology Cases (FNA, PAP, Body fluids)
+CREATE TABLE IF NOT EXISTS hmis_lab_cyto_cases (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    order_id uuid NOT NULL REFERENCES hmis_lab_orders(id),
+    case_number varchar(30) NOT NULL UNIQUE,
+    specimen_type varchar(30) NOT NULL CHECK (specimen_type IN ('fnac','pap_smear','body_fluid','urine_cytology','brushing','washings','other')),
+    specimen_site varchar(100),
+    clinical_history text,
+    adequacy varchar(20) CHECK (adequacy IN ('satisfactory','unsatisfactory','limited')),
+    -- FNAC specific
+    fnac_passes int,
+    fnac_aspirate_description text,
+    -- PAP specific
+    bethesda_category varchar(50),
+    -- Report
+    microscopic_description text,
+    cyto_diagnosis text,
+    recommendation text,
+    -- Status
+    status varchar(20) NOT NULL DEFAULT 'accessioned' CHECK (status IN ('accessioned','screening','reporting','verified','dispatched')),
+    reported_by uuid REFERENCES hmis_staff(id),
+    reported_at timestamptz,
+    verified_by uuid REFERENCES hmis_staff(id),
+    verified_at timestamptz,
+    created_at timestamptz NOT NULL DEFAULT now()
+);
+
+-- Cytology case number sequence
+CREATE SEQUENCE IF NOT EXISTS hmis_cyto_case_seq START 1;
+
+CREATE OR REPLACE FUNCTION hmis_next_cyto_case() RETURNS varchar AS $$
+DECLARE seq_val int; case_no varchar;
+BEGIN
+    seq_val := nextval('hmis_cyto_case_seq');
+    case_no := 'H1-CY-' || to_char(now(), 'YYMM') || '-' || lpad(seq_val::text, 4, '0');
+    RETURN case_no;
+END;
+$$ LANGUAGE plpgsql;
+
+-- ============================================================
+-- PART 2: NABL AUDIT TRAIL
+-- ============================================================
+
+-- 4. Comprehensive audit log for NABL compliance
+CREATE TABLE IF NOT EXISTS hmis_lab_audit_log (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    -- What
+    entity_type varchar(30) NOT NULL CHECK (entity_type IN (
+        'order','result','sample','culture','sensitivity','qc_result',
+        'histo_case','cyto_case','report','critical_alert','outsourced','lot'
+    )),
+    entity_id uuid NOT NULL,
+    action varchar(20) NOT NULL CHECK (action IN (
+        'create','update','delete','verify','reject','print','dispatch',
+        'collect','receive','report','amend','acknowledge','cancel'
+    )),
+    -- Who
+    performed_by uuid NOT NULL REFERENCES hmis_staff(id),
+    -- When
+    performed_at timestamptz NOT NULL DEFAULT now(),
+    -- What changed
+    field_name varchar(50),
+    old_value text,
+    new_value text,
+    -- Context
+    ip_address varchar(45),
+    user_agent text,
+    reason text,
+    -- Metadata
+    metadata jsonb DEFAULT '{}',
+    created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_audit_entity ON hmis_lab_audit_log(entity_type, entity_id);
+CREATE INDEX IF NOT EXISTS idx_audit_staff ON hmis_lab_audit_log(performed_by, performed_at DESC);
+CREATE INDEX IF NOT EXISTS idx_audit_action ON hmis_lab_audit_log(action, performed_at DESC);
+
+-- 5. Document control register (SOPs, manuals, forms — NABL requirement)
+CREATE TABLE IF NOT EXISTS hmis_lab_documents (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    doc_number varchar(30) NOT NULL UNIQUE,
+    doc_title varchar(200) NOT NULL,
+    doc_type varchar(20) NOT NULL CHECK (doc_type IN ('sop','manual','form','policy','work_instruction','register','checklist')),
+    department varchar(50),
+    version varchar(10) NOT NULL DEFAULT '1.0',
+    effective_date date NOT NULL DEFAULT CURRENT_DATE,
+    review_date date,
+    status varchar(15) NOT NULL DEFAULT 'active' CHECK (status IN ('draft','active','under_review','superseded','obsolete')),
+    prepared_by uuid REFERENCES hmis_staff(id),
+    reviewed_by uuid REFERENCES hmis_staff(id),
+    approved_by uuid REFERENCES hmis_staff(id),
+    file_url text,
+    created_at timestamptz NOT NULL DEFAULT now()
+);
+
+-- 6. Non-conformance / CAPA register
+CREATE TABLE IF NOT EXISTS hmis_lab_ncr (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    ncr_number varchar(30) NOT NULL UNIQUE,
+    ncr_type varchar(20) NOT NULL CHECK (ncr_type IN ('non_conformance','complaint','incident','capa','preventive_action')),
+    title varchar(200) NOT NULL,
+    description text NOT NULL,
+    root_cause text,
+    corrective_action text,
+    preventive_action text,
+    severity varchar(10) CHECK (severity IN ('minor','major','critical')),
+    status varchar(15) NOT NULL DEFAULT 'open' CHECK (status IN ('open','investigating','action_taken','closed','verified')),
+    reported_by uuid NOT NULL REFERENCES hmis_staff(id),
+    assigned_to uuid REFERENCES hmis_staff(id),
+    due_date date,
+    closed_date date,
+    closed_by uuid REFERENCES hmis_staff(id),
+    created_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE SEQUENCE IF NOT EXISTS hmis_ncr_seq START 1;
+
+-- ============================================================
+-- PART 3: REFLEX TESTING
+-- ============================================================
+
+-- 7. Reflex testing rules
+CREATE TABLE IF NOT EXISTS hmis_lab_reflex_rules (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    rule_name varchar(100) NOT NULL,
+    -- Trigger: which test/parameter and condition
+    trigger_test_id uuid NOT NULL REFERENCES hmis_lab_test_master(id),
+    trigger_parameter_id uuid REFERENCES hmis_lab_test_parameters(id),
+    trigger_condition varchar(10) NOT NULL CHECK (trigger_condition IN ('gt','gte','lt','lte','eq','neq','between','abnormal','critical')),
+    trigger_value_1 decimal(10,3),
+    trigger_value_2 decimal(10,3),
+    -- Action: which test to auto-order
+    reflex_test_id uuid NOT NULL REFERENCES hmis_lab_test_master(id),
+    reflex_priority varchar(10) DEFAULT 'routine',
+    -- Config
+    requires_approval boolean NOT NULL DEFAULT false,
+    is_active boolean NOT NULL DEFAULT true,
+    description text,
+    created_at timestamptz NOT NULL DEFAULT now()
+);
+
+-- ============================================================
+-- PART 4: ADD HISTOPATHOLOGY TESTS TO MASTER
+-- ============================================================
+
+-- ============================================================
+-- PART 5: RLS
+-- ============================================================
+DO $$
+DECLARE tbl text;
+BEGIN
+    FOREACH tbl IN ARRAY ARRAY[
+        'hmis_lab_histo_cases','hmis_lab_cyto_cases','hmis_lab_audit_log',
+        'hmis_lab_documents','hmis_lab_ncr','hmis_lab_reflex_rules'
+    ] LOOP
+        EXECUTE format('ALTER TABLE %I ENABLE ROW LEVEL SECURITY', tbl);
+        EXECUTE format('CREATE POLICY %I_auth ON %I FOR ALL USING (auth.uid() IS NOT NULL)', tbl || '_pol', tbl);
+    END LOOP;
+END $$;
+
+-- ============================================================
+-- PART 6: SEED REFLEX RULES
+-- ============================================================
+
+-- Seed some common special stains and IHC markers as comments for reference
+COMMENT ON TABLE hmis_lab_histo_cases IS 'Common Special Stains: PAS, PAS-D, Masson Trichrome, Reticulin, Congo Red, ZN, GMS, Mucicarmine, Iron (Perl), Alcian Blue
+Common IHC Markers: CK (Pan), CK7, CK20, EMA, Vimentin, S100, HMB45, Desmin, SMA, CD3, CD20, CD30, CD34, CD45, CD68, Ki67, ER, PR, HER2, p53, p63, TTF1, PSA, Chromogranin, Synaptophysin, GATA3, PAX8, WT1, Calretinin, D2-40';
+
+-- ═══ sql/ot_enhancement.sql ═══
+-- ============================================================
+-- Health1 HMIS — OT Management Enhancement
+-- Run in Supabase SQL Editor (project: bmuupgrzbfmddjwcqlss)
+-- ============================================================
+
+-- 1. OT Room enhancements
+ALTER TABLE hmis_ot_rooms ADD COLUMN IF NOT EXISTS equipment jsonb DEFAULT '[]';
+ALTER TABLE hmis_ot_rooms ADD COLUMN IF NOT EXISTS has_robotic boolean DEFAULT false;
+ALTER TABLE hmis_ot_rooms ADD COLUMN IF NOT EXISTS has_laminar_flow boolean DEFAULT false;
+ALTER TABLE hmis_ot_rooms ADD COLUMN IF NOT EXISTS max_daily_slots int DEFAULT 6;
+
+-- 2. OT Booking enhancements
+ALTER TABLE hmis_ot_bookings ADD COLUMN IF NOT EXISTS assistant_surgeon_id uuid REFERENCES hmis_staff(id);
+ALTER TABLE hmis_ot_bookings ADD COLUMN IF NOT EXISTS scrub_nurse_id uuid REFERENCES hmis_staff(id);
+ALTER TABLE hmis_ot_bookings ADD COLUMN IF NOT EXISTS circulating_nurse_id uuid REFERENCES hmis_staff(id);
+ALTER TABLE hmis_ot_bookings ADD COLUMN IF NOT EXISTS anaesthesia_type varchar(20) CHECK (anaesthesia_type IN ('general','spinal','epidural','regional','local','sedation','combined'));
+ALTER TABLE hmis_ot_bookings ADD COLUMN IF NOT EXISTS priority varchar(10) DEFAULT 'elective' CHECK (priority IN ('elective','urgent','emergency'));
+ALTER TABLE hmis_ot_bookings ADD COLUMN IF NOT EXISTS cancel_reason text;
+ALTER TABLE hmis_ot_bookings ADD COLUMN IF NOT EXISTS postpone_reason text;
+ALTER TABLE hmis_ot_bookings ADD COLUMN IF NOT EXISTS robot_type varchar(20) CHECK (robot_type IN ('ssi_mantra','cuvis','none'));
+ALTER TABLE hmis_ot_bookings ADD COLUMN IF NOT EXISTS laterality varchar(10) CHECK (laterality IN ('left','right','bilateral','na'));
+ALTER TABLE hmis_ot_bookings ADD COLUMN IF NOT EXISTS patient_category varchar(20) DEFAULT 'adult' CHECK (patient_category IN ('adult','paediatric','neonatal','geriatric'));
+
+-- 3. WHO Surgical Safety Checklist
+CREATE TABLE IF NOT EXISTS hmis_ot_safety_checklist (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    ot_booking_id uuid NOT NULL REFERENCES hmis_ot_bookings(id) ON DELETE CASCADE,
+    -- SIGN IN (before anaesthesia)
+    sign_in_done boolean DEFAULT false,
+    sign_in_at timestamptz,
+    sign_in_by uuid REFERENCES hmis_staff(id),
+    patient_identity_confirmed boolean DEFAULT false,
+    site_marked boolean DEFAULT false,
+    consent_verified boolean DEFAULT false,
+    anaesthesia_check boolean DEFAULT false,
+    pulse_oximeter boolean DEFAULT false,
+    known_allergy boolean DEFAULT false,
+    allergy_details text,
+    difficult_airway boolean DEFAULT false,
+    blood_loss_risk boolean DEFAULT false,
+    blood_availability boolean DEFAULT false,
+    -- TIME OUT (before incision)
+    time_out_done boolean DEFAULT false,
+    time_out_at timestamptz,
+    time_out_by uuid REFERENCES hmis_staff(id),
+    team_introduced boolean DEFAULT false,
+    patient_name_confirmed boolean DEFAULT false,
+    procedure_confirmed boolean DEFAULT false,
+    site_confirmed boolean DEFAULT false,
+    antibiotic_given boolean DEFAULT false,
+    antibiotic_time timestamptz,
+    imaging_displayed boolean DEFAULT false,
+    anticipated_events_discussed boolean DEFAULT false,
+    -- SIGN OUT (before patient leaves OT)
+    sign_out_done boolean DEFAULT false,
+    sign_out_at timestamptz,
+    sign_out_by uuid REFERENCES hmis_staff(id),
+    procedure_recorded boolean DEFAULT false,
+    instrument_count_correct boolean DEFAULT false,
+    sponge_count_correct boolean DEFAULT false,
+    needle_count_correct boolean DEFAULT false,
+    specimen_labelled boolean DEFAULT false,
+    equipment_issues text,
+    recovery_concerns text,
+    created_at timestamptz NOT NULL DEFAULT now()
+);
+
+-- 4. OT Implant/Consumable Tracking
+CREATE TABLE IF NOT EXISTS hmis_ot_implants (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    ot_booking_id uuid NOT NULL REFERENCES hmis_ot_bookings(id),
+    implant_name varchar(200) NOT NULL,
+    manufacturer varchar(100),
+    catalogue_number varchar(50),
+    lot_number varchar(50),
+    serial_number varchar(50),
+    size varchar(30),
+    quantity int NOT NULL DEFAULT 1,
+    cost decimal(12,2) DEFAULT 0,
+    mrp decimal(12,2) DEFAULT 0,
+    sticker_attached boolean DEFAULT false,
+    notes text,
+    created_at timestamptz NOT NULL DEFAULT now()
+);
+
+-- 5. OT Anaesthesia Record
+CREATE TABLE IF NOT EXISTS hmis_ot_anaesthesia (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    ot_booking_id uuid NOT NULL REFERENCES hmis_ot_bookings(id) ON DELETE CASCADE,
+    anaesthetist_id uuid NOT NULL REFERENCES hmis_staff(id),
+    anaesthesia_type varchar(20) NOT NULL,
+    asa_grade int CHECK (asa_grade BETWEEN 1 AND 6),
+    mallampati int CHECK (mallampati BETWEEN 1 AND 4),
+    airway_device varchar(30),
+    tube_size varchar(10),
+    intubation_attempts int DEFAULT 1,
+    premedication jsonb DEFAULT '[]',
+    induction_agents jsonb DEFAULT '[]',
+    maintenance_agents jsonb DEFAULT '[]',
+    muscle_relaxants jsonb DEFAULT '[]',
+    reversal_agents jsonb DEFAULT '[]',
+    fluids_given jsonb DEFAULT '[]',
+    blood_products jsonb DEFAULT '[]',
+    vitals_log jsonb DEFAULT '[]',
+    events_log jsonb DEFAULT '[]',
+    total_fluid_ml int DEFAULT 0,
+    estimated_blood_loss_ml int DEFAULT 0,
+    urine_output_ml int DEFAULT 0,
+    complications text,
+    extubation_time timestamptz,
+    recovery_score int,
+    handover_to varchar(50),
+    handover_at timestamptz,
+    created_at timestamptz NOT NULL DEFAULT now()
+);
+
+-- RLS
+DO $$
+DECLARE tbl text;
+BEGIN
+    FOREACH tbl IN ARRAY ARRAY['hmis_ot_safety_checklist','hmis_ot_implants','hmis_ot_anaesthesia'] LOOP
+        EXECUTE format('ALTER TABLE %I ENABLE ROW LEVEL SECURITY', tbl);
+        EXECUTE format('DROP POLICY IF EXISTS %I ON %I', tbl || '_pol', tbl);
+        EXECUTE format('CREATE POLICY %I ON %I FOR ALL USING (auth.uid() IS NOT NULL)', tbl || '_pol', tbl);
+    END LOOP;
+END $$;
+
+-- Indexes
+CREATE INDEX IF NOT EXISTS idx_ot_checklist_booking ON hmis_ot_safety_checklist(ot_booking_id);
+CREATE INDEX IF NOT EXISTS idx_ot_implants_booking ON hmis_ot_implants(ot_booking_id);
+CREATE INDEX IF NOT EXISTS idx_ot_anaesthesia_booking ON hmis_ot_anaesthesia(ot_booking_id);
+CREATE INDEX IF NOT EXISTS idx_ot_bookings_date ON hmis_ot_bookings(scheduled_date, status);
+
+-- ═══ sql/radiology_enhancement.sql ═══
+-- ============================================================
+-- Health1 HMIS — Radiology Module Enhancement
+-- Run in Supabase SQL Editor (project: bmuupgrzbfmddjwcqlss)
+-- ============================================================
+
+-- 1. Enhance radiology orders
+ALTER TABLE hmis_radiology_orders ADD COLUMN IF NOT EXISTS accession_number varchar(30);
+ALTER TABLE hmis_radiology_orders ADD COLUMN IF NOT EXISTS urgency varchar(10) DEFAULT 'routine' CHECK (urgency IN ('routine','urgent','stat'));
+ALTER TABLE hmis_radiology_orders ADD COLUMN IF NOT EXISTS modality varchar(20);
+ALTER TABLE hmis_radiology_orders ADD COLUMN IF NOT EXISTS body_part varchar(50);
+ALTER TABLE hmis_radiology_orders ADD COLUMN IF NOT EXISTS is_contrast boolean DEFAULT false;
+ALTER TABLE hmis_radiology_orders ADD COLUMN IF NOT EXISTS contrast_allergy_checked boolean DEFAULT false;
+ALTER TABLE hmis_radiology_orders ADD COLUMN IF NOT EXISTS creatinine_value decimal(5,2);
+ALTER TABLE hmis_radiology_orders ADD COLUMN IF NOT EXISTS lmp_date date;
+ALTER TABLE hmis_radiology_orders ADD COLUMN IF NOT EXISTS pregnancy_status varchar(10) CHECK (pregnancy_status IN ('not_pregnant','pregnant','unknown','na'));
+ALTER TABLE hmis_radiology_orders ADD COLUMN IF NOT EXISTS scheduled_date date;
+ALTER TABLE hmis_radiology_orders ADD COLUMN IF NOT EXISTS scheduled_time time;
+ALTER TABLE hmis_radiology_orders ADD COLUMN IF NOT EXISTS room_id uuid;
+ALTER TABLE hmis_radiology_orders ADD COLUMN IF NOT EXISTS technician_id uuid REFERENCES hmis_staff(id);
+ALTER TABLE hmis_radiology_orders ADD COLUMN IF NOT EXISTS ordered_by uuid REFERENCES hmis_staff(id);
+ALTER TABLE hmis_radiology_orders ADD COLUMN IF NOT EXISTS admission_id uuid REFERENCES hmis_admissions(id);
+ALTER TABLE hmis_radiology_orders ADD COLUMN IF NOT EXISTS encounter_id uuid;
+ALTER TABLE hmis_radiology_orders ADD COLUMN IF NOT EXISTS pacs_study_uid varchar(100);
+ALTER TABLE hmis_radiology_orders ADD COLUMN IF NOT EXISTS pacs_accession varchar(50);
+ALTER TABLE hmis_radiology_orders ADD COLUMN IF NOT EXISTS stradus_viewer_url text;
+ALTER TABLE hmis_radiology_orders ADD COLUMN IF NOT EXISTS started_at timestamptz;
+ALTER TABLE hmis_radiology_orders ADD COLUMN IF NOT EXISTS completed_at timestamptz;
+ALTER TABLE hmis_radiology_orders ADD COLUMN IF NOT EXISTS reported_at timestamptz;
+ALTER TABLE hmis_radiology_orders ADD COLUMN IF NOT EXISTS verified_at timestamptz;
+ALTER TABLE hmis_radiology_orders ADD COLUMN IF NOT EXISTS tat_minutes int;
+
+-- 2. Enhance radiology reports
+ALTER TABLE hmis_radiology_reports ADD COLUMN IF NOT EXISTS technique text;
+ALTER TABLE hmis_radiology_reports ADD COLUMN IF NOT EXISTS comparison text;
+ALTER TABLE hmis_radiology_reports ADD COLUMN IF NOT EXISTS clinical_history text;
+ALTER TABLE hmis_radiology_reports ADD COLUMN IF NOT EXISTS is_critical boolean DEFAULT false;
+ALTER TABLE hmis_radiology_reports ADD COLUMN IF NOT EXISTS critical_notified boolean DEFAULT false;
+ALTER TABLE hmis_radiology_reports ADD COLUMN IF NOT EXISTS critical_notified_to varchar(100);
+ALTER TABLE hmis_radiology_reports ADD COLUMN IF NOT EXISTS critical_notified_at timestamptz;
+ALTER TABLE hmis_radiology_reports ADD COLUMN IF NOT EXISTS is_addendum boolean DEFAULT false;
+ALTER TABLE hmis_radiology_reports ADD COLUMN IF NOT EXISTS parent_report_id uuid REFERENCES hmis_radiology_reports(id);
+ALTER TABLE hmis_radiology_reports ADD COLUMN IF NOT EXISTS template_used varchar(50);
+ALTER TABLE hmis_radiology_reports ADD COLUMN IF NOT EXISTS verified_at timestamptz;
+ALTER TABLE hmis_radiology_reports ADD COLUMN IF NOT EXISTS status varchar(15) DEFAULT 'draft' CHECK (status IN ('draft','finalized','verified','amended'));
+
+-- 3. Radiology rooms / modalities
+CREATE TABLE IF NOT EXISTS hmis_radiology_rooms (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    centre_id uuid NOT NULL REFERENCES hmis_centres(id),
+    name varchar(50) NOT NULL,
+    modality varchar(20) NOT NULL,
+    manufacturer varchar(100),
+    model varchar(100),
+    dicom_ae_title varchar(30),
+    dicom_ip varchar(20),
+    dicom_port int,
+    is_active boolean DEFAULT true,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    UNIQUE(centre_id, name)
+);
+
+-- 4. Report templates
+CREATE TABLE IF NOT EXISTS hmis_radiology_templates (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    modality varchar(20) NOT NULL,
+    body_part varchar(50),
+    template_name varchar(100) NOT NULL,
+    technique_text text,
+    findings_template text NOT NULL,
+    impression_template text,
+    is_normal boolean DEFAULT true,
+    is_active boolean DEFAULT true,
+    created_at timestamptz NOT NULL DEFAULT now()
+);
+
+-- 5. PACS integration config (Stradus)
+CREATE TABLE IF NOT EXISTS hmis_pacs_config (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    centre_id uuid NOT NULL REFERENCES hmis_centres(id) UNIQUE,
+    pacs_vendor varchar(30) NOT NULL DEFAULT 'stradus',
+    pacs_url text NOT NULL,
+    viewer_url text,
+    dicom_ae_title varchar(30),
+    dicom_ip varchar(20),
+    dicom_port int DEFAULT 104,
+    hl7_ip varchar(20),
+    hl7_port int DEFAULT 2575,
+    api_key text,
+    is_active boolean DEFAULT true,
+    created_at timestamptz NOT NULL DEFAULT now()
+);
+
+-- Indexes
+CREATE INDEX IF NOT EXISTS idx_rad_orders_centre ON hmis_radiology_orders(centre_id, status);
+CREATE INDEX IF NOT EXISTS idx_rad_orders_accession ON hmis_radiology_orders(accession_number);
+CREATE INDEX IF NOT EXISTS idx_rad_orders_pacs ON hmis_radiology_orders(pacs_study_uid);
+
+-- RLS
+DO $$
+DECLARE tbl text;
+BEGIN
+    FOREACH tbl IN ARRAY ARRAY['hmis_radiology_rooms','hmis_radiology_templates','hmis_pacs_config'] LOOP
+        EXECUTE format('ALTER TABLE %I ENABLE ROW LEVEL SECURITY', tbl);
+        EXECUTE format('DROP POLICY IF EXISTS %I ON %I', tbl || '_pol', tbl);
+        EXECUTE format('CREATE POLICY %I ON %I FOR ALL USING (auth.uid() IS NOT NULL)', tbl || '_pol', tbl);
+    END LOOP;
+END $$;
+
+-- ============================================================
+-- SEED: Common radiology report templates
+-- ============================================================
+
+-- SEED: Radiology test master (if empty)
