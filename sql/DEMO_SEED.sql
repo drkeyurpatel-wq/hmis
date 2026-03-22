@@ -246,8 +246,8 @@ BEGIN
     bno:=bno+1;
     total := 5000+(random()*95000)::numeric(10,2);
     paid := total*(0.7+random()*0.3);
-    INSERT INTO hmis_bills (centre_id,patient_id,bill_number,bill_type,encounter_id,payor_type,gross_amount,discount_amount,tax_amount,net_amount,paid_amount,balance_amount,status,bill_date)
-    VALUES (rec.centre_id,rec.patient_id,'BILL-'||lpad(bno::text,6,'0'),'ipd',rec.aid,rec.payor_type,total,total*0.05,0,total*0.95,paid,total*0.95-paid,CASE WHEN paid>=total*0.95 THEN 'paid' ELSE 'partially_paid' END,COALESCE(rec.actual_discharge::date,CURRENT_DATE))
+    INSERT INTO hmis_bills (centre_id,patient_id,bill_number,bill_type,encounter_id,payor_type,gross_amount,discount_amount,tax_amount,net_amount,paid_amount,balance_amount,status,bill_date,created_by)
+    VALUES (rec.centre_id,rec.patient_id,'BILL-'||lpad(bno::text,6,'0'),'ipd',rec.aid,rec.payor_type,total,total*0.05,0,total*0.95,paid,total*0.95-paid,CASE WHEN paid>=total*0.95 THEN 'paid' ELSE 'partially_paid' END,COALESCE(rec.actual_discharge::date,CURRENT_DATE),rcpt)
     RETURNING id INTO bid;
     INSERT INTO hmis_payments (bill_id,amount,payment_mode,reference_number,receipt_number,payment_date,received_by)
     VALUES (bid,paid,(ARRAY['cash','card','upi','neft'])[1+(random()*3)::int],'TXN'||lpad(bno::text,8,'0'),'RCP-'||lpad(bno::text,8,'0'),COALESCE(rec.actual_discharge::date,CURRENT_DATE),rcpt);
@@ -257,8 +257,8 @@ BEGIN
   FOR rec IN SELECT v.id vid,v.centre_id,v.patient_id,v.created_at FROM hmis_opd_visits v WHERE v.status='completed' LOOP
     bno:=bno+1;
     total := 300+(random()*2700)::numeric(10,2);
-    INSERT INTO hmis_bills (centre_id,patient_id,bill_number,bill_type,encounter_id,payor_type,gross_amount,discount_amount,tax_amount,net_amount,paid_amount,balance_amount,status,bill_date)
-    VALUES (rec.centre_id,rec.patient_id,'BILL-'||lpad(bno::text,6,'0'),'opd',rec.vid,'self',total,0,0,total,total,0,'paid',rec.created_at::date)
+    INSERT INTO hmis_bills (centre_id,patient_id,bill_number,bill_type,encounter_id,payor_type,gross_amount,discount_amount,tax_amount,net_amount,paid_amount,balance_amount,status,bill_date,created_by)
+    VALUES (rec.centre_id,rec.patient_id,'BILL-'||lpad(bno::text,6,'0'),'opd',rec.vid,'self',total,0,0,total,total,0,'paid',rec.created_at::date,rcpt)
     RETURNING id INTO bid;
     INSERT INTO hmis_payments (bill_id,amount,payment_mode,receipt_number,payment_date,received_by)
     VALUES (bid,total,(ARRAY['cash','card','upi'])[1+(random()*2)::int],'RCP-O'||lpad(bno::text,8,'0'),rec.created_at::date,rcpt);
