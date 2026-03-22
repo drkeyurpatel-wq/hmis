@@ -6,7 +6,11 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "lint:ci": "next lint --max-warnings 0",
+    "typecheck": "tsc --noEmit",
+    "check": "npm run lint:ci && npm run typecheck",
+    "validate": "npm run check && npm run build"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.0.5",

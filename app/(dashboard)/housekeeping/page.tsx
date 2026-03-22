@@ -2,11 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { useAuthStore } from '@/lib/store/auth';
 import { RoleGuard } from '@/components/ui/shared';
-import { createClient } from '@/lib/supabase/client';
+import { sb } from '@/lib/supabase/browser';
 import { useHousekeepingTasks, useHousekeepingSchedules, type HKTask, type HKSchedule } from '@/lib/housekeeping/housekeeping-hooks';
-
-let _sb: any = null;
-function sb() { if (typeof window === 'undefined') return null as any; if (!_sb) { try { _sb = createClient(); } catch { return null; } } return _sb; }
 
 type Tab = 'board' | 'discharge' | 'schedules';
 const TASK_TYPES = ['routine', 'discharge', 'deep_clean', 'infection', 'spill', 'terminal'] as const;

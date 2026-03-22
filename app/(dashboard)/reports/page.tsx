@@ -5,10 +5,7 @@ import { useAuthStore } from '@/lib/store/auth';
 import { useReportEngine, type ReportFilters } from '@/lib/reports/report-engine';
 import { exportToExcel, type ExcelSheet, type ExcelColumn } from '@/lib/reports/excel-export';
 import { exportToPDF } from '@/lib/reports/pdf-export';
-import { createClient } from '@/lib/supabase/client';
-
-let _sb: any = null;
-function sb() { if (typeof window === 'undefined') return null as any; if (!_sb) { try { _sb = createClient(); } catch { return null; } } return _sb; }
+import { sb } from '@/lib/supabase/browser';
 
 type ReportType = 'revenue'|'doctors'|'occupancy'|'opd'|'discharge_tat'|'insurance'|'pharmacy'|'lab'|'radiology'|'ar_aging'|'charges'|'centre_comparison';
 

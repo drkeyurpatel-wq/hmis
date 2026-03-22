@@ -1,9 +1,7 @@
 'use client';
 import React, { useState, useEffect } from 'react';
-import { createClient } from '@/lib/supabase/client';
-
-let _sb: any = null;
-function sb() { if (typeof window === 'undefined') return null as any; if (!_sb) { try { _sb = createClient(); } catch { return null; } } return _sb; }
+import { sb } from '@/lib/supabase/browser';
+import { getIntegrationStatuses } from '@/lib/config/env';
 
 interface ProviderConfig {
   id?: string;
@@ -142,11 +140,25 @@ export default function IntegrationsConfig({ centreId, flash }: Props) {
   if (!centreId) return <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-700">Select a centre first.</div>;
   if (loading) return <div className="text-xs text-gray-400 p-4">Loading...</div>;
 
+  const envStatuses = getIntegrationStatuses();
+
   return (
     <div className="space-y-4">
       <div>
         <h3 className="font-bold text-sm">Integration Providers</h3>
         <p className="text-[10px] text-gray-500">Configure external service connections (hmis_integration_config)</p>
+      </div>
+
+      {/* Environment Health Summary */}
+      <div className="bg-gray-50 rounded-xl border p-3">
+        <div className="text-[10px] font-medium text-gray-500 mb-2">Environment Status</div>
+        <div className="flex flex-wrap gap-2">
+          {Object.entries(envStatuses).map(([key, s]) => (
+            <span key={key} className={`px-2 py-0.5 rounded text-[10px] font-medium ${s.configured ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-400'}`}>
+              {s.configured ? '\u2713' : '\u2717'} {s.label}
+            </span>
+          ))}
+        </div>
       </div>
 
       {PROVIDERS.map(p => {

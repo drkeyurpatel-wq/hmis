@@ -1,10 +1,7 @@
 // lib/pharmacy/pharmacy-v2-hooks.ts
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { createClient } from '@/lib/supabase/client';
+import { sb } from '@/lib/supabase/browser';
 import { auditCreate } from '@/lib/audit/audit-logger';
-
-let _sb: any = null;
-function sb() { if (typeof window === 'undefined') return null as any; if (!_sb) { try { _sb = createClient(); } catch { return null; } } return _sb; }
 
 // ============================================================
 // RETURNS & WRITE-OFFS

@@ -2,14 +2,11 @@
 // OPD: patient completes consultation → bill generated → payment → receipt
 'use client';
 import React, { useState, useCallback } from 'react';
-import { createClient } from '@/lib/supabase/client';
+import { sb } from '@/lib/supabase/browser';
 import { smartPostConsultationCharge, generateBillNumber, lookupTariff } from '@/lib/bridge/cross-module-bridge';
 import { printBillInvoice, printPaymentReceipt } from '@/components/billing/bill-pdf';
 import { auditCreate } from '@/lib/audit/audit-logger';
 import { notifyPayment } from '@/lib/notifications/notification-dispatcher';
-
-let _sb: any = null;
-function sb() { if (typeof window === 'undefined') return null as any; if (!_sb) { try { _sb = createClient(); } catch { return null; } } return _sb; }
 
 const fmt = (n: number) => '₹' + Math.round(n).toLocaleString('en-IN');
 

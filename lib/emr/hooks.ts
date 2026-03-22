@@ -2,15 +2,7 @@
 // Supabase hooks for EMR v3
 
 import { useState, useEffect, useCallback } from 'react';
-import { createClient } from '@/lib/supabase/client';
-
-// Lazy Supabase — safe during SSR/build when env vars missing
-let _sb: ReturnType<typeof createClient> | null = null;
-function sb() {
-  if (typeof window === 'undefined') return null as any;
-  if (!_sb) { try { _sb = createClient(); } catch { return null as any; } }
-  return _sb;
-}
+import { sb } from '@/lib/supabase/browser';
 
 // ============================================================
 // Types

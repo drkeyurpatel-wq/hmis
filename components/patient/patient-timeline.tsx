@@ -1,13 +1,10 @@
 'use client';
 import React, { useState, useEffect, useCallback } from 'react';
-import { createClient } from '@/lib/supabase/client';
+import { sb } from '@/lib/supabase/browser';
 import {
   UserPlus, Calendar, Stethoscope, FlaskConical, Pill, ScanLine,
   BedDouble, Scissors, CreditCard, Heart, FileText, Activity, LogOut, AlertTriangle,
 } from 'lucide-react';
-
-let _sb: any = null;
-function sb() { if (typeof window === 'undefined') return null as any; if (!_sb) { try { _sb = createClient(); } catch { return null; } } return _sb; }
 
 interface TimelineEvent {
   id: string;

@@ -1,7 +1,7 @@
 'use client';
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
-import { createClient } from '@/lib/supabase/client';
+import { sb } from '@/lib/supabase/browser';
 import { useAuthStore } from '@/lib/store/auth';
 import Link from 'next/link';
 import PatientImagingPanel from '@/components/radiology/patient-imaging-panel';
@@ -10,8 +10,6 @@ import { usePatientDocuments, useEmergencyContacts, usePatientInsurance } from '
 import { exportPatientData } from '@/lib/utils/data-export';
 import { PatientTimeline } from '@/components/patient/patient-timeline';
 
-let _sb: any = null;
-function sb() { if (typeof window === 'undefined') return null as any; if (!_sb) { try { _sb = createClient(); } catch { return null; } } return _sb; }
 
 export default function PatientDetailPage() {
   const { id } = useParams();

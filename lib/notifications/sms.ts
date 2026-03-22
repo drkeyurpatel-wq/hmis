@@ -7,10 +7,7 @@
 //   MSG91_SENDER_ID (6-char DLT-registered sender, e.g. HELTH1)
 //   MSG91_ROUTE (4 = transactional, 1 = promotional)
 
-import { createClient } from '@/lib/supabase/client';
-
-let _sb: any = null;
-function sb() { if (typeof window === 'undefined') return null as any; if (!_sb) { try { _sb = createClient(); } catch { return null; } } return _sb; }
+import { sb } from '@/lib/supabase/browser';
 
 const MSG91_API = 'https://control.msg91.com/api/v5/flow/';
 

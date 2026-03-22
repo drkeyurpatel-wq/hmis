@@ -1,9 +1,6 @@
 // lib/packages/packages-hooks.ts — Package management + utilization tracking
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { createClient } from '@/lib/supabase/client';
-
-let _sb: any = null;
-function sb() { if (typeof window === 'undefined') return null as any; if (!_sb) { try { _sb = createClient(); } catch { return null; } } return _sb; }
+import { sb } from '@/lib/supabase/browser';
 
 export const CATEGORIES = ['surgical','medical','daycare','diagnostic','maternity','trauma','transplant','robotic','cardiac','neuro'];
 export const ROOMS = ['general','semi_private','private','deluxe','icu','transplant_icu'];

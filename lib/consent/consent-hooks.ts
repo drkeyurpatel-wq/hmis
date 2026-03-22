@@ -2,14 +2,7 @@
 // Hooks for digital consent management — templates + signed consents
 
 import { useState, useEffect, useCallback } from 'react';
-import { createClient } from '@/lib/supabase/client';
-
-let _sb: any = null;
-function sb() {
-  if (typeof window === 'undefined') return null as any;
-  if (!_sb) { try { _sb = createClient(); } catch { return null; } }
-  return _sb;
-}
+import { sb } from '@/lib/supabase/browser';
 
 // ============================================================
 // CONSENT TEMPLATES

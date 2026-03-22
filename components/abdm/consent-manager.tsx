@@ -1,17 +1,10 @@
 'use client';
 import React, { useState, useEffect } from 'react';
-import { createClient } from '@/lib/supabase/client';
+import { sb } from '@/lib/supabase/browser';
 
 // ============================================================
 // HIE-CM Consent Manager — Request & view health records
 // ============================================================
-
-let _sb: any = null;
-function sb() {
-  if (typeof window === 'undefined') return null as any;
-  if (!_sb) { try { _sb = createClient(); } catch { return null; } }
-  return _sb;
-}
 
 interface ConsentRequest {
   id: string;

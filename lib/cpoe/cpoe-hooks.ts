@@ -1,11 +1,8 @@
 // lib/cpoe/cpoe-hooks.ts
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { createClient } from '@/lib/supabase/client';
+import { sb } from '@/lib/supabase/browser';
 import { auditCreate, auditCancel } from '@/lib/audit/audit-logger';
 import { routeCPOEOrder } from '@/lib/bridge/cross-module-bridge';
-
-let _sb: any = null;
-function sb() { if (typeof window === 'undefined') return null as any; if (!_sb) { try { _sb = createClient(); } catch { return null; } } return _sb; }
 
 export interface CPOEOrder {
   id: string; admissionId: string; patientId: string;

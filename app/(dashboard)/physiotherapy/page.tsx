@@ -3,10 +3,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { RoleGuard } from '@/components/ui/shared';
 import { useAuthStore } from '@/lib/store/auth';
 import { usePhysio, BODY_REGIONS, SPORTS, COMP_LEVELS, MODALITIES, SESSION_TYPES, PLAN_TYPES, RTS_PHASES, OUTCOME_MEASURES } from '@/lib/physiotherapy/physio-hooks';
-import { createClient } from '@/lib/supabase/client';
-
-let _sb: any = null;
-function sb() { if (typeof window === 'undefined') return null as any; if (!_sb) { try { _sb = createClient(); } catch { return null; } } return _sb; }
+import { sb } from '@/lib/supabase/browser';
 
 const TYPE_COLORS: Record<string, string> = { therapeutic: 'bg-blue-100 text-blue-700', preventive: 'bg-green-100 text-green-700', sports_rehab: 'bg-red-100 text-red-700', post_surgical: 'bg-purple-100 text-purple-700', cardiac_rehab: 'bg-pink-100 text-pink-700', neuro_rehab: 'bg-indigo-100 text-indigo-700' };
 const RTS_COLORS: Record<string, string> = { phase_1_protection: 'bg-red-100 text-red-700', phase_2_controlled_motion: 'bg-orange-100 text-orange-700', phase_3_strengthening: 'bg-amber-100 text-amber-700', phase_4_sport_specific: 'bg-blue-100 text-blue-700', phase_5_return_to_play: 'bg-green-100 text-green-700', cleared: 'bg-green-600 text-white' };

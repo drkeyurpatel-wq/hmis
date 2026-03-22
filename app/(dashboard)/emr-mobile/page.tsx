@@ -1,16 +1,13 @@
 'use client';
 import React, { useState, useEffect, useCallback, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { createClient } from '@/lib/supabase/client';
+import { sb } from '@/lib/supabase/browser';
 import { useAuthStore } from '@/lib/store/auth';
 import { RoleGuard } from '@/components/ui/shared';
 import VitalsInput from '@/components/emr-mobile/vitals-input';
 import QuickNote from '@/components/emr-mobile/quick-note';
 import OrderQuick from '@/components/emr-mobile/order-quick';
 import Link from 'next/link';
-
-let _sb: any = null;
-function sb() { if (typeof window === 'undefined') return null as any; if (!_sb) { try { _sb = createClient(); } catch { return null; } } return _sb; }
 
 type MobileTab = 'vitals' | 'notes' | 'orders' | 'meds' | 'history';
 

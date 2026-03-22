@@ -1,12 +1,9 @@
 'use client';
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Bell, X, Check, FlaskConical, Pill, CreditCard, BedDouble, AlertTriangle, Activity, Clock } from 'lucide-react';
-import { createClient } from '@/lib/supabase/client';
+import { sb } from '@/lib/supabase/browser';
 import { useAuthStore } from '@/lib/store/auth';
 import Link from 'next/link';
-
-let _sb: any = null;
-function sb() { if (typeof window === 'undefined') return null as any; if (!_sb) { try { _sb = createClient(); } catch { return null; } } return _sb; }
 
 interface Notification {
   id: string;

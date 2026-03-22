@@ -22,10 +22,7 @@ import {
   smsFollowUpReminder,
 } from './sms';
 
-import { createClient } from '@/lib/supabase/client';
-
-let _sb: any = null;
-function sb() { if (typeof window === 'undefined') return null as any; if (!_sb) { try { _sb = createClient(); } catch { return null; } } return _sb; }
+import { sb } from '@/lib/supabase/browser';
 
 async function safe(fn: () => Promise<any>): Promise<void> {
   try { await fn(); } catch (e) { console.warn('[NOTIFY]', e); }

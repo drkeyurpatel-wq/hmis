@@ -3,10 +3,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { RoleGuard } from '@/components/ui/shared';
 import { useAuthStore } from '@/lib/store/auth';
 import { useEndoscopy, useDecontamination, type EndoProcedure } from '@/lib/endoscopy/endoscopy-hooks';
-import { createClient } from '@/lib/supabase/client';
-
-let _sb: any = null;
-function sb() { if (typeof window === 'undefined') return null as any; if (!_sb) { try { _sb = createClient(); } catch { return null; } } return _sb; }
+import { sb } from '@/lib/supabase/browser';
 
 const TYPE_COLORS: Record<string, string> = { ogd: 'bg-blue-600', colonoscopy: 'bg-purple-600', ercp: 'bg-amber-600', eus: 'bg-teal-600', bronchoscopy: 'bg-indigo-600', sigmoidoscopy: 'bg-pink-600' };
 const STATUS_COLORS: Record<string, string> = { scheduled: 'bg-blue-100 text-blue-700', in_progress: 'bg-amber-100 text-amber-700', completed: 'bg-green-100 text-green-700', cancelled: 'bg-red-100 text-red-700' };

@@ -4,11 +4,8 @@ import React, { useState, useMemo } from 'react';
 import { useParams } from 'next/navigation';
 import { useStudyDetail, usePatientImaging, useRadiologyTemplates, type ImagingStudy } from '@/lib/radiology/radiology-hooks';
 import { useAuthStore } from '@/lib/store/auth';
-import { createClient } from '@/lib/supabase/client';
+import { sb } from '@/lib/supabase/browser';
 import Link from 'next/link';
-
-let _sb: any = null;
-function sb() { if (typeof window === 'undefined') return null as any; if (!_sb) { try { _sb = createClient(); } catch { return null; } } return _sb; }
 
 const MOD_CLR: Record<string, string> = {
   XR: 'bg-blue-100 text-teal-700', CT: 'bg-purple-100 text-purple-700', MRI: 'bg-indigo-100 text-indigo-700',

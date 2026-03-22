@@ -2,15 +2,12 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { createClient } from '@/lib/supabase/client';
+import { sb } from '@/lib/supabase/browser';
 import { openPrintWindow } from '@/components/ui/shared';
 import { downloadDischargePDF } from '@/lib/discharge/discharge-pdf';
 import { auditCreate, auditSign, auditPrint } from '@/lib/audit/audit-logger';
 import { triggerFinalBillOnDischarge } from '@/lib/bridge/cross-module-bridge';
 import { notifyDischarge } from '@/lib/notifications/notification-dispatcher';
-
-let _sb: any = null;
-function sb() { if (typeof window === 'undefined') return null as any; if (!_sb) { try { _sb = createClient(); } catch { return null; } } return _sb; }
 
 interface Props {
   admissionId: string; patientId: string; staffId: string;

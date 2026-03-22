@@ -2,15 +2,8 @@
 // Supabase hooks for OPD → Billing → Pharmacy revenue loop
 
 import { useState, useEffect, useCallback } from 'react';
-import { createClient } from '@/lib/supabase/client';
+import { sb } from '@/lib/supabase/browser';
 import { sendOPDTokenConfirmation, sendPharmacyReady, sendPaymentReceipt } from '@/lib/notifications/whatsapp';
-
-let _sb: ReturnType<typeof createClient> | null = null;
-function sb() {
-  if (typeof window === 'undefined') return null as any;
-  if (!_sb) { try { _sb = createClient(); } catch { return null as any; } }
-  return _sb;
-}
 
 // ============================================================
 // OPD QUEUE

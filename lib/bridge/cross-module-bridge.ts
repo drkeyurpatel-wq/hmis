@@ -2,11 +2,8 @@
 // Connects modules that should talk to each other but don't yet.
 // Called from UI action handlers after the primary action succeeds.
 
-import { createClient } from '@/lib/supabase/client';
+import { sb } from '@/lib/supabase/browser';
 import { auditCreate } from '@/lib/audit/audit-logger';
-
-let _sb: any = null;
-function sb() { if (typeof window === 'undefined') return null as any; if (!_sb) { try { _sb = createClient(); } catch { return null; } } return _sb; }
 
 // ============================================================
 // TARIFF LOOKUP — find real rate from hmis_tariff_master

@@ -1,9 +1,6 @@
 // lib/linen/linen-hooks.ts
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { createClient } from '@/lib/supabase/client';
-
-let _sb: any = null;
-function sb() { if (typeof window === 'undefined') return null as any; if (!_sb) { try { _sb = createClient(); } catch { return null; } } return _sb; }
+import { sb } from '@/lib/supabase/browser';
 
 export const LINEN_TYPES = ['bedsheet', 'pillow_cover', 'blanket', 'curtain', 'towel', 'gown', 'drape'] as const;
 export type LinenType = typeof LINEN_TYPES[number];

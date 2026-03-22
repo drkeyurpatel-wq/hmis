@@ -1,7 +1,7 @@
 'use client';
 import React, { useState, useEffect, Suspense } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
-import { createClient } from '@/lib/supabase/client';
+import { sb } from '@/lib/supabase/browser';
 import { useAuthStore } from '@/lib/store/auth';
 import { useDoctorRounds, useICUChart, useICUScores, useIOChart, useMedicationOrders, useMAR, useConsents, useProceduralNotes } from '@/lib/ipd/clinical-hooks';
 import NursingShiftNotes from '@/components/ipd/nursing-shift-notes';
@@ -25,9 +25,6 @@ import CPOEPanel from '@/components/ipd/cpoe-panel';
 import { useAlerts } from '@/lib/alerts/alert-engine';
 import AlertPanel from '@/components/alerts/alert-panel';
 import Link from 'next/link';
-
-let _sb: any = null;
-function sb() { if (typeof window === 'undefined') return null as any; if (!_sb) { try { _sb = createClient(); } catch { return null; } } return _sb; }
 
 type ClinicalTab = 'rounds' | 'icu' | 'trends' | 'io' | 'meds' | 'mar' | 'scores' | 'cpoe' | 'consents' | 'procedures' | 'nursing' | 'alerts' | 'lab' | 'imaging' | 'billing' | 'discharge';
 

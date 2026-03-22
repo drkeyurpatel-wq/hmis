@@ -2,11 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { useAuthStore } from '@/lib/store/auth';
 import { RoleGuard } from '@/components/ui/shared';
-import { createClient } from '@/lib/supabase/client';
+import { sb } from '@/lib/supabase/browser';
 import { useMortuary, type MortuaryRecord } from '@/lib/mortuary/mortuary-hooks';
-
-let _sb: any = null;
-function sb() { if (typeof window === 'undefined') return null as any; if (!_sb) { try { _sb = createClient(); } catch { return null; } } return _sb; }
 
 const STATUS_COLORS: Record<string, string> = {
   received: 'bg-amber-100 text-amber-700', stored: 'bg-blue-100 text-blue-700',

@@ -2,12 +2,9 @@
 // Full refund workflow: initiate → approve → process → receipt
 'use client';
 import React, { useState, useEffect, useCallback } from 'react';
-import { createClient } from '@/lib/supabase/client';
+import { sb } from '@/lib/supabase/browser';
 import { useAuthStore } from '@/lib/store/auth';
 import { auditCreate, auditApprove } from '@/lib/audit/audit-logger';
-
-let _sb: any = null;
-function sb() { if (typeof window === 'undefined') return null as any; if (!_sb) { try { _sb = createClient(); } catch { return null; } } return _sb; }
 const fmt = (n: number) => '₹' + Math.round(n).toLocaleString('en-IN');
 
 interface Props { centreId: string; onFlash: (m: string) => void; }

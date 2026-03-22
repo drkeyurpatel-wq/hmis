@@ -2,14 +2,11 @@
 import React, { useState, useEffect } from 'react';
 import { useAuthStore } from '@/lib/store/auth';
 import { RoleGuard } from '@/components/ui/shared';
-import { createClient } from '@/lib/supabase/client';
+import { sb } from '@/lib/supabase/browser';
 import {
   useEquipment, useMaintenance, usePMSchedule,
   type Equipment, type MaintenanceTicket, type PMSchedule,
 } from '@/lib/biomedical/biomedical-hooks';
-
-let _sb: any = null;
-function sb() { if (typeof window === 'undefined') return null as any; if (!_sb) { try { _sb = createClient(); } catch { return null; } } return _sb; }
 
 const fmt = (n: number) => `₹${Math.round(n).toLocaleString('en-IN')}`;
 type Tab = 'equipment' | 'maintenance' | 'pm' | 'analytics';
