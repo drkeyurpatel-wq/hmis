@@ -1262,12 +1262,4 @@ BEGIN
         EXECUTE format('CREATE POLICY %I ON %I FOR ALL USING (auth.uid() IS NOT NULL)', tbl || '_pol', tbl);
     END LOOP;
 END $$;
-
--- ════════════════════════════════════════════════════════
--- ALL MODULE TABLES CREATED SUCCESSFULLY
--- 43 tables, 51 indexes
--- ════════════════════════════════════════════════════════
--- NEXT: Run these SEPARATELY (large data files):
--- 1. sql/comprehensive_tariff_2000.sql  (998 hospital services)
--- 2. sql/pmjay_tariff_2015.sql          (1,976 PMJAY procedures)
--- ════════════════════════════════════════════════════════
+-- END OF SCHEMA MIGRATIONS

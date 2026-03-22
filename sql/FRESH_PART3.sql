@@ -1,24 +1,919 @@
--- Health1 HMIS — 38 Missing Module Tables
--- Safe: only creates what doesn't exist, no conflicts
+-- Health1 HMIS — NHCX Integration Migration
 -- Run in Supabase SQL Editor (project: bmuupgrzbfmddjwcqlss)
+-- ============================================================
 
--- Safety: ensure hmis_pharmacy_po exists (referenced by purchase_indents)
-CREATE TABLE IF NOT EXISTS hmis_pharmacy_po (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  centre_id uuid NOT NULL REFERENCES hmis_centres(id),
-  po_number varchar(20) NOT NULL,
-  supplier varchar(200) NOT NULL,
-  supplier_gst varchar(20),
-  order_date date NOT NULL DEFAULT CURRENT_DATE,
-  expected_date date,
-  status varchar(15) NOT NULL DEFAULT 'draft',
-  items jsonb NOT NULL DEFAULT '[]',
-  total_amount decimal(12,2) DEFAULT 0,
-  notes text,
-  created_by uuid REFERENCES hmis_staff(id),
-  created_at timestamptz NOT NULL DEFAULT now()
+-- 1. NHCX Transaction Log — every API call in/out
+CREATE TABLE IF NOT EXISTS hmis_nhcx_transactions (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    claim_id uuid REFERENCES hmis_claims(id),
+    patient_id uuid REFERENCES hmis_patients(id),
+    action varchar(50) NOT NULL,                    -- coverageeligibility/check, preauth/submit, etc
+    direction varchar(10) NOT NULL CHECK (direction IN ('outgoing','incoming')),
+    nhcx_api_call_id varchar(100),                  -- NHCX gateway's API call ID
+    nhcx_correlation_id varchar(100),               -- Links request ↔ response
+    nhcx_workflow_id varchar(100),                   -- Links eligibility → preauth → claim
+    status varchar(20) NOT NULL DEFAULT 'pending',
+    error_message text,
+    request_payload jsonb,
+    response_payload jsonb,
+    request_timestamp timestamptz,
+    response_timestamp timestamptz,
+    created_at timestamptz NOT NULL DEFAULT now()
 );
 
+CREATE INDEX IF NOT EXISTS idx_nhcx_txn_claim ON hmis_nhcx_transactions(claim_id);
+CREATE INDEX IF NOT EXISTS idx_nhcx_txn_correlation ON hmis_nhcx_transactions(nhcx_correlation_id);
+CREATE INDEX IF NOT EXISTS idx_nhcx_txn_workflow ON hmis_nhcx_transactions(nhcx_workflow_id);
+
+-- 2. Add NHCX columns to hmis_claims
+ALTER TABLE hmis_claims ADD COLUMN IF NOT EXISTS nhcx_correlation_id varchar(100);
+ALTER TABLE hmis_claims ADD COLUMN IF NOT EXISTS nhcx_workflow_id varchar(100);
+ALTER TABLE hmis_claims ADD COLUMN IF NOT EXISTS nhcx_response jsonb;
+ALTER TABLE hmis_claims ADD COLUMN IF NOT EXISTS nhcx_submitted_at timestamptz;
+ALTER TABLE hmis_claims ADD COLUMN IF NOT EXISTS nhcx_responded_at timestamptz;
+
+-- 3. Add NHCX participant codes to insurers and TPAs
+ALTER TABLE hmis_insurers ADD COLUMN IF NOT EXISTS nhcx_code varchar(100);
+ALTER TABLE hmis_tpas ADD COLUMN IF NOT EXISTS nhcx_code varchar(100);
+
+-- 4. Add ABHA fields to patients (if not exists)
+ALTER TABLE hmis_patients ADD COLUMN IF NOT EXISTS abha_number varchar(20);
+ALTER TABLE hmis_patients ADD COLUMN IF NOT EXISTS abha_address varchar(50);
+
+-- 5. NHCX Configuration table
+CREATE TABLE IF NOT EXISTS hmis_nhcx_config (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    centre_id uuid NOT NULL REFERENCES hmis_centres(id),
+    participant_code varchar(100) NOT NULL,
+    hfr_id varchar(20) NOT NULL,
+    username varchar(100) NOT NULL,
+    encrypted_secret text NOT NULL,           -- encrypted in application
+    gateway_url varchar(200) NOT NULL DEFAULT 'https://hcxbeta.nha.gov.in',
+    is_production boolean NOT NULL DEFAULT false,
+    rsa_public_key text,                       -- PEM format
+    rsa_private_key_encrypted text,            -- encrypted, stored securely
+    webhook_url text,                          -- our callback URL for NHCX
+    is_active boolean NOT NULL DEFAULT true,
+    last_token_at timestamptz,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    UNIQUE(centre_id)
+);
+
+-- RLS
+DO $$
+BEGIN
+    EXECUTE 'ALTER TABLE hmis_nhcx_transactions ENABLE ROW LEVEL SECURITY';
+    EXECUTE 'CREATE POLICY nhcx_txn_pol ON hmis_nhcx_transactions FOR ALL USING (auth.uid() IS NOT NULL)';
+    EXECUTE 'ALTER TABLE hmis_nhcx_config ENABLE ROW LEVEL SECURITY';
+    EXECUTE 'CREATE POLICY nhcx_cfg_pol ON hmis_nhcx_config FOR ALL USING (auth.uid() IS NOT NULL)';
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+-- 6. Seed major insurers with NHCX codes (placeholder — update when known)
+-- These codes will be available from the NHCX participant registry
+UPDATE hmis_insurers SET nhcx_code = CASE 
+    WHEN name ILIKE '%star health%' THEN 'nhcx-star-health'
+    WHEN name ILIKE '%niva bupa%' OR name ILIKE '%max bupa%' THEN 'nhcx-niva-bupa'
+    WHEN name ILIKE '%care health%' OR name ILIKE '%religare%' THEN 'nhcx-care-health'
+    WHEN name ILIKE '%hdfc ergo%' THEN 'nhcx-hdfc-ergo'
+    WHEN name ILIKE '%icici lombard%' THEN 'nhcx-icici-lombard'
+    WHEN name ILIKE '%bajaj allianz%' THEN 'nhcx-bajaj-allianz'
+    WHEN name ILIKE '%new india%' THEN 'nhcx-new-india'
+    WHEN name ILIKE '%national%' THEN 'nhcx-national-insurance'
+    WHEN name ILIKE '%united india%' THEN 'nhcx-united-india'
+    WHEN name ILIKE '%oriental%' THEN 'nhcx-oriental-insurance'
+    ELSE nhcx_code
+END WHERE nhcx_code IS NULL;
+
+UPDATE hmis_tpas SET nhcx_code = CASE
+    WHEN name ILIKE '%medi assist%' THEN 'nhcx-medi-assist'
+    WHEN name ILIKE '%paramount%' THEN 'nhcx-paramount'
+    WHEN name ILIKE '%vidal%' THEN 'nhcx-vidal'
+    WHEN name ILIKE '%md india%' THEN 'nhcx-md-india'
+    WHEN name ILIKE '%good health%' THEN 'nhcx-good-health'
+    ELSE nhcx_code
+END WHERE nhcx_code IS NULL;
+-- ============================================================
+-- Health1 HMIS — RBAC: Role-Based Access Control
+-- Proper module permissions, role templates, bulk user creation
+-- Run in Supabase SQL Editor (project: bmuupgrzbfmddjwcqlss)
+-- ============================================================
+
+-- 1. Clear old roles and insert proper templates
+-- Upsert roles (safe — does not delete referenced roles)
+
+-- ============================================================
+-- PERMISSION STRUCTURE:
+-- permissions jsonb = { "module_name": ["action1", "action2"] }
+--
+-- MODULES (matching sidebar + features):
+--   dashboard, patients, opd, appointments, ipd, bed_management,
+--   nursing_station, emr, billing, pharmacy, lab, blood_bank,
+--   radiology, ot, vpms, homecare, reports, quality, settings,
+--   command_centre, portal
+--
+-- ACTIONS per module:
+--   view, create, edit, delete, print, approve, export, admin
+-- ============================================================
+
+INSERT INTO hmis_roles (name, description, permissions, is_system) VALUES
+
+-- SUPER ADMIN — everything
+('super_admin', 'Full system access — all modules, all actions', '{
+  "dashboard": ["view","admin"],
+  "patients": ["view","create","edit","delete","print","export","admin"],
+  "opd": ["view","create","edit","delete","print","export","admin"],
+  "appointments": ["view","create","edit","delete","print","export"],
+  "ipd": ["view","create","edit","delete","print","approve","export","admin"],
+  "bed_management": ["view","create","edit","admin"],
+  "nursing_station": ["view","create","edit","print"],
+  "emr": ["view","create","edit","delete","print","export","admin"],
+  "billing": ["view","create","edit","delete","print","approve","export","admin"],
+  "pharmacy": ["view","create","edit","delete","print","approve","export","admin"],
+  "lab": ["view","create","edit","delete","print","approve","export","admin"],
+  "blood_bank": ["view","create","edit","print","approve"],
+  "radiology": ["view","create","edit","delete","print","approve","export","admin"],
+  "ot": ["view","create","edit","print","approve","admin"],
+  "vpms": ["view","create","edit","approve","admin"],
+  "homecare": ["view","create","edit","print"],
+  "reports": ["view","export","admin"],
+  "quality": ["view","create","edit","approve","export","admin"],
+  "settings": ["view","edit","admin"],
+  "command_centre": ["view","admin"]
+}'::jsonb, true),
+
+-- ADMIN — everything except settings admin
+('admin', 'Hospital administrator — full access except system settings', '{
+  "dashboard": ["view"],
+  "patients": ["view","create","edit","print","export"],
+  "opd": ["view","create","edit","print","export"],
+  "appointments": ["view","create","edit","delete","print"],
+  "ipd": ["view","create","edit","print","approve","export"],
+  "bed_management": ["view","create","edit"],
+  "nursing_station": ["view","create","edit","print"],
+  "emr": ["view","create","edit","print","export"],
+  "billing": ["view","create","edit","print","approve","export"],
+  "pharmacy": ["view","create","edit","print","approve","export"],
+  "lab": ["view","create","edit","print","approve","export"],
+  "blood_bank": ["view","create","edit","print","approve"],
+  "radiology": ["view","create","edit","print","approve","export"],
+  "ot": ["view","create","edit","print","approve"],
+  "vpms": ["view","create","edit","approve"],
+  "homecare": ["view","create","edit","print"],
+  "reports": ["view","export"],
+  "quality": ["view","create","edit","approve","export"],
+  "settings": ["view","edit"],
+  "command_centre": ["view"]
+}'::jsonb, true),
+
+-- DOCTOR — clinical modules
+('doctor', 'Consulting / treating physician', '{
+  "dashboard": ["view"],
+  "patients": ["view","create","edit","print"],
+  "opd": ["view","create","edit","print"],
+  "appointments": ["view","create","edit"],
+  "ipd": ["view","create","edit","print"],
+  "bed_management": ["view"],
+  "nursing_station": ["view"],
+  "emr": ["view","create","edit","print","export"],
+  "billing": ["view","print"],
+  "pharmacy": ["view"],
+  "lab": ["view","create","print"],
+  "radiology": ["view","create","print"],
+  "ot": ["view","create","edit","print"],
+  "reports": ["view"],
+  "quality": ["view","create"]
+}'::jsonb, true),
+
+-- NURSE — clinical care modules
+('nurse', 'Nursing staff — ward, ICU, OT', '{
+  "dashboard": ["view"],
+  "patients": ["view","edit"],
+  "opd": ["view"],
+  "appointments": ["view"],
+  "ipd": ["view","create","edit","print"],
+  "bed_management": ["view","edit"],
+  "nursing_station": ["view","create","edit","print"],
+  "emr": ["view","create","edit"],
+  "pharmacy": ["view"],
+  "lab": ["view"],
+  "radiology": ["view"],
+  "ot": ["view","edit"],
+  "quality": ["view","create"]
+}'::jsonb, true),
+
+-- RECEPTIONIST — front desk
+('receptionist', 'Front desk — registration, appointments, basic billing', '{
+  "dashboard": ["view"],
+  "patients": ["view","create","edit","print"],
+  "opd": ["view","create","edit","print"],
+  "appointments": ["view","create","edit","delete","print"],
+  "ipd": ["view"],
+  "bed_management": ["view"],
+  "billing": ["view","create","print"],
+  "reports": ["view"]
+}'::jsonb, true),
+
+-- BILLING STAFF
+('billing_staff', 'Billing and accounts — bills, payments, insurance', '{
+  "dashboard": ["view"],
+  "patients": ["view"],
+  "billing": ["view","create","edit","print","export"],
+  "ipd": ["view"],
+  "pharmacy": ["view"],
+  "reports": ["view","export"]
+}'::jsonb, true),
+
+-- BILLING MANAGER — billing + approvals
+('billing_manager', 'Billing manager — approve refunds, credit notes, discounts', '{
+  "dashboard": ["view"],
+  "patients": ["view"],
+  "billing": ["view","create","edit","delete","print","approve","export","admin"],
+  "ipd": ["view","print"],
+  "pharmacy": ["view"],
+  "reports": ["view","export"],
+  "quality": ["view"]
+}'::jsonb, true),
+
+-- PHARMACIST
+('pharmacist', 'Pharmacy — dispensing, stock, controlled drugs', '{
+  "dashboard": ["view"],
+  "patients": ["view"],
+  "pharmacy": ["view","create","edit","print","approve","export"],
+  "billing": ["view"],
+  "reports": ["view"]
+}'::jsonb, true),
+
+-- LAB TECHNICIAN
+('lab_technician', 'Laboratory — sample collection, results entry, verification', '{
+  "dashboard": ["view"],
+  "patients": ["view"],
+  "lab": ["view","create","edit","print","export"],
+  "blood_bank": ["view","create","edit"],
+  "reports": ["view"]
+}'::jsonb, true),
+
+-- RADIOLOGY TECHNICIAN
+('radiology_technician', 'Radiology — imaging, reports', '{
+  "dashboard": ["view"],
+  "patients": ["view"],
+  "radiology": ["view","create","edit","print","export"],
+  "reports": ["view"]
+}'::jsonb, true)
+ON CONFLICT (name) DO UPDATE SET
+  description = EXCLUDED.description,
+  permissions = EXCLUDED.permissions,
+  is_system = EXCLUDED.is_system;
+
+
+-- ============================================================
+-- 2. BULK USER CREATION RPC
+-- Creates staff + Supabase auth user + assigns role at centre
+-- ============================================================
+
+CREATE OR REPLACE FUNCTION create_staff_user(
+  p_employee_code text,
+  p_full_name text,
+  p_email text,
+  p_password text,
+  p_phone text,
+  p_staff_type text,
+  p_designation text,
+  p_centre_id uuid,
+  p_role_name text,
+  p_department_id uuid DEFAULT NULL,
+  p_specialisation text DEFAULT NULL,
+  p_medical_reg_no text DEFAULT NULL
+) RETURNS jsonb AS $$
+DECLARE
+  v_auth_id uuid;
+  v_staff_id uuid;
+  v_role_id uuid;
+BEGIN
+  -- Get role ID
+  SELECT id INTO v_role_id FROM hmis_roles WHERE name = p_role_name;
+  IF v_role_id IS NULL THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Role not found: ' || p_role_name);
+  END IF;
+
+  -- Check for duplicate employee code
+  IF EXISTS (SELECT 1 FROM hmis_staff WHERE employee_code = p_employee_code) THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Employee code already exists: ' || p_employee_code);
+  END IF;
+
+  -- Create Supabase auth user
+  v_auth_id := extensions.uuid_generate_v4();
+  INSERT INTO auth.users (
+    id, instance_id, email, encrypted_password, email_confirmed_at,
+    raw_app_meta_data, raw_user_meta_data, created_at, updated_at,
+    role, aud, confirmation_token
+  ) VALUES (
+    v_auth_id, '00000000-0000-0000-0000-000000000000', p_email,
+    crypt(p_password, gen_salt('bf')),
+    now(),
+    '{"provider":"email","providers":["email"]}'::jsonb,
+    jsonb_build_object('full_name', p_full_name, 'employee_code', p_employee_code),
+    now(), now(), 'authenticated', 'authenticated', ''
+  );
+
+  -- Create identity
+  INSERT INTO auth.identities (id, user_id, identity_data, provider, provider_id, last_sign_in_at, created_at, updated_at)
+  VALUES (v_auth_id, v_auth_id, jsonb_build_object('sub', v_auth_id, 'email', p_email), 'email', v_auth_id, now(), now(), now());
+
+  -- Create staff record
+  INSERT INTO hmis_staff (
+    auth_user_id, employee_code, full_name, designation, staff_type,
+    department_id, primary_centre_id, phone, email,
+    specialisation, medical_reg_no
+  ) VALUES (
+    v_auth_id, p_employee_code, p_full_name, p_designation, p_staff_type,
+    p_department_id, p_centre_id, p_phone, p_email,
+    p_specialisation, p_medical_reg_no
+  ) RETURNING id INTO v_staff_id;
+
+  -- Assign role at centre
+  INSERT INTO hmis_staff_centres (staff_id, centre_id, role_id)
+  VALUES (v_staff_id, p_centre_id, v_role_id)
+  ON CONFLICT (staff_id, centre_id) DO UPDATE SET role_id = v_role_id;
+
+  -- Assign to department if provided
+  IF p_department_id IS NOT NULL THEN
+    INSERT INTO hmis_staff_departments (staff_id, department_id, is_primary)
+    VALUES (v_staff_id, p_department_id, true)
+    ON CONFLICT (staff_id, department_id) DO NOTHING;
+  END IF;
+
+  RETURN jsonb_build_object(
+    'success', true,
+    'staff_id', v_staff_id,
+    'auth_id', v_auth_id,
+    'employee_code', p_employee_code,
+    'email', p_email,
+    'role', p_role_name
+  );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+
+-- ============================================================
+-- 3. BATCH USER CREATION (for CSV import)
+-- ============================================================
+CREATE OR REPLACE FUNCTION create_staff_batch(p_users jsonb)
+RETURNS jsonb AS $$
+DECLARE
+  v_user jsonb;
+  v_result jsonb;
+  v_results jsonb[] := ARRAY[]::jsonb[];
+  v_success int := 0;
+  v_failed int := 0;
+BEGIN
+  FOR v_user IN SELECT * FROM jsonb_array_elements(p_users)
+  LOOP
+    BEGIN
+      v_result := create_staff_user(
+        v_user->>'employee_code', v_user->>'full_name',
+        v_user->>'email', v_user->>'password',
+        v_user->>'phone', v_user->>'staff_type',
+        v_user->>'designation', (v_user->>'centre_id')::uuid,
+        v_user->>'role_name',
+        CASE WHEN v_user->>'department_id' IS NOT NULL THEN (v_user->>'department_id')::uuid ELSE NULL END,
+        v_user->>'specialisation', v_user->>'medical_reg_no'
+      );
+      v_results := array_append(v_results, v_result);
+      IF (v_result->>'success')::boolean THEN v_success := v_success + 1;
+      ELSE v_failed := v_failed + 1; END IF;
+    EXCEPTION WHEN OTHERS THEN
+      v_failed := v_failed + 1;
+      v_results := array_append(v_results, jsonb_build_object('success', false, 'error', SQLERRM, 'employee_code', v_user->>'employee_code'));
+    END;
+  END LOOP;
+
+  RETURN jsonb_build_object('success', v_success, 'failed', v_failed, 'results', to_jsonb(v_results));
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+-- ============================================================
+-- Health1 HMIS — CPOE (Computerized Physician Order Entry)
+-- Run in Supabase SQL Editor (project: bmuupgrzbfmddjwcqlss)
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS hmis_cpoe_orders (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    admission_id uuid NOT NULL REFERENCES hmis_admissions(id),
+    patient_id uuid NOT NULL REFERENCES hmis_patients(id),
+    order_type varchar(20) NOT NULL CHECK (order_type IN ('medication','lab','radiology','diet','nursing','activity','consult','procedure')),
+    order_text text NOT NULL,
+    details jsonb DEFAULT '{}',
+    priority varchar(10) NOT NULL DEFAULT 'routine' CHECK (priority IN ('routine','urgent','stat','asap')),
+    status varchar(15) NOT NULL DEFAULT 'ordered' CHECK (status IN ('ordered','verified','in_progress','completed','cancelled','held')),
+    ordered_by uuid NOT NULL REFERENCES hmis_staff(id),
+    is_verbal boolean NOT NULL DEFAULT false,
+    cosigned_by uuid REFERENCES hmis_staff(id),
+    cosigned_at timestamptz,
+    notes text,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_cpoe_admission ON hmis_cpoe_orders(admission_id, status);
+CREATE INDEX IF NOT EXISTS idx_cpoe_patient ON hmis_cpoe_orders(patient_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_cpoe_verbal ON hmis_cpoe_orders(is_verbal) WHERE is_verbal = true AND cosigned_by IS NULL;
+
+ALTER TABLE hmis_cpoe_orders ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS hmis_cpoe_orders_pol ON hmis_cpoe_orders;
+CREATE POLICY hmis_cpoe_orders_pol ON hmis_cpoe_orders FOR ALL USING (auth.uid() IS NOT NULL);
+-- ============================================================
+-- Health1 HMIS — Refund Management
+-- Run in Supabase SQL Editor (project: bmuupgrzbfmddjwcqlss)
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS hmis_refunds (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    centre_id uuid NOT NULL REFERENCES hmis_centres(id),
+    bill_id uuid NOT NULL REFERENCES hmis_bills(id),
+    refund_amount decimal(12,2) NOT NULL,
+    reason text NOT NULL,
+    refund_mode varchar(20) NOT NULL CHECK (refund_mode IN ('cash','neft','cheque','upi')),
+    bank_details text,
+    status varchar(15) NOT NULL DEFAULT 'initiated' CHECK (status IN ('initiated','approved','processed','rejected','cancelled')),
+    initiated_by uuid NOT NULL REFERENCES hmis_staff(id),
+    approved_by uuid REFERENCES hmis_staff(id),
+    approved_at timestamptz,
+    processed_by uuid REFERENCES hmis_staff(id),
+    processed_at timestamptz,
+    utr_number varchar(50),
+    created_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_refunds_centre ON hmis_refunds(centre_id, status);
+CREATE INDEX IF NOT EXISTS idx_refunds_bill ON hmis_refunds(bill_id);
+
+ALTER TABLE hmis_refunds ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS hmis_refunds_pol ON hmis_refunds;
+CREATE POLICY hmis_refunds_pol ON hmis_refunds FOR ALL USING (auth.uid() IS NOT NULL);
+-- ============================================================
+-- Health1 HMIS — Package Builder + OPD Billing Support
+-- Run in Supabase SQL Editor (project: bmuupgrzbfmddjwcqlss)
+-- ============================================================
+
+-- 1. Packages table (for PackageBuilder component)
+CREATE TABLE IF NOT EXISTS hmis_packages (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    centre_id uuid NOT NULL REFERENCES hmis_centres(id),
+    name varchar(200) NOT NULL,
+    description text,
+    room_category varchar(20) DEFAULT 'economy',
+    expected_los int DEFAULT 3,
+    items jsonb NOT NULL DEFAULT '[]',
+    gross_amount decimal(12,2) NOT NULL DEFAULT 0,
+    discount_amount decimal(12,2) NOT NULL DEFAULT 0,
+    discount_percentage decimal(5,2) DEFAULT 0,
+    net_amount decimal(12,2) NOT NULL DEFAULT 0,
+    is_active boolean NOT NULL DEFAULT true,
+    created_by uuid REFERENCES hmis_staff(id),
+    created_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_packages_centre ON hmis_packages(centre_id, is_active);
+
+ALTER TABLE hmis_packages ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS hmis_packages_pol ON hmis_packages;
+CREATE POLICY hmis_packages_pol ON hmis_packages FOR ALL USING (auth.uid() IS NOT NULL);
+
+-- 2. Add visit_type to OPD visits if missing (for follow-up vs new)
+ALTER TABLE hmis_opd_visits ADD COLUMN IF NOT EXISTS visit_type varchar(15) DEFAULT 'new';
+ALTER TABLE hmis_opd_visits ADD COLUMN IF NOT EXISTS visit_reason text;
+-- ============================================================
+-- Health1 HMIS — Pharmacy v2 (Returns, Transfers, Controlled)
+-- Run in Supabase SQL Editor (project: bmuupgrzbfmddjwcqlss)
+-- ============================================================
+
+-- 1. Pharmacy Returns & Write-offs
+CREATE TABLE IF NOT EXISTS hmis_pharmacy_returns (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    centre_id uuid NOT NULL REFERENCES hmis_centres(id),
+    drug_id uuid NOT NULL REFERENCES hmis_drug_master(id),
+    quantity decimal(10,2) NOT NULL,
+    batch_number varchar(30),
+    return_type varchar(20) NOT NULL CHECK (return_type IN ('patient_return','supplier_return','expiry_write_off','damage')),
+    reason text NOT NULL,
+    patient_id uuid REFERENCES hmis_patients(id),
+    dispensing_id uuid,
+    refund_amount decimal(10,2) DEFAULT 0,
+    status varchar(15) NOT NULL DEFAULT 'processed',
+    processed_by uuid NOT NULL REFERENCES hmis_staff(id),
+    created_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_rx_returns_centre ON hmis_pharmacy_returns(centre_id, return_type);
+
+-- 2. Inter-Centre Stock Transfers
+CREATE TABLE IF NOT EXISTS hmis_pharmacy_transfers (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    from_centre_id uuid NOT NULL REFERENCES hmis_centres(id),
+    to_centre_id uuid NOT NULL REFERENCES hmis_centres(id),
+    drug_id uuid NOT NULL REFERENCES hmis_drug_master(id),
+    quantity decimal(10,2) NOT NULL,
+    batch_number varchar(30),
+    reason text,
+    status varchar(15) NOT NULL DEFAULT 'initiated' CHECK (status IN ('initiated','in_transit','received','cancelled')),
+    initiated_by uuid NOT NULL REFERENCES hmis_staff(id),
+    received_by uuid REFERENCES hmis_staff(id),
+    received_at timestamptz,
+    created_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_rx_transfers ON hmis_pharmacy_transfers(from_centre_id, status);
+
+-- 3. Controlled Substance Register (Schedule H, H1, X)
+CREATE TABLE IF NOT EXISTS hmis_controlled_substance_log (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    centre_id uuid NOT NULL REFERENCES hmis_centres(id),
+    drug_id uuid NOT NULL REFERENCES hmis_drug_master(id),
+    quantity decimal(10,2) NOT NULL,
+    batch_number varchar(30),
+    transaction_type varchar(15) NOT NULL CHECK (transaction_type IN ('received','dispensed','returned','destroyed','wastage')),
+    patient_id uuid REFERENCES hmis_patients(id),
+    admission_id uuid REFERENCES hmis_admissions(id),
+    administered_by uuid NOT NULL REFERENCES hmis_staff(id),
+    witnessed_by uuid REFERENCES hmis_staff(id),
+    balance_after decimal(10,2) DEFAULT 0,
+    notes text,
+    created_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_controlled_centre ON hmis_controlled_substance_log(centre_id, drug_id);
+
+-- Add schedule column to drug master if missing
+ALTER TABLE hmis_drug_master ADD COLUMN IF NOT EXISTS schedule varchar(5);
+ALTER TABLE hmis_drug_master ADD COLUMN IF NOT EXISTS is_controlled boolean DEFAULT false;
+ALTER TABLE hmis_drug_master ADD COLUMN IF NOT EXISTS reorder_level int DEFAULT 10;
+ALTER TABLE hmis_drug_master ADD COLUMN IF NOT EXISTS max_stock int DEFAULT 500;
+
+-- RLS
+DO $$
+DECLARE tbl text;
+BEGIN
+    FOREACH tbl IN ARRAY ARRAY['hmis_pharmacy_returns','hmis_pharmacy_transfers','hmis_controlled_substance_log'] LOOP
+        EXECUTE format('ALTER TABLE %I ENABLE ROW LEVEL SECURITY', tbl);
+        EXECUTE format('DROP POLICY IF EXISTS %I ON %I', tbl || '_pol', tbl);
+        EXECUTE format('CREATE POLICY %I ON %I FOR ALL USING (auth.uid() IS NOT NULL)', tbl || '_pol', tbl);
+    END LOOP;
+END $$;
+-- ============================================================
+-- Health1 HMIS — Lab Instrument Integration + Patient Lab History
+-- Run in Supabase SQL Editor (project: bmuupgrzbfmddjwcqlss)
+-- ============================================================
+
+-- 1. Instrument result staging table
+-- Results from Mindray/analyzers land here before being verified
+CREATE TABLE IF NOT EXISTS hmis_lab_instrument_results (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    lab_order_id uuid REFERENCES hmis_lab_orders(id),
+    patient_id uuid REFERENCES hmis_patients(id),
+    parameter_code varchar(30),
+    parameter_name varchar(100) NOT NULL,
+    result_value varchar(50) NOT NULL,
+    unit varchar(20),
+    reference_range varchar(50),
+    instrument_flag varchar(10),
+    is_abnormal boolean DEFAULT false,
+    is_critical boolean DEFAULT false,
+    source varchar(20) NOT NULL DEFAULT 'instrument',
+    instrument_format varchar(10),  -- hl7, astm, json
+    received_at timestamptz NOT NULL DEFAULT now(),
+    reviewed boolean DEFAULT false,
+    reviewed_by uuid REFERENCES hmis_staff(id),
+    reviewed_at timestamptz,
+    accepted boolean,  -- true = accepted into results, false = rejected
+    rejection_reason text,
+    created_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_lab_instr_order ON hmis_lab_instrument_results(lab_order_id);
+CREATE INDEX IF NOT EXISTS idx_lab_instr_patient ON hmis_lab_instrument_results(patient_id, received_at DESC);
+CREATE INDEX IF NOT EXISTS idx_lab_instr_unreviewed ON hmis_lab_instrument_results(reviewed) WHERE reviewed = false;
+
+-- RLS
+ALTER TABLE hmis_lab_instrument_results ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS hmis_lab_instrument_results_pol ON hmis_lab_instrument_results;
+CREATE POLICY hmis_lab_instrument_results_pol ON hmis_lab_instrument_results FOR ALL USING (auth.uid() IS NOT NULL);
+-- ============================================================
+-- Add BC-5000 specific parameters to CBC test
+-- Run in Supabase SQL Editor
+-- ============================================================
+
+DO $$
+DECLARE cbc_id uuid;
+BEGIN
+    SELECT id INTO cbc_id FROM hmis_lab_test_master WHERE test_code = 'CBC';
+    
+    IF cbc_id IS NOT NULL THEN
+    INSERT INTO hmis_lab_test_parameters (test_id, parameter_code, parameter_name, unit, ref_range_min, ref_range_max, data_type, sort_order) VALUES
+    -- Absolute counts (BC-5000 outputs these)
+    (cbc_id, 'NEUT_ABS', 'Neutrophils (Absolute)', 'x10^3/uL', 2.0, 7.0, 'numeric', 20),
+    (cbc_id, 'LYMPH_ABS', 'Lymphocytes (Absolute)', 'x10^3/uL', 1.0, 3.0, 'numeric', 21),
+    (cbc_id, 'MONO_ABS', 'Monocytes (Absolute)', 'x10^3/uL', 0.2, 0.8, 'numeric', 22),
+    (cbc_id, 'EOS_ABS', 'Eosinophils (Absolute)', 'x10^3/uL', 0.02, 0.5, 'numeric', 23),
+    (cbc_id, 'BASO_ABS', 'Basophils (Absolute)', 'x10^3/uL', 0.0, 0.1, 'numeric', 24),
+    -- RDW-SD
+    (cbc_id, 'RDW_SD', 'RDW-SD', 'fL', 39, 46, 'numeric', 25),
+    -- Platelet indices
+    (cbc_id, 'PDW', 'Platelet Distribution Width', 'fL', 9, 17, 'numeric', 26),
+    (cbc_id, 'PCT', 'Plateletcrit', '%', 0.17, 0.35, 'numeric', 27),
+    (cbc_id, 'PLCR', 'Platelet Large Cell Ratio', '%', 13, 43, 'numeric', 28),
+    (cbc_id, 'PLCC', 'Platelet Large Cell Count', 'x10^3/uL', NULL, NULL, 'numeric', 29)
+    ON CONFLICT (test_id, parameter_code) DO NOTHING;
+    
+    RAISE NOTICE 'BC-5000 parameters added: 10 new CBC parameters';
+    END IF;
+END $$;
+-- ============================================================
+-- Health1 HMIS — Command Centre Server-Side Aggregation
+-- Run in Supabase SQL Editor (project: bmuupgrzbfmddjwcqlss)
+-- ============================================================
+
+-- 1. Bed Census — single query, grouped by centre
+CREATE OR REPLACE FUNCTION get_bed_census()
+RETURNS TABLE (
+    centre_id uuid,
+    centre_name text,
+    centre_code text,
+    total_beds bigint,
+    occupied bigint,
+    available bigint,
+    maintenance bigint,
+    icu_total bigint,
+    icu_occupied bigint,
+    ward_type text,
+    ward_occupied bigint,
+    ward_total bigint
+) LANGUAGE sql STABLE AS $$
+    WITH bed_data AS (
+        SELECT
+            c.id AS centre_id,
+            c.name AS centre_name,
+            c.code AS centre_code,
+            b.status AS bed_status,
+            w.type AS ward_type
+        FROM hmis_beds b
+        JOIN hmis_rooms r ON r.id = b.room_id
+        JOIN hmis_wards w ON w.id = r.ward_id
+        JOIN hmis_centres c ON c.id = w.centre_id
+        WHERE c.is_active = true
+    )
+    SELECT
+        bd.centre_id,
+        bd.centre_name,
+        bd.centre_code,
+        COUNT(*) AS total_beds,
+        COUNT(*) FILTER (WHERE bd.bed_status = 'occupied') AS occupied,
+        COUNT(*) FILTER (WHERE bd.bed_status = 'available') AS available,
+        COUNT(*) FILTER (WHERE bd.bed_status = 'maintenance') AS maintenance,
+        COUNT(*) FILTER (WHERE bd.ward_type = 'icu') AS icu_total,
+        COUNT(*) FILTER (WHERE bd.ward_type = 'icu' AND bd.bed_status = 'occupied') AS icu_occupied,
+        bd.ward_type,
+        COUNT(*) FILTER (WHERE bd.bed_status = 'occupied') AS ward_occupied,
+        COUNT(*) AS ward_total
+    FROM bed_data bd
+    GROUP BY bd.centre_id, bd.centre_name, bd.centre_code, bd.ward_type
+    ORDER BY bd.centre_name, bd.ward_type;
+$$;
+
+-- 2. Today's Operations Summary — single query
+CREATE OR REPLACE FUNCTION get_daily_ops_summary(p_date date DEFAULT CURRENT_DATE)
+RETURNS TABLE (
+    centre_id uuid,
+    opd_total bigint,
+    opd_waiting bigint,
+    opd_in_consult bigint,
+    opd_completed bigint,
+    admissions bigint,
+    discharges bigint,
+    discharge_pending bigint,
+    ot_scheduled bigint,
+    ot_in_progress bigint,
+    ot_completed bigint,
+    ot_cancelled bigint,
+    ot_emergency bigint,
+    ot_robotic bigint,
+    lab_pending bigint
+) LANGUAGE sql STABLE AS $$
+    WITH opd AS (
+        SELECT centre_id,
+            COUNT(*) AS total,
+            COUNT(*) FILTER (WHERE status = 'waiting') AS waiting,
+            COUNT(*) FILTER (WHERE status = 'with_doctor') AS in_consult,
+            COUNT(*) FILTER (WHERE status IN ('completed','referred')) AS completed
+        FROM hmis_opd_visits
+        WHERE created_at::date = p_date
+        GROUP BY centre_id
+    ),
+    ipd AS (
+        SELECT centre_id,
+            COUNT(*) FILTER (WHERE admission_date::date = p_date) AS admissions,
+            COUNT(*) FILTER (WHERE status = 'discharged' AND actual_discharge::date = p_date) AS discharges,
+            COUNT(*) FILTER (WHERE status = 'discharge_initiated') AS discharge_pending
+        FROM hmis_admissions
+        GROUP BY centre_id
+    ),
+    ot AS (
+        SELECT b.ot_room_id, r.centre_id,
+            COUNT(*) AS scheduled,
+            COUNT(*) FILTER (WHERE b.status = 'in_progress') AS in_progress,
+            COUNT(*) FILTER (WHERE b.status = 'completed') AS completed,
+            COUNT(*) FILTER (WHERE b.status = 'cancelled') AS cancelled,
+            COUNT(*) FILTER (WHERE b.is_emergency) AS emergency,
+            COUNT(*) FILTER (WHERE b.is_robotic) AS robotic
+        FROM hmis_ot_bookings b
+        JOIN hmis_ot_rooms r ON r.id = b.ot_room_id
+        WHERE b.scheduled_date = p_date
+        GROUP BY b.ot_room_id, r.centre_id
+    ),
+    lab AS (
+        SELECT centre_id,
+            COUNT(*) FILTER (WHERE status IN ('ordered','collected','processing')) AS pending
+        FROM hmis_lab_orders
+        WHERE created_at::date = p_date
+        GROUP BY centre_id
+    ),
+    centres AS (SELECT id AS centre_id FROM hmis_centres WHERE is_active = true)
+    SELECT
+        c.centre_id,
+        COALESCE(o.total, 0) AS opd_total,
+        COALESCE(o.waiting, 0) AS opd_waiting,
+        COALESCE(o.in_consult, 0) AS opd_in_consult,
+        COALESCE(o.completed, 0) AS opd_completed,
+        COALESCE(i.admissions, 0) AS admissions,
+        COALESCE(i.discharges, 0) AS discharges,
+        COALESCE(i.discharge_pending, 0) AS discharge_pending,
+        COALESCE(SUM(ot_agg.scheduled), 0) AS ot_scheduled,
+        COALESCE(SUM(ot_agg.in_progress), 0) AS ot_in_progress,
+        COALESCE(SUM(ot_agg.completed), 0) AS ot_completed,
+        COALESCE(SUM(ot_agg.cancelled), 0) AS ot_cancelled,
+        COALESCE(SUM(ot_agg.emergency), 0) AS ot_emergency,
+        COALESCE(SUM(ot_agg.robotic), 0) AS ot_robotic,
+        COALESCE(l.pending, 0) AS lab_pending
+    FROM centres c
+    LEFT JOIN opd o ON o.centre_id = c.centre_id
+    LEFT JOIN ipd i ON i.centre_id = c.centre_id
+    LEFT JOIN ot ot_agg ON ot_agg.centre_id = c.centre_id
+    LEFT JOIN lab l ON l.centre_id = c.centre_id
+    GROUP BY c.centre_id, o.total, o.waiting, o.in_consult, o.completed,
+        i.admissions, i.discharges, i.discharge_pending, l.pending;
+$$;
+
+-- 3. Revenue Summary — single query
+CREATE OR REPLACE FUNCTION get_revenue_summary(p_date date DEFAULT CURRENT_DATE)
+RETURNS TABLE (
+    centre_id uuid,
+    bills_count bigint,
+    gross_amount numeric,
+    discount_amount numeric,
+    net_amount numeric,
+    paid_amount numeric,
+    balance_amount numeric,
+    cash_collected numeric,
+    upi_collected numeric,
+    card_collected numeric,
+    neft_collected numeric,
+    insurance_billed numeric,
+    collection_rate numeric
+) LANGUAGE sql STABLE AS $$
+    SELECT
+        b.centre_id,
+        COUNT(*) AS bills_count,
+        COALESCE(SUM(b.gross_amount), 0) AS gross_amount,
+        COALESCE(SUM(b.discount_amount), 0) AS discount_amount,
+        COALESCE(SUM(b.net_amount), 0) AS net_amount,
+        COALESCE(SUM(b.paid_amount), 0) AS paid_amount,
+        COALESCE(SUM(b.balance_amount), 0) AS balance_amount,
+        0::numeric AS cash_collected,
+        0::numeric AS upi_collected,
+        0::numeric AS card_collected,
+        0::numeric AS neft_collected,
+        COALESCE(SUM(b.net_amount) FILTER (WHERE b.payor_type != 'self'), 0) AS insurance_billed,
+        CASE WHEN SUM(b.net_amount) > 0
+            THEN ROUND(SUM(b.paid_amount) / SUM(b.net_amount) * 100, 1)
+            ELSE 0 END AS collection_rate
+    FROM hmis_bills b
+    WHERE b.bill_date = p_date AND b.status != 'cancelled'
+    GROUP BY b.centre_id;
+$$;
+
+-- 4. Insurance Pipeline — single query
+CREATE OR REPLACE FUNCTION get_insurance_pipeline()
+RETURNS TABLE (
+    centre_id uuid,
+    preauth_pending bigint,
+    preauth_approved bigint,
+    claims_pending bigint,
+    claims_approved bigint,
+    claims_settled bigint,
+    claims_rejected bigint,
+    total_claimed numeric,
+    total_approved numeric,
+    total_settled numeric,
+    total_outstanding numeric
+) LANGUAGE sql STABLE AS $$
+    SELECT
+        b.centre_id,
+        COUNT(*) FILTER (WHERE cl.status IN ('submitted','under_review')) AS preauth_pending,
+        COUNT(*) FILTER (WHERE cl.status = 'approved') AS preauth_approved,
+        COUNT(*) FILTER (WHERE cl.status IN ('submitted','query')) AS claims_pending,
+        COUNT(*) FILTER (WHERE cl.status = 'approved') AS claims_approved,
+        COUNT(*) FILTER (WHERE cl.status = 'settled') AS claims_settled,
+        COUNT(*) FILTER (WHERE cl.status = 'rejected') AS claims_rejected,
+        COALESCE(SUM(cl.claimed_amount), 0) AS total_claimed,
+        COALESCE(SUM(cl.approved_amount), 0) AS total_approved,
+        COALESCE(SUM(cl.settled_amount), 0) AS total_settled,
+        COALESCE(SUM(cl.claimed_amount) - COALESCE(SUM(cl.settled_amount), 0), 0) AS total_outstanding
+    FROM hmis_claims cl
+    JOIN hmis_bills b ON b.id = cl.bill_id
+    WHERE cl.status NOT IN ('settled','rejected')
+    GROUP BY b.centre_id;
+$$;
+-- ============================================================
+-- Health1 HMIS — Quality/NABH + Audit Trail
+-- Run in Supabase SQL Editor (project: bmuupgrzbfmddjwcqlss)
+-- ============================================================
+
+-- 1. Incident Reporting
+CREATE TABLE IF NOT EXISTS hmis_incidents (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    centre_id uuid NOT NULL REFERENCES hmis_centres(id),
+    incident_number varchar(20) NOT NULL UNIQUE,
+    category varchar(30) NOT NULL CHECK (category IN (
+        'medication_error','fall','infection','surgical','transfusion',
+        'equipment','documentation','communication','delay','abuse',
+        'needle_stick','fire_safety','other'
+    )),
+    severity varchar(15) NOT NULL CHECK (severity IN ('near_miss','minor','moderate','serious','sentinel')),
+    description text NOT NULL,
+    location varchar(50),
+    patient_id uuid REFERENCES hmis_patients(id),
+    involved_staff text,
+    immediate_action text,
+    root_cause text,
+    corrective_action text,
+    preventive_action text,
+    status varchar(15) NOT NULL DEFAULT 'reported' CHECK (status IN ('reported','investigating','action_taken','closed','reopened')),
+    reported_by uuid NOT NULL REFERENCES hmis_staff(id),
+    assigned_to uuid REFERENCES hmis_staff(id),
+    closed_at timestamptz,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_incidents_centre ON hmis_incidents(centre_id, status);
+
+-- 2. Quality Indicators (NABH KPIs)
+CREATE TABLE IF NOT EXISTS hmis_quality_indicators (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    centre_id uuid NOT NULL REFERENCES hmis_centres(id),
+    indicator_code varchar(10) NOT NULL,
+    indicator_name varchar(100) NOT NULL,
+    period varchar(10) NOT NULL, -- '2026-03' format
+    value decimal(10,2) NOT NULL,
+    numerator int,
+    denominator int,
+    target decimal(10,2),
+    met_target boolean,
+    submitted_by uuid REFERENCES hmis_staff(id),
+    created_at timestamptz NOT NULL DEFAULT now(),
+    UNIQUE(centre_id, indicator_code, period)
+);
+
+CREATE INDEX IF NOT EXISTS idx_qi_centre ON hmis_quality_indicators(centre_id, period);
+
+-- 3. Audit Trail
+CREATE TABLE IF NOT EXISTS hmis_audit_trail (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    centre_id uuid NOT NULL REFERENCES hmis_centres(id),
+    user_id uuid NOT NULL REFERENCES hmis_staff(id),
+    action varchar(20) NOT NULL CHECK (action IN ('create','update','delete','view','print','sign','cancel','approve','reject')),
+    entity_type varchar(30) NOT NULL,
+    entity_id uuid,
+    entity_label varchar(200),
+    changes jsonb,
+    ip_address varchar(45),
+    user_agent text,
+    created_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_audit_centre ON hmis_audit_trail(centre_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_audit_entity ON hmis_audit_trail(entity_type, entity_id);
+CREATE INDEX IF NOT EXISTS idx_audit_user ON hmis_audit_trail(user_id, created_at DESC);
+
+-- RLS
+DO $$
+DECLARE tbl text;
+BEGIN
+    FOREACH tbl IN ARRAY ARRAY['hmis_incidents','hmis_quality_indicators','hmis_audit_trail'] LOOP
+        EXECUTE format('ALTER TABLE %I ENABLE ROW LEVEL SECURITY', tbl);
+        EXECUTE format('DROP POLICY IF EXISTS %I ON %I', tbl || '_pol', tbl);
+        EXECUTE format('CREATE POLICY %I ON %I FOR ALL USING (auth.uid() IS NOT NULL)', tbl || '_pol', tbl);
+    END LOOP;
+END $$;
 -- Health1 HMIS — CRM Module + Integration Tables
 -- Run in Supabase SQL Editor (project: bmuupgrzbfmddjwcqlss)
 
@@ -228,6 +1123,23 @@ CREATE INDEX IF NOT EXISTS idx_er_visits_centre ON hmis_er_visits(centre_id, sta
 -- ============================================================
 -- 2. DIETARY / KITCHEN
 -- ============================================================
+CREATE TABLE IF NOT EXISTS hmis_diet_orders (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  centre_id uuid REFERENCES hmis_centres(id),
+  patient_id uuid REFERENCES hmis_patients(id),
+  admission_id uuid REFERENCES hmis_admissions(id),
+  diet_type varchar(30) NOT NULL, -- regular, diabetic, renal, liquid, soft, npo, high_protein, low_salt, cardiac
+  special_instructions text,
+  allergies text[], -- food allergies
+  meal_plan jsonb DEFAULT '{}', -- { breakfast: true, lunch: true, dinner: true, snacks: true }
+  calorie_target integer,
+  protein_target integer,
+  ordered_by uuid REFERENCES hmis_staff(id),
+  status varchar(20) DEFAULT 'active', -- active, modified, discontinued
+  start_date date DEFAULT CURRENT_DATE,
+  end_date date,
+  created_at timestamp with time zone DEFAULT now()
+);
 
 CREATE TABLE IF NOT EXISTS hmis_meal_service (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -608,6 +1520,31 @@ CREATE INDEX IF NOT EXISTS idx_discharge_checklist ON hmis_discharge_checklists(
 -- ============================================================
 -- 15. AMBULANCE & TRANSPORT
 -- ============================================================
+CREATE TABLE IF NOT EXISTS hmis_ambulances (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  centre_id uuid REFERENCES hmis_centres(id),
+  vehicle_number varchar(20) NOT NULL,
+  type varchar(20) NOT NULL DEFAULT 'bls', -- als, bls, patient_transport, neonatal, mortuary
+  make varchar(50),
+  model varchar(50),
+  year integer,
+  driver_name varchar(200),
+  driver_phone varchar(20),
+  driver_license varchar(50),
+  emt_name varchar(200),
+  emt_phone varchar(20),
+  status varchar(20) DEFAULT 'available', -- available, on_trip, maintenance, out_of_service
+  current_location varchar(200),
+  fuel_level varchar(10), -- full, 3/4, half, 1/4, empty
+  last_sanitized timestamp with time zone,
+  insurance_expiry date,
+  fitness_expiry date,
+  equipment_checklist jsonb DEFAULT '{}', -- {oxygen: true, defibrillator: true, stretcher: true}
+  odometer_km integer,
+  is_active boolean DEFAULT true,
+  created_at timestamp with time zone DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_ambulances_centre ON hmis_ambulances(centre_id, status);
 
 CREATE TABLE IF NOT EXISTS hmis_transport_requests (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -1059,10 +1996,28 @@ CREATE INDEX IF NOT EXISTS idx_vendors_category ON hmis_vendors(category);
 -- Run in Supabase SQL Editor (project: bmuupgrzbfmddjwcqlss)
 -- ============================================================
 
+CREATE TABLE IF NOT EXISTS hmis_cdss_usage (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    complaint_name varchar(100) NOT NULL,
+    doctor_id uuid NOT NULL REFERENCES hmis_staff(id),
+    centre_id uuid NOT NULL REFERENCES hmis_centres(id),
+    attributes_used text[] NOT NULL DEFAULT '{}',
+    attributes_skipped text[] NOT NULL DEFAULT '{}',
+    chip_selections jsonb NOT NULL DEFAULT '{}',
+    free_text_entries jsonb NOT NULL DEFAULT '{}',
+    time_spent_ms int DEFAULT 0,
+    created_at timestamptz NOT NULL DEFAULT now()
+);
 
 -- Indexes for analytics queries
+CREATE INDEX IF NOT EXISTS idx_cdss_doctor ON hmis_cdss_usage(doctor_id, complaint_name);
+CREATE INDEX IF NOT EXISTS idx_cdss_centre ON hmis_cdss_usage(centre_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_cdss_complaint ON hmis_cdss_usage(complaint_name, created_at DESC);
 
 -- RLS
+ALTER TABLE hmis_cdss_usage ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS hmis_cdss_usage_pol ON hmis_cdss_usage;
+CREATE POLICY hmis_cdss_usage_pol ON hmis_cdss_usage FOR ALL USING (auth.uid() IS NOT NULL);
 -- ============================================================
 -- Health1 HMIS — Patient Portal
 -- Run in Supabase SQL Editor (project: bmuupgrzbfmddjwcqlss)
@@ -1141,52 +2096,8 @@ BEGIN
         EXECUTE format('CREATE POLICY %I_auth ON %I FOR ALL USING (auth.uid() IS NOT NULL)', tbl || '_pol', tbl);
     END LOOP;
 END $$;
--- ============================================================
--- Health1 HMIS — Quality/NABH + Audit Trail
--- Run in Supabase SQL Editor (project: bmuupgrzbfmddjwcqlss)
--- ============================================================
-
--- 1. Incident Reporting
-
-
--- 2. Quality Indicators (NABH KPIs)
-CREATE TABLE IF NOT EXISTS hmis_quality_indicators (
-    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-    centre_id uuid NOT NULL REFERENCES hmis_centres(id),
-    indicator_code varchar(10) NOT NULL,
-    indicator_name varchar(100) NOT NULL,
-    period varchar(10) NOT NULL, -- '2026-03' format
-    value decimal(10,2) NOT NULL,
-    numerator int,
-    denominator int,
-    target decimal(10,2),
-    met_target boolean,
-    submitted_by uuid REFERENCES hmis_staff(id),
-    created_at timestamptz NOT NULL DEFAULT now(),
-    UNIQUE(centre_id, indicator_code, period)
-);
-
-CREATE INDEX IF NOT EXISTS idx_qi_centre ON hmis_quality_indicators(centre_id, period);
-
--- 3. Audit Trail
-
-
--- RLS
-DO $$
-DECLARE tbl text;
-BEGIN
-    FOREACH tbl IN ARRAY ARRAY['hmis_incidents','hmis_quality_indicators','hmis_audit_trail'] LOOP
-        EXECUTE format('ALTER TABLE %I ENABLE ROW LEVEL SECURITY', tbl);
-        EXECUTE format('DROP POLICY IF EXISTS %I ON %I', tbl || '_pol', tbl);
-        EXECUTE format('CREATE POLICY %I ON %I FOR ALL USING (auth.uid() IS NOT NULL)', tbl || '_pol', tbl);
-    END LOOP;
-END $$;
 
 -- ════════════════════════════════════════════════════════
--- ALL MODULE TABLES CREATED SUCCESSFULLY
--- 43 tables, 51 indexes
--- ════════════════════════════════════════════════════════
--- NEXT: Run these SEPARATELY (large data files):
--- 1. sql/comprehensive_tariff_2000.sql  (998 hospital services)
--- 2. sql/pmjay_tariff_2015.sql          (1,976 PMJAY procedures)
+-- REBUILD COMPLETE
+-- Next: Run sql/SEED_AND_TARIFF.sql for seed data + tariffs
 -- ════════════════════════════════════════════════════════
