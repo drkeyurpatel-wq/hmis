@@ -10,7 +10,7 @@ import {
   CreditCard, Pill, FlaskConical, ScanLine, Scissors, BarChart3,
   Settings, LogOut, Building2, ChevronDown, ChevronRight, Droplets,
   Home, Activity, Truck, FileText, Shield, Heart, PanelLeftClose, PanelLeft,
-  Target, Radio, Mic, AlertTriangle, UtensilsCrossed,
+  Target, Radio, Mic, AlertTriangle, UtensilsCrossed, Package,
 } from 'lucide-react';
 
 interface NavItem { href: string; label: string; icon: any; module: string | null; badge?: string }
@@ -56,11 +56,14 @@ const NAV: NavGroup[] = [
   { key: 'operations', label: 'OPERATIONS', items: [
     { href: '/vpms', label: 'Procurement', icon: Truck, module: null },
     { href: '/homecare', label: 'Homecare', icon: Home, module: 'homecare' },
+    { href: '/ambulance', label: 'Ambulance', icon: Truck, module: 'opd' },
+    { href: '/visitors', label: 'Visitors', icon: Users, module: 'ipd' },
     { href: '/quality', label: 'Quality', icon: Shield, module: 'mis' },
     { href: '/infection-control', label: 'HICC', icon: AlertTriangle, module: 'mis' },
   ]},
   { key: 'admin', label: 'ADMIN', items: [
     { href: '/reports', label: 'Reports', icon: BarChart3, module: 'mis' },
+    { href: '/assets', label: 'Assets', icon: Package, module: null },
     { href: '/documents', label: 'Documents', icon: FileText, module: null },
     { href: '/grievances', label: 'Grievances', icon: AlertTriangle, module: null },
     { href: '/telemedicine', label: 'Telemedicine', icon: Stethoscope, module: 'opd' },
