@@ -113,6 +113,7 @@ export default function ServiceBillingEngine({
       category: tariff.category,
       quantity: 1, days: 1,
       unit_rate: rate,
+      unit_cost: tariff.cost_price || 0,
       discount_pct: globalDiscPct,
     });
     setItems(prev => [...prev, item]);
@@ -323,18 +324,25 @@ export default function ServiceBillingEngine({
           {/* Tariff results */}
           {tariffResults.length > 0 && (
             <div className="border rounded-lg max-h-48 overflow-y-auto mb-3">
-              {tariffResults.map(t => (
+              {tariffResults.map(t => {
+                const rate = getRateForPayor(t, payorType);
+                const costP = t.cost_price || 0;
+                const mgn = rate > 0 && costP > 0 ? Math.round(((rate - costP) / rate) * 100) : null;
+                return (
                 <button key={t.id} onClick={() => addItem(t)} className="w-full text-left px-3 py-2 hover:bg-blue-50 flex items-center justify-between border-b last:border-0 text-xs">
                   <div>
                     <span className="font-medium">{t.service_name}</span>
                     <span className="ml-2 text-gray-400">{t.category.replace(/_/g, ' ')}</span>
                   </div>
                   <div className="flex items-center gap-3">
-                    <span className="font-bold text-green-700">{INR(getRateForPayor(t, payorType))}</span>
+                    {costP > 0 && <span className="text-[9px] text-gray-400">Cost {INR(costP)}</span>}
+                    <span className="font-bold text-green-700">{INR(rate)}</span>
+                    {mgn !== null && <span className={`text-[9px] font-bold ${mgn >= 30 ? 'text-green-600' : mgn >= 0 ? 'text-amber-600' : 'text-red-600'}`}>{mgn}%</span>}
                     <Plus size={14} className="text-blue-500" />
                   </div>
                 </button>
-              ))}
+                );
+              })}
             </div>
           )}
 
@@ -373,13 +381,15 @@ export default function ServiceBillingEngine({
               <table className="w-full text-xs">
                 <thead>
                   <tr className="bg-gray-50 border-b">
-                    <th className="p-2 text-left w-1/3">Service</th>
-                    <th className="p-2 text-center w-14">Qty</th>
-                    <th className="p-2 text-center w-14">Days</th>
-                    <th className="p-2 text-right w-20">Rate</th>
-                    <th className="p-2 text-right w-20">Amount</th>
-                    <th className="p-2 text-center w-16">Disc%</th>
-                    <th className="p-2 text-right w-20">Net</th>
+                    <th className="p-2 text-left w-1/4">Service</th>
+                    <th className="p-2 text-center w-12">Qty</th>
+                    <th className="p-2 text-center w-12">Days</th>
+                    <th className="p-2 text-right w-16">Rate</th>
+                    <th className="p-2 text-right w-16">Cost</th>
+                    <th className="p-2 text-right w-16">Amount</th>
+                    <th className="p-2 text-center w-12">Disc%</th>
+                    <th className="p-2 text-right w-16">Net</th>
+                    <th className="p-2 text-right w-16">Margin</th>
                     <th className="p-2 w-8"></th>
                   </tr>
                 </thead>
@@ -391,16 +401,28 @@ export default function ServiceBillingEngine({
                           onChange={e => updateItem(item.id, 'description', e.target.value)} />
                         <div className="text-[9px] text-gray-400">{item.category.replace(/_/g, ' ')}</div>
                       </td>
-                      <td className="p-2"><input type="number" className="w-12 text-center border rounded px-1 py-0.5 text-xs" value={item.quantity} min={1}
+                      <td className="p-2"><input type="number" className="w-10 text-center border rounded px-1 py-0.5 text-xs" value={item.quantity} min={1}
                         onChange={e => updateItem(item.id, 'quantity', parseInt(e.target.value) || 1)} /></td>
-                      <td className="p-2"><input type="number" className="w-12 text-center border rounded px-1 py-0.5 text-xs" value={item.days} min={1}
+                      <td className="p-2"><input type="number" className="w-10 text-center border rounded px-1 py-0.5 text-xs" value={item.days} min={1}
                         onChange={e => updateItem(item.id, 'days', parseInt(e.target.value) || 1)} /></td>
-                      <td className="p-2"><input type="number" className="w-16 text-right border rounded px-1 py-0.5 text-xs" value={item.unit_rate}
+                      <td className="p-2"><input type="number" className="w-14 text-right border rounded px-1 py-0.5 text-xs" value={item.unit_rate}
                         onChange={e => updateItem(item.id, 'unit_rate', parseFloat(e.target.value) || 0)} /></td>
+                      <td className="p-2"><input type="number" className="w-14 text-right border rounded px-1 py-0.5 text-xs text-gray-500" value={item.unit_cost}
+                        onChange={e => updateItem(item.id, 'unit_cost', parseFloat(e.target.value) || 0)} /></td>
                       <td className="p-2 text-right">{INR(item.amount)}</td>
-                      <td className="p-2"><input type="number" className="w-12 text-center border rounded px-1 py-0.5 text-xs" value={item.discount_pct} min={0} max={100}
+                      <td className="p-2"><input type="number" className="w-10 text-center border rounded px-1 py-0.5 text-xs" value={item.discount_pct} min={0} max={100}
                         onChange={e => updateItem(item.id, 'discount_pct', parseFloat(e.target.value) || 0)} /></td>
                       <td className="p-2 text-right font-bold">{INR(item.net_amount)}</td>
+                      <td className="p-2 text-right">
+                        {item.unit_cost > 0 ? (
+                          <div>
+                            <span className={`font-bold text-[10px] ${item.margin_pct >= 30 ? 'text-green-700' : item.margin_pct >= 0 ? 'text-amber-600' : 'text-red-600'}`}>
+                              {item.margin_pct}%
+                            </span>
+                            <div className="text-[8px] text-gray-400">{INR(item.margin)}</div>
+                          </div>
+                        ) : <span className="text-[9px] text-gray-300">—</span>}
+                      </td>
                       <td className="p-2"><button onClick={() => removeItem(item.id)} className="text-gray-400 hover:text-red-500"><Trash2 size={12} /></button></td>
                     </tr>
                   ))}
@@ -422,6 +444,14 @@ export default function ServiceBillingEngine({
                 <div className="text-[10px] text-gray-500">Gross: {INR(summary.gross)}</div>
                 {summary.totalDiscount > 0 && <div className="text-[10px] text-red-600">Discount: -{INR(summary.totalDiscount)}</div>}
                 <div className="text-sm font-bold text-gray-900">Net: {INR(summary.net)}</div>
+                {summary.totalCost > 0 && (
+                  <div className="border-t border-gray-200 pt-1 mt-1">
+                    <div className="text-[10px] text-gray-400">Cost: {INR(summary.totalCost)}</div>
+                    <div className={`text-xs font-bold ${summary.marginPct >= 30 ? 'text-green-700' : summary.marginPct >= 0 ? 'text-amber-600' : 'text-red-600'}`}>
+                      Margin: {INR(summary.margin)} ({summary.marginPct}%)
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           )}

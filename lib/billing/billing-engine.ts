@@ -16,6 +16,7 @@ export interface TariffItem {
   rate_insurance: number;
   rate_pmjay: number;
   rate_cghs: number;
+  cost_price: number;
 }
 
 export interface BillLineItem {
@@ -26,7 +27,11 @@ export interface BillLineItem {
   quantity: number;
   days: number;
   unit_rate: number;
+  unit_cost: number;     // cost per unit (from tariff, pharmacy purchase_rate, implant cost)
   amount: number;        // qty × days × rate
+  cost_amount: number;   // qty × days × unit_cost
+  margin: number;        // net_amount - cost_amount
+  margin_pct: number;    // margin / net_amount × 100
   discount_pct: number;
   discount_amt: number;
   tax_pct: number;
@@ -49,6 +54,9 @@ export interface BillSummary {
   totalDiscount: number;
   totalTax: number;
   net: number;
+  totalCost: number;
+  margin: number;
+  marginPct: number;
   paid: number;
   balance: number;
   itemCount: number;
@@ -103,7 +111,7 @@ export async function searchTariff(
 ): Promise<TariffItem[]> {
   if (!query || query.length < 2) return [];
   let q = sb().from('hmis_tariff_master')
-    .select('id, service_name, service_code, category, rate_self, rate_insurance, rate_pmjay, rate_cghs')
+    .select('id, service_name, service_code, category, rate_self, rate_insurance, rate_pmjay, rate_cghs, cost_price')
     .eq('centre_id', centreId).eq('is_active', true)
     .ilike('service_name', `%${query}%`)
     .order('category').limit(20);
@@ -138,12 +146,16 @@ export function calcLineItem(item: Partial<BillLineItem>): BillLineItem {
   const qty = item.quantity || 1;
   const days = item.days || 1;
   const rate = item.unit_rate || 0;
+  const cost = item.unit_cost || 0;
   const amount = qty * days * rate;
+  const costAmount = qty * days * cost;
   const discPct = item.discount_pct || 0;
   const discAmt = item.discount_amt || Math.round(amount * discPct / 100);
   const taxPct = item.tax_pct || 0;
   const taxAmt = Math.round((amount - discAmt) * taxPct / 100);
   const net = amount - discAmt + taxAmt;
+  const margin = net - costAmount;
+  const marginPct = net > 0 ? Math.round((margin / net) * 1000) / 10 : 0;
   return {
     id: item.id || `li_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
     tariff_id: item.tariff_id || null,
@@ -152,7 +164,11 @@ export function calcLineItem(item: Partial<BillLineItem>): BillLineItem {
     quantity: qty,
     days,
     unit_rate: rate,
+    unit_cost: cost,
     amount,
+    cost_amount: costAmount,
+    margin,
+    margin_pct: marginPct,
     discount_pct: discPct,
     discount_amt: discAmt,
     tax_pct: taxPct,
@@ -170,8 +186,11 @@ export function calcBillSummary(items: BillLineItem[], payments: PaymentEntry[])
   const totalDiscount = items.reduce((s, i) => s + i.discount_amt, 0);
   const totalTax = items.reduce((s, i) => s + i.tax_amt, 0);
   const net = items.reduce((s, i) => s + i.net_amount, 0);
+  const totalCost = items.reduce((s, i) => s + i.cost_amount, 0);
+  const margin = net - totalCost;
+  const marginPct = net > 0 ? Math.round((margin / net) * 1000) / 10 : 0;
   const paid = payments.reduce((s, p) => s + p.amount, 0);
-  return { gross, totalDiscount, totalTax, net, paid, balance: net - paid, itemCount: items.length };
+  return { gross, totalDiscount, totalTax, net, totalCost, margin, marginPct, paid, balance: net - paid, itemCount: items.length };
 }
 
 // ============================================================
@@ -213,6 +232,7 @@ export async function createBill(params: {
     payor_type: params.payorType,
     gross_amount: summary.gross, discount_amount: summary.totalDiscount,
     tax_amount: summary.totalTax, net_amount: summary.net,
+    total_cost: summary.totalCost,
     paid_amount: summary.paid, balance_amount: summary.balance,
     status: summary.balance <= 0 ? 'paid' : summary.paid > 0 ? 'partially_paid' : 'final',
     bill_date: new Date().toISOString().split('T')[0],
@@ -229,7 +249,8 @@ export async function createBill(params: {
     return {
       bill_id: bill.id, tariff_id: i.tariff_id,
       description: i.description, quantity: i.quantity * i.days,
-      unit_rate: i.unit_rate, amount: i.amount,
+      unit_rate: i.unit_rate, unit_cost: i.unit_cost, cost_amount: i.cost_amount,
+      amount: i.amount,
       discount: i.discount_amt, tax: i.tax_amt, net_amount: i.net_amount,
       service_date: i.service_date, doctor_id: i.doctor_id,
       cost_centre_id: costCentreId,
@@ -359,6 +380,7 @@ export async function buildIPDBillFromCharges(
     quantity: 1,
     days: g.count,
     unit_rate: parseFloat(g.charge.amount),
+    unit_cost: parseFloat(g.charge.unit_cost || 0),
     service_date: g.dates[0],
   }));
 }
