@@ -94,7 +94,7 @@ function StaffInner() {
 
   return (
     <div className="max-w-7xl mx-auto space-y-4">
-      {toast && <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-green-600 text-white px-4 py-2 rounded-lg shadow-lg text-sm">{toast}</div>}
+      {toast && <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-emerald-600 text-white px-4 py-2 rounded-xl shadow-lg text-sm">{toast}</div>}
 
       <div className="flex items-center justify-between">
         <div><h1 className="text-xl font-bold">Staff & Access Management</h1>
@@ -113,7 +113,7 @@ function StaffInner() {
 
       {/* Tabs */}
       <div className="flex gap-1 border-b">{(['staff', 'create', 'bulk', 'roles', ...(editingRole ? ['permissions'] as Tab[] : [])] as Tab[]).map(t =>
-        <button key={t} onClick={() => setTab(t)} className={`px-4 py-2 text-xs font-medium border-b-2 -mb-px capitalize ${tab === t ? 'border-blue-600 text-blue-700' : 'border-transparent text-gray-500'}`}>
+        <button key={t} onClick={() => setTab(t)} className={`px-4 py-2 text-xs font-medium rounded-xl capitalize ${tab === t ? 'bg-teal-600 text-white shadow-sm' : 'bg-white text-gray-500 border border-gray-100 hover:bg-gray-50'}`}>
           {t === 'staff' ? `Staff List (${filtered.length})` : t === 'create' ? '+ Create User' : t === 'bulk' ? 'Bulk Import' : t === 'roles' ? `Roles (${roles.roles.length})` : `Edit: ${editingRole?.name}`}
         </button>
       )}</div>
@@ -144,7 +144,7 @@ function StaffInner() {
                 <td className="p-2 text-gray-400 text-[10px]">{s.email}</td>
                 <td className="p-2 text-gray-400 text-[10px]">{s.phone}</td>
                 <td className="p-2 text-center"><button onClick={() => mgmt.toggleActive(s.id, !s.is_active)} className={`text-[9px] px-1.5 py-0.5 rounded ${s.is_active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>{s.is_active ? 'Active' : 'Inactive'}</button></td>
-                <td className="p-2 text-center"><button onClick={() => { const pw = prompt('New password:'); if (pw && s.auth_user_id) mgmt.resetPassword(s.auth_user_id, pw).then(r => flash(r.success ? 'Password reset' : r.error || 'Failed')); }} className="text-[9px] text-blue-600 hover:underline">Reset PW</button></td>
+                <td className="p-2 text-center"><button onClick={() => { const pw = prompt('New password:'); if (pw && s.auth_user_id) mgmt.resetPassword(s.auth_user_id, pw).then(r => flash(r.success ? 'Password reset' : r.error || 'Failed')); }} className="text-[9px] text-teal-600 hover:underline">Reset PW</button></td>
               </tr>
             );
           })}</tbody></table>
@@ -177,7 +177,7 @@ function StaffInner() {
             <input type="text" value={form.specialisation} onChange={e => setForm(f => ({ ...f, specialisation: e.target.value }))} className="w-full px-3 py-2 border rounded-lg text-sm" placeholder="Cardiology, Neurology..." /></div>
         </div>
         <button onClick={handleCreate} disabled={creating || !form.fullName || !form.email || !form.password}
-          className="px-6 py-2.5 bg-blue-600 text-white text-sm rounded-lg font-medium disabled:opacity-40">{creating ? 'Creating...' : 'Create User'}</button>
+          className="px-6 py-2.5 bg-teal-600 text-white text-sm rounded-lg font-medium disabled:opacity-40">{creating ? 'Creating...' : 'Create User'}</button>
       </div>}
 
       {/* ===== BULK IMPORT ===== */}
@@ -188,7 +188,7 @@ function StaffInner() {
         <textarea value={csvText} onChange={e => setCsvText(e.target.value)} rows={12} className="w-full px-3 py-2 border rounded-lg text-xs font-mono"
           placeholder={`H1-DOC-001,Dr. Amit Shah,amit.shah@health1.in,Health1@2026,9876543210,doctor,Consultant Cardiologist,doctor,Cardiology,GJ-12345\nH1-NRS-001,Priya Patel,priya.patel@health1.in,,9876543211,nurse,Staff Nurse ICU,nurse,,\nH1-REC-001,Ravi Kumar,ravi.kumar@health1.in,,9876543212,receptionist,Front Desk,receptionist,,`} />
         <div className="flex gap-3 items-center">
-          <button onClick={handleBulk} disabled={bulking || !csvText.trim()} className="px-6 py-2.5 bg-green-600 text-white text-sm rounded-lg font-medium disabled:opacity-40">{bulking ? 'Importing...' : `Import ${csvText.trim().split('\n').filter(l => l.trim() && !l.startsWith('employee')).length} Users`}</button>
+          <button onClick={handleBulk} disabled={bulking || !csvText.trim()} className="px-6 py-2.5 bg-emerald-600 text-white text-sm rounded-lg font-medium disabled:opacity-40">{bulking ? 'Importing...' : `Import ${csvText.trim().split('\n').filter(l => l.trim() && !l.startsWith('employee')).length} Users`}</button>
           {bulkResult && <span className="text-xs"><span className="text-green-700 font-bold">{bulkResult.success} created</span> {bulkResult.failed > 0 && <span className="text-red-700 font-bold">{bulkResult.failed} failed</span>}</span>}
         </div>
         {bulkResult?.results?.filter((r: any) => !r.success).length > 0 && <div className="bg-red-50 rounded-lg p-3 text-xs">
@@ -207,8 +207,8 @@ function StaffInner() {
               <div key={role.id} className={`bg-white rounded-xl border p-4 ${role.is_system ? 'border-blue-200' : ''}`}>
                 <div className="flex items-center justify-between mb-2">
                   <div><span className="font-bold text-sm capitalize">{role.name.replace('_', ' ')}</span>
-                    {role.is_system && <span className="ml-1 text-[8px] bg-blue-100 text-blue-700 px-1 py-0.5 rounded">SYSTEM</span>}</div>
-                  <button onClick={() => startEditPerms(role)} className="px-2 py-1 bg-blue-100 text-blue-700 text-[10px] rounded">Edit Permissions</button>
+                    {role.is_system && <span className="ml-1 text-[8px] bg-blue-100 text-teal-700 px-1 py-0.5 rounded">SYSTEM</span>}</div>
+                  <button onClick={() => startEditPerms(role)} className="px-2 py-1 bg-blue-100 text-teal-700 text-[10px] rounded">Edit Permissions</button>
                 </div>
                 <div className="text-xs text-gray-500 mb-2">{role.description}</div>
                 <div className="text-[10px] text-gray-400">{moduleCount} modules, {permCount} permissions</div>
@@ -225,11 +225,11 @@ function StaffInner() {
       {/* ===== PERMISSION EDITOR ===== */}
       {tab === 'permissions' && editingRole && <div className="bg-white rounded-xl border p-5 space-y-4">
         <div className="flex items-center justify-between">
-          <div><h2 className="font-bold text-sm">Edit Permissions: <span className="text-blue-700 capitalize">{editingRole.name.replace('_', ' ')}</span></h2>
+          <div><h2 className="font-bold text-sm">Edit Permissions: <span className="text-teal-700 capitalize">{editingRole.name.replace('_', ' ')}</span></h2>
             <p className="text-xs text-gray-500">{editingRole.description}</p></div>
           <div className="flex gap-2">
             <button onClick={() => { setTab('roles'); setEditingRole(null); }} className="px-3 py-1.5 bg-gray-200 text-xs rounded-lg">Cancel</button>
-            <button onClick={savePerms} className="px-4 py-1.5 bg-green-600 text-white text-xs rounded-lg font-medium">Save Permissions</button>
+            <button onClick={savePerms} className="px-4 py-1.5 bg-emerald-600 text-white text-xs rounded-lg font-medium">Save Permissions</button>
           </div>
         </div>
 
@@ -251,13 +251,13 @@ function StaffInner() {
                   <td key={action} className="p-2 text-center">
                     {mod.actions.includes(action) ?
                       <input type="checkbox" checked={perms.includes(action)} onChange={() => togglePerm(mod.key, action)}
-                        className="w-4 h-4 rounded border-gray-300 text-blue-600 accent-blue-600" /> :
+                        className="w-4 h-4 rounded border-gray-300 text-teal-600 accent-blue-600" /> :
                       <span className="text-gray-200">—</span>
                     }
                   </td>
                 )}
                 <td className="p-2 text-center">
-                  <button onClick={() => toggleAllModule(mod.key, mod.actions)} className={`text-[9px] px-2 py-0.5 rounded ${allOn ? 'bg-blue-600 text-white' : 'bg-gray-100'}`}>
+                  <button onClick={() => toggleAllModule(mod.key, mod.actions)} className={`text-[9px] px-2 py-0.5 rounded ${allOn ? 'bg-teal-600 text-white' : 'bg-gray-100'}`}>
                     {allOn ? 'All ✓' : 'All'}
                   </button>
                 </td>

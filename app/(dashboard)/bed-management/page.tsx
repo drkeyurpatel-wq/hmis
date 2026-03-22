@@ -5,7 +5,7 @@ import { useBedManagement, type BedData, type BedStatus } from '@/lib/bed-manage
 
 const STATUS_CONFIG: Record<BedStatus, { bg: string; border: string; text: string; label: string }> = {
   available:    { bg: 'bg-green-50',  border: 'border-green-300', text: 'text-green-700', label: 'Available' },
-  occupied:     { bg: 'bg-blue-50',   border: 'border-blue-300',  text: 'text-blue-700',  label: 'Occupied' },
+  occupied:     { bg: 'bg-blue-50',   border: 'border-blue-300',  text: 'text-teal-700',  label: 'Occupied' },
   reserved:     { bg: 'bg-amber-50',  border: 'border-amber-300', text: 'text-amber-700', label: 'Reserved' },
   maintenance:  { bg: 'bg-gray-100',  border: 'border-gray-300',  text: 'text-gray-500',  label: 'Maintenance' },
   housekeeping: { bg: 'bg-orange-50', border: 'border-orange-300',text: 'text-orange-700', label: 'Housekeeping' },
@@ -23,7 +23,7 @@ function BedCard({ bed, onSelect }: { bed: BedData; onSelect: (b: BedData) => vo
       <div className="flex items-center justify-between mb-1">
         <span className={`font-bold text-sm ${cfg.text}`}>{bed.bedNumber}</span>
         {bed.status === 'occupied' && bed.daysAdmitted !== undefined && (
-          <span className={`text-[9px] px-1 py-0.5 rounded ${isLongStay ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'}`}>
+          <span className={`text-[9px] px-1 py-0.5 rounded ${isLongStay ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-teal-700'}`}>
             D{bed.daysAdmitted}
           </span>
         )}
@@ -38,7 +38,7 @@ function BedCard({ bed, onSelect }: { bed: BedData; onSelect: (b: BedData) => vo
           {bed.payorType && (
             <span className={`text-[8px] px-1 py-0.5 rounded ${
               bed.payorType === 'self' ? 'bg-gray-100 text-gray-600' :
-              bed.payorType === 'insurance' ? 'bg-blue-100 text-blue-600' :
+              bed.payorType === 'insurance' ? 'bg-blue-100 text-teal-600' :
               bed.payorType?.startsWith('govt') ? 'bg-green-100 text-green-600' :
               'bg-purple-100 text-purple-600'
             }`}>{bed.payorType.replace('govt_', '').replace('_', ' ')}</span>
@@ -102,7 +102,7 @@ export default function BedManagementPage() {
 
   return (
     <div className="max-w-7xl mx-auto space-y-4">
-      {toast && <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-green-600 text-white px-4 py-2 rounded-lg shadow-lg text-sm">{toast}</div>}
+      {toast && <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-emerald-600 text-white px-4 py-2 rounded-xl shadow-lg text-sm">{toast}</div>}
 
       {/* Header */}
       <div className="flex items-center justify-between">
@@ -110,7 +110,7 @@ export default function BedManagementPage() {
           <h1 className="text-xl font-bold text-gray-900">Bed Management</h1>
           <p className="text-xs text-gray-500">{wards.length} wards | {totals.total} beds | Real-time occupancy</p>
         </div>
-        <button onClick={load} className="px-3 py-1.5 bg-blue-600 text-white text-xs rounded-lg">Refresh</button>
+        <button onClick={load} className="px-3 py-1.5 bg-teal-600 text-white text-xs rounded-lg">Refresh</button>
       </div>
 
       {/* Summary strip */}
@@ -120,7 +120,7 @@ export default function BedManagementPage() {
           const count = (totals as any)[status] || 0;
           return (
             <div key={status} onClick={() => setStatusFilter(statusFilter === status ? 'all' : status)}
-              className={`rounded-xl border p-3 text-center cursor-pointer transition-all ${statusFilter === status ? 'ring-2 ring-blue-500' : ''} ${cfg.bg}`}>
+              className={`rounded-xl border p-3 text-center cursor-pointer transition-all ${statusFilter === status ? 'ring-2 ring-teal-500' : ''} ${cfg.bg}`}>
               <div className={`text-2xl font-bold ${cfg.text}`}>{count}</div>
               <div className="text-[10px] text-gray-500">{cfg.label}</div>
             </div>
@@ -131,10 +131,10 @@ export default function BedManagementPage() {
       {/* Ward filter */}
       <div className="flex gap-1.5 flex-wrap">
         <button onClick={() => setWardFilter('all')}
-          className={`px-2.5 py-1 rounded-lg text-xs border ${wardFilter === 'all' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white border-gray-200'}`}>All Wards</button>
+          className={`px-2.5 py-1 rounded-lg text-xs border ${wardFilter === 'all' ? 'bg-teal-600 text-white border-teal-600' : 'bg-white border-gray-200'}`}>All Wards</button>
         {wards.map(w => (
           <button key={w.wardId} onClick={() => setWardFilter(w.wardId)}
-            className={`px-2.5 py-1 rounded-lg text-xs border ${wardFilter === w.wardId ? 'bg-blue-600 text-white border-blue-600' : 'bg-white border-gray-200'}`}>
+            className={`px-2.5 py-1 rounded-lg text-xs border ${wardFilter === w.wardId ? 'bg-teal-600 text-white border-teal-600' : 'bg-white border-gray-200'}`}>
             {w.wardName} <span className="text-[10px] opacity-70">({w.occupied}/{w.totalBeds})</span>
           </button>
         ))}
@@ -151,7 +151,7 @@ export default function BedManagementPage() {
                 ward.wardType === 'icu' ? 'bg-red-100 text-red-700' :
                 ward.wardType === 'transplant_icu' ? 'bg-red-100 text-red-700' :
                 ward.wardType === 'private' ? 'bg-purple-100 text-purple-700' :
-                ward.wardType === 'semi_private' ? 'bg-blue-100 text-blue-700' :
+                ward.wardType === 'semi_private' ? 'bg-blue-100 text-teal-700' :
                 ward.wardType === 'isolation' ? 'bg-amber-100 text-amber-700' :
                 'bg-gray-100 text-gray-700'
               }`}>{ward.wardType.replace('_', ' ')}</span>
@@ -159,7 +159,7 @@ export default function BedManagementPage() {
             </div>
             <div className="flex items-center gap-3 text-xs">
               <span className="text-green-700 font-semibold">{ward.available} free</span>
-              <span className="text-blue-700">{ward.occupied} occ</span>
+              <span className="text-teal-700">{ward.occupied} occ</span>
               {ward.housekeeping > 0 && <span className="text-orange-700">{ward.housekeeping} cleaning</span>}
               <span className={`font-bold ${ward.occupancyPct >= 90 ? 'text-red-700' : ward.occupancyPct >= 70 ? 'text-amber-700' : 'text-green-700'}`}>{ward.occupancyPct}%</span>
             </div>
@@ -228,15 +228,15 @@ export default function BedManagementPage() {
             </>}
 
             {selectedBed.status === 'housekeeping' && <>
-              <button onClick={async () => { const r = await markClean(selectedBed.id); if (!r.success) setActionError(r.error || ''); else { flash('Bed is now available'); setSelectedBed(null); }}} className="px-4 py-2 bg-green-600 text-white text-sm rounded-lg">Mark Clean &amp; Available</button>
+              <button onClick={async () => { const r = await markClean(selectedBed.id); if (!r.success) setActionError(r.error || ''); else { flash('Bed is now available'); setSelectedBed(null); }}} className="px-4 py-2 bg-emerald-600 text-white text-sm rounded-lg">Mark Clean &amp; Available</button>
             </>}
 
             {selectedBed.status === 'reserved' && <>
-              <button onClick={async () => { const r = await updateBedStatus(selectedBed.id, 'available'); if (!r.success) setActionError(r.error || ''); else { flash('Unreserved'); setSelectedBed(null); }}} className="px-4 py-2 bg-green-600 text-white text-sm rounded-lg">Unreserve (Make Available)</button>
+              <button onClick={async () => { const r = await updateBedStatus(selectedBed.id, 'available'); if (!r.success) setActionError(r.error || ''); else { flash('Unreserved'); setSelectedBed(null); }}} className="px-4 py-2 bg-emerald-600 text-white text-sm rounded-lg">Unreserve (Make Available)</button>
             </>}
 
             {selectedBed.status === 'maintenance' && <>
-              <button onClick={async () => { const r = await updateBedStatus(selectedBed.id, 'available'); if (!r.success) setActionError(r.error || ''); else { flash('Available'); setSelectedBed(null); }}} className="px-4 py-2 bg-green-600 text-white text-sm rounded-lg">Mark Available</button>
+              <button onClick={async () => { const r = await updateBedStatus(selectedBed.id, 'available'); if (!r.success) setActionError(r.error || ''); else { flash('Available'); setSelectedBed(null); }}} className="px-4 py-2 bg-emerald-600 text-white text-sm rounded-lg">Mark Available</button>
             </>}
           </div>
 

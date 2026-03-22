@@ -51,31 +51,31 @@ function HomecarePage() {
     return () => clearTimeout(t);
   }, [patSearch]);
 
-  const progColor = (p: string) => p === 'post_discharge' ? 'bg-blue-100 text-blue-700' : p === 'palliative' ? 'bg-purple-100 text-purple-700' : p === 'wound_care' ? 'bg-orange-100 text-orange-700' : p === 'iv_therapy' ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-600';
+  const progColor = (p: string) => p === 'post_discharge' ? 'bg-blue-100 text-teal-700' : p === 'palliative' ? 'bg-purple-100 text-purple-700' : p === 'wound_care' ? 'bg-orange-100 text-orange-700' : p === 'iv_therapy' ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-600';
   const stColor = (s: string) => s === 'active' ? 'bg-green-100 text-green-700' : s === 'paused' ? 'bg-yellow-100 text-yellow-700' : s === 'completed' || s === 'discharged' ? 'bg-gray-100 text-gray-500' : 'bg-red-100 text-red-700';
-  const visitStColor = (s: string) => s === 'scheduled' ? 'bg-yellow-100 text-yellow-700' : s === 'in_progress' ? 'bg-blue-100 text-blue-700 animate-pulse' : s === 'completed' ? 'bg-green-100 text-green-700' : s === 'missed' ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-600';
-  const condColor = (c: string) => c === 'improving' ? 'text-green-600' : c === 'stable' ? 'text-blue-600' : c === 'deteriorating' ? 'text-red-600' : c === 'critical' ? 'text-red-700 font-bold' : 'text-gray-500';
+  const visitStColor = (s: string) => s === 'scheduled' ? 'bg-yellow-100 text-yellow-700' : s === 'in_progress' ? 'bg-blue-100 text-teal-700 animate-pulse' : s === 'completed' ? 'bg-green-100 text-green-700' : s === 'missed' ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-600';
+  const condColor = (c: string) => c === 'improving' ? 'text-green-600' : c === 'stable' ? 'text-teal-600' : c === 'deteriorating' ? 'text-red-600' : c === 'critical' ? 'text-red-700 font-bold' : 'text-gray-500';
 
   const tabs: [HCTab, string][] = [['dashboard','Dashboard'],['enrollments','Patients'],['schedule','My Schedule'],['visits','Visit Log'],['wound','Wound Care'],['billing','Billing'],['rates','Rate Card']];
 
   return (
     <div className="max-w-6xl mx-auto">
-      {toast && <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-green-600 text-white px-4 py-2 rounded-lg shadow-lg text-sm">{toast}</div>}
+      {toast && <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-emerald-600 text-white px-4 py-2 rounded-xl shadow-lg text-sm">{toast}</div>}
 
       <div className="flex items-center justify-between mb-4">
         <div><h1 className="text-2xl font-bold text-gray-900">Homecare</h1><p className="text-sm text-gray-500">Home visit management, remote monitoring, patient care</p></div>
       </div>
 
-      <div className="flex gap-1 mb-4 border-b pb-px overflow-x-auto">
+      <div className="flex gap-1 mb-4 pb-0.5 overflow-x-auto scrollbar-thin">
         {tabs.map(([k, l]) => <button key={k} onClick={() => { setTab(k); setShowForm(false); }}
-          className={`px-3 py-2 text-xs font-medium whitespace-nowrap border-b-2 -mb-px ${tab === k ? 'border-green-600 text-green-700' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>{l}</button>)}
+          className={`px-3 py-2 text-xs font-medium whitespace-nowrap rounded-xl ${tab === k ? 'bg-teal-600 text-white shadow-sm' : 'bg-white text-gray-500 border border-gray-100 hover:bg-gray-50'}`}>{l}</button>)}
       </div>
 
       {/* ===== DASHBOARD ===== */}
       {tab === 'dashboard' && <div>
         <div className="grid grid-cols-4 gap-4 mb-6">
           <div className="bg-green-50 rounded-xl p-4"><div className="text-xs text-gray-500">Active Patients</div><div className="text-2xl font-bold text-green-700">{enrollments.stats.active}</div></div>
-          <div className="bg-blue-50 rounded-xl p-4"><div className="text-xs text-gray-500">Today's Visits</div><div className="text-2xl font-bold text-blue-700">{nurseSchedule.todayVisits.length}</div></div>
+          <div className="bg-blue-50 rounded-xl p-4"><div className="text-xs text-gray-500">Today's Visits</div><div className="text-2xl font-bold text-teal-700">{nurseSchedule.todayVisits.length}</div></div>
           <div className="bg-yellow-50 rounded-xl p-4"><div className="text-xs text-gray-500">Pending</div><div className="text-2xl font-bold text-yellow-700">{nurseSchedule.todayVisits.filter(v => v.status === 'scheduled').length}</div></div>
           <div className="bg-red-50 rounded-xl p-4"><div className="text-xs text-gray-500">Escalations</div><div className="text-2xl font-bold text-red-700">{nurseSchedule.todayVisits.filter(v => v.needs_escalation).length}</div></div>
         </div>
@@ -97,11 +97,11 @@ function HomecarePage() {
             <div className="text-xs text-gray-500 mt-1">{v.enrollment?.address_line1}{v.enrollment?.landmark ? ' (Nr. ' + v.enrollment.landmark + ')' : ''}</div>
             <div className="flex gap-2 mt-2">
               {v.status === 'scheduled' && <button onClick={async () => { await visits.checkin(v.id); flash('Checked in — GPS recorded'); nurseSchedule.load(); }}
-                className="px-3 py-1 bg-green-600 text-white text-xs rounded-lg">Check In</button>}
+                className="px-3 py-1 bg-emerald-600 text-white text-xs rounded-lg">Check In</button>}
               {v.status === 'in_progress' && <button onClick={() => { setSelectedEnrollId(v.enrollment_id); setVF({ visitId: v.id }); setTab('visits'); setShowVisitForm(true); }}
-                className="px-3 py-1 bg-blue-600 text-white text-xs rounded-lg">Document & Checkout</button>}
+                className="px-3 py-1 bg-teal-600 text-white text-xs rounded-lg">Document & Checkout</button>}
               {v.enrollment?.patient?.phone_primary && <a href={`tel:${v.enrollment.patient.phone_primary}`} className="px-3 py-1 bg-gray-100 text-gray-600 text-xs rounded-lg">Call</a>}
-              {v.enrollment?.latitude && <a href={`https://www.google.com/maps/dir/?api=1&destination=${v.enrollment.latitude},${v.enrollment.longitude}`} target="_blank" className="px-3 py-1 bg-blue-50 text-blue-700 text-xs rounded-lg">Navigate</a>}
+              {v.enrollment?.latitude && <a href={`https://www.google.com/maps/dir/?api=1&destination=${v.enrollment.latitude},${v.enrollment.longitude}`} target="_blank" className="px-3 py-1 bg-blue-50 text-teal-700 text-xs rounded-lg">Navigate</a>}
             </div>
           </div>
         ))}</div>}
@@ -111,7 +111,7 @@ function HomecarePage() {
       {tab === 'enrollments' && <div>
         <div className="flex justify-between items-center mb-3">
           <h2 className="font-semibold text-sm">Homecare Patients</h2>
-          <button onClick={() => setShowForm(!showForm)} className="px-3 py-1.5 bg-green-600 text-white text-xs rounded-lg">{showForm ? 'Cancel' : '+ Enroll Patient'}</button>
+          <button onClick={() => setShowForm(!showForm)} className="px-3 py-1.5 bg-emerald-600 text-white text-xs rounded-lg">{showForm ? 'Cancel' : '+ Enroll Patient'}</button>
         </div>
         {showForm && <div className="bg-white rounded-xl border p-5 mb-4 space-y-3">
           <div className="relative">
@@ -147,7 +147,7 @@ function HomecarePage() {
           </div>
           <div><label className="text-xs text-gray-500">Special instructions</label>
             <textarea value={eForm.special_instructions} onChange={e => setEF(f => ({...f, special_instructions: e.target.value}))} rows={2} className="w-full px-3 py-2 border rounded-lg text-sm" placeholder="Dietary restrictions, mobility issues, caretaker info..." /></div>
-          <button onClick={async () => { if (!eForm.patient_id || !eForm.address_line1) return; const r = await enrollments.enroll(eForm, staffId); if (r) { flash('Enrolled: ' + r.enrollment_number); setShowForm(false); } }} className="px-4 py-2 bg-green-600 text-white text-sm rounded-lg">Enroll</button>
+          <button onClick={async () => { if (!eForm.patient_id || !eForm.address_line1) return; const r = await enrollments.enroll(eForm, staffId); if (r) { flash('Enrolled: ' + r.enrollment_number); setShowForm(false); } }} className="px-4 py-2 bg-emerald-600 text-white text-sm rounded-lg">Enroll</button>
         </div>}
         {enrollments.enrollments.length === 0 ? <div className="text-center py-8 bg-white rounded-xl border text-gray-400 text-sm">No homecare patients</div> :
         <div className="space-y-2">{enrollments.enrollments.map((e: any) => (
@@ -188,11 +188,11 @@ function HomecarePage() {
             <div className="text-xs text-gray-600 mb-2">{v.enrollment?.address_line1}{v.enrollment?.landmark ? ' | Nr. ' + v.enrollment.landmark : ''}</div>
             <div className="flex gap-2 flex-wrap">
               {v.status === 'scheduled' && <button onClick={async () => { await visits.checkin(v.id); flash('Checked in'); nurseSchedule.load(); }}
-                className="px-3 py-1.5 bg-green-600 text-white text-xs rounded-lg font-medium">Check In</button>}
+                className="px-3 py-1.5 bg-emerald-600 text-white text-xs rounded-lg font-medium">Check In</button>}
               {v.status === 'in_progress' && <button onClick={() => { setSelectedEnrollId(v.enrollment_id); setVF({ visitId: v.id }); setTab('visits'); setShowVisitForm(true); }}
-                className="px-3 py-1.5 bg-blue-600 text-white text-xs rounded-lg font-medium">Document Visit</button>}
+                className="px-3 py-1.5 bg-teal-600 text-white text-xs rounded-lg font-medium">Document Visit</button>}
               <a href={`tel:${v.enrollment?.patient?.phone_primary}`} className="px-3 py-1.5 bg-gray-100 text-gray-600 text-xs rounded-lg">Call Patient</a>
-              {v.enrollment?.latitude && <a href={`https://www.google.com/maps/dir/?api=1&destination=${v.enrollment.latitude},${v.enrollment.longitude}`} target="_blank" className="px-3 py-1.5 bg-blue-50 text-blue-700 text-xs rounded-lg">Navigate</a>}
+              {v.enrollment?.latitude && <a href={`https://www.google.com/maps/dir/?api=1&destination=${v.enrollment.latitude},${v.enrollment.longitude}`} target="_blank" className="px-3 py-1.5 bg-blue-50 text-teal-700 text-xs rounded-lg">Navigate</a>}
               <a href={`https://wa.me/91${v.enrollment?.patient?.phone_primary?.replace(/\D/g,'')}`} target="_blank" className="px-3 py-1.5 bg-green-50 text-green-700 text-xs rounded-lg">WhatsApp</a>
             </div>
           </div>
@@ -203,7 +203,7 @@ function HomecarePage() {
       {tab === 'visits' && <div>
         <div className="flex justify-between items-center mb-3">
           <h2 className="font-semibold text-sm">Visit Log {selectedEnrollId ? `— ${enrollments.enrollments.find(e => e.id === selectedEnrollId)?.enrollment_number || ''}` : ''}</h2>
-          {selectedEnrollId && <button onClick={() => setShowVisitForm(!showVisitForm)} className="px-3 py-1.5 bg-green-600 text-white text-xs rounded-lg">{showVisitForm ? 'Cancel' : '+ Schedule Visit'}</button>}
+          {selectedEnrollId && <button onClick={() => setShowVisitForm(!showVisitForm)} className="px-3 py-1.5 bg-emerald-600 text-white text-xs rounded-lg">{showVisitForm ? 'Cancel' : '+ Schedule Visit'}</button>}
         </div>
         {!selectedEnrollId ? <div className="text-center py-8 bg-white rounded-xl border text-gray-400 text-sm">Select a patient from Patients tab first</div> : <>
           {showVisitForm && <div className="bg-white rounded-xl border p-5 mb-4 space-y-3">
@@ -248,11 +248,11 @@ function HomecarePage() {
                 await visits.saveVitals(vForm.visitId, vitals);
                 await visits.checkout(vForm.visitId, { assessmentNotes: vForm.assessment_notes, planNotes: vForm.plan_notes, generalCondition: vForm.general_condition, needsEscalation: vForm.needs_escalation, escalationReason: vForm.escalation_reason });
                 flash('Visit documented & checked out'); setShowVisitForm(false); setVF({});
-              }} className="px-4 py-2 bg-green-600 text-white text-sm rounded-lg">Save & Checkout</button>
+              }} className="px-4 py-2 bg-emerald-600 text-white text-sm rounded-lg">Save & Checkout</button>
               : <button onClick={async () => {
                 await visits.schedule({ enrollment_id: selectedEnrollId, assigned_nurse_id: staffId, scheduled_date: vForm.scheduled_date || new Date().toISOString().split('T')[0], scheduled_time: vForm.scheduled_time || '09:00', visit_type: vForm.visit_type || 'routine' });
                 flash('Visit scheduled'); setShowVisitForm(false); setVF({});
-              }} className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg">Schedule Visit</button>}
+              }} className="px-4 py-2 bg-teal-600 text-white text-sm rounded-lg">Schedule Visit</button>}
               <button onClick={() => { setShowVisitForm(false); setVF({}); }} className="px-4 py-2 bg-gray-100 text-sm rounded-lg">Cancel</button>
             </div>
           </div>}

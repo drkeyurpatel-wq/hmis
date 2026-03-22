@@ -139,7 +139,7 @@ function EMRInner() {
 
   return (
     <div className="max-w-7xl mx-auto space-y-3">
-      {toast && <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-green-600 text-white px-4 py-2 rounded-lg shadow-lg text-sm">{toast}</div>}
+      {toast && <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-emerald-600 text-white px-4 py-2 rounded-xl shadow-lg text-sm">{toast}</div>}
 
       {/* Patient Banner */}
       <PatientBanner patient={patient} onSearch={() => setShowSearch(true)} />
@@ -183,7 +183,7 @@ function EMRInner() {
         <div className="w-14 flex-shrink-0 space-y-1">
           {STEPS.map((s, i) => (
             <button key={s.key} onClick={() => setStep(s.key)}
-              className={`w-full py-2 rounded-lg text-center relative ${step === s.key ? 'bg-blue-600 text-white' : filled[s.key] ? 'bg-green-100 text-green-700 border border-green-300' : 'bg-gray-50 text-gray-400 border'}`}>
+              className={`w-full py-2 rounded-lg text-center relative ${step === s.key ? 'bg-teal-600 text-white' : filled[s.key] ? 'bg-green-100 text-green-700 border border-green-300' : 'bg-gray-50 text-gray-400 border'}`}>
               <div className="text-[10px] font-bold">{s.short}</div>
               {filled[s.key] && step !== s.key && <div className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-green-500 rounded-full" />}
             </button>
@@ -196,9 +196,9 @@ function EMRInner() {
           <div className="flex items-center justify-between mb-2">
             <h2 className="text-sm font-bold text-gray-700">{STEPS[stepIdx].label}</h2>
             <div className="flex gap-1">
-              {patient.id && <button onClick={() => setShowHistory(!showHistory)} className={`px-2 py-1 text-[10px] rounded border ${showHistory ? 'bg-blue-600 text-white' : 'bg-white'}`}>History</button>}
-              {patient.id && <button onClick={() => setShowImaging(!showImaging)} className={`px-2 py-1 text-[10px] rounded border ${showImaging ? 'bg-blue-600 text-white' : 'bg-white'}`}>Imaging</button>}
-              {patient.id && <button onClick={() => setShowLab(!showLab)} className={`px-2 py-1 text-[10px] rounded border ${showLab ? 'bg-blue-600 text-white' : 'bg-white'}`}>Lab</button>}
+              {patient.id && <button onClick={() => setShowHistory(!showHistory)} className={`px-2 py-1 text-[10px] rounded border ${showHistory ? 'bg-teal-600 text-white' : 'bg-white'}`}>History</button>}
+              {patient.id && <button onClick={() => setShowImaging(!showImaging)} className={`px-2 py-1 text-[10px] rounded border ${showImaging ? 'bg-teal-600 text-white' : 'bg-white'}`}>Imaging</button>}
+              {patient.id && <button onClick={() => setShowLab(!showLab)} className={`px-2 py-1 text-[10px] rounded border ${showLab ? 'bg-teal-600 text-white' : 'bg-white'}`}>Lab</button>}
               <button onClick={() => setShowCopilot(!showCopilot)} className={`px-2 py-1 text-[10px] rounded border ${showCopilot ? 'bg-purple-600 text-white' : 'bg-white text-purple-700'}`}>AI Copilot</button>
             </div>
           </div>
@@ -263,7 +263,7 @@ function EMRInner() {
                 </div>
                 <div className="bg-gray-50 rounded-lg p-3">
                   <div className="font-bold text-gray-700 mb-1">Diagnosis ({diagnoses.length})</div>
-                  {diagnoses.map((d, i) => <div key={i}><span className={`text-[9px] px-1 rounded ${d.type === 'primary' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100'}`}>{d.type}</span> {d.name} ({d.code})</div>)}
+                  {diagnoses.map((d, i) => <div key={i}><span className={`text-[9px] px-1 rounded ${d.type === 'primary' ? 'bg-blue-100 text-teal-700' : 'bg-gray-100'}`}>{d.type}</span> {d.name} ({d.code})</div>)}
                   {!diagnoses.length && <div className="text-gray-400">None</div>}
                 </div>
                 <div className="bg-gray-50 rounded-lg p-3">
@@ -283,7 +283,7 @@ function EMRInner() {
               <div className="flex gap-3 pt-2">
                 <button onClick={() => saveEncounter(false)} disabled={saving} className="px-6 py-2.5 bg-gray-200 text-sm rounded-lg disabled:opacity-40">{saving ? 'Saving...' : 'Save Draft'}</button>
                 <button onClick={() => saveEncounter(true)} disabled={saving || !complaints.length}
-                  className="px-8 py-2.5 bg-green-600 text-white text-sm rounded-lg font-medium disabled:opacity-40">{saving ? 'Signing...' : 'Sign & Complete'}</button>
+                  className="px-8 py-2.5 bg-emerald-600 text-white text-sm rounded-lg font-medium disabled:opacity-40">{saving ? 'Signing...' : 'Sign & Complete'}</button>
                 {prescriptions.length > 0 && <button onClick={() => {
                   const rxRows = prescriptions.map((p, i) =>
                     `<tr><td style="padding:4px 6px;border:1px solid #ddd;text-align:center;font-size:10px">${i+1}</td><td style="padding:4px 6px;border:1px solid #ddd;font-size:10px"><b>${p.drug}</b> (${p.generic}) ${p.dose}</td><td style="padding:4px 6px;border:1px solid #ddd;text-align:center;font-size:10px">${p.route}</td><td style="padding:4px 6px;border:1px solid #ddd;text-align:center;font-size:10px">${p.frequency}</td><td style="padding:4px 6px;border:1px solid #ddd;text-align:center;font-size:10px">${p.duration}</td><td style="padding:4px 6px;border:1px solid #ddd;font-size:9px">${p.instructions}</td></tr>`
@@ -321,7 +321,7 @@ function EMRInner() {
                     prescriptions: prescriptions.map(p => ({ brand: p.drug, generic: p.generic, strength: p.dose, dose: p.dose, frequency: p.frequency, duration: p.duration, instructions: p.instructions })),
                     advice: advice ? [advice] : [], followUp: followUpDate || '',
                   }, { name: 'Health1 Super Speciality Hospital', address: 'Shilaj, Ahmedabad', phone: '', tagline: 'NABH Accredited' });
-                }} className="px-4 py-2.5 bg-blue-600 text-white text-sm rounded-lg">Print Summary</button>
+                }} className="px-4 py-2.5 bg-teal-600 text-white text-sm rounded-lg">Print Summary</button>
               </div>
             </div>
           )}
@@ -330,7 +330,7 @@ function EMRInner() {
           <div className="flex items-center justify-between mt-3">
             <button onClick={prevStep} disabled={stepIdx === 0} className="px-4 py-2 bg-gray-100 text-sm rounded-lg disabled:opacity-30">← Previous</button>
             <div className="text-[10px] text-gray-400">Step {stepIdx + 1} of {STEPS.length}</div>
-            <button onClick={nextStep} disabled={stepIdx === STEPS.length - 1} className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg disabled:opacity-30">Next →</button>
+            <button onClick={nextStep} disabled={stepIdx === STEPS.length - 1} className="px-4 py-2 bg-teal-600 text-white text-sm rounded-lg disabled:opacity-30">Next →</button>
           </div>
         </div>
 
@@ -345,7 +345,7 @@ function EMRInner() {
                   <div className="flex justify-between text-[10px]">
                     <span className="text-gray-500">{new Date(enc.date || enc.encounter_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
                     <button onClick={async () => { const data = await emr.cloneEncounter(enc.id); if (data) flash('Encounter cloned'); }}
-                      className="text-blue-600 hover:underline">Clone</button>
+                      className="text-teal-600 hover:underline">Clone</button>
                   </div>
                   <div className="text-xs font-medium">{enc.diagnosis || enc.chief_complaint || 'Encounter'}</div>
                   {enc.doctor && <div className="text-[10px] text-gray-400">{enc.doctor}</div>}

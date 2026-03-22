@@ -78,7 +78,7 @@ function CRMInner() {
   const sourceData = useMemo(() => Object.entries(leads.stats.bySource).sort((a: any, b: any) => b[1] - a[1]).slice(0, 8).map(([k, v]) => ({ name: k.replace('_', ' '), value: v as number })), [leads.stats]);
   const deptData = useMemo(() => Object.entries(leads.stats.byDept).sort((a: any, b: any) => b[1] - a[1]).slice(0, 6).map(([k, v]) => ({ name: k, value: v as number })), [leads.stats]);
 
-  const priorityBadge = (p: string) => p === 'hot' ? 'bg-red-100 text-red-700' : p === 'warm' ? 'bg-amber-100 text-amber-700' : p === 'cold' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600';
+  const priorityBadge = (p: string) => p === 'hot' ? 'bg-red-100 text-red-700' : p === 'warm' ? 'bg-amber-100 text-amber-700' : p === 'cold' ? 'bg-blue-100 text-teal-700' : 'bg-gray-100 text-gray-600';
 
   return (
     <div className="max-w-[1400px] mx-auto space-y-4">
@@ -106,7 +106,7 @@ function CRMInner() {
       <div className="grid grid-cols-7 gap-2">
         {[
           { label: 'Total Leads', value: leads.stats.total, color: 'text-gray-800' },
-          { label: 'New', value: leads.stats.new, color: 'text-blue-700' },
+          { label: 'New', value: leads.stats.new, color: 'text-teal-700' },
           { label: 'Hot', value: leads.stats.hot, color: 'text-red-600' },
           { label: 'Appt Booked', value: leads.stats.booked, color: 'text-amber-700' },
           { label: 'Converted', value: leads.stats.converted, color: 'text-emerald-700' },
@@ -238,7 +238,7 @@ function CRMInner() {
                   <div className="text-[10px] text-gray-400 mt-0.5">Due: {new Date(f.follow_up_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</div>
                 </div>
                 <div className="flex gap-2 shrink-0">
-                  <button onClick={() => handleCall(f.lead?.phone, f.lead_id)} className="px-3 py-2 bg-green-600 text-white text-xs rounded-xl font-medium hover:bg-green-700"><Phone size={12} className="inline mr-1" />Call</button>
+                  <button onClick={() => handleCall(f.lead?.phone, f.lead_id)} className="px-3 py-2 bg-emerald-600 text-white text-xs rounded-xl font-medium hover:bg-emerald-700"><Phone size={12} className="inline mr-1" />Call</button>
                   <button onClick={() => followUps.markDone(f.id)} className="px-3 py-2 bg-gray-100 text-gray-600 text-xs rounded-xl font-medium hover:bg-gray-200">Done</button>
                 </div>
               </div>
@@ -260,7 +260,7 @@ function CRMInner() {
                 </div>
                 <h3 className="font-bold text-sm text-gray-800">{c.name}</h3>
                 <div className="grid grid-cols-3 gap-2 mt-3 text-center">
-                  <div><div className="text-[9px] text-gray-400">Leads</div><div className="font-bold text-blue-700">{c.leads_generated}</div></div>
+                  <div><div className="text-[9px] text-gray-400">Leads</div><div className="font-bold text-teal-700">{c.leads_generated}</div></div>
                   <div><div className="text-[9px] text-gray-400">Appts</div><div className="font-bold text-amber-700">{c.appointments_booked}</div></div>
                   <div><div className="text-[9px] text-gray-400">Revenue</div><div className="font-bold text-emerald-700">{INR(c.revenue_generated || 0)}</div></div>
                 </div>
@@ -407,7 +407,7 @@ function LeadDetail({ lead, centreId, staffId, doctors, onCall, onUpdate, onConv
       <div className="p-5 border-b border-gray-100 shrink-0">
         <div className="flex items-center justify-between mb-3">
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xs">← Back</button>
-          {lead.leadsquared_id && <a href={`https://app.leadsquared.com/Leads/${lead.leadsquared_id}`} target="_blank" className="flex items-center gap-1 text-[10px] text-blue-600"><ExternalLink size={10} />LeadSquared</a>}
+          {lead.leadsquared_id && <a href={`https://app.leadsquared.com/Leads/${lead.leadsquared_id}`} target="_blank" className="flex items-center gap-1 text-[10px] text-teal-600"><ExternalLink size={10} />LeadSquared</a>}
         </div>
         <div className="flex items-center gap-3">
           <div className="w-12 h-12 rounded-full bg-teal-100 flex items-center justify-center shrink-0">
@@ -423,9 +423,9 @@ function LeadDetail({ lead, centreId, staffId, doctors, onCall, onUpdate, onConv
         </div>
         {/* Action buttons */}
         <div className="flex gap-2 mt-3">
-          <button onClick={() => onCall(lead.phone, lead.id)} className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-green-600 text-white text-xs rounded-xl font-semibold hover:bg-green-700"><Phone size={13} /> Call</button>
+          <button onClick={() => onCall(lead.phone, lead.id)} className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-emerald-600 text-white text-xs rounded-xl font-semibold hover:bg-emerald-700"><Phone size={13} /> Call</button>
           <button onClick={() => window.open(`https://wa.me/91${lead.phone.replace(/[^0-9]/g, '').slice(-10)}`, '_blank')} className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-emerald-600 text-white text-xs rounded-xl font-semibold hover:bg-emerald-700"><MessageCircle size={13} /> WhatsApp</button>
-          <button onClick={() => window.open(`mailto:${lead.email}`, '_blank')} disabled={!lead.email} className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-blue-600 text-white text-xs rounded-xl font-semibold hover:bg-blue-700 disabled:opacity-40"><Mail size={13} /> Email</button>
+          <button onClick={() => window.open(`mailto:${lead.email}`, '_blank')} disabled={!lead.email} className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-teal-600 text-white text-xs rounded-xl font-semibold hover:bg-teal-700 disabled:opacity-40"><Mail size={13} /> Email</button>
         </div>
       </div>
 

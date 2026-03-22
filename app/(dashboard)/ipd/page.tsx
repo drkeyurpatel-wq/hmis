@@ -53,17 +53,17 @@ function IPDPageInner() {
   const occupancy = beds.length > 0 ? Math.round(occupiedBeds / beds.length * 100) : 0;
 
   const stColor = (s: string) => s === 'active' ? 'bg-blue-100 text-blue-800' : s === 'discharge_initiated' ? 'bg-orange-100 text-orange-800' : s === 'discharged' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-700';
-  const typeColor = (t: string) => t === 'emergency' ? 'bg-red-100 text-red-700' : t === 'elective' ? 'bg-blue-100 text-blue-700' : t === 'daycare' ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-700';
+  const typeColor = (t: string) => t === 'emergency' ? 'bg-red-100 text-red-700' : t === 'elective' ? 'bg-blue-100 text-teal-700' : t === 'daycare' ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-700';
 
   return (
     <div className="max-w-6xl mx-auto">
       <div className="flex items-center justify-between mb-6">
         <div><h1 className="text-2xl font-bold text-gray-900">IPD / Admissions</h1><p className="text-sm text-gray-500">Inpatient management and bed board</p></div>
-        <button onClick={() => setShowAdmit(true)} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700">+ New Admission</button>
+        <button onClick={() => setShowAdmit(true)} className="px-4 py-2 bg-teal-600 text-white rounded-lg text-sm font-medium hover:bg-teal-700">+ New Admission</button>
       </div>
 
       <div className="grid grid-cols-5 gap-4 mb-6">
-        <div className="bg-blue-50 rounded-xl p-4"><div className="text-xs text-gray-500">Active</div><div className="text-2xl font-bold text-blue-700">{activeCount}</div></div>
+        <div className="bg-blue-50 rounded-xl p-4"><div className="text-xs text-gray-500">Active</div><div className="text-2xl font-bold text-teal-700">{activeCount}</div></div>
         <div className="bg-orange-50 rounded-xl p-4"><div className="text-xs text-gray-500">Discharge initiated</div><div className="text-2xl font-bold text-orange-700">{dischargeInit}</div></div>
         <div className="bg-green-50 rounded-xl p-4"><div className="text-xs text-gray-500">Beds available</div><div className="text-2xl font-bold text-green-700">{availBeds}</div></div>
         <div className="bg-purple-50 rounded-xl p-4"><div className="text-xs text-gray-500">Beds occupied</div><div className="text-2xl font-bold text-purple-700">{occupiedBeds}</div></div>
@@ -113,7 +113,7 @@ function IPDPageInner() {
       )}
 
       <div className="flex gap-2 mb-4">{[['active','Active'],['discharge_initiated','Discharge Init'],['discharged','Discharged'],['all','All']].map(([k,l]) =>
-        <button key={k} onClick={() => setStatusFilter(k)} className={`px-3 py-1.5 text-xs rounded-lg border ${statusFilter === k ? 'bg-blue-600 text-white border-blue-600' : 'bg-white border-gray-200'}`}>{l}</button>
+        <button key={k} onClick={() => setStatusFilter(k)} className={`px-3 py-1.5 text-xs rounded-lg border ${statusFilter === k ? 'bg-teal-600 text-white border-teal-600' : 'bg-white border-gray-200'}`}>{l}</button>
       )}</div>
 
       {loading ? <TableSkeleton rows={6} cols={5} /> :
@@ -126,7 +126,7 @@ function IPDPageInner() {
         <th className="p-3">Actions</th>
       </tr></thead><tbody>{admissions.map(a => (
         <tr key={a.id} className="border-b hover:bg-gray-50">
-          <td className="p-3 font-mono text-xs text-blue-600">{a.ipdNumber}</td>
+          <td className="p-3 font-mono text-xs text-teal-600">{a.ipdNumber}</td>
           <td className="p-3"><div className="font-medium">{a.patientName}</div><div className="text-xs text-gray-400">{a.patientUhid}</div></td>
           <td className="p-3 text-xs">{a.primaryDoctor}</td><td className="p-3 text-xs">{a.department}</td>
           <td className="p-3"><span className={`px-2 py-0.5 rounded-full text-xs ${typeColor(a.admissionType)}`}>{a.admissionType}</span></td>
@@ -135,9 +135,9 @@ function IPDPageInner() {
           <td className="p-3"><span className={`px-2 py-0.5 rounded-full text-xs ${stColor(a.status)}`}>{a.status.replace('_', ' ')}</span></td>
           <td className="p-3"><div className="flex gap-1">
             {a.status === 'active' && <button onClick={() => initiateDischarge(a.id)} className="px-2 py-1 bg-orange-50 text-orange-700 text-xs rounded hover:bg-orange-100">Init Discharge</button>}
-            {a.status === 'discharge_initiated' && <a href={`/ipd/${a.id}?tab=discharge`} className="px-2 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700 font-medium">Discharge</a>}
+            {a.status === 'discharge_initiated' && <a href={`/ipd/${a.id}?tab=discharge`} className="px-2 py-1 bg-emerald-600 text-white text-xs rounded hover:bg-emerald-700 font-medium">Discharge</a>}
             <a href={`/ipd/${a.id}`} className="px-2 py-1 bg-purple-50 text-purple-700 text-xs rounded hover:bg-purple-100 font-medium">Clinical</a>
-            <a href={`/emr-v2?patient=${a.patientId}`} className="px-2 py-1 bg-blue-50 text-blue-700 text-xs rounded hover:bg-blue-100">EMR</a>
+            <a href={`/emr-v2?patient=${a.patientId}`} className="px-2 py-1 bg-blue-50 text-teal-700 text-xs rounded hover:bg-blue-100">EMR</a>
           </div></td>
         </tr>
       ))}</tbody></table></div>}
@@ -188,7 +188,7 @@ function IPDPageInner() {
             <div><label className="text-xs text-gray-500">Provisional diagnosis</label>
               <input type="text" value={form.provisionalDiagnosis} onChange={e => setForm(f => ({...f, provisionalDiagnosis: e.target.value}))} placeholder="e.g., Acute MI, Appendicitis..." className="w-full px-3 py-2 border rounded-lg text-sm" /></div>
             <div className="flex gap-2 pt-2">
-              <button onClick={handleAdmit} disabled={!form.patientId||!form.admittingDoctorId||!form.primaryDoctorId||!form.departmentId} className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm disabled:opacity-50">Admit Patient</button>
+              <button onClick={handleAdmit} disabled={!form.patientId||!form.admittingDoctorId||!form.primaryDoctorId||!form.departmentId} className="flex-1 px-4 py-2 bg-teal-600 text-white rounded-lg text-sm disabled:opacity-50">Admit Patient</button>
               <button onClick={() => setShowAdmit(false)} className="px-4 py-2 bg-gray-100 rounded-lg text-sm">Cancel</button>
             </div>
           </div>

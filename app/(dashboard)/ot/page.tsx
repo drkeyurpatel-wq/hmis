@@ -73,7 +73,7 @@ function OTInner() {
     utilization.loadRange(from, to);
   }, [utilization.loadRange]);
 
-  const stColor = (s: string) => s === 'completed' ? 'bg-green-100 text-green-700' : s === 'in_progress' ? 'bg-red-100 text-red-700' : s === 'scheduled' ? 'bg-blue-100 text-blue-700' : s === 'cancelled' ? 'bg-gray-100 text-gray-500' : 'bg-yellow-100 text-yellow-700';
+  const stColor = (s: string) => s === 'completed' ? 'bg-green-100 text-green-700' : s === 'in_progress' ? 'bg-red-100 text-red-700' : s === 'scheduled' ? 'bg-blue-100 text-teal-700' : s === 'cancelled' ? 'bg-gray-100 text-gray-500' : 'bg-yellow-100 text-yellow-700';
   const timeSlots = ['07:00','08:00','09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00','18:00','19:00','20:00'];
 
   const tabs: [Tab,string,string][] = [
@@ -83,19 +83,19 @@ function OTInner() {
 
   return (
     <div className="max-w-7xl mx-auto">
-      {toast && <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-green-600 text-white px-4 py-2 rounded-lg shadow-lg text-sm">{toast}</div>}
+      {toast && <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-emerald-600 text-white px-4 py-2 rounded-xl shadow-lg text-sm">{toast}</div>}
       <div className="flex items-center justify-between mb-3">
         <div><h1 className="text-xl font-bold text-gray-900">Operation Theatre Management</h1>
           <p className="text-xs text-gray-500">Health1 — {schedule.rooms.length} OT rooms | SSI Mantra 3.0 + Cuvis Robotic</p></div>
         <div className="flex items-center gap-2">
           <input type="date" value={date} onChange={e => { setDate(e.target.value); schedule.loadBookings(e.target.value); }} className="px-2 py-1.5 border rounded-lg text-xs" />
-          <button onClick={() => setTab('new_booking')} className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg">+ Book Surgery</button>
+          <button onClick={() => setTab('new_booking')} className="px-4 py-2 bg-teal-600 text-white text-sm rounded-lg">+ Book Surgery</button>
         </div>
       </div>
 
       {/* Stats strip */}
       <div className="grid grid-cols-8 gap-2 mb-3">
-        {[['Scheduled',schedule.stats.scheduled,'text-blue-700','bg-blue-50'],['In Progress',schedule.stats.inProgress,'text-red-700','bg-red-50'],
+        {[['Scheduled',schedule.stats.scheduled,'text-teal-700','bg-blue-50'],['In Progress',schedule.stats.inProgress,'text-red-700','bg-red-50'],
           ['Completed',schedule.stats.completed,'text-green-700','bg-green-50'],['Cancelled',schedule.stats.cancelled,'text-gray-500','bg-gray-50'],
           ['Emergency',schedule.stats.emergency,'text-orange-700','bg-orange-50'],['Robotic',schedule.stats.robotic,'text-purple-700','bg-purple-50'],
           ['Total',schedule.stats.total,'text-gray-700','bg-white'],['Avg Duration',`${Math.round(schedule.stats.avgDuration)}m`,'text-gray-700','bg-white'],
@@ -104,9 +104,9 @@ function OTInner() {
         ))}
       </div>
 
-      <div className="flex gap-0.5 mb-4 border-b pb-px overflow-x-auto">
+      <div className="flex gap-0.5 mb-4 pb-0.5 overflow-x-auto scrollbar-thin">
         {tabs.map(([k,l,icon]) => <button key={k} onClick={() => setTab(k)}
-          className={`px-2 py-2 text-[11px] font-medium whitespace-nowrap border-b-2 -mb-px ${tab===k?'border-blue-600 text-blue-700':'border-transparent text-gray-500 hover:text-gray-700'}`}>{icon} {l}</button>)}
+          className={`px-2 py-2 text-[11px] font-medium whitespace-nowrap rounded-xl ${tab===k?'bg-teal-600 text-white shadow-sm':'bg-white text-gray-500 border border-gray-100 hover:bg-gray-50'}`}>{icon} {l}</button>)}
       </div>
 
       {/* ===== SCHEDULE BOARD — Visual timeline per OT room ===== */}
@@ -119,7 +119,7 @@ function OTInner() {
                 <span className="font-bold text-sm">{room.name}</span>
                 <span className="text-[10px] text-gray-400">{room.type}</span>
                 {room.has_robotic && <span className="text-[9px] bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded">Robotic</span>}
-                {room.has_laminar_flow && <span className="text-[9px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded">Laminar</span>}
+                {room.has_laminar_flow && <span className="text-[9px] bg-blue-100 text-teal-700 px-1.5 py-0.5 rounded">Laminar</span>}
                 <span className="ml-auto text-xs text-gray-400">{roomBookings.length} case{roomBookings.length !== 1 ? 's' : ''}</span>
               </div>
               {/* Timeline */}
@@ -190,9 +190,9 @@ function OTInner() {
             <button onClick={async () => { await schedule.cancel(selectedBooking.id, 'Postponed'); setSelectedBooking(null); flash('Cancelled'); }} className="px-3 py-2 bg-gray-200 text-sm rounded-lg">Cancel</button>
           </>}{
           selectedBooking.status === 'in_progress' && <>
-            <button onClick={async () => { await schedule.updateStatus(selectedBooking.id, 'completed'); setSelectedBooking(null); flash('Surgery completed'); }} className="px-4 py-2 bg-green-600 text-white text-sm rounded-lg">Complete Surgery</button>
+            <button onClick={async () => { await schedule.updateStatus(selectedBooking.id, 'completed'); setSelectedBooking(null); flash('Surgery completed'); }} className="px-4 py-2 bg-emerald-600 text-white text-sm rounded-lg">Complete Surgery</button>
           </>}
-          <Link href={`/ot/${selectedBooking.id}`} className="px-3 py-2 bg-blue-100 text-blue-700 text-sm rounded-lg">Open Detail →</Link>
+          <Link href={`/ot/${selectedBooking.id}`} className="px-3 py-2 bg-blue-100 text-teal-700 text-sm rounded-lg">Open Detail →</Link>
         </div>
       </div>}
 
@@ -254,19 +254,19 @@ function OTInner() {
         <div className="grid grid-cols-5 gap-3">
           <div><label className="text-xs text-gray-500">Duration (min)</label>
             <div className="flex gap-1 mt-1">{[30,60,90,120,180,240].map(d => (
-              <button key={d} onClick={() => setBkForm(f => ({...f, estimated_duration_min:d}))} className={`flex-1 py-1.5 rounded text-[10px] border ${bkForm.estimated_duration_min===d?'bg-blue-600 text-white':'bg-white'}`}>{d}m</button>
+              <button key={d} onClick={() => setBkForm(f => ({...f, estimated_duration_min:d}))} className={`flex-1 py-1.5 rounded text-[10px] border ${bkForm.estimated_duration_min===d?'bg-teal-600 text-white':'bg-white'}`}>{d}m</button>
             ))}</div></div>
           <div><label className="text-xs text-gray-500">Anaesthesia</label>
             <div className="flex flex-wrap gap-0.5 mt-1">{ANAESTHESIA_TYPES.map(a => (
-              <button key={a} onClick={() => setBkForm(f => ({...f, anaesthesia_type:a}))} className={`px-1.5 py-0.5 rounded text-[9px] border ${bkForm.anaesthesia_type===a?'bg-blue-600 text-white':'bg-white'}`}>{a}</button>
+              <button key={a} onClick={() => setBkForm(f => ({...f, anaesthesia_type:a}))} className={`px-1.5 py-0.5 rounded text-[9px] border ${bkForm.anaesthesia_type===a?'bg-teal-600 text-white':'bg-white'}`}>{a}</button>
             ))}</div></div>
           <div><label className="text-xs text-gray-500">Priority</label>
             <div className="flex gap-1 mt-1">{['elective','urgent','emergency'].map(p => (
-              <button key={p} onClick={() => setBkForm(f => ({...f, priority:p, is_emergency:p==='emergency'}))} className={`flex-1 py-1.5 rounded text-[10px] border ${bkForm.priority===p?p==='emergency'?'bg-red-600 text-white':p==='urgent'?'bg-yellow-500 text-white':'bg-blue-600 text-white':'bg-white'}`}>{p}</button>
+              <button key={p} onClick={() => setBkForm(f => ({...f, priority:p, is_emergency:p==='emergency'}))} className={`flex-1 py-1.5 rounded text-[10px] border ${bkForm.priority===p?p==='emergency'?'bg-red-600 text-white':p==='urgent'?'bg-yellow-500 text-white':'bg-teal-600 text-white':'bg-white'}`}>{p}</button>
             ))}</div></div>
           <div><label className="text-xs text-gray-500">Laterality</label>
             <div className="flex gap-1 mt-1">{['left','right','bilateral','na'].map(l => (
-              <button key={l} onClick={() => setBkForm(f => ({...f, laterality:l}))} className={`flex-1 py-1.5 rounded text-[10px] border ${bkForm.laterality===l?'bg-blue-600 text-white':'bg-white'}`}>{l === 'na' ? 'N/A' : l}</button>
+              <button key={l} onClick={() => setBkForm(f => ({...f, laterality:l}))} className={`flex-1 py-1.5 rounded text-[10px] border ${bkForm.laterality===l?'bg-teal-600 text-white':'bg-white'}`}>{l === 'na' ? 'N/A' : l}</button>
             ))}</div></div>
           <div><label className="text-xs text-gray-500">Robot</label>
             <div className="flex gap-1 mt-1">{[['none','None'],['ssi_mantra','SSI Mantra'],['cuvis','Cuvis']].map(([v,l]) => (
@@ -282,7 +282,7 @@ function OTInner() {
           flash('Surgery booked'); setTab('board'); setBookingError('');
           setBkForm({admission_id:'',ot_room_id:'',surgeon_id:'',anaesthetist_id:'',assistant_surgeon_id:'',procedure_name:'',scheduled_date:new Date().toISOString().split('T')[0],scheduled_start:'09:00',estimated_duration_min:60,is_emergency:false,is_robotic:false,robot_type:'none',anaesthesia_type:'general',priority:'elective',laterality:'na',patient_category:'adult'});
         }} disabled={!bkForm.admission_id||!bkForm.ot_room_id||!bkForm.surgeon_id||!bkForm.procedure_name}
-          className="px-6 py-2.5 bg-green-600 text-white text-sm rounded-lg font-medium disabled:opacity-40">Book Surgery</button>
+          className="px-6 py-2.5 bg-emerald-600 text-white text-sm rounded-lg font-medium disabled:opacity-40">Book Surgery</button>
       </div>}
 
       {/* ===== UTILIZATION ===== */}
@@ -319,7 +319,7 @@ function OTInner() {
               </div>
               <div className="flex gap-1 flex-wrap mb-2">
                 {r.has_robotic && <span className="text-[9px] bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded">Robotic</span>}
-                {r.has_laminar_flow && <span className="text-[9px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded">Laminar Flow</span>}
+                {r.has_laminar_flow && <span className="text-[9px] bg-blue-100 text-teal-700 px-1.5 py-0.5 rounded">Laminar Flow</span>}
               </div>
               {live && <div className="text-xs bg-red-100 rounded-lg p-2">
                 <div className="font-bold text-red-700">{live.procedure_name}</div>
@@ -341,7 +341,7 @@ function OTInner() {
         <h2 className="font-bold text-sm mb-3">WHO Surgical Safety Checklist</h2>
         <p className="text-xs text-gray-500 mb-3">The WHO checklist runs in 3 phases per surgery — available in each OT booking detail page.</p>
         <div className="grid grid-cols-3 gap-3 text-xs">
-          <div className="bg-blue-50 rounded-lg p-3"><div className="font-bold text-blue-700">Sign In</div><div className="text-gray-500 mt-1">Before anaesthesia — patient identity, consent, allergy, airway risk, blood loss risk, equipment check</div></div>
+          <div className="bg-blue-50 rounded-lg p-3"><div className="font-bold text-teal-700">Sign In</div><div className="text-gray-500 mt-1">Before anaesthesia — patient identity, consent, allergy, airway risk, blood loss risk, equipment check</div></div>
           <div className="bg-amber-50 rounded-lg p-3"><div className="font-bold text-amber-700">Time Out</div><div className="text-gray-500 mt-1">Before incision — team introduction, procedure confirmation, anticipated events, antibiotic prophylaxis, imaging displayed</div></div>
           <div className="bg-green-50 rounded-lg p-3"><div className="font-bold text-green-700">Sign Out</div><div className="text-gray-500 mt-1">Before leaving OT — procedure recorded, instrument/sponge/needle count, specimen labelled, equipment issues, recovery plan</div></div>
         </div>

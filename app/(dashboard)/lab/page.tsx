@@ -38,7 +38,7 @@ function LabPageInner() {
 
   return (
     <div className="max-w-6xl mx-auto">
-      {toast && <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-green-600 text-white px-4 py-2 rounded-lg shadow-lg text-sm">{toast}</div>}
+      {toast && <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-teal-600 text-white px-5 py-2.5 rounded-xl shadow-lg text-sm">{toast}</div>}
 
       <div className="flex items-center justify-between mb-4">
         <div><h1 className="text-2xl font-bold text-gray-900">Laboratory (LIMS)</h1><p className="text-sm text-gray-500">Sample management, result entry, validation</p></div>
@@ -59,9 +59,9 @@ function LabPageInner() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 mb-4 border-b pb-px overflow-x-auto">
+      <div className="flex gap-1 mb-4 pb-0.5 overflow-x-auto scrollbar-thin">
         {([['worklist','Worklist'],['collect','Samples'],['results','Results'],['verify','Verify'],['critical','Critical'],['micro','Microbiology'],['histo','Histopath'],['antibiogram','Antibiogram'],['qc','QC'],['nabl','NABL/Audit'],['outsourced','Outsourced'],['tat','TAT']] as [LabTab,string][]).map(([k,l]) =>
-          <button key={k} onClick={() => setTab(k)} className={`px-3 py-2 text-xs font-medium whitespace-nowrap border-b-2 -mb-px ${tab === k ? 'border-blue-600 text-blue-700' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
+          <button key={k} onClick={() => setTab(k)} className={`px-3 py-2 text-xs font-medium whitespace-nowrap rounded-xl ${tab === k ? 'bg-teal-600 text-white shadow-sm' : 'bg-white text-gray-500 border border-gray-100 hover:bg-gray-50'}`}>
             {l} {k === 'critical' && criticalAlerts.alerts.length > 0 ? <span className="ml-1 bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded-full">{criticalAlerts.alerts.length}</span> : ''}</button>
         )}
       </div>
@@ -69,7 +69,7 @@ function LabPageInner() {
       {/* ===== WORKLIST ===== */}
       {tab === 'worklist' && <>
         <div className="flex gap-2 mb-3">{[['all','All'],['ordered','Pending'],['sample_collected','Collected'],['processing','Processing'],['completed','Completed']].map(([k,l]) =>
-          <button key={k} onClick={() => setStatusFilter(k)} className={`px-3 py-1 text-xs rounded-lg border ${statusFilter === k ? 'bg-blue-600 text-white border-blue-600' : 'bg-white border-gray-200'}`}>{l}</button>
+          <button key={k} onClick={() => setStatusFilter(k)} className={`px-3 py-1 text-xs rounded-lg border ${statusFilter === k ? 'bg-teal-600 text-white border-teal-600' : 'bg-white border-gray-200'}`}>{l}</button>
         )}</div>
         {loading ? <TableSkeleton rows={8} cols={6} /> :
         orders.length === 0 ? <div className="text-center py-12 bg-white rounded-xl border text-gray-400 text-sm">No lab orders for this date</div> :
@@ -146,7 +146,7 @@ function LabPageInner() {
                   });
                   load(statusFilter, dateFilter);
                 }
-              }} className="px-3 py-1.5 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700">Collect & Label</button>
+              }} className="px-3 py-1.5 bg-teal-600 text-white text-xs rounded-xl hover:bg-teal-700">Collect & Label</button>
               <button onClick={async () => {
                 const reason = prompt('Rejection reason:\n1. Hemolyzed\n2. Clotted\n3. Lipemic\n4. Insufficient quantity\n5. Wrong container\n6. Patient ID mismatch\n7. Unlabeled\n\nEnter reason:');
                 if (reason) { await samples.rejectSample('', o.id, reason, staffId); flash('Sample rejected'); load(statusFilter, dateFilter); }
@@ -196,7 +196,7 @@ function LabPageInner() {
             <div className="text-sm"><span className="font-medium">{a.parameter_name}:</span> <span className="text-red-700 font-bold text-lg">{a.result_value}</span> <span className="text-xs text-gray-500">({a.critical_type === 'low' ? 'CRITICALLY LOW' : 'CRITICALLY HIGH'})</span></div>
             <div className="flex gap-2 mt-2">
               {a.status === 'pending' && <button onClick={() => criticalAlerts.notify(a.id, '', staffId)} className="px-3 py-1 bg-orange-600 text-white text-xs rounded-lg">Mark Notified</button>}
-              {(a.status === 'pending' || a.status === 'notified') && <button onClick={() => { const action = prompt('Action taken by doctor:'); if (action) criticalAlerts.acknowledge(a.id, staffId, action); }} className="px-3 py-1 bg-green-600 text-white text-xs rounded-lg">Acknowledge</button>}
+              {(a.status === 'pending' || a.status === 'notified') && <button onClick={() => { const action = prompt('Action taken by doctor:'); if (action) criticalAlerts.acknowledge(a.id, staffId, action); }} className="px-3 py-1 bg-emerald-600 text-white text-xs rounded-xl">Acknowledge</button>}
             </div>
           </div>
         ))}</div>}
@@ -423,7 +423,7 @@ function ResultEntryPanel({ order, staffId, onFlash, onDone, onSelectOrder, orde
             </div>
 
             <div className="flex gap-2">
-              <button onClick={handleSave} className="px-4 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700">Save Results</button>
+              <button onClick={handleSave} className="px-4 py-2 bg-emerald-600 text-white text-sm rounded-xl hover:bg-emerald-700">Save Results</button>
               <button onClick={() => {
                 if (!order) return;
                 const resultsForPrint = entry.parameters.filter((p: any) => p.is_reportable && values[p.id]).map((p: any) => {
@@ -434,7 +434,7 @@ function ResultEntryPanel({ order, staffId, onFlash, onDone, onSelectOrder, orde
                 });
                 printLabReport({ patientName: order.patientName, uhid: order.patientUhid || '', age: order.patientAge || '', gender: order.patientGender || '',
                   testName: order.testName, testCode: order.testCode || '', barcode: order.sampleBarcode || '', orderedBy: order.orderedBy || '', results: resultsForPrint });
-              }} className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700">Print Report</button>
+              }} className="px-4 py-2 bg-teal-600 text-white text-sm rounded-xl hover:bg-teal-700">Print Report</button>
               <button onClick={onDone} className="px-4 py-2 bg-gray-100 text-gray-600 text-sm rounded-lg">Back to Worklist</button>
             </div>
           </div>
@@ -497,7 +497,7 @@ function VerifyPanel({ order, staffId, onFlash, onDone, onSelectOrder, orders }:
 
             <div className="flex gap-2">
               <button onClick={async () => { await entry.verifyResults(staffId); onFlash('Results verified & reported'); onDone(); }}
-                className="px-4 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 font-medium">Verify & Report</button>
+                className="px-4 py-2 bg-emerald-600 text-white text-sm rounded-xl hover:bg-emerald-700 font-medium">Verify & Report</button>
               <button onClick={() => {
                 if (!order) return;
                 printLabReport({
@@ -511,7 +511,7 @@ function VerifyPanel({ order, staffId, onFlash, onDone, onSelectOrder, orders }:
                     flag: r.is_critical ? 'CRITICAL' : r.is_abnormal ? 'ABN' : '',
                   })),
                 });
-              }} className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700">Print Report</button>
+              }} className="px-4 py-2 bg-teal-600 text-white text-sm rounded-xl hover:bg-teal-700">Print Report</button>
               <button onClick={() => {
                 if (!order) return;
                 const phone = prompt('Patient phone number for WhatsApp:');
@@ -519,7 +519,7 @@ function VerifyPanel({ order, staffId, onFlash, onDone, onSelectOrder, orders }:
                 const results = entry.results.map((r: any) => ({ parameterName: r.parameter_name, value: r.result_value, unit: r.unit || '', flag: r.is_critical ? 'CRITICAL' : r.is_abnormal ? 'ABN' : '' }));
                 const summary = generateResultSummary(results);
                 sendLabReportWhatsApp(phone, { patientName: order.patientName, uhid: order.patientUhid, testName: order.testName, resultSummary: summary });
-              }} className="px-4 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 flex items-center gap-1">
+              }} className="px-4 py-2 bg-emerald-600 text-white text-sm rounded-xl hover:bg-emerald-700 flex items-center gap-1">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 2C6.477 2 2 6.477 2 12c0 1.89.525 3.66 1.438 5.168L2 22l4.832-1.438A9.955 9.955 0 0012 22c5.523 0 10-4.477 10-10S17.523 2 12 2z"/></svg>
                 WhatsApp</button>
               <button onClick={onDone} className="px-4 py-2 bg-gray-100 text-gray-600 text-sm rounded-lg">Back</button>

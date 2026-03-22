@@ -11,7 +11,7 @@ let _sb: any = null;
 function sb() { if (typeof window === 'undefined') return null as any; if (!_sb) { try { _sb = createClient(); } catch { return null; } } return _sb; }
 
 const MOD_CLR: Record<string, string> = {
-  XR: 'bg-blue-100 text-blue-700', CT: 'bg-purple-100 text-purple-700', MRI: 'bg-indigo-100 text-indigo-700',
+  XR: 'bg-blue-100 text-teal-700', CT: 'bg-purple-100 text-purple-700', MRI: 'bg-indigo-100 text-indigo-700',
   USG: 'bg-green-100 text-green-700', ECHO: 'bg-red-100 text-red-700', DEXA: 'bg-teal-100 text-teal-700',
 };
 
@@ -80,7 +80,7 @@ export default function StudyDetailPage() {
 
   return (
     <div className="max-w-5xl mx-auto space-y-4">
-      {toast && <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-green-600 text-white px-4 py-2 rounded-lg shadow-lg text-sm">{toast}</div>}
+      {toast && <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-emerald-600 text-white px-4 py-2 rounded-xl shadow-lg text-sm">{toast}</div>}
 
       {/* Study Header */}
       <div className="bg-white rounded-xl border p-5">
@@ -100,11 +100,11 @@ export default function StudyDetailPage() {
           <div className="flex items-center gap-2">
             {(study.stradusStudyUrl || study.pacsViewerUrl) && (
               <a href={study.stradusStudyUrl || study.pacsViewerUrl || ''} target="_blank" rel="noopener noreferrer"
-                className="px-4 py-2 bg-green-600 text-white text-sm rounded-lg font-medium hover:bg-green-700">
+                className="px-4 py-2 bg-emerald-600 text-white text-sm rounded-lg font-medium hover:bg-emerald-700">
                 Open in Stradus
               </a>
             )}
-            <Link href="/radiology" className="text-xs text-gray-500 hover:text-blue-600">Back</Link>
+            <Link href="/radiology" className="text-xs text-gray-500 hover:text-teal-600">Back</Link>
           </div>
         </div>
 
@@ -113,7 +113,7 @@ export default function StudyDetailPage() {
           <div><span className="text-gray-500 block">Accession</span><span className="font-mono font-semibold">{study.accessionNumber}</span></div>
           <div><span className="text-gray-500 block">Referring Dr</span><span className="font-semibold">{study.referringDoctorName || '—'}</span></div>
           <div><span className="text-gray-500 block">Images</span><span className="font-semibold">{study.seriesCount} series / {study.imageCount} images</span></div>
-          <div><span className="text-gray-500 block">Status</span><span className={`px-2 py-0.5 rounded text-xs font-medium ${study.status === 'verified' ? 'bg-green-100 text-green-700' : study.status === 'reported' ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700'}`}>{study.status}</span></div>
+          <div><span className="text-gray-500 block">Status</span><span className={`px-2 py-0.5 rounded text-xs font-medium ${study.status === 'verified' ? 'bg-green-100 text-green-700' : study.status === 'reported' ? 'bg-blue-100 text-teal-700' : 'bg-amber-100 text-amber-700'}`}>{study.status}</span></div>
         </div>
 
         {/* Stradus URL display */}
@@ -130,12 +130,12 @@ export default function StudyDetailPage() {
         <div key={r.id} className={`bg-white rounded-xl border p-5 ${r.isCritical ? 'border-red-300 bg-red-50' : ''}`}>
           <div className="flex items-center justify-between mb-3">
             <h3 className="font-bold text-sm">{idx === 0 ? 'Report' : `Report (${r.reportStatus})`}
-              <span className={`ml-2 px-2 py-0.5 rounded text-[10px] ${r.reportStatus === 'verified' ? 'bg-green-100 text-green-700' : r.reportStatus === 'final' ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700'}`}>{r.reportStatus}</span>
+              <span className={`ml-2 px-2 py-0.5 rounded text-[10px] ${r.reportStatus === 'verified' ? 'bg-green-100 text-green-700' : r.reportStatus === 'final' ? 'bg-blue-100 text-teal-700' : 'bg-amber-100 text-amber-700'}`}>{r.reportStatus}</span>
               <span className="ml-2 px-2 py-0.5 rounded text-[10px] bg-gray-100 text-gray-600">via {r.source}</span>
             </h3>
             <div className="flex gap-2">
               {r.reportStatus === 'final' && !r.verifiedByName && (
-                <button onClick={() => verifyReport(r.id)} className="px-3 py-1.5 bg-green-600 text-white text-xs rounded-lg">Verify</button>
+                <button onClick={() => verifyReport(r.id)} className="px-3 py-1.5 bg-emerald-600 text-white text-xs rounded-lg">Verify</button>
               )}
               {r.tatMinutes && <span className="text-xs text-gray-400">TAT: {r.tatMinutes >= 60 ? `${Math.floor(r.tatMinutes / 60)}h ${r.tatMinutes % 60}m` : `${r.tatMinutes}m`}</span>}
             </div>
@@ -148,7 +148,7 @@ export default function StudyDetailPage() {
             {r.clinicalHistory && <div><div className="text-xs font-semibold text-gray-500 uppercase">Clinical History</div><div>{r.clinicalHistory}</div></div>}
             {r.comparison && <div><div className="text-xs font-semibold text-gray-500 uppercase">Comparison</div><div>{r.comparison}</div></div>}
             <div className="border-t pt-3"><div className="text-xs font-semibold text-gray-500 uppercase">Findings</div><div className="whitespace-pre-wrap leading-relaxed">{r.findings}</div></div>
-            <div className="bg-blue-50 rounded-lg p-4 border border-blue-200"><div className="text-xs font-semibold text-blue-700 uppercase mb-1">Impression</div><div className="text-blue-900 font-medium whitespace-pre-wrap">{r.impression}</div></div>
+            <div className="bg-blue-50 rounded-lg p-4 border border-blue-200"><div className="text-xs font-semibold text-teal-700 uppercase mb-1">Impression</div><div className="text-blue-900 font-medium whitespace-pre-wrap">{r.impression}</div></div>
           </div>
 
           <div className="mt-3 pt-2 border-t text-xs text-gray-500 flex justify-between">
@@ -161,7 +161,7 @@ export default function StudyDetailPage() {
           <div className="text-center text-gray-400 text-sm mb-3">No report received from Stradus yet</div>
           {!showManualReport && (
             <div className="text-center">
-              <button onClick={() => setShowManualReport(true)} className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg">Enter Report Manually (Fallback)</button>
+              <button onClick={() => setShowManualReport(true)} className="px-4 py-2 bg-teal-600 text-white text-sm rounded-lg">Enter Report Manually (Fallback)</button>
             </div>
           )}
         </div>
@@ -183,7 +183,7 @@ export default function StudyDetailPage() {
         <div><label className="text-xs text-gray-500">Impression *</label><textarea value={reportForm.impression} onChange={e => setReportForm(f => ({...f, impression: e.target.value}))} rows={3} className="w-full px-3 py-2 border rounded-lg text-sm font-medium" /></div>
         <label className="flex items-center gap-2 text-xs text-red-700"><input type="checkbox" checked={reportForm.is_critical} onChange={e => setReportForm(f => ({...f, is_critical: e.target.checked}))} className="rounded" />Critical finding</label>
         {actionError && <div className="text-sm text-red-700">{actionError}</div>}
-        <div className="flex gap-2"><button onClick={saveManualReport} disabled={!reportForm.findings.trim() || !reportForm.impression.trim()} className="px-6 py-2 bg-green-600 text-white text-sm rounded-lg disabled:opacity-40">Save Report</button>
+        <div className="flex gap-2"><button onClick={saveManualReport} disabled={!reportForm.findings.trim() || !reportForm.impression.trim()} className="px-6 py-2 bg-emerald-600 text-white text-sm rounded-lg disabled:opacity-40">Save Report</button>
           <button onClick={() => setShowManualReport(false)} className="px-4 py-2 bg-gray-200 text-sm rounded-lg">Cancel</button></div>
       </div>}
 
@@ -195,7 +195,7 @@ export default function StudyDetailPage() {
             <span className={`px-1.5 py-0.5 rounded text-[9px] ${MOD_CLR[s.modality] || 'bg-gray-100'}`}>{s.modality}</span>
             <span className="font-medium flex-1">{s.studyDescription}</span>
             <span className="text-gray-400">{s.studyDate}</span>
-            <span className={`px-1.5 py-0.5 rounded text-[9px] ${s.status === 'verified' ? 'bg-green-100 text-green-700' : s.status === 'reported' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100'}`}>{s.status}</span>
+            <span className={`px-1.5 py-0.5 rounded text-[9px] ${s.status === 'verified' ? 'bg-green-100 text-green-700' : s.status === 'reported' ? 'bg-blue-100 text-teal-700' : 'bg-gray-100'}`}>{s.status}</span>
             {s.stradusStudyUrl && <a href={s.stradusStudyUrl} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} className="text-[9px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded">View</a>}
           </Link>
         ))}</div>

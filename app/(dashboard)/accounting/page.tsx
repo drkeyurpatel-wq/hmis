@@ -39,7 +39,7 @@ function AccountingPageInner() {
   const tbDebit = trialBalance.reduce((s, t) => s + t.debit, 0);
   const tbCredit = trialBalance.reduce((s, t) => s + t.credit, 0);
 
-  const typeColor = (t: string) => t === 'asset' ? 'text-blue-700' : t === 'liability' ? 'text-red-700' : t === 'equity' ? 'text-purple-700' : t === 'revenue' ? 'text-green-700' : 'text-orange-700';
+  const typeColor = (t: string) => t === 'asset' ? 'text-teal-700' : t === 'liability' ? 'text-red-700' : t === 'equity' ? 'text-purple-700' : t === 'revenue' ? 'text-green-700' : 'text-orange-700';
 
   return (
     <div className="max-w-6xl mx-auto">
@@ -47,24 +47,24 @@ function AccountingPageInner() {
         <div><h1 className="text-2xl font-bold text-gray-900">Accounting</h1><p className="text-sm text-gray-500">General Ledger, Chart of Accounts, Trial Balance</p></div>
         <div className="flex gap-2 items-center"><input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="text-sm border rounded-lg px-2 py-1.5" />
           <span className="text-gray-400">to</span><input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className="text-sm border rounded-lg px-2 py-1.5" />
-          <button onClick={() => setShowNewJE(true)} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700">+ Journal Entry</button></div>
+          <button onClick={() => setShowNewJE(true)} className="px-4 py-2 bg-teal-600 text-white rounded-lg text-sm font-medium hover:bg-teal-700">+ Journal Entry</button></div>
       </div>
 
       <div className="flex gap-2 mb-6">{[['journals','Journal Entries'],['coa','Chart of Accounts'],['trial','Trial Balance']].map(([k,l]) =>
-        <button key={k} onClick={() => { if(k==='trial')loadTrial(); else setTab(k as any); }} className={`px-4 py-2 text-sm rounded-lg border ${tab === k ? 'bg-blue-600 text-white border-blue-600' : 'bg-white border-gray-200'}`}>{l}</button>
+        <button key={k} onClick={() => { if(k==='trial')loadTrial(); else setTab(k as any); }} className={`px-4 py-2 text-sm rounded-lg border ${tab === k ? 'bg-teal-600 text-white border-teal-600' : 'bg-white border-gray-200'}`}>{l}</button>
       )}</div>
 
       {tab === 'journals' && <>
         <div className="grid grid-cols-3 gap-4 mb-6">
           <div className="bg-gray-50 rounded-xl p-4"><div className="text-xs text-gray-500">Journal entries</div><div className="text-2xl font-bold">{journals.length}</div></div>
-          <div className="bg-blue-50 rounded-xl p-4"><div className="text-xs text-gray-500">Total debit</div><div className="text-2xl font-bold text-blue-700">Rs.{Math.round(totalDebit).toLocaleString('en-IN')}</div></div>
+          <div className="bg-blue-50 rounded-xl p-4"><div className="text-xs text-gray-500">Total debit</div><div className="text-2xl font-bold text-teal-700">Rs.{Math.round(totalDebit).toLocaleString('en-IN')}</div></div>
           <div className="bg-green-50 rounded-xl p-4"><div className="text-xs text-gray-500">Total credit</div><div className="text-2xl font-bold text-green-700">Rs.{Math.round(totalCredit).toLocaleString('en-IN')}</div></div>
         </div>
         {loading ? <TableSkeleton rows={6} cols={5} /> :
         journals.length === 0 ? <div className="text-center py-12 bg-white rounded-xl border text-gray-400 text-sm">No journal entries for this period</div> :
         <div className="space-y-3">{journals.map((j: any) => (
           <div key={j.id} className="bg-white rounded-xl border p-4">
-            <div className="flex items-center justify-between mb-2"><span className="font-mono text-xs text-blue-600">{j.entry_number}</span>
+            <div className="flex items-center justify-between mb-2"><span className="font-mono text-xs text-teal-600">{j.entry_number}</span>
               <div className="flex items-center gap-2"><span className={`px-2 py-0.5 rounded-full text-xs ${j.status === 'posted' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>{j.status}</span>
                 <span className="text-xs text-gray-400">{j.entry_date}</span>{j.is_auto && <span className="text-xs bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded">Auto</span>}</div></div>
             <div className="text-sm mb-2">{j.description}</div>
@@ -94,7 +94,7 @@ function AccountingPageInner() {
 
       {tab === 'trial' && <>
         <div className="grid grid-cols-3 gap-4 mb-6">
-          <div className="bg-blue-50 rounded-xl p-4"><div className="text-xs text-gray-500">Total debit</div><div className="text-2xl font-bold text-blue-700">Rs.{Math.round(tbDebit).toLocaleString('en-IN')}</div></div>
+          <div className="bg-blue-50 rounded-xl p-4"><div className="text-xs text-gray-500">Total debit</div><div className="text-2xl font-bold text-teal-700">Rs.{Math.round(tbDebit).toLocaleString('en-IN')}</div></div>
           <div className="bg-green-50 rounded-xl p-4"><div className="text-xs text-gray-500">Total credit</div><div className="text-2xl font-bold text-green-700">Rs.{Math.round(tbCredit).toLocaleString('en-IN')}</div></div>
           <div className={`rounded-xl p-4 ${Math.abs(tbDebit - tbCredit) < 1 ? 'bg-green-50' : 'bg-red-50'}`}><div className="text-xs text-gray-500">Difference</div><div className={`text-2xl font-bold ${Math.abs(tbDebit - tbCredit) < 1 ? 'text-green-700' : 'text-red-700'}`}>Rs.{Math.abs(Math.round(tbDebit - tbCredit)).toLocaleString('en-IN')}</div></div>
         </div>
@@ -126,7 +126,7 @@ function AccountingPageInner() {
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <label className="text-xs font-medium text-gray-500">Lines</label>
-                  <button onClick={() => setJeLines(prev => [...prev, { accountId: '', debit: 0, credit: 0 }])} className="text-xs text-blue-600">+ Add line</button>
+                  <button onClick={() => setJeLines(prev => [...prev, { accountId: '', debit: 0, credit: 0 }])} className="text-xs text-teal-600">+ Add line</button>
                 </div>
                 <div className="border rounded-lg overflow-hidden">
                   <div className="grid grid-cols-12 gap-0 bg-gray-50 text-xs font-medium text-gray-500 p-2">
@@ -161,7 +161,7 @@ function AccountingPageInner() {
 
               <div className="flex gap-2 pt-2">
                 <button onClick={handleCreateJE} disabled={!jeDesc || !jeBalanced}
-                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm disabled:opacity-50">Create Entry</button>
+                  className="flex-1 px-4 py-2 bg-teal-600 text-white rounded-lg text-sm disabled:opacity-50">Create Entry</button>
                 <button onClick={() => setShowNewJE(false)} className="px-4 py-2 bg-gray-100 rounded-lg text-sm">Cancel</button>
               </div>
             </div>

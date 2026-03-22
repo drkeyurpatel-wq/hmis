@@ -79,14 +79,14 @@ function SettingsInner() {
 
   return (
     <div className="max-w-7xl mx-auto space-y-4">
-      {toast && <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-green-600 text-white px-4 py-2 rounded-lg shadow-lg text-sm">{toast}</div>}
+      {toast && <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-emerald-600 text-white px-4 py-2 rounded-xl shadow-lg text-sm">{toast}</div>}
       <div className="flex items-center justify-between">
         <div><h1 className="text-xl font-bold">Settings & Configuration</h1><p className="text-xs text-gray-500">System-wide configuration for Health1 HMIS</p></div>
         <input type="text" value={search} onChange={e => setSearch(e.target.value)} className="px-3 py-1.5 border rounded-lg text-xs w-56" placeholder="Search..." />
       </div>
 
       <div className="flex gap-1 border-b">{tabs.map(([k, l]) =>
-        <button key={k} onClick={() => setTab(k)} className={`px-3 py-2 text-xs font-medium border-b-2 -mb-px ${tab === k ? 'border-blue-600 text-blue-700' : 'border-transparent text-gray-500'}`}>{l}</button>
+        <button key={k} onClick={() => setTab(k)} className={`px-3 py-2 text-xs font-medium rounded-xl ${tab === k ? 'bg-teal-600 text-white shadow-sm' : 'bg-white text-gray-500 border border-gray-100 hover:bg-gray-50'}`}>{l}</button>
       )}</div>
 
       {/* CENTRES */}
@@ -110,7 +110,7 @@ function SettingsInner() {
           </tr></thead><tbody>{filtered(staffList).slice(0, 100).map(s => (
             <tr key={s.id} className={`border-b ${!s.is_active ? 'opacity-40' : ''}`}>
               <td className="p-2 font-medium">{s.full_name}{s.specialisation ? <div className="text-[10px] text-gray-400">{s.specialisation}</div> : null}</td>
-              <td className="p-2 text-center"><span className={`px-1 py-0.5 rounded text-[9px] ${s.staff_type === 'doctor' ? 'bg-blue-100 text-blue-700' : s.staff_type === 'nurse' ? 'bg-teal-100 text-teal-700' : 'bg-gray-100'}`}>{s.staff_type}</span></td>
+              <td className="p-2 text-center"><span className={`px-1 py-0.5 rounded text-[9px] ${s.staff_type === 'doctor' ? 'bg-blue-100 text-teal-700' : s.staff_type === 'nurse' ? 'bg-teal-100 text-teal-700' : 'bg-gray-100'}`}>{s.staff_type}</span></td>
               <td className="p-2 text-center text-gray-500">{s.designation || '—'}</td>
               <td className="p-2 text-center text-gray-500">{s.department?.name || '—'}</td>
               <td className="p-2 text-center text-gray-400">{s.phone || '—'}</td>
@@ -185,7 +185,7 @@ function SettingsInner() {
         <div className="text-3xl mb-3">👥</div>
         <h3 className="font-bold text-sm mb-2">Staff & Access Management</h3>
         <p className="text-xs text-gray-500 mb-4">Create users, assign roles, edit permissions with the checkbox matrix editor.</p>
-        <a href="/staff" className="px-6 py-2.5 bg-blue-600 text-white text-sm rounded-lg inline-block">Open Staff & Access →</a>
+        <a href="/staff" className="px-6 py-2.5 bg-teal-600 text-white text-sm rounded-lg inline-block">Open Staff & Access →</a>
       </div>}
 
       {/* SYSTEM */}
@@ -209,8 +209,8 @@ function SettingsInner() {
               { name: 'Stradus PACS', status: 'Webhook configured', color: 'text-green-600' },
               { name: 'Mindray BC-5000', status: 'API endpoint ready', color: 'text-green-600' },
               { name: 'VPMS (Purchase)', status: 'Cross-DB bridge live', color: 'text-green-600' },
-              { name: 'WhatsApp Alerts', status: 'Template ready', color: 'text-blue-600' },
-              { name: 'Tally (Accounting)', status: 'Routes built', color: 'text-blue-600' },
+              { name: 'WhatsApp Alerts', status: 'Template ready', color: 'text-teal-600' },
+              { name: 'Tally (Accounting)', status: 'Routes built', color: 'text-teal-600' },
             ].map(i => (
               <div key={i.name} className="flex justify-between border rounded-lg px-3 py-2">
                 <span>{i.name}</span><span className={`font-medium ${i.color}`}>{i.status}</span>

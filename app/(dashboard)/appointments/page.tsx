@@ -12,7 +12,7 @@ function sb() { if (typeof window === 'undefined') return null as any; if (!_sb)
 type Tab = 'today' | 'book' | 'calendar' | 'schedules';
 
 const STATUS_COLORS: Record<string, string> = {
-  booked: 'bg-blue-100 text-blue-700', confirmed: 'bg-blue-100 text-blue-700',
+  booked: 'bg-blue-100 text-teal-700', confirmed: 'bg-blue-100 text-teal-700',
   checked_in: 'bg-amber-100 text-amber-700', in_consultation: 'bg-purple-100 text-purple-700',
   completed: 'bg-green-100 text-green-700', cancelled: 'bg-red-100 text-red-700',
   no_show: 'bg-gray-100 text-gray-700', rescheduled: 'bg-orange-100 text-orange-700',
@@ -127,7 +127,7 @@ function AppointmentsInner() {
 
   return (
     <div className="max-w-7xl mx-auto space-y-4">
-      {toast && <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-green-600 text-white px-4 py-2 rounded-lg shadow-lg text-sm">{toast}</div>}
+      {toast && <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-emerald-600 text-white px-4 py-2 rounded-xl shadow-lg text-sm">{toast}</div>}
 
       <div className="flex items-center justify-between">
         <div><h1 className="text-xl font-bold">Appointments</h1><p className="text-xs text-gray-500">Scheduling, booking, check-in, queue management</p></div>
@@ -142,7 +142,7 @@ function AppointmentsInner() {
 
       {/* Tabs */}
       <div className="flex gap-1 border-b">{(['today', 'book', 'calendar', 'schedules'] as Tab[]).map(t =>
-        <button key={t} onClick={() => setTab(t)} className={`px-4 py-2 text-xs font-medium border-b-2 -mb-px capitalize ${tab === t ? 'border-blue-600 text-blue-700' : 'border-transparent text-gray-500'}`}>
+        <button key={t} onClick={() => setTab(t)} className={`px-4 py-2 text-xs font-medium rounded-xl capitalize ${tab === t ? 'bg-teal-600 text-white shadow-sm' : 'bg-white text-gray-500 border border-gray-100 hover:bg-gray-50'}`}>
           {t === 'today' ? "Today's Queue" : t === 'book' ? 'Book New' : t === 'calendar' ? 'Calendar View' : 'Doctor Schedules'}
         </button>
       )}</div>
@@ -150,7 +150,7 @@ function AppointmentsInner() {
       {/* KPIs */}
       {tab === 'today' && <div className="grid grid-cols-7 gap-2">
         <div className="bg-white rounded-xl border p-2 text-center"><div className="text-[9px] text-gray-500">Total</div><div className="text-xl font-bold">{appts.stats.total}</div></div>
-        <div className="bg-blue-50 rounded-xl border p-2 text-center"><div className="text-[9px] text-gray-500">Booked</div><div className="text-xl font-bold text-blue-700">{appts.stats.booked}</div></div>
+        <div className="bg-blue-50 rounded-xl border p-2 text-center"><div className="text-[9px] text-gray-500">Booked</div><div className="text-xl font-bold text-teal-700">{appts.stats.booked}</div></div>
         <div className="bg-amber-50 rounded-xl border p-2 text-center"><div className="text-[9px] text-gray-500">Checked In</div><div className="text-xl font-bold text-amber-700">{appts.stats.checkedIn}</div></div>
         <div className="bg-purple-50 rounded-xl border p-2 text-center"><div className="text-[9px] text-gray-500">In Consult</div><div className="text-xl font-bold text-purple-700">{appts.stats.inConsult}</div></div>
         <div className="bg-green-50 rounded-xl border p-2 text-center"><div className="text-[9px] text-gray-500">Completed</div><div className="text-xl font-bold text-green-700">{appts.stats.completed}</div></div>
@@ -168,7 +168,7 @@ function AppointmentsInner() {
           </tr></thead><tbody>{filtered.map(a => (
             <tr key={a.id} className={`border-b hover:bg-gray-50 ${a.priority === 'urgent' ? 'bg-red-50/30' : a.priority === 'vip' ? 'bg-purple-50/30' : ''}`}>
               <td className="p-2 text-center"><span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-bold">T-{String(a.token).padStart(3, '0')}</span></td>
-              <td className="p-2"><Link href={`/emr-v2?patient=${a.patientId}`} className="font-medium text-blue-700 hover:underline">{a.patientName}</Link>
+              <td className="p-2"><Link href={`/emr-v2?patient=${a.patientId}`} className="font-medium text-teal-700 hover:underline">{a.patientName}</Link>
                 <div className="text-[10px] text-gray-400">{a.uhid} | {a.phone}</div></td>
               <td className="p-2 text-center font-mono">{fmtTime(a.time)}</td>
               <td className="p-2">Dr. {a.doctorName}<div className="text-[10px] text-gray-400">{a.specialisation}</div></td>
@@ -217,7 +217,7 @@ function AppointmentsInner() {
             {slots.length === 0 ? <div className="text-xs text-gray-400 bg-gray-50 rounded-lg p-4 text-center">No schedule for this doctor on {DAYS[new Date(bookDate).getDay()]}. Add schedule in Doctor Schedules tab.</div> :
             <div className="flex flex-wrap gap-1.5">{slots.map(s => (
               <button key={s.time} onClick={() => s.available && setSelectedSlot(s.time)} disabled={!s.available}
-                className={`px-3 py-2 rounded-lg text-xs border ${selectedSlot === s.time ? 'bg-blue-600 text-white border-blue-600' : s.available ? 'bg-white hover:bg-blue-50 border-gray-200' : 'bg-gray-100 text-gray-400 line-through'}`}>
+                className={`px-3 py-2 rounded-lg text-xs border ${selectedSlot === s.time ? 'bg-teal-600 text-white border-teal-600' : s.available ? 'bg-white hover:bg-blue-50 border-gray-200' : 'bg-gray-100 text-gray-400 line-through'}`}>
                 {fmtTime(s.time)}
               </button>
             ))}</div>}</div>
@@ -231,7 +231,7 @@ function AppointmentsInner() {
             <input type="text" value={bookReason} onChange={e => setBookReason(e.target.value)} className="w-full px-3 py-2 border rounded-lg text-sm" placeholder="Chief complaint or reason" /></div>
         </div>
         <button onClick={handleBook} disabled={booking || !selectedPatient || !bookDoctor || !selectedSlot}
-          className="px-6 py-2.5 bg-blue-600 text-white text-sm rounded-lg font-medium disabled:opacity-40">{booking ? 'Booking...' : 'Book Appointment'}</button>
+          className="px-6 py-2.5 bg-teal-600 text-white text-sm rounded-lg font-medium disabled:opacity-40">{booking ? 'Booking...' : 'Book Appointment'}</button>
       </div>}
 
       {/* CALENDAR VIEW */}
@@ -247,8 +247,8 @@ function AppointmentsInner() {
               <button key={i} onClick={() => { setDate(ds); setTab('today'); }}
                 className={`p-2 rounded-lg border text-left min-h-[80px] ${isToday ? 'border-blue-300 bg-blue-50' : 'hover:bg-gray-50'}`}>
                 <div className="text-[10px] text-gray-500">{DAYS[i]}</div>
-                <div className={`text-sm font-bold ${isToday ? 'text-blue-700' : ''}`}>{d.getDate()}</div>
-                {dayAppts.length > 0 && <div className="text-[9px] text-blue-600 mt-1">{dayAppts.length} appts</div>}
+                <div className={`text-sm font-bold ${isToday ? 'text-teal-700' : ''}`}>{d.getDate()}</div>
+                {dayAppts.length > 0 && <div className="text-[9px] text-teal-600 mt-1">{dayAppts.length} appts</div>}
               </button>
             );
           })}
@@ -278,7 +278,7 @@ function AppointmentsInner() {
               </select></div>
             <div><label className="text-[9px] text-gray-500">Fee ₹</label>
               <input type="number" value={schedForm.fee} onChange={e => setSchedForm(f => ({ ...f, fee: parseInt(e.target.value) || 0 }))} className="w-full px-2 py-1.5 border rounded text-xs" /></div>
-            <div className="flex items-end"><button onClick={addSchedule} disabled={!schedForm.doctorId} className="w-full py-1.5 bg-blue-600 text-white text-xs rounded disabled:opacity-40">Add</button></div>
+            <div className="flex items-end"><button onClick={addSchedule} disabled={!schedForm.doctorId} className="w-full py-1.5 bg-teal-600 text-white text-xs rounded disabled:opacity-40">Add</button></div>
           </div>
         </div>
         {scheds.loading ? <div className="animate-pulse h-24 bg-gray-200 rounded-xl" /> :

@@ -74,14 +74,14 @@ function PharmacyInner() {
 
   return (
     <div className="max-w-7xl mx-auto">
-      {toast && <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-green-600 text-white px-4 py-2 rounded-lg shadow-lg text-sm">{toast}</div>}
+      {toast && <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-emerald-600 text-white px-4 py-2 rounded-xl shadow-lg text-sm">{toast}</div>}
       <div className="flex items-center justify-between mb-3">
         <div><h1 className="text-xl font-bold text-gray-900">Pharmacy</h1><p className="text-xs text-gray-500">Drug dispensing, stock management, procurement</p></div>
       </div>
 
-      <div className="flex gap-0.5 mb-4 border-b pb-px overflow-x-auto">
+      <div className="flex gap-1 mb-4 pb-0.5 overflow-x-auto scrollbar-thin">
         {tabs.map(([k,l,icon]) => <button key={k} onClick={() => setTab(k)}
-          className={`px-2 py-2 text-[11px] font-medium whitespace-nowrap border-b-2 -mb-px ${tab===k?'border-blue-600 text-blue-700':'border-transparent text-gray-500 hover:text-gray-700'}`}>{icon} {l}</button>)}
+          className={`flex items-center gap-1 px-2.5 py-2 text-[11px] font-medium whitespace-nowrap rounded-xl ${tab===k?'bg-teal-600 text-white shadow-sm':'bg-white text-gray-500 border border-gray-100 hover:bg-gray-50'}`}>{icon} {l}</button>)}
       </div>
 
       {/* ===== DASHBOARD ===== */}
@@ -207,7 +207,7 @@ function PharmacyInner() {
               if (!result.success) { setDispError(result.error || 'Dispensing failed'); return; }
               flash('Dispensed successfully'); setSelectedRx(null); setDispItems([]); setDispError('');
             }} disabled={dispLoading || dispItems.filter(i => i.drugId && i.qty > 0).length === 0}
-              className="px-6 py-2 bg-green-600 text-white text-sm rounded-lg font-medium disabled:opacity-40">{dispLoading ? 'Processing...' : 'Dispense (FEFO Auto-Pick)'}</button>
+              className="px-6 py-2 bg-emerald-600 text-white text-sm rounded-lg font-medium disabled:opacity-40">{dispLoading ? 'Processing...' : 'Dispense (FEFO Auto-Pick)'}</button>
           </div>
         </div>}
       </div>}
@@ -215,7 +215,7 @@ function PharmacyInner() {
       {/* ===== DRUG MASTER ===== */}
       {tab === 'drug_master' && <div className="space-y-3">
         <div className="flex gap-2"><input type="text" value={drugSearch} onChange={e => setDrugSearch(e.target.value)} className="flex-1 px-3 py-2 border rounded-lg text-sm" placeholder="Search drugs..." />
-          <button onClick={() => setShowAddDrug(!showAddDrug)} className="px-3 py-2 bg-blue-600 text-white text-xs rounded-lg">{showAddDrug?'Cancel':'+ Add Drug'}</button></div>
+          <button onClick={() => setShowAddDrug(!showAddDrug)} className="px-3 py-2 bg-teal-600 text-white text-xs rounded-lg">{showAddDrug?'Cancel':'+ Add Drug'}</button></div>
         {showAddDrug && <div className="bg-white rounded-xl border p-5 space-y-3">
           <div className="grid grid-cols-4 gap-3">
             <div><label className="text-xs text-gray-500">Generic name *</label><input type="text" value={drugForm.generic_name} onChange={e => setDrugForm(f => ({...f, generic_name:e.target.value}))} className="w-full px-3 py-2 border rounded-lg text-sm" /></div>
@@ -226,26 +226,26 @@ function PharmacyInner() {
           <div className="grid grid-cols-5 gap-3">
             <div><label className="text-xs text-gray-500">Formulation</label>
               <div className="flex gap-0.5 mt-0.5 flex-wrap">{['tablet','capsule','syrup','injection','ointment','drops','inhaler','powder','gel','patch'].map(f => (
-                <button key={f} onClick={() => setDrugForm(d => ({...d, formulation:f}))} className={`px-1.5 py-0.5 rounded text-[9px] border ${drugForm.formulation===f?'bg-blue-600 text-white':'bg-white'}`}>{f}</button>
+                <button key={f} onClick={() => setDrugForm(d => ({...d, formulation:f}))} className={`px-1.5 py-0.5 rounded text-[9px] border ${drugForm.formulation===f?'bg-teal-600 text-white':'bg-white'}`}>{f}</button>
               ))}</div></div>
             <div><label className="text-xs text-gray-500">Unit</label>
               <div className="flex gap-0.5 mt-0.5 flex-wrap">{['strip','vial','bottle','tube','ampoule','sachet','box','unit'].map(u => (
-                <button key={u} onClick={() => setDrugForm(d => ({...d, unit:u}))} className={`px-1.5 py-0.5 rounded text-[9px] border ${drugForm.unit===u?'bg-blue-600 text-white':'bg-white'}`}>{u}</button>
+                <button key={u} onClick={() => setDrugForm(d => ({...d, unit:u}))} className={`px-1.5 py-0.5 rounded text-[9px] border ${drugForm.unit===u?'bg-teal-600 text-white':'bg-white'}`}>{u}</button>
               ))}</div></div>
             <div><label className="text-xs text-gray-500">Schedule</label>
               <div className="flex gap-0.5 mt-0.5">{['','H','H1','X'].map(s => (
-                <button key={s} onClick={() => setDrugForm(d => ({...d, schedule:s, is_narcotic:s==='X'}))} className={`px-2 py-0.5 rounded text-[9px] border ${drugForm.schedule===s?'bg-blue-600 text-white':'bg-white'}`}>{s||'None'}</button>
+                <button key={s} onClick={() => setDrugForm(d => ({...d, schedule:s, is_narcotic:s==='X'}))} className={`px-2 py-0.5 rounded text-[9px] border ${drugForm.schedule===s?'bg-teal-600 text-white':'bg-white'}`}>{s||'None'}</button>
               ))}</div></div>
             <div><label className="text-xs text-gray-500">GST %</label>
               <div className="flex gap-0.5 mt-0.5">{[0,5,12,18].map(g => (
-                <button key={g} onClick={() => setDrugForm(d => ({...d, gst_rate:g}))} className={`px-2 py-0.5 rounded text-[9px] border ${drugForm.gst_rate===g?'bg-blue-600 text-white':'bg-white'}`}>{g}%</button>
+                <button key={g} onClick={() => setDrugForm(d => ({...d, gst_rate:g}))} className={`px-2 py-0.5 rounded text-[9px] border ${drugForm.gst_rate===g?'bg-teal-600 text-white':'bg-white'}`}>{g}%</button>
               ))}</div></div>
             <div className="flex gap-2">
               <label className="flex items-center gap-1 text-[10px]"><input type="checkbox" checked={drugForm.is_antibiotic} onChange={e => setDrugForm(d => ({...d, is_antibiotic:e.target.checked}))} /> Antibiotic</label>
               <label className="flex items-center gap-1 text-[10px]"><input type="checkbox" checked={drugForm.is_narcotic} onChange={e => setDrugForm(d => ({...d, is_narcotic:e.target.checked}))} /> Narcotic</label>
             </div>
           </div>
-          <button onClick={async () => { if (!drugForm.generic_name) return; await drugMaster.addDrug(drugForm); setShowAddDrug(false); flash('Drug added'); }} className="px-4 py-2 bg-green-600 text-white text-sm rounded-lg">Save Drug</button>
+          <button onClick={async () => { if (!drugForm.generic_name) return; await drugMaster.addDrug(drugForm); setShowAddDrug(false); flash('Drug added'); }} className="px-4 py-2 bg-emerald-600 text-white text-sm rounded-lg">Save Drug</button>
         </div>}
         <div className="bg-white rounded-xl border overflow-hidden"><table className="w-full text-xs"><thead><tr className="bg-gray-50 border-b">
           <th className="p-2 text-left">Generic Name</th><th className="p-2 text-left">Brand</th><th className="p-2">Form</th><th className="p-2">Strength</th><th className="p-2">Sch</th><th className="p-2">GST</th><th className="p-2">Reorder</th>
@@ -270,7 +270,7 @@ function PharmacyInner() {
             <button onClick={() => stock.load({lowStock:true})} className="px-3 py-1.5 rounded-lg text-xs border bg-red-50 text-red-700">Low Stock ({stock.lowStock.length})</button>
             <button onClick={() => stock.load({expiringSoon:true})} className="px-3 py-1.5 rounded-lg text-xs border bg-orange-50 text-orange-700">Expiring ({stock.expiringSoon.length})</button>
           </div>
-          <button onClick={() => setShowAddStock(!showAddStock)} className="px-3 py-1.5 bg-blue-600 text-white text-xs rounded-lg">{showAddStock?'Cancel':'+ Add Stock'}</button>
+          <button onClick={() => setShowAddStock(!showAddStock)} className="px-3 py-1.5 bg-teal-600 text-white text-xs rounded-lg">{showAddStock?'Cancel':'+ Add Stock'}</button>
         </div>
         {showAddStock && <div className="bg-white rounded-xl border p-5 space-y-3">
           <div className="grid grid-cols-4 gap-3">
@@ -295,7 +295,7 @@ function PharmacyInner() {
             if (!result.success) { setStockError(result.error || 'Failed to add stock'); return; }
             setShowAddStock(false); setStockError(''); flash('Stock added');
             setStockForm({ drug_id:'', drug_name:'', batch_number:'', expiry_date:'', purchase_rate:'', mrp:'', quantity_received:'', supplier:'' });
-          }} className="px-4 py-2 bg-green-600 text-white text-sm rounded-lg">Add Stock</button>
+          }} className="px-4 py-2 bg-emerald-600 text-white text-sm rounded-lg">Add Stock</button>
         </div>}
         <div className="bg-white rounded-xl border overflow-hidden"><table className="w-full text-xs"><thead><tr className="bg-gray-50 border-b">
           <th className="p-2 text-left">Drug</th><th className="p-2">Form</th><th className="p-2 text-right">Total Qty</th><th className="p-2">Batches</th><th className="p-2">Earliest Exp</th><th className="p-2 text-right">Avg Cost</th><th className="p-2 text-right">MRP</th><th className="p-2 text-right">Value</th>
@@ -353,7 +353,7 @@ function PharmacyInner() {
       {tab === 'po' && <div className="bg-white rounded-xl border p-4">
         <div className="flex items-center justify-between mb-3">
           <h2 className="font-bold text-sm">Purchase Orders</h2>
-          <a href="/vpms" className="px-3 py-1.5 bg-blue-600 text-white text-xs rounded-lg">Open VPMS →</a>
+          <a href="/vpms" className="px-3 py-1.5 bg-teal-600 text-white text-xs rounded-lg">Open VPMS →</a>
         </div>
         <div className="text-xs text-gray-500 mb-3">Purchase orders are managed in the VPMS (Vendor & Purchase Management System). POs created there auto-flow to pharmacy stock via the integration bridge.</div>
         <div className="grid grid-cols-3 gap-3">
@@ -369,7 +369,7 @@ function PharmacyInner() {
       {tab === 'grn' && <div className="bg-white rounded-xl border p-4">
         <h2 className="font-bold text-sm mb-3">Goods Receipt Note</h2>
         <div className="text-xs text-gray-500 mb-3">GRN verification happens in the Stock tab when adding new stock entries. Each stock entry serves as a GRN with batch number, expiry, supplier, and quantity tracking.</div>
-        <div className="text-center py-8"><button onClick={() => setTab('stock')} className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg">Go to Stock Management →</button></div>
+        <div className="text-center py-8"><button onClick={() => setTab('stock')} className="px-4 py-2 bg-teal-600 text-white text-sm rounded-lg">Go to Stock Management →</button></div>
       </div>}
 
       {tab === 'transfers' && <div className="space-y-4">
@@ -404,7 +404,7 @@ function PharmacyInner() {
               if (r.success) { flash('Transfer initiated'); setXferForm({ drugSearch: '', drugId: '', drugName: '', quantity: '', batchNumber: '', toCentreId: '', reason: '' }); }
               else flash(r.error || 'Failed');
             }} disabled={!xferForm.drugId || !xferForm.quantity || !xferForm.toCentreId}
-              className="w-full py-1.5 bg-blue-600 text-white text-xs rounded disabled:opacity-40">Transfer</button></div>
+              className="w-full py-1.5 bg-teal-600 text-white text-xs rounded disabled:opacity-40">Transfer</button></div>
           </div>
         </div>
         {/* Transfer list */}

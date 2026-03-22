@@ -16,7 +16,7 @@ const TASK_ICONS: Record<string, string> = {
 const WARD_COLORS: Record<string, string> = {
   icu: 'bg-red-100 text-red-700', transplant_icu: 'bg-red-100 text-red-700',
   general: 'bg-gray-100 text-gray-700', private: 'bg-purple-100 text-purple-700',
-  semi_private: 'bg-blue-100 text-blue-700', nicu: 'bg-pink-100 text-pink-700',
+  semi_private: 'bg-blue-100 text-teal-700', nicu: 'bg-pink-100 text-pink-700',
 };
 
 type ViewMode = 'patients' | 'tasks' | 'handoff';
@@ -35,7 +35,7 @@ function NursingStationInner() {
 
   return (
     <div className="max-w-7xl mx-auto space-y-4">
-      {toast && <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-green-600 text-white px-4 py-2 rounded-lg shadow-lg text-sm">{toast}</div>}
+      {toast && <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-emerald-600 text-white px-4 py-2 rounded-xl shadow-lg text-sm">{toast}</div>}
 
       <div className="flex items-center justify-between">
         <div><h1 className="text-xl font-bold">Nursing Station</h1>
@@ -54,7 +54,7 @@ function NursingStationInner() {
         <div className="bg-white rounded-xl border p-2 text-center"><div className="text-[9px] text-gray-500">Patients</div><div className="text-xl font-bold">{station.stats.totalPatients}</div></div>
         <div className="bg-red-50 rounded-xl border p-2 text-center"><div className="text-[9px] text-gray-500">ICU</div><div className="text-xl font-bold text-red-700">{station.stats.icuPatients}</div></div>
         <div className={`rounded-xl border p-2 text-center ${station.stats.vitalsDue > 0 ? 'bg-amber-50' : 'bg-green-50'}`}><div className="text-[9px] text-gray-500">Vitals Due</div><div className={`text-xl font-bold ${station.stats.vitalsDue > 0 ? 'text-amber-700' : 'text-green-700'}`}>{station.stats.vitalsDue}</div></div>
-        <div className={`rounded-xl border p-2 text-center ${station.stats.medsDue > 0 ? 'bg-blue-50' : 'bg-green-50'}`}><div className="text-[9px] text-gray-500">Meds Due</div><div className={`text-xl font-bold ${station.stats.medsDue > 0 ? 'text-blue-700' : 'text-green-700'}`}>{station.stats.medsDue}</div></div>
+        <div className={`rounded-xl border p-2 text-center ${station.stats.medsDue > 0 ? 'bg-blue-50' : 'bg-green-50'}`}><div className="text-[9px] text-gray-500">Meds Due</div><div className={`text-xl font-bold ${station.stats.medsDue > 0 ? 'text-teal-700' : 'text-green-700'}`}>{station.stats.medsDue}</div></div>
         <div className="bg-white rounded-xl border p-2 text-center"><div className="text-[9px] text-gray-500">Labs Pending</div><div className="text-xl font-bold">{station.stats.pendingLabs}</div></div>
         <div className={`rounded-xl border p-2 text-center ${station.stats.criticalAlerts > 0 ? 'bg-red-50 border-red-300' : 'bg-green-50'}`}><div className="text-[9px] text-gray-500">Critical</div><div className={`text-xl font-bold ${station.stats.criticalAlerts > 0 ? 'text-red-700 animate-pulse' : 'text-green-700'}`}>{station.stats.criticalAlerts}</div></div>
         <div className={`rounded-xl border p-2 text-center ${station.stats.overdueTasks > 0 ? 'bg-red-50' : 'bg-white'}`}><div className="text-[9px] text-gray-500">Overdue</div><div className={`text-xl font-bold ${station.stats.overdueTasks > 0 ? 'text-red-700' : ''}`}>{station.stats.overdueTasks}</div></div>
@@ -64,7 +64,7 @@ function NursingStationInner() {
       {/* View toggle */}
       <div className="flex gap-1">
         {(['patients', 'tasks', 'handoff'] as ViewMode[]).map(v =>
-          <button key={v} onClick={() => setView(v)} className={`px-4 py-2 text-xs font-medium rounded-lg ${view === v ? 'bg-blue-600 text-white' : 'bg-white border'}`}>
+          <button key={v} onClick={() => setView(v)} className={`px-4 py-2 text-xs font-medium rounded-lg ${view === v ? 'bg-teal-600 text-white' : 'bg-white border'}`}>
             {v === 'patients' ? 'Patient Board' : v === 'tasks' ? 'Task Board' : 'Shift Handoff'}
           </button>
         )}
@@ -81,7 +81,7 @@ function NursingStationInner() {
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
                   <span className="bg-blue-100 text-blue-800 px-2 py-0.5 rounded text-[10px] font-bold">{p.bedNumber}</span>
-                  <Link href={`/ipd/${p.admissionId}`} className="font-bold text-sm text-blue-700 hover:underline">{p.patientName}</Link>
+                  <Link href={`/ipd/${p.admissionId}`} className="font-bold text-sm text-teal-700 hover:underline">{p.patientName}</Link>
                   <span className="text-[10px] font-mono text-gray-400">{p.uhid}</span>
                 </div>
                 <div className="flex items-center gap-1">
@@ -93,7 +93,7 @@ function NursingStationInner() {
               {/* Alert badges */}
               <div className="flex flex-wrap gap-1.5">
                 {p.vitalsDueAt && <span className="px-2 py-1 bg-amber-100 text-amber-700 rounded text-[10px] font-medium">🩺 Vitals due</span>}
-                {p.medsDueCount > 0 && <span className={`px-2 py-1 rounded text-[10px] font-medium ${p.criticalAlerts > 0 ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'}`}>💊 {p.medsDueCount} meds {p.criticalAlerts > 0 ? '(OVERDUE)' : 'due'}</span>}
+                {p.medsDueCount > 0 && <span className={`px-2 py-1 rounded text-[10px] font-medium ${p.criticalAlerts > 0 ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-teal-700'}`}>💊 {p.medsDueCount} meds {p.criticalAlerts > 0 ? '(OVERDUE)' : 'due'}</span>}
                 {p.pendingLabs > 0 && <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded text-[10px] font-medium">🧪 {p.pendingLabs} labs</span>}
                 {p.news2Score !== null && p.news2Score >= 5 && <span className="px-2 py-1 bg-red-600 text-white rounded text-[10px] font-bold animate-pulse">NEWS2: {p.news2Score}</span>}
                 {p.wardType === 'icu' && <span className="px-2 py-1 bg-red-50 text-red-600 rounded text-[10px]">ICU monitoring</span>}
@@ -126,8 +126,8 @@ function NursingStationInner() {
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <span className={`text-[10px] font-medium ${t.status === 'overdue' ? 'text-red-700' : t.status === 'due_now' ? 'text-amber-700' : 'text-blue-700'}`}>{t.dueAt}</span>
-                <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${t.status === 'overdue' ? 'bg-red-600 text-white' : t.status === 'due_now' ? 'bg-amber-500 text-white' : 'bg-blue-100 text-blue-700'}`}>{t.status.replace('_', ' ')}</span>
+                <span className={`text-[10px] font-medium ${t.status === 'overdue' ? 'text-red-700' : t.status === 'due_now' ? 'text-amber-700' : 'text-teal-700'}`}>{t.dueAt}</span>
+                <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${t.status === 'overdue' ? 'bg-red-600 text-white' : t.status === 'due_now' ? 'bg-amber-500 text-white' : 'bg-blue-100 text-teal-700'}`}>{t.status.replace('_', ' ')}</span>
                 <Link href={`/ipd/${t.admissionId}`} className="px-2 py-1 bg-white border rounded text-[10px] hover:bg-blue-50">Open</Link>
               </div>
             </div>
@@ -176,7 +176,7 @@ function NursingStationInner() {
             <textarea value={handoff.notes} onChange={e => setHandoff(h => ({ ...h, notes: e.target.value }))} rows={4} className="w-full px-3 py-2 border rounded-lg text-sm"
               placeholder="Pending tasks, expected discharges, new admissions expected, equipment issues, supply needs..." /></div>
 
-          <button onClick={() => flash('Handoff saved')} className="px-6 py-2.5 bg-green-600 text-white text-sm rounded-lg font-medium">Save Handoff Report</button>
+          <button onClick={() => flash('Handoff saved')} className="px-6 py-2.5 bg-emerald-600 text-white text-sm rounded-lg font-medium">Save Handoff Report</button>
         </div>
       )}
       </>}

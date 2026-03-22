@@ -50,16 +50,16 @@ function BloodBankInner() {
 
   return (
     <div className="max-w-6xl mx-auto">
-      {toast && <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-green-600 text-white px-4 py-2 rounded-lg shadow-lg text-sm">{toast}</div>}
+      {toast && <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-emerald-600 text-white px-4 py-2 rounded-xl shadow-lg text-sm">{toast}</div>}
 
       <div className="flex items-center justify-between mb-4">
         <div><h1 className="text-2xl font-bold text-gray-900">Blood Bank</h1><p className="text-sm text-gray-500">Blood storage, compatibility testing, transfusion management</p></div>
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 mb-4 border-b pb-px overflow-x-auto">
+      <div className="flex gap-1 mb-4 pb-0.5 overflow-x-auto scrollbar-thin">
         {tabs.map(([k, l]) => <button key={k} onClick={() => { setTab(k); setShowForm(false); }}
-          className={`px-3 py-2 text-xs font-medium whitespace-nowrap border-b-2 -mb-px ${tab === k ? 'border-red-600 text-red-700' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>{l}</button>)}
+          className={`px-3 py-2 text-xs font-medium whitespace-nowrap rounded-xl ${tab === k ? 'bg-teal-600 text-white shadow-sm' : 'bg-white text-gray-500 border border-gray-100 hover:bg-gray-50'}`}>{l}</button>)}
       </div>
 
       {/* ===== INVENTORY ===== */}
@@ -165,7 +165,7 @@ function BloodBankInner() {
             <div><label className="text-xs text-gray-500">Hb (g/dL)</label>
               <input type="number" step="0.1" value={dForm.hb_level} onChange={e => setDF(f => ({...f, hb_level: e.target.value}))} className="w-full px-3 py-2 border rounded-lg text-sm" /></div>
           </div>
-          <button onClick={async () => { const d = await donors.register(dForm); if (d) { flash('Donor registered: ' + d.donor_number); setShowForm(false); } }} className="px-4 py-2 bg-green-600 text-white text-sm rounded-lg">Register Donor</button>
+          <button onClick={async () => { const d = await donors.register(dForm); if (d) { flash('Donor registered: ' + d.donor_number); setShowForm(false); } }} className="px-4 py-2 bg-emerald-600 text-white text-sm rounded-lg">Register Donor</button>
         </div>}
         {donors.donors.length === 0 ? <div className="text-center py-8 bg-white rounded-xl border text-gray-400 text-sm">No donors registered</div> :
         <div className="bg-white rounded-xl border overflow-hidden"><table className="w-full text-xs"><thead><tr className="bg-gray-50 border-b">
@@ -209,7 +209,7 @@ function BloodBankInner() {
             <div><label className="text-xs text-gray-500">Volume (ml)</label>
               <input type="number" value={donForm.volumeMl} onChange={e => setDonF(f => ({...f, volumeMl: parseInt(e.target.value)||450}))} className="w-full px-3 py-2 border rounded-lg text-sm" /></div>
           </div>
-          <button onClick={async () => { if (!donForm.donorId || !donForm.bagNumber) return; const d = await donations.collect(donForm.donorId, donForm.bagNumber, donForm.aboGroup, donForm.rhType, staffId, donForm.volumeMl); if (d) { flash('Collected: ' + d.donation_number); setShowForm(false); } }} className="px-4 py-2 bg-green-600 text-white text-sm rounded-lg">Record Collection</button>
+          <button onClick={async () => { if (!donForm.donorId || !donForm.bagNumber) return; const d = await donations.collect(donForm.donorId, donForm.bagNumber, donForm.aboGroup, donForm.rhType, staffId, donForm.volumeMl); if (d) { flash('Collected: ' + d.donation_number); setShowForm(false); } }} className="px-4 py-2 bg-emerald-600 text-white text-sm rounded-lg">Record Collection</button>
         </div>}
         {donations.donations.length === 0 ? <div className="text-center py-8 bg-white rounded-xl border text-gray-400 text-sm">No donations</div> :
         <div className="space-y-2">{donations.donations.map((d: any) => (
@@ -266,7 +266,7 @@ function BloodBankInner() {
           </div>
           <div><label className="text-xs text-gray-500">Clinical indication</label>
             <input type="text" value={reqForm.indication} onChange={e => setReqF(f => ({...f, indication: e.target.value}))} className="w-full px-3 py-2 border rounded-lg text-sm" placeholder="e.g., Pre-operative, severe anemia, DIC, massive transfusion..." /></div>
-          <button onClick={async () => { if (!reqForm.patientId) return; await requests.create(reqForm, staffId); flash('Blood request submitted'); setShowForm(false); }} className="px-4 py-2 bg-green-600 text-white text-sm rounded-lg">Submit Request</button>
+          <button onClick={async () => { if (!reqForm.patientId) return; await requests.create(reqForm, staffId); flash('Blood request submitted'); setShowForm(false); }} className="px-4 py-2 bg-emerald-600 text-white text-sm rounded-lg">Submit Request</button>
         </div>}
         {requests.requests.length === 0 ? <div className="text-center py-8 bg-white rounded-xl border text-gray-400 text-sm">No blood requests</div> :
         <div className="space-y-2">{requests.requests.map((r: any) => (

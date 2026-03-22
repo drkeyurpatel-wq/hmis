@@ -8,12 +8,12 @@ import { exportToCSV } from '@/lib/utils/data-export';
 type Tab = 'dashboard' | 'incidents' | 'indicators' | 'audit_trail';
 
 const SEVERITY_COLORS: Record<string, string> = {
-  near_miss: 'bg-gray-100 text-gray-700', minor: 'bg-blue-100 text-blue-700',
+  near_miss: 'bg-gray-100 text-gray-700', minor: 'bg-blue-100 text-teal-700',
   moderate: 'bg-amber-100 text-amber-700', serious: 'bg-orange-100 text-orange-700',
   sentinel: 'bg-red-600 text-white',
 };
 const STATUS_COLORS: Record<string, string> = {
-  reported: 'bg-blue-100 text-blue-700', investigating: 'bg-amber-100 text-amber-700',
+  reported: 'bg-blue-100 text-teal-700', investigating: 'bg-amber-100 text-amber-700',
   action_taken: 'bg-green-100 text-green-700', closed: 'bg-gray-100 text-gray-500',
 };
 const CAT_LABELS: Record<string, string> = {
@@ -86,7 +86,7 @@ function QualityInner() {
 
   return (
     <div className="max-w-7xl mx-auto space-y-4">
-      {toast && <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-green-600 text-white px-4 py-2 rounded-lg shadow-lg text-sm">{toast}</div>}
+      {toast && <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-emerald-600 text-white px-4 py-2 rounded-xl shadow-lg text-sm">{toast}</div>}
 
       <div className="flex items-center justify-between">
         <div><h1 className="text-xl font-bold">Quality & NABH Compliance</h1><p className="text-xs text-gray-500">Incident reporting, quality indicators, audit trail</p></div>
@@ -94,7 +94,7 @@ function QualityInner() {
 
       <div className="flex gap-1 border-b">{(['dashboard', 'incidents', 'indicators', 'audit_trail'] as Tab[]).map(t =>
         <button key={t} onClick={() => { setTab(t); if (t === 'audit_trail') audit.load(auditFilter.entityType ? auditFilter : undefined); }}
-          className={`px-4 py-2 text-xs font-medium border-b-2 -mb-px capitalize ${tab === t ? 'border-blue-600 text-blue-700' : 'border-transparent text-gray-500'}`}>
+          className={`px-4 py-2 text-xs font-medium rounded-xl capitalize ${tab === t ? 'bg-teal-600 text-white shadow-sm' : 'bg-white text-gray-500 border border-gray-100 hover:bg-gray-50'}`}>
           {t === 'dashboard' ? 'Dashboard' : t === 'incidents' ? `Incidents (${incidents.stats.open})` : t === 'indicators' ? 'NABH Indicators' : 'Audit Trail'}
         </button>
       )}</div>
@@ -202,7 +202,7 @@ function QualityInner() {
       {tab === 'indicators' && <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="font-bold text-sm">NABH Quality Indicators (20 KPIs)</h2>
-          <button onClick={() => setShowNewQI(!showNewQI)} className="px-4 py-2 bg-blue-600 text-white text-xs rounded-lg">{showNewQI ? 'Cancel' : '+ Submit Data'}</button>
+          <button onClick={() => setShowNewQI(!showNewQI)} className="px-4 py-2 bg-teal-600 text-white text-xs rounded-lg">{showNewQI ? 'Cancel' : '+ Submit Data'}</button>
         </div>
 
         {showNewQI && <div className="bg-white rounded-xl border p-4 space-y-3">
@@ -217,7 +217,7 @@ function QualityInner() {
               <input type="number" value={qiForm.value} onChange={e => setQiForm(f => ({ ...f, value: e.target.value }))} className="w-full px-2 py-1.5 border rounded text-xs" step="0.01" /></div>
             <div><label className="text-[9px] text-gray-500">Numerator</label>
               <input type="number" value={qiForm.numerator} onChange={e => setQiForm(f => ({ ...f, numerator: e.target.value }))} className="w-full px-2 py-1.5 border rounded text-xs" /></div>
-            <div className="flex items-end"><button onClick={submitQI} disabled={!qiForm.value} className="w-full py-1.5 bg-blue-600 text-white text-xs rounded disabled:opacity-40">Submit</button></div>
+            <div className="flex items-end"><button onClick={submitQI} disabled={!qiForm.value} className="w-full py-1.5 bg-teal-600 text-white text-xs rounded disabled:opacity-40">Submit</button></div>
           </div>
         </div>}
 
@@ -257,7 +257,7 @@ function QualityInner() {
           <input type="date" value={auditFilter.dateFrom} onChange={e => setAuditFilter(f => ({ ...f, dateFrom: e.target.value }))} className="px-2 py-1 border rounded text-xs" />
           <span className="text-xs text-gray-400 self-center">to</span>
           <input type="date" value={auditFilter.dateTo} onChange={e => setAuditFilter(f => ({ ...f, dateTo: e.target.value }))} className="px-2 py-1 border rounded text-xs" />
-          <button onClick={() => audit.load(auditFilter.entityType || auditFilter.dateFrom ? auditFilter : undefined)} className="px-3 py-1 bg-blue-600 text-white text-xs rounded">Filter</button>
+          <button onClick={() => audit.load(auditFilter.entityType || auditFilter.dateFrom ? auditFilter : undefined)} className="px-3 py-1 bg-teal-600 text-white text-xs rounded">Filter</button>
           <button onClick={() => exportToCSV(audit.logs.map((l: any) => ({ timestamp: l.created_at, user: l.user?.full_name, action: l.action, entity_type: l.entity_type, details: l.entity_label, changes: l.changes ? JSON.stringify(l.changes) : "" })), "audit_trail")} className="px-3 py-1 bg-gray-100 text-xs rounded border">Export CSV</button>
         </div>
 
@@ -270,7 +270,7 @@ function QualityInner() {
             <tr key={log.id} className="border-b hover:bg-gray-50">
               <td className="p-2 text-gray-400 text-[10px] whitespace-nowrap">{new Date(log.created_at).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</td>
               <td className="p-2 font-medium">{log.user?.full_name}</td>
-              <td className="p-2 text-center"><span className={`px-1.5 py-0.5 rounded text-[9px] ${log.action === 'delete' || log.action === 'cancel' ? 'bg-red-100 text-red-700' : log.action === 'create' ? 'bg-green-100 text-green-700' : log.action === 'sign' || log.action === 'approve' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600'}`}>{ACTION_LABELS[log.action] || log.action}</span></td>
+              <td className="p-2 text-center"><span className={`px-1.5 py-0.5 rounded text-[9px] ${log.action === 'delete' || log.action === 'cancel' ? 'bg-red-100 text-red-700' : log.action === 'create' ? 'bg-green-100 text-green-700' : log.action === 'sign' || log.action === 'approve' ? 'bg-blue-100 text-teal-700' : 'bg-gray-100 text-gray-600'}`}>{ACTION_LABELS[log.action] || log.action}</span></td>
               <td className="p-2"><span className="text-gray-500">{log.entity_type?.replace('_', ' ')}</span>{log.entity_label && <span className="ml-1 text-[10px] text-gray-400">{log.entity_label}</span>}</td>
               <td className="p-2 text-[10px] text-gray-400 max-w-xs truncate">{log.changes ? JSON.stringify(log.changes).substring(0, 80) : '—'}</td>
             </tr>

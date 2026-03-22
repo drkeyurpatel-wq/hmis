@@ -138,7 +138,7 @@ export default function OTDetailPage() {
 
   return (
     <div className="max-w-5xl mx-auto space-y-4">
-      {toast && <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-green-600 text-white px-4 py-2 rounded-lg shadow-lg text-sm">{toast}</div>}
+      {toast && <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-emerald-600 text-white px-4 py-2 rounded-xl shadow-lg text-sm">{toast}</div>}
 
       {/* Surgery Header */}
       <div className="bg-white rounded-xl border p-5">
@@ -152,8 +152,8 @@ export default function OTDetailPage() {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <span className={`px-2.5 py-1 rounded-lg text-xs font-medium ${booking.status === 'in_progress' ? 'bg-red-100 text-red-700 animate-pulse' : booking.status === 'completed' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}`}>{booking.status?.replace('_', ' ')}</span>
-            <Link href="/ot" className="text-xs text-gray-500 hover:text-blue-600">Back to OT</Link>
+            <span className={`px-2.5 py-1 rounded-lg text-xs font-medium ${booking.status === 'in_progress' ? 'bg-red-100 text-red-700 animate-pulse' : booking.status === 'completed' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-teal-700'}`}>{booking.status?.replace('_', ' ')}</span>
+            <Link href="/ot" className="text-xs text-gray-500 hover:text-teal-600">Back to OT</Link>
           </div>
         </div>
 
@@ -186,9 +186,9 @@ export default function OTDetailPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-0.5 border-b pb-px overflow-x-auto">
+      <div className="flex gap-0.5 pb-0.5 overflow-x-auto scrollbar-thin">
         {tabs.map(([k, l]) => <button key={k} onClick={() => setTab(k)}
-          className={`px-3 py-2 text-xs font-medium whitespace-nowrap border-b-2 -mb-px ${tab === k ? 'border-blue-600 text-blue-700' : 'border-transparent text-gray-500'}`}>{l}</button>)}
+          className={`px-3 py-2 text-xs font-medium whitespace-nowrap rounded-xl ${tab === k ? 'bg-teal-600 text-white shadow-sm' : 'bg-white text-gray-500 border border-gray-100 hover:bg-gray-50'}`}>{l}</button>)}
       </div>
 
       {/* ===== WHO SAFETY CHECKLIST ===== */}
@@ -197,7 +197,7 @@ export default function OTDetailPage() {
         <div className={`bg-white rounded-xl border p-5 ${checklist?.sign_in_done ? 'border-green-300' : ''}`}>
           <div className="flex items-center justify-between mb-3">
             <h3 className="font-bold text-sm">SIGN IN <span className="text-gray-400 font-normal">— Before anaesthesia</span></h3>
-            {checklist?.sign_in_done ? <span className="bg-green-100 text-green-700 px-2 py-0.5 rounded text-xs">Completed {checklist.sign_in_at ? new Date(checklist.sign_in_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : ''}</span> : <button onClick={() => completePhase('sign_in')} className="px-3 py-1.5 bg-green-600 text-white text-xs rounded-lg">Complete Sign In</button>}
+            {checklist?.sign_in_done ? <span className="bg-green-100 text-green-700 px-2 py-0.5 rounded text-xs">Completed {checklist.sign_in_at ? new Date(checklist.sign_in_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : ''}</span> : <button onClick={() => completePhase('sign_in')} className="px-3 py-1.5 bg-emerald-600 text-white text-xs rounded-lg">Complete Sign In</button>}
           </div>
           <div className="grid grid-cols-2 gap-2">
             {[['patient_identity_confirmed', 'Patient identity confirmed (name, DOB, wristband)'],
@@ -225,7 +225,7 @@ export default function OTDetailPage() {
         <div className={`bg-white rounded-xl border p-5 ${checklist?.time_out_done ? 'border-green-300' : ''}`}>
           <div className="flex items-center justify-between mb-3">
             <h3 className="font-bold text-sm">TIME OUT <span className="text-gray-400 font-normal">— Before skin incision</span></h3>
-            {checklist?.time_out_done ? <span className="bg-green-100 text-green-700 px-2 py-0.5 rounded text-xs">Completed {checklist.time_out_at ? new Date(checklist.time_out_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : ''}</span> : <button onClick={() => completePhase('time_out')} className="px-3 py-1.5 bg-green-600 text-white text-xs rounded-lg">Complete Time Out</button>}
+            {checklist?.time_out_done ? <span className="bg-green-100 text-green-700 px-2 py-0.5 rounded text-xs">Completed {checklist.time_out_at ? new Date(checklist.time_out_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : ''}</span> : <button onClick={() => completePhase('time_out')} className="px-3 py-1.5 bg-emerald-600 text-white text-xs rounded-lg">Complete Time Out</button>}
           </div>
           <div className="grid grid-cols-2 gap-2">
             {[['team_introduced', 'All team members introduced by name and role'],
@@ -248,7 +248,7 @@ export default function OTDetailPage() {
         <div className={`bg-white rounded-xl border p-5 ${checklist?.sign_out_done ? 'border-green-300' : ''}`}>
           <div className="flex items-center justify-between mb-3">
             <h3 className="font-bold text-sm">SIGN OUT <span className="text-gray-400 font-normal">— Before patient leaves OT</span></h3>
-            {checklist?.sign_out_done ? <span className="bg-green-100 text-green-700 px-2 py-0.5 rounded text-xs">Completed {checklist.sign_out_at ? new Date(checklist.sign_out_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : ''}</span> : <button onClick={() => completePhase('sign_out')} className="px-3 py-1.5 bg-green-600 text-white text-xs rounded-lg">Complete Sign Out</button>}
+            {checklist?.sign_out_done ? <span className="bg-green-100 text-green-700 px-2 py-0.5 rounded text-xs">Completed {checklist.sign_out_at ? new Date(checklist.sign_out_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : ''}</span> : <button onClick={() => completePhase('sign_out')} className="px-3 py-1.5 bg-emerald-600 text-white text-xs rounded-lg">Complete Sign Out</button>}
           </div>
           <div className="grid grid-cols-2 gap-2">
             {[['procedure_recorded', 'Procedure name recorded'],
@@ -285,14 +285,14 @@ export default function OTDetailPage() {
           <div><label className="text-xs text-gray-500">Fitness</label>
             <div className="flex gap-1 mt-1">{['fit', 'unfit', 'conditional'].map(f => (
               <button key={f} onClick={() => setNotes((n: any) => ({ ...n, pre_op: { ...n.pre_op, pre_op_fitness: f } }))}
-                className={`flex-1 py-1.5 rounded text-xs border ${notes.pre_op?.pre_op_fitness === f ? 'bg-blue-600 text-white' : 'bg-white'}`}>{f}</button>
+                className={`flex-1 py-1.5 rounded text-xs border ${notes.pre_op?.pre_op_fitness === f ? 'bg-teal-600 text-white' : 'bg-white'}`}>{f}</button>
             ))}</div></div>
           <div><label className="text-xs text-gray-500">ASA Grade</label>
             <div className="flex gap-1 mt-1">{[1, 2, 3, 4, 5, 6].map(g => (
               <button key={g} onClick={() => setNotes((n: any) => ({ ...n, pre_op: { ...n.pre_op, pre_op_asa_grade: g } }))}
-                className={`flex-1 py-1.5 rounded text-xs border ${notes.pre_op?.pre_op_asa_grade === g ? 'bg-blue-600 text-white' : 'bg-white'}`}>ASA {g}</button>
+                className={`flex-1 py-1.5 rounded text-xs border ${notes.pre_op?.pre_op_asa_grade === g ? 'bg-teal-600 text-white' : 'bg-white'}`}>ASA {g}</button>
             ))}</div></div>
-          <div className="flex items-end"><button onClick={() => saveNote('pre_op', notes.pre_op)} className="w-full px-4 py-2 bg-green-600 text-white text-sm rounded-lg">Save Pre-Op</button></div>
+          <div className="flex items-end"><button onClick={() => saveNote('pre_op', notes.pre_op)} className="w-full px-4 py-2 bg-emerald-600 text-white text-sm rounded-lg">Save Pre-Op</button></div>
         </div>
       </div>}
 
@@ -312,7 +312,7 @@ export default function OTDetailPage() {
           <div><label className="text-xs text-gray-500">Specimens sent</label><input type="text" value={notes.intra_op?.specimens_sent || ''} onChange={e => setNotes((n: any) => ({ ...n, intra_op: { ...n.intra_op, specimens_sent: e.target.value } }))} className="w-full px-3 py-2 border rounded-lg text-sm" placeholder="None / describe" /></div>
         </div>
         <div><label className="text-xs text-gray-500">Complications</label><input type="text" value={notes.intra_op?.complications || ''} onChange={e => setNotes((n: any) => ({ ...n, intra_op: { ...n.intra_op, complications: e.target.value } }))} className="w-full px-3 py-2 border rounded-lg text-sm" placeholder="None / describe..." /></div>
-        <button onClick={() => saveNote('intra_op', notes.intra_op)} className="px-4 py-2 bg-green-600 text-white text-sm rounded-lg">Save Intra-Op</button>
+        <button onClick={() => saveNote('intra_op', notes.intra_op)} className="px-4 py-2 bg-emerald-600 text-white text-sm rounded-lg">Save Intra-Op</button>
       </div>}
 
       {/* ===== POST-OP ===== */}
@@ -328,7 +328,7 @@ export default function OTDetailPage() {
           <div><label className="text-xs text-gray-500">Drains</label><input type="text" value={notes.post_op?.drain_details || ''} onChange={e => setNotes((n: any) => ({ ...n, post_op: { ...n.post_op, drain_details: e.target.value } }))} className="w-full px-3 py-2 border rounded-lg text-sm" placeholder="ICD, abdominal drain..." /></div>
           <div><label className="text-xs text-gray-500">DVT prophylaxis</label><input type="text" value={notes.post_op?.dvt_prophylaxis || ''} onChange={e => setNotes((n: any) => ({ ...n, post_op: { ...n.post_op, dvt_prophylaxis: e.target.value } }))} className="w-full px-3 py-2 border rounded-lg text-sm" placeholder="Enoxaparin 40mg SC OD" /></div>
         </div>
-        <button onClick={() => saveNote('post_op', notes.post_op)} className="px-4 py-2 bg-green-600 text-white text-sm rounded-lg">Save Post-Op</button>
+        <button onClick={() => saveNote('post_op', notes.post_op)} className="px-4 py-2 bg-emerald-600 text-white text-sm rounded-lg">Save Post-Op</button>
       </div>}
 
       {/* ===== ANAESTHESIA ===== */}
@@ -352,7 +352,7 @@ export default function OTDetailPage() {
             <div><label className="text-xs text-gray-500">MRP</label><input type="number" value={implantForm.mrp} onChange={e => setImplantForm(f => ({ ...f, mrp: e.target.value }))} className="w-full px-3 py-2 border rounded-lg text-sm" placeholder="Patient charge" /></div>
           </div>
           {actionError && <div className="text-sm text-red-700">{actionError}</div>}
-          <button onClick={addImplant} className="px-4 py-2 bg-green-600 text-white text-sm rounded-lg">Add Implant</button>
+          <button onClick={addImplant} className="px-4 py-2 bg-emerald-600 text-white text-sm rounded-lg">Add Implant</button>
         </div>
 
         {implants.length > 0 && <div className="bg-white rounded-xl border overflow-hidden">

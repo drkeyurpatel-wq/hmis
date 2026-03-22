@@ -98,7 +98,7 @@ function CentreCard({ centre, isSelected, onClick }: { centre: CentreData; isSel
         <div className="flex justify-between"><span className="text-gray-500">OPD</span><span className="font-semibold">{centre.opdTotal}{centre.opdWaiting > 0 && <span className="text-amber-600 ml-0.5">({centre.opdWaiting}w)</span>}</span></div>
         <div className="flex justify-between"><span className="text-gray-500">Revenue</span><span className="font-semibold text-green-700">{rupees(centre.netRevenue)}</span></div>
         <div className="flex justify-between"><span className="text-gray-500">Adm/Dis</span><span><span className="font-semibold text-green-600">{centre.admissions}</span><span className="text-gray-300">/</span><span className="font-semibold text-orange-600">{centre.discharges}</span></span></div>
-        <div className="flex justify-between"><span className="text-gray-500">Collected</span><span className="font-semibold text-blue-700">{rupees(centre.collected)}{centre.collectionPct > 0 && <span className="text-gray-400 ml-0.5">({centre.collectionPct}%)</span>}</span></div>
+        <div className="flex justify-between"><span className="text-gray-500">Collected</span><span className="font-semibold text-teal-700">{rupees(centre.collected)}{centre.collectionPct > 0 && <span className="text-gray-400 ml-0.5">({centre.collectionPct}%)</span>}</span></div>
         <div className="flex justify-between"><span className="text-gray-500">OT</span><span className="font-semibold">{centre.otCompleted}/{centre.otScheduled}{centre.otInProgress > 0 && <span className="text-red-600 ml-0.5">({centre.otInProgress} live)</span>}</span></div>
         {(centre.preauthPending + centre.claimsPending) > 0 && <div className="flex justify-between"><span className="text-gray-500">Insurance</span><span><span className="text-amber-600 font-semibold">{centre.preauthPending}PA</span>{centre.claimsPending > 0 && <span className="text-red-600 font-semibold ml-0.5">{centre.claimsPending}CL</span>}</span></div>}
       </div>
@@ -142,7 +142,7 @@ function CentreDetailPanel({ centre }: { centre: CentreData }) {
         <div className="space-y-2">
           <h3 className="text-xs font-semibold text-gray-500 uppercase">Operations Today</h3>
           <div className="space-y-1.5 text-xs">
-            <div className="flex justify-between bg-blue-50 rounded-lg px-3 py-2"><span>OPD Visits</span><span className="font-bold text-blue-700">{centre.opdTotal}</span></div>
+            <div className="flex justify-between bg-blue-50 rounded-lg px-3 py-2"><span>OPD Visits</span><span className="font-bold text-teal-700">{centre.opdTotal}</span></div>
             {centre.opdWaiting > 0 && <div className="flex justify-between bg-amber-50 rounded-lg px-3 py-2"><span>Waiting Now</span><span className="font-bold text-amber-700">{centre.opdWaiting}</span></div>}
             {centre.opdInConsult > 0 && <div className="flex justify-between bg-green-50 rounded-lg px-3 py-2"><span>In Consultation</span><span className="font-bold text-green-700">{centre.opdInConsult}</span></div>}
             <div className="flex justify-between bg-green-50 rounded-lg px-3 py-2"><span>Admissions</span><span className="font-bold text-green-700">{centre.admissions}</span></div>
@@ -157,11 +157,11 @@ function CentreDetailPanel({ centre }: { centre: CentreData }) {
           <div className="text-2xl font-bold text-green-700">{rupees(centre.netRevenue)}</div>
           <div className="space-y-1 text-xs">
             <div className="flex justify-between"><span className="text-gray-500">Gross billed</span><span>{rupees(centre.grossRevenue)}</span></div>
-            <div className="flex justify-between"><span className="text-gray-500">Collected</span><span className="text-blue-700 font-semibold">{rupees(centre.collected)}</span></div>
+            <div className="flex justify-between"><span className="text-gray-500">Collected</span><span className="text-teal-700 font-semibold">{rupees(centre.collected)}</span></div>
             <div className="flex justify-between"><span className="text-gray-500">Outstanding</span><span className="text-red-700 font-semibold">{rupees(centre.outstanding)}</span></div>
             <div className="flex justify-between"><span className="text-gray-500">Collection rate</span><span className={`font-semibold ${centre.collectionPct >= 80 ? 'text-green-700' : centre.collectionPct >= 50 ? 'text-amber-700' : 'text-red-700'}`}>{centre.collectionPct}%</span></div>
             <div className="flex justify-between"><span className="text-gray-500">Bills</span><span>{centre.billsCount}</span></div>
-            {centre.insuranceBilled > 0 && <div className="flex justify-between"><span className="text-gray-500">Insurance</span><span className="text-blue-600">{rupees(centre.insuranceBilled)}</span></div>}
+            {centre.insuranceBilled > 0 && <div className="flex justify-between"><span className="text-gray-500">Insurance</span><span className="text-teal-600">{rupees(centre.insuranceBilled)}</span></div>}
           </div>
         </div>
 
@@ -217,7 +217,7 @@ export default function CommandCentrePage() {
         <div className="flex items-center gap-2">
           {errors.length > 0 && <span className="text-[10px] text-red-500">{errors.length} error{errors.length > 1 ? 's' : ''}</span>}
           {loading && <span className="text-[10px] text-blue-500 animate-pulse">Refreshing...</span>}
-          <button onClick={refresh} disabled={loading} className="px-3 py-1.5 bg-blue-600 text-white text-xs rounded-lg disabled:opacity-50">Refresh</button>
+          <button onClick={refresh} disabled={loading} className="px-3 py-1.5 bg-teal-600 text-white text-xs rounded-lg disabled:opacity-50">Refresh</button>
         </div>
       </div>
 
@@ -229,13 +229,13 @@ export default function CommandCentrePage() {
         <MetricCard label="Beds" value={`${totals.occupied}/${totals.totalBeds}`} sub={`${totals.occupancyPct}% occ`}
           color={totals.occupancyPct > 85 ? 'text-red-700' : 'text-green-700'} />
         <MetricCard label="ICU" value={`${totals.icuOccupied}/${totals.icuTotal}`} sub={`${totals.icuAvailable} free`}
-          color={totals.icuAvailable <= 2 ? 'text-red-700' : 'text-blue-700'} />
-        <MetricCard label="OPD" value={totals.opdTotal} sub={`${totals.opdWaiting} waiting`} color="text-blue-700" />
+          color={totals.icuAvailable <= 2 ? 'text-red-700' : 'text-teal-700'} />
+        <MetricCard label="OPD" value={totals.opdTotal} sub={`${totals.opdWaiting} waiting`} color="text-teal-700" />
         <MetricCard label="Admissions" value={totals.admissions} sub="today" color="text-green-700" />
         <MetricCard label="Discharges" value={totals.discharges} sub={totals.dischargePending > 0 ? `${totals.dischargePending} pending` : 'today'} color="text-orange-700" />
         <MetricCard label="Revenue" value={rupees(totals.netRevenue)} sub="today" color="text-green-700" />
         <MetricCard label="Collected" value={rupees(totals.collected)} sub={`${totals.collectionPct}%`}
-          color={totals.collectionPct >= 80 ? 'text-blue-700' : 'text-amber-700'} />
+          color={totals.collectionPct >= 80 ? 'text-teal-700' : 'text-amber-700'} />
         <MetricCard label="OT" value={`${totals.otCompleted}/${totals.otScheduled}`}
           sub={totals.otInProgress > 0 ? `${totals.otInProgress} live` : 'done/scheduled'} color="text-purple-700" />
         <MetricCard label="Pre-Auth" value={totals.preauthPending} sub="pending"
@@ -296,7 +296,7 @@ export default function CommandCentrePage() {
                 <td className="p-2 text-center text-green-700 font-semibold">{c.admissions}</td>
                 <td className="p-2 text-center text-orange-700">{c.discharges}</td>
                 <td className="p-2 text-right font-semibold text-green-700">{rupees(c.netRevenue)}</td>
-                <td className="p-2 text-right text-blue-700">{rupees(c.collected)}</td>
+                <td className="p-2 text-right text-teal-700">{rupees(c.collected)}</td>
                 <td className="p-2 text-center">
                   <span className={`font-semibold ${c.collectionPct >= 80 ? 'text-green-700' : c.collectionPct >= 50 ? 'text-amber-700' : 'text-red-700'}`}>{c.collectionPct}%</span>
                 </td>
@@ -320,7 +320,7 @@ export default function CommandCentrePage() {
               <td className="p-2 text-center text-green-700">{totals.admissions}</td>
               <td className="p-2 text-center text-orange-700">{totals.discharges}</td>
               <td className="p-2 text-right text-green-700">{rupees(totals.netRevenue)}</td>
-              <td className="p-2 text-right text-blue-700">{rupees(totals.collected)}</td>
+              <td className="p-2 text-right text-teal-700">{rupees(totals.collected)}</td>
               <td className="p-2 text-center">{totals.collectionPct}%</td>
               <td className="p-2 text-center">{totals.otCompleted}/{totals.otScheduled}</td>
               <td className="p-2 text-center">{totals.dischargePending + totals.preauthPending + totals.claimsPending}</td>

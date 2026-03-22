@@ -90,13 +90,13 @@ export default function PatientDetailPage() {
 
   return (
     <div className="max-w-5xl mx-auto">
-      {toast && <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-green-600 text-white px-4 py-2 rounded-lg shadow-lg text-sm">{toast}</div>}
+      {toast && <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-emerald-600 text-white px-4 py-2 rounded-xl shadow-lg text-sm">{toast}</div>}
 
       {/* Header */}
       <div className="bg-white rounded-xl border p-5 mb-6">
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold text-xl">{patient.first_name?.charAt(0)}{patient.last_name?.charAt(0)}</div>
+            <div className="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center text-teal-700 font-bold text-xl">{patient.first_name?.charAt(0)}{patient.last_name?.charAt(0)}</div>
             <div>
               <h1 className="text-2xl font-bold text-gray-900">{fullName}</h1>
               <div className="flex items-center gap-3 mt-1 text-sm text-gray-500">
@@ -112,7 +112,7 @@ export default function PatientDetailPage() {
           </div>
           <div className="flex gap-2">
             <button onClick={() => setEditing(!editing)} className="px-4 py-2 bg-gray-100 text-sm rounded-lg hover:bg-gray-200">{editing ? 'Cancel' : 'Edit'}</button>
-            <Link href={`/emr-v2?patient=${patientId}`} className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700">New Encounter</Link>
+            <Link href={`/emr-v2?patient=${patientId}`} className="px-4 py-2 bg-teal-600 text-white text-sm rounded-lg hover:bg-teal-700">New Encounter</Link>
           </div>
         </div>
 
@@ -129,7 +129,7 @@ export default function PatientDetailPage() {
       {/* Tabs */}
       <div className="flex gap-1 mb-4 border-b">{[['overview','Overview'],['imaging','Imaging'],['lab','Lab Results'],['documents','Documents'],['insurance','Insurance'],['emergency','Emergency Contacts'],['encounters','Encounters'],['billing','Billing'],['edit','Edit Details']].map(([k,l]) =>
         <button key={k} onClick={() => { setActiveTab(k); if (k === 'edit') setEditing(true); }}
-          className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px ${activeTab === k ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>{l}</button>
+          className={`px-4 py-2 text-sm font-medium rounded-xl ${activeTab === k ? 'bg-teal-600 text-white shadow-sm' : 'bg-white text-gray-500 border border-gray-100 hover:bg-gray-50'}`}>{l}</button>
       )}</div>
 
       {/* Tab content */}
@@ -190,7 +190,7 @@ export default function PatientDetailPage() {
               </select>
               <input type="file" onChange={e => setDocFile(e.target.files?.[0] || null)} className="flex-1 text-xs" accept="image/*,.pdf,.doc,.docx" />
               <button onClick={async () => { if (docFile) { const r = await docs.upload(docFile, docType, staff?.id || ''); if (r.success) { flash('Document uploaded'); setDocFile(null); } else flash(r.error || 'Upload failed'); }}}
-                disabled={!docFile} className="px-4 py-2 bg-blue-600 text-white text-xs rounded-lg disabled:opacity-40">Upload</button>
+                disabled={!docFile} className="px-4 py-2 bg-teal-600 text-white text-xs rounded-lg disabled:opacity-40">Upload</button>
             </div>
           </div>
           {docs.documents.length === 0 ? <div className="text-center py-8 bg-white rounded-xl border text-gray-400 text-sm">No documents uploaded</div> :
@@ -202,7 +202,7 @@ export default function PatientDetailPage() {
                 <td className="p-2">{d.document_name}</td>
                 <td className="p-2 text-center text-gray-400">{new Date(d.created_at).toLocaleDateString('en-IN')}</td>
                 <td className="p-2 text-center">{d.verified ? <span className="text-green-600">✓</span> : <span className="text-gray-300">—</span>}</td>
-                <td className="p-2"><a href={d.file_url} target="_blank" className="text-blue-600 text-[10px]">View</a></td></tr>
+                <td className="p-2"><a href={d.file_url} target="_blank" className="text-teal-600 text-[10px]">View</a></td></tr>
             ))}</tbody></table>
           </div>}
         </div>
@@ -238,7 +238,7 @@ export default function PatientDetailPage() {
               </select>
               <input type="text" value={ecForm.phone} onChange={e => setEcForm(f => ({ ...f, phone: e.target.value }))} className="w-36 px-3 py-2 border rounded-lg text-xs" placeholder="Phone" />
               <button onClick={async () => { if (ecForm.name && ecForm.phone) { await emergencyContacts.add(ecForm.name, ecForm.relationship, ecForm.phone); setEcForm({ name: '', relationship: '', phone: '' }); flash('Contact added'); }}}
-                disabled={!ecForm.name || !ecForm.phone} className="px-4 py-2 bg-blue-600 text-white text-xs rounded-lg disabled:opacity-40">Add</button>
+                disabled={!ecForm.name || !ecForm.phone} className="px-4 py-2 bg-teal-600 text-white text-xs rounded-lg disabled:opacity-40">Add</button>
             </div>
           </div>
           {emergencyContacts.contacts.length === 0 ? <div className="text-center py-8 bg-white rounded-xl border text-gray-400 text-sm">No emergency contacts</div> :
@@ -264,7 +264,7 @@ export default function PatientDetailPage() {
           </tr></thead><tbody>{encounters.map((e: any) => (
             <tr key={e.id} className="border-b hover:bg-gray-50">
               <td className="p-3">{e.encounter_date}</td><td className="p-3 text-xs">{e.encounter_type}</td>
-              <td className="p-3"><span className="font-mono text-xs text-blue-600">{e.primary_diagnosis_code}</span> {e.primary_diagnosis_label || '—'}</td>
+              <td className="p-3"><span className="font-mono text-xs text-teal-600">{e.primary_diagnosis_code}</span> {e.primary_diagnosis_label || '—'}</td>
               <td className="p-3 text-xs">{e.doctor?.full_name}</td>
               <td className="p-3 text-xs">{e.prescription_count} meds, {e.investigation_count} labs</td>
               <td className="p-3"><span className={`px-2 py-0.5 rounded-full text-xs ${e.status === 'signed' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>{e.status}</span></td>
@@ -282,7 +282,7 @@ export default function PatientDetailPage() {
             <th className="text-left p-3 font-medium text-gray-500">Status</th>
           </tr></thead><tbody>{bills.map((b: any) => (
             <tr key={b.id} className="border-b hover:bg-gray-50">
-              <td className="p-3 font-mono text-xs text-blue-600">{b.bill_number}</td><td className="p-3">{b.bill_date}</td>
+              <td className="p-3 font-mono text-xs text-teal-600">{b.bill_number}</td><td className="p-3">{b.bill_date}</td>
               <td className="p-3 text-xs">{b.bill_type.toUpperCase()}</td>
               <td className="p-3 text-right font-medium">Rs.{(b.net_amount || 0).toLocaleString('en-IN')}</td>
               <td className="p-3 text-right text-green-600">Rs.{(b.paid_amount || 0).toLocaleString('en-IN')}</td>
@@ -304,7 +304,7 @@ export default function PatientDetailPage() {
             ].map(([k,l]) => (
               <div key={k}><label className="text-xs text-gray-500 mb-1 block">{l}</label>
                 <input type={k === 'date_of_birth' ? 'date' : k === 'email' ? 'email' : 'text'} value={editForm[k] || ''} onChange={e => setEditForm((p: any) => ({ ...p, [k]: e.target.value }))}
-                  className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" /></div>
+                  className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500" /></div>
             ))}
             <div><label className="text-xs text-gray-500 mb-1 block">Gender</label>
               <select value={editForm.gender || ''} onChange={e => setEditForm((p: any) => ({ ...p, gender: e.target.value }))} className="w-full px-3 py-2 border rounded-lg text-sm">
@@ -316,7 +316,7 @@ export default function PatientDetailPage() {
               <select value={editForm.marital_status || ''} onChange={e => setEditForm((p: any) => ({ ...p, marital_status: e.target.value }))} className="w-full px-3 py-2 border rounded-lg text-sm">
                 <option value="">Select</option>{['Single','Married','Divorced','Widowed'].map(ms => <option key={ms}>{ms}</option>)}</select></div>
           </div>
-          <div className="flex gap-2 mt-6"><button onClick={saveEdit} className="px-6 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700">Save changes</button>
+          <div className="flex gap-2 mt-6"><button onClick={saveEdit} className="px-6 py-2 bg-teal-600 text-white rounded-lg text-sm font-medium hover:bg-teal-700">Save changes</button>
             <button onClick={() => { setEditing(false); setActiveTab('overview'); setEditForm(patient); }} className="px-6 py-2 bg-gray-100 text-gray-600 rounded-lg text-sm">Cancel</button></div>
         </div>
       )}

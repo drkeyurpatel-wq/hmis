@@ -82,7 +82,7 @@ function IPDClinicalInner() {
 
   return (
     <div className="max-w-6xl mx-auto">
-      {toast && <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-green-600 text-white px-4 py-2 rounded-lg shadow-lg text-sm">{toast}</div>}
+      {toast && <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-emerald-600 text-white px-4 py-2 rounded-xl shadow-lg text-sm">{toast}</div>}
 
       {/* ===== PATIENT HEADER ===== */}
       <div className="bg-white rounded-xl border p-4 mb-4">
@@ -112,7 +112,7 @@ function IPDClinicalInner() {
               {latestVitals.temp && <span className="bg-gray-50 px-1.5 py-0.5 rounded">T <b>{latestVitals.temp}°F</b></span>}
             </div>}
             <div className="flex gap-2">
-              {(admission.status === 'active' || admission.status === 'discharge_initiated') && <button onClick={() => setTab('discharge')} className="px-3 py-1.5 bg-green-600 text-white text-xs rounded-lg hover:bg-green-700 font-medium">Discharge</button>}
+              {(admission.status === 'active' || admission.status === 'discharge_initiated') && <button onClick={() => setTab('discharge')} className="px-3 py-1.5 bg-emerald-600 text-white text-xs rounded-lg hover:bg-emerald-700 font-medium">Discharge</button>}
               <Link href={`/emr-v2?patient=${pt.id}`} className="px-3 py-1.5 bg-blue-50 text-blue-700 text-xs rounded-lg hover:bg-blue-100">EMR</Link>
               <Link href="/ipd" className="px-3 py-1.5 bg-gray-100 text-gray-600 text-xs rounded-lg hover:bg-gray-200">Back</Link>
             </div>
@@ -124,7 +124,7 @@ function IPDClinicalInner() {
       <div className="flex gap-0.5 mb-4 overflow-x-auto border-b pb-px">
         {tabs.map(([k, l, count]) => (
           <button key={k} onClick={() => setTab(k)}
-            className={`px-2.5 py-2 text-[11px] font-medium whitespace-nowrap border-b-2 -mb-px flex items-center gap-1 ${tab === k ? 'border-blue-600 text-blue-700' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
+            className={`px-2.5 py-2 text-[11px] font-medium whitespace-nowrap rounded-xl flex items-center gap-1 ${tab === k ? 'bg-teal-600 text-white shadow-sm' : 'bg-white text-gray-500 border border-gray-100 hover:bg-gray-50'}`}>
             {l}{count && <span className={`text-[9px] px-1 rounded-full ${tab === k ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-400'}`}>{count}</span>}
           </button>
         ))}

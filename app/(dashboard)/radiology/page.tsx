@@ -40,7 +40,7 @@ function RadiologyInner() {
 
   return (
     <div className="max-w-7xl mx-auto space-y-4">
-      {toast && <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-green-600 text-white px-4 py-2 rounded-lg shadow-lg text-sm">{toast}</div>}
+      {toast && <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-emerald-600 text-white px-4 py-2 rounded-xl shadow-lg text-sm">{toast}</div>}
 
       {/* Report viewer modal */}
       {selectedOrder && <ReportViewer order={selectedOrder} staffId={staffId} pacsConfig={pacs.config} onFlash={flash} onClose={() => setSelectedOrder(null)} />}
@@ -58,8 +58,8 @@ function RadiologyInner() {
           </p>
         </div>
         <div className="flex gap-2">
-          {pacs.config && <a href={pacs.config.viewer_url} target="_blank" rel="noopener noreferrer" className="px-3 py-1.5 bg-green-600 text-white text-xs rounded-lg">Open Stradus</a>}
-          <button onClick={() => setTab('new_order')} className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg">+ New Order</button>
+          {pacs.config && <a href={pacs.config.viewer_url} target="_blank" rel="noopener noreferrer" className="px-3 py-1.5 bg-emerald-600 text-white text-xs rounded-lg">Open Stradus</a>}
+          <button onClick={() => setTab('new_order')} className="px-4 py-2 bg-teal-600 text-white text-sm rounded-lg">+ New Order</button>
         </div>
       </div>
 
@@ -69,7 +69,7 @@ function RadiologyInner() {
           ['Ordered', worklist.stats.ordered, 'text-gray-700', 'bg-gray-50'],
           ['Scheduled', worklist.stats.scheduled, 'text-amber-700', 'bg-amber-50'],
           ['In Progress', worklist.stats.inProgress, 'text-purple-700', 'bg-purple-50'],
-          ['Reported', worklist.stats.reported, 'text-blue-700', 'bg-blue-50'],
+          ['Reported', worklist.stats.reported, 'text-teal-700', 'bg-blue-50'],
           ['Verified', worklist.stats.verified, 'text-green-700', 'bg-green-50'],
           ['STAT', worklist.stats.stat, worklist.stats.stat > 0 ? 'text-red-700' : 'text-gray-400', worklist.stats.stat > 0 ? 'bg-red-50' : 'bg-white'],
           ['Critical', worklist.stats.critical, worklist.stats.critical > 0 ? 'text-red-700' : 'text-gray-400', worklist.stats.critical > 0 ? 'bg-red-50' : 'bg-white'],
@@ -81,9 +81,9 @@ function RadiologyInner() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-0.5 border-b pb-px overflow-x-auto">
+      <div className="flex gap-0.5 pb-0.5 overflow-x-auto scrollbar-thin">
         {tabs.map(([k, l]) => <button key={k} onClick={() => setTab(k)}
-          className={`px-3 py-2 text-xs font-medium whitespace-nowrap border-b-2 -mb-px ${tab === k ? 'border-blue-600 text-blue-700' : 'border-transparent text-gray-500'}`}>{l}</button>)}
+          className={`px-3 py-2 text-xs font-medium whitespace-nowrap rounded-xl ${tab === k ? 'bg-teal-600 text-white shadow-sm' : 'bg-white text-gray-500 border border-gray-100 hover:bg-gray-50'}`}>{l}</button>)}
       </div>
 
       {tab === 'worklist' && <RadiologyWorklist centreId={centreId} modalities={testMaster.modalities} pacsConfig={pacs.config}
@@ -100,7 +100,7 @@ function RadiologyInner() {
         <h2 className="font-bold text-sm">Stradus → HMIS Report Webhook</h2>
         <div className="bg-white rounded-xl border p-5 space-y-4">
           <div className="bg-blue-50 rounded-xl p-4">
-            <div className="text-xs font-bold text-blue-700 mb-2">Webhook Endpoint</div>
+            <div className="text-xs font-bold text-teal-700 mb-2">Webhook Endpoint</div>
             <div className="font-mono text-sm bg-white rounded-lg px-4 py-2 border">POST {typeof window !== 'undefined' ? window.location.origin : 'https://hmis-brown.vercel.app'}/api/radiology/stradus-webhook</div>
           </div>
 
@@ -117,7 +117,7 @@ function RadiologyInner() {
           <div className="bg-gray-50 rounded-xl p-4">
             <div className="text-xs font-bold text-gray-700 mb-2">Configure in Stradus RIS:</div>
             <div className="text-xs font-mono space-y-1 text-gray-600">
-              <div>URL: <span className="text-blue-600">{typeof window !== 'undefined' ? window.location.origin : 'https://hmis-brown.vercel.app'}/api/radiology/stradus-webhook</span></div>
+              <div>URL: <span className="text-teal-600">{typeof window !== 'undefined' ? window.location.origin : 'https://hmis-brown.vercel.app'}/api/radiology/stradus-webhook</span></div>
               <div>Method: POST</div>
               <div>Content-Type: application/json (preferred) or application/hl7-v2</div>
               <div>Events: report.finalized, report.amended, report.addendum</div>
