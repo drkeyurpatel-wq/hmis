@@ -8,8 +8,9 @@ import IntegrationsConfig from '@/components/settings/integrations-config';
 import NotificationsConfig from '@/components/settings/notifications-config';
 import BillingConfig from '@/components/settings/billing-config';
 import DepartmentsConfig from '@/components/settings/departments-config';
+import CostCentresConfig from '@/components/settings/cost-centres-config';
 
-type Tab = 'hospital' | 'integrations' | 'notifications' | 'billing' | 'departments' | 'staff' | 'wards' | 'tariffs' | 'auto_charges' | 'reports' | 'roles' | 'system';
+type Tab = 'hospital' | 'integrations' | 'notifications' | 'billing' | 'departments' | 'cost_centres' | 'staff' | 'wards' | 'tariffs' | 'auto_charges' | 'reports' | 'roles' | 'system';
 
 const EVENT_LABELS: Record<string, string> = {
   appointment_reminder: 'Appointment Reminder', lab_ready: 'Lab Results Ready',
@@ -103,7 +104,7 @@ function SettingsInner() {
 
   const tabs: [Tab, string][] = [
     ['hospital', 'Hospital Setup'], ['integrations', 'Integrations'], ['notifications', 'Notifications'],
-    ['billing', 'Billing Config'], ['departments', 'Departments'],
+    ['billing', 'Billing Config'], ['departments', 'Departments'], ['cost_centres', 'Cost Centres'],
     ['staff', 'Staff'], ['wards', 'Wards & Rooms'], ['tariffs', 'Tariff Master'],
     ['auto_charges', 'Auto-Charge'], ['reports', 'Report Emails'], ['roles', 'Roles'], ['system', 'System'],
   ];
@@ -134,6 +135,9 @@ function SettingsInner() {
 
       {/* NEW TAB 5 — DEPARTMENTS */}
       {tab === 'departments' && <DepartmentsConfig centreId={centreId} flash={flash} />}
+
+      {/* COST CENTRES */}
+      {tab === 'cost_centres' && <CostCentresConfig centreId={centreId} flash={flash} />}
 
       {/* STAFF */}
       {tab === 'staff' && <div className="space-y-2">

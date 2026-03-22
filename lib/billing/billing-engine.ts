@@ -2,6 +2,7 @@
 // Core billing engine — every service from tariff → bill → payment → receipt
 
 import { sb } from '@/lib/supabase/browser';
+import { resolveCostCentre } from './cost-centre-hooks';
 
 // ============================================================
 // TYPES
@@ -220,13 +221,19 @@ export async function createBill(params: {
 
   if (billErr) return { success: false, error: billErr.message };
 
-  // Insert line items
-  const itemRows = finalItems.map(i => ({
-    bill_id: bill.id, tariff_id: i.tariff_id,
-    description: i.description, quantity: i.quantity * i.days,
-    unit_rate: i.unit_rate, amount: i.amount,
-    discount: i.discount_amt, tax: i.tax_amt, net_amount: i.net_amount,
-    service_date: i.service_date, doctor_id: i.doctor_id,
+  // Insert line items — resolve cost centre for each item
+  const itemRows = await Promise.all(finalItems.map(async (i) => {
+    const costCentreId = await resolveCostCentre(centreId, {
+      departmentName: i.department, tariffCategory: i.category, billType: params.billType,
+    });
+    return {
+      bill_id: bill.id, tariff_id: i.tariff_id,
+      description: i.description, quantity: i.quantity * i.days,
+      unit_rate: i.unit_rate, amount: i.amount,
+      discount: i.discount_amt, tax: i.tax_amt, net_amount: i.net_amount,
+      service_date: i.service_date, doctor_id: i.doctor_id,
+      cost_centre_id: costCentreId,
+    };
   }));
   await sb().from('hmis_bill_items').insert(itemRows);
 

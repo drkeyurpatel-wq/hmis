@@ -53,6 +53,7 @@ const NAV: NavGroup[] = [
     { href: '/billing', label: 'Billing', icon: CreditCard, module: 'billing' },
     { href: '/packages', label: 'Packages', icon: Package, module: 'billing' },
     { href: '/insurance', label: 'Insurance', icon: ShieldCheck, module: 'billing' },
+    { href: '/pnl', label: 'P&L', icon: BarChart3, module: 'billing' },
     { href: '/revenue-leakage', label: 'Revenue Leakage', icon: AlertTriangle, module: 'billing' },
     { href: '/accounting', label: 'Accounting', icon: FileText, module: 'billing' },
   ]},
