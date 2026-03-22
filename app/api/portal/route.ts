@@ -48,9 +48,10 @@ export async function POST(request: NextRequest) {
         // Send OTP via WhatsApp Cloud API (if configured)
         const WHATSAPP_API = process.env.WHATSAPP_API_URL;
         const WHATSAPP_TOKEN = process.env.WHATSAPP_API_TOKEN;
+        let otpDelivered = false;
         if (WHATSAPP_API && WHATSAPP_TOKEN) {
           try {
-            await fetch(WHATSAPP_API, {
+            const waRes = await fetch(WHATSAPP_API, {
               method: 'POST',
               headers: { 'Authorization': `Bearer ${WHATSAPP_TOKEN}`, 'Content-Type': 'application/json' },
               body: JSON.stringify({
@@ -59,14 +60,20 @@ export async function POST(request: NextRequest) {
                   components: [{ type: 'body', parameters: [{ type: 'text', text: otp }] }] },
               }),
             });
-          } catch { /* Silent fail — OTP still stored in DB for verification */ }
+            const waData = await waRes.json();
+            otpDelivered = !!waData.messages?.[0]?.id;
+          } catch (err) {
+            console.error('[PORTAL OTP] WhatsApp delivery failed:', err);
+          }
         } else {
+          console.warn('[PORTAL OTP] WhatsApp not configured. OTP stored in DB but not delivered. Phone:', cleanPhone);
         }
 
         return NextResponse.json({
           success: true,
-          message: 'OTP sent to your phone',
+          message: otpDelivered ? 'OTP sent to your WhatsApp' : 'OTP generated. Please contact reception if not received.',
           patientName: patient.first_name,
+          delivered: otpDelivered,
         });
       }
 

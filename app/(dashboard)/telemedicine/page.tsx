@@ -132,7 +132,7 @@ function TeleInner() {
                   {c.status === 'in_progress' && (
                     <button onClick={() => joinCall(c)} className="px-4 py-2 bg-purple-600 text-white text-xs rounded-xl font-semibold hover:bg-purple-700 flex items-center gap-1.5 animate-pulse"><Video size={13} /> Rejoin</button>
                   )}
-                  {c.room_url && <a href={c.room_url} target="_blank" className="p-2 bg-gray-100 rounded-xl hover:bg-gray-200"><ExternalLink size={14} className="text-gray-500" /></a>}
+                  {c.room_url && <a href={c.room_url} target="_blank" rel="noopener noreferrer" className="p-2 bg-gray-100 rounded-xl hover:bg-gray-200"><ExternalLink size={14} className="text-gray-500" /></a>}
                 </div>
               </div>
             );

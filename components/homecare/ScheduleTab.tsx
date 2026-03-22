@@ -32,8 +32,8 @@ export default function ScheduleTab({ todayVisits, visitStColor, checkin, onDocu
             {v.status === 'in_progress' && <button onClick={() => onDocumentVisit(v.enrollment_id, v.id)}
               className="px-3 py-1.5 bg-blue-600 text-white text-xs rounded-lg font-medium">Document Visit</button>}
             <a href={`tel:${v.enrollment?.patient?.phone_primary}`} className="px-3 py-1.5 bg-gray-100 text-gray-600 text-xs rounded-lg">Call Patient</a>
-            {v.enrollment?.latitude && <a href={`https://www.google.com/maps/dir/?api=1&destination=${v.enrollment.latitude},${v.enrollment.longitude}`} target="_blank" className="px-3 py-1.5 bg-blue-50 text-blue-700 text-xs rounded-lg">Navigate</a>}
-            <a href={`https://wa.me/91${v.enrollment?.patient?.phone_primary?.replace(/\D/g,'')}`} target="_blank" className="px-3 py-1.5 bg-green-50 text-green-700 text-xs rounded-lg">WhatsApp</a>
+            {v.enrollment?.latitude && <a href={`https://www.google.com/maps/dir/?api=1&destination=${v.enrollment.latitude},${v.enrollment.longitude}`} target="_blank" rel="noopener noreferrer" className="px-3 py-1.5 bg-blue-50 text-blue-700 text-xs rounded-lg">Navigate</a>}
+            <a href={`https://wa.me/91${v.enrollment?.patient?.phone_primary?.replace(/\D/g,'')}`} target="_blank" rel="noopener noreferrer" className="px-3 py-1.5 bg-green-50 text-green-700 text-xs rounded-lg">WhatsApp</a>
           </div>
         </div>
       ))}</div>}

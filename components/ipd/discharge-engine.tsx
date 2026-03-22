@@ -536,7 +536,7 @@ RULES:
           </div>
           <input type="text" value={clearances.billingNotes} onChange={e => setClearances(c => ({...c, billingNotes: e.target.value}))}
             className="w-full mt-2 px-3 py-1.5 border rounded-lg text-xs" placeholder="Billing notes (outstanding amount, payment mode, etc.)..." />
-          <a href={`/billing?patient=${patientId}`} target="_blank" className="inline-block mt-2 px-3 py-1 bg-blue-50 text-blue-700 text-xs rounded-lg">Open Billing →</a>
+          <a href={`/billing?patient=${patientId}`} target="_blank" rel="noopener noreferrer" className="inline-block mt-2 px-3 py-1 bg-blue-50 text-blue-700 text-xs rounded-lg">Open Billing →</a>
         </div>
 
         {/* Pharmacy Clearance */}

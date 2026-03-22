@@ -408,7 +408,7 @@ function LeadDetail({ lead, centreId, staffId, doctors, onCall, onUpdate, onConv
       <div className="p-5 border-b border-gray-100 shrink-0">
         <div className="flex items-center justify-between mb-3">
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xs">← Back</button>
-          {lead.leadsquared_id && <a href={`https://app.leadsquared.com/Leads/${lead.leadsquared_id}`} target="_blank" className="flex items-center gap-1 text-[10px] text-teal-600"><ExternalLink size={10} />LeadSquared</a>}
+          {lead.leadsquared_id && <a href={`https://app.leadsquared.com/Leads/${lead.leadsquared_id}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-[10px] text-teal-600"><ExternalLink size={10} />LeadSquared</a>}
         </div>
         <div className="flex items-center gap-3">
           <div className="w-12 h-12 rounded-full bg-teal-100 flex items-center justify-center shrink-0">

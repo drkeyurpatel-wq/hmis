@@ -259,7 +259,7 @@ function InsuranceInner() {
             {documents.map(d => (
               <div key={d.id} className="flex items-center justify-between py-1.5 border-b text-xs">
                 <div><span className="px-1 py-0.5 bg-gray-100 rounded text-[9px] mr-1">{d.document_type?.replace(/_/g, ' ')}</span>{d.file_name}</div>
-                <a href={d.file_url} target="_blank" rel="noopener" className="text-teal-600 hover:text-teal-800">View</a>
+                <a href={d.file_url} target="_blank" rel="noopener noreferrer" className="text-teal-600 hover:text-teal-800">View</a>
               </div>
             ))}
             {documents.length === 0 && <div className="text-xs text-gray-400">No documents uploaded</div>}

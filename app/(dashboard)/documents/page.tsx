@@ -98,7 +98,7 @@ function DocsInner() {
                   <div className="flex gap-1">
                     {d.status === 'draft' && <button onClick={() => docs.update(d.id, { status: 'under_review' })} className="px-2 py-1 bg-amber-50 text-amber-700 text-[10px] rounded-lg font-medium">Submit</button>}
                     {d.status === 'under_review' && <button onClick={() => { docs.approve(d.id, staffId); flash('Approved'); }} className="px-2 py-1 bg-emerald-50 text-emerald-700 text-[10px] rounded-lg font-medium">Approve</button>}
-                    {d.file_url && <a href={d.file_url} target="_blank" className="p-1 bg-gray-50 rounded-lg hover:bg-gray-100"><Download size={12} className="text-gray-500" /></a>}
+                    {d.file_url && <a href={d.file_url} target="_blank" rel="noopener noreferrer" className="p-1 bg-gray-50 rounded-lg hover:bg-gray-100"><Download size={12} className="text-gray-500" /></a>}
                   </div>
                 </td>
               </tr>
