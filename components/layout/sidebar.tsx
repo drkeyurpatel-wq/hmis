@@ -10,7 +10,7 @@ import {
   CreditCard, Pill, FlaskConical, ScanLine, Scissors, BarChart3,
   Settings, LogOut, Building2, ChevronDown, ChevronRight, Droplets,
   Home, Activity, Truck, FileText, Shield, Heart, PanelLeftClose, PanelLeft,
-  Smartphone, ShieldCheck, Wrench, SprayCan, Shirt,
+  Smartphone, ShieldCheck, Wrench, SprayCan, Shirt, Cross,
 } from 'lucide-react';
 
 interface NavItem { href: string; label: string; icon: any; module: string | null; badge?: string }
@@ -49,6 +49,7 @@ const NAV: NavGroup[] = [
     { href: '/biomedical', label: 'Biomedical', icon: Wrench, module: null },
     { href: '/housekeeping', label: 'Housekeeping', icon: SprayCan, module: null },
     { href: '/linen', label: 'Linen', icon: Shirt, module: null },
+    { href: '/mortuary', label: 'Mortuary', icon: Cross, module: null },
     { href: '/quality', label: 'Quality', icon: Shield, module: 'mis' },
   ]},
   { key: 'admin', label: 'ADMIN', items: [
