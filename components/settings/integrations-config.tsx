@@ -14,7 +14,14 @@ interface ProviderConfig {
   sync_status?: string;
 }
 
-const PROVIDERS: { key: string; label: string; color: string; fields: { key: string; label: string; secret?: boolean }[]; testType?: 'connection' | 'send' }[] = [
+const PROVIDERS: { key: string; label: string; color: string; fields: { key: string; label: string; secret?: boolean; placeholder?: string }[]; testType?: 'connection' | 'send' }[] = [
+  { key: 'abdm', label: 'ABDM / ABHA', color: 'bg-orange-100 text-orange-700', fields: [
+    { key: 'client_id', label: 'ABDM Client ID', placeholder: 'From ABDM sandbox/production' },
+    { key: 'client_secret', label: 'ABDM Client Secret', secret: true },
+    { key: 'hip_id', label: 'HIP ID (HFR ID)', placeholder: 'IN2410013685' },
+    { key: 'environment', label: 'Environment', placeholder: 'sandbox or production' },
+    { key: 'callback_url', label: 'Callback URL', placeholder: 'https://yourdomain.com/api/abdm' },
+  ], testType: 'connection' },
   { key: 'leadsquared', label: 'LeadSquared CRM', color: 'bg-orange-100 text-orange-700', fields: [
     { key: 'api_host', label: 'API Host' }, { key: 'access_key', label: 'Access Key' }, { key: 'secret_key', label: 'Secret Key', secret: true },
   ], testType: 'connection' },
@@ -91,7 +98,14 @@ export default function IntegrationsConfig({ centreId, flash }: Props) {
     setTesting(provider);
     const cfg = getConfig(provider);
     try {
-      if (provider === 'leadsquared') {
+      if (provider === 'abdm') {
+        const clientId = cfg.config.client_id;
+        const clientSecret = cfg.config.client_secret;
+        if (!clientId || !clientSecret) { flash('Fill ABDM Client ID and Secret first'); setTesting(''); return; }
+        const res = await fetch('/api/abdm');
+        const data = await res.json();
+        flash(data.abdm?.configured ? `ABDM: Connected (${data.abdm.environment}) HIP: ${data.abdm.hipId}` : 'ABDM: Not configured — set environment variables');
+      } else if (provider === 'leadsquared') {
         const host = cfg.config.api_host;
         const ak = cfg.config.access_key;
         const sk = cfg.config.secret_key;
@@ -160,6 +174,7 @@ export default function IntegrationsConfig({ centreId, flash }: Props) {
                         type={f.secret && !showSecrets[`${p.key}_${f.key}`] ? 'password' : 'text'}
                         value={cfg.config[f.key] || ''}
                         onChange={e => updateField(p.key, f.key, e.target.value)}
+                        placeholder={(f as any).placeholder || ''}
                         className="w-full px-3 py-2 border rounded-lg text-sm pr-8"
                       />
                       {f.secret && <button onClick={() => setShowSecrets(prev => ({ ...prev, [`${p.key}_${f.key}`]: !prev[`${p.key}_${f.key}`] }))}

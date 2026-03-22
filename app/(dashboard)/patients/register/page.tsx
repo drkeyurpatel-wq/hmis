@@ -5,7 +5,7 @@ import { createBrowserClient } from '@supabase/ssr';
 const GENDERS = ['Male', 'Female', 'Other'];
 const BLOOD_GROUPS = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
 const MARITAL = ['Single', 'Married', 'Divorced', 'Widowed'];
-const ID_TYPES = ['Aadhaar', 'PAN', 'Passport', 'Voter ID', 'Driving License'];
+const ID_TYPES = ['Aadhaar', 'PAN', 'Passport', 'Voter ID', 'Driving License', 'ABHA Number'];
 const STATES = ['Gujarat', 'Rajasthan', 'Maharashtra', 'Delhi', 'Karnataka', 'Tamil Nadu', 'Uttar Pradesh', 'West Bengal', 'Other'];
 const SCHEMES = ['Self Pay', 'Private Insurance', 'PMJAY', 'CGHS', 'ECHS', 'ESI'];
 const RELIGIONS = ['Hindu', 'Muslim', 'Christian', 'Sikh', 'Buddhist', 'Jain', 'Other'];
@@ -53,6 +53,8 @@ export default function PatientRegistrationPage() {
   const [ecName, setEcName] = useState('');
   const [ecPhone, setEcPhone] = useState('');
   const [ecRelation, setEcRelation] = useState('');
+  const [abhaNumber, setAbhaNumber] = useState('');
+  const [abhaAddress, setAbhaAddress] = useState('');
   const [allergies, setAllergies] = useState('');
   const [medHistory, setMedHistory] = useState('');
 
@@ -82,6 +84,7 @@ export default function PatientRegistrationPage() {
         email: email.trim() || null, address_line1: addr1.trim() || null, address_line2: addr2.trim() || null,
         city: city.trim() || null, state: stateVal || null, pincode: pincode.trim() || null,
         id_type: idType || null, id_number: idNumber.trim() || null,
+        abha_number: abhaNumber.trim() || null, abha_address: abhaAddress.trim() || null,
       }).select('id').single();
       if (insErr) { setError(insErr.message); setSaving(false); return; }
       if (ecName.trim() && ecPhone.trim() && patient) {
@@ -174,6 +177,14 @@ export default function PatientRegistrationPage() {
           <div className="grid grid-cols-2 gap-4">
             <div><label className={CL}>ID Type</label><select className={CI} value={idType} onChange={e => setIdType(e.target.value)}><option value="">Select</option>{ID_TYPES.map(t => <option key={t} value={t}>{t}</option>)}</select></div>
             <div><label className={CL}>ID Number</label><input className={CI} value={idNumber} onChange={e => setIdNumber(e.target.value)} /></div>
+          </div>
+          <div className="bg-gradient-to-r from-orange-50 to-green-50 border border-orange-200 rounded-xl p-4 mt-4">
+            <h3 className="text-sm font-bold text-orange-700 flex items-center gap-2">ABHA / ABDM <span className="text-[9px] font-normal bg-orange-100 text-orange-600 px-1.5 py-0.5 rounded">Ayushman Bharat</span></h3>
+            <p className="text-[10px] text-gray-500 mb-3">Link patient&apos;s ABHA Health Account (optional — can be done later)</p>
+            <div className="grid grid-cols-2 gap-4">
+              <div><label className={CL}>ABHA Number</label><input className={CI} value={abhaNumber} onChange={e => setAbhaNumber(e.target.value)} placeholder="XX-XXXX-XXXX-XXXX" maxLength={17} /></div>
+              <div><label className={CL}>ABHA Address (PHR)</label><input className={CI} value={abhaAddress} onChange={e => setAbhaAddress(e.target.value)} placeholder="username@abdm" /></div>
+            </div>
           </div>
           <h3 className="text-sm font-bold text-gray-700 mt-4">Insurance</h3>
           <div className="grid grid-cols-2 gap-4">
