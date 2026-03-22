@@ -5,10 +5,13 @@ interface AuthState {
   staff: Staff | null;
   centres: StaffCentre[];
   activeCentreId: string | null;
+  enabledModules: Set<string>;
   isLoading: boolean;
   setStaff: (staff: Staff | null) => void;
   setCentres: (centres: StaffCentre[]) => void;
   setActiveCentre: (centreId: string) => void;
+  setEnabledModules: (modules: Set<string>) => void;
+  isModuleEnabled: (moduleKey: string) => boolean;
   hasPermission: (module: string, action: string) => boolean;
   reset: () => void;
 }
@@ -17,6 +20,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   staff: null,
   centres: [],
   activeCentreId: null,
+  enabledModules: new Set<string>(),
   isLoading: true,
 
   setStaff: (staff) => set({ staff, isLoading: false }),
@@ -28,6 +32,15 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }),
 
   setActiveCentre: (centreId) => set({ activeCentreId: centreId }),
+
+  setEnabledModules: (modules) => set({ enabledModules: modules }),
+
+  isModuleEnabled: (moduleKey) => {
+    const { enabledModules, staff } = get();
+    if (staff?.staff_type === 'admin') return true;
+    if (enabledModules.size === 0) return true;
+    return enabledModules.has(moduleKey);
+  },
 
   hasPermission: (module, action) => {
     const { centres, activeCentreId } = get();
@@ -49,6 +62,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       staff: null,
       centres: [],
       activeCentreId: null,
+      enabledModules: new Set<string>(),
       isLoading: true,
     }),
 }));

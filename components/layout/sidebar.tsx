@@ -12,10 +12,10 @@ import {
   Home, Activity, Truck, FileText, Shield, Heart, PanelLeftClose, PanelLeft,
   Smartphone, ShieldCheck, Wrench, SprayCan, Shirt, Cross,
   Mic, ClipboardList, UtensilsCrossed, Dumbbell, AlertTriangle,
-  Package, HandshakeIcon, Eye, UserPlus, Siren, MessageSquare,
+  Package, HandshakeIcon, Eye, UserPlus, Siren, MessageSquare, SlidersHorizontal,
 } from 'lucide-react';
 
-interface NavItem { href: string; label: string; icon: any; module: string | null; badge?: string }
+interface NavItem { href: string; label: string; icon: any; module: string | null; moduleKey?: string; badge?: string }
 interface NavGroup { key: string; label: string; items: NavItem[] }
 
 const NAV: NavGroup[] = [
@@ -25,66 +25,67 @@ const NAV: NavGroup[] = [
   ]},
   { key: 'clinical', label: 'CLINICAL', items: [
     { href: '/patients', label: 'Patients', icon: Users, module: 'patients' },
-    { href: '/opd', label: 'OPD', icon: Calendar, module: 'opd' },
-    { href: '/appointments', label: 'Appointments', icon: Calendar, module: 'opd' },
-    { href: '/emr-v2', label: 'EMR', icon: Stethoscope, module: 'emr' },
-    { href: '/voice-notes', label: 'Voice Notes', icon: Mic, module: 'emr' },
-    { href: '/ipd', label: 'IPD', icon: BedDouble, module: 'ipd' },
-    { href: '/bed-management', label: 'Beds', icon: BedDouble, module: 'ipd' },
-    { href: '/nursing-station', label: 'Nursing', icon: Heart, module: 'ipd' },
-    { href: '/handover', label: 'Shift Handover', icon: ClipboardList, module: 'ipd' },
-    { href: '/emergency', label: 'Emergency', icon: Siren, module: 'ipd' },
-    { href: '/ot', label: 'OT', icon: Scissors, module: 'ot' },
-    { href: '/surgical-planning', label: 'Surgical Planning', icon: ClipboardList, module: 'ot' },
-    { href: '/digital-consent', label: 'Digital Consent', icon: FileText, module: 'ot' },
-    { href: '/cathlab', label: 'Cath Lab', icon: Heart, module: 'ot' },
-    { href: '/endoscopy', label: 'Endoscopy', icon: Eye, module: 'ot' },
-    { href: '/dialysis', label: 'Dialysis', icon: Droplets, module: 'ipd' },
-    { href: '/physiotherapy', label: 'Physiotherapy', icon: Dumbbell, module: 'ipd' },
-    { href: '/dietary', label: 'Dietary', icon: UtensilsCrossed, module: 'ipd' },
-    { href: '/cssd', label: 'CSSD', icon: Shield, module: 'ot' },
-    { href: '/referrals', label: 'Referrals', icon: UserPlus, module: 'opd' },
+    { href: '/opd', label: 'OPD', icon: Calendar, module: 'opd', moduleKey: 'opd' },
+    { href: '/appointments', label: 'Appointments', icon: Calendar, module: 'opd', moduleKey: 'appointments' },
+    { href: '/emr-v2', label: 'EMR', icon: Stethoscope, module: 'emr', moduleKey: 'emr' },
+    { href: '/voice-notes', label: 'Voice Notes', icon: Mic, module: 'emr', moduleKey: 'voice_notes' },
+    { href: '/ipd', label: 'IPD', icon: BedDouble, module: 'ipd', moduleKey: 'ipd' },
+    { href: '/bed-management', label: 'Beds', icon: BedDouble, module: 'ipd', moduleKey: 'bed_management' },
+    { href: '/nursing-station', label: 'Nursing', icon: Heart, module: 'ipd', moduleKey: 'nursing' },
+    { href: '/handover', label: 'Shift Handover', icon: ClipboardList, module: 'ipd', moduleKey: 'shift_handover' },
+    { href: '/emergency', label: 'Emergency', icon: Siren, module: 'ipd', moduleKey: 'emergency' },
+    { href: '/ot', label: 'OT', icon: Scissors, module: 'ot', moduleKey: 'ot' },
+    { href: '/surgical-planning', label: 'Surgical Planning', icon: ClipboardList, module: 'ot', moduleKey: 'surgical_planning' },
+    { href: '/digital-consent', label: 'Digital Consent', icon: FileText, module: 'ot', moduleKey: 'digital_consent' },
+    { href: '/cathlab', label: 'Cath Lab', icon: Heart, module: 'ot', moduleKey: 'cathlab' },
+    { href: '/endoscopy', label: 'Endoscopy', icon: Eye, module: 'ot', moduleKey: 'endoscopy' },
+    { href: '/dialysis', label: 'Dialysis', icon: Droplets, module: 'ipd', moduleKey: 'dialysis' },
+    { href: '/physiotherapy', label: 'Physiotherapy', icon: Dumbbell, module: 'ipd', moduleKey: 'physiotherapy' },
+    { href: '/dietary', label: 'Dietary', icon: UtensilsCrossed, module: 'ipd', moduleKey: 'dietary' },
+    { href: '/cssd', label: 'CSSD', icon: Shield, module: 'ot', moduleKey: 'cssd' },
+    { href: '/referrals', label: 'Referrals', icon: UserPlus, module: 'opd', moduleKey: 'referrals' },
   ]},
   { key: 'diagnostics', label: 'DIAGNOSTICS', items: [
-    { href: '/lab', label: 'Laboratory', icon: FlaskConical, module: 'lab' },
-    { href: '/radiology', label: 'Radiology', icon: ScanLine, module: 'radiology' },
-    { href: '/blood-bank', label: 'Blood Bank', icon: Droplets, module: 'lab' },
-    { href: '/pharmacy', label: 'Pharmacy', icon: Pill, module: 'pharmacy' },
+    { href: '/lab', label: 'Laboratory', icon: FlaskConical, module: 'lab', moduleKey: 'lab' },
+    { href: '/radiology', label: 'Radiology', icon: ScanLine, module: 'radiology', moduleKey: 'radiology' },
+    { href: '/blood-bank', label: 'Blood Bank', icon: Droplets, module: 'lab', moduleKey: 'blood_bank' },
+    { href: '/pharmacy', label: 'Pharmacy', icon: Pill, module: 'pharmacy', moduleKey: 'pharmacy' },
   ]},
   { key: 'revenue', label: 'REVENUE', items: [
-    { href: '/billing', label: 'Billing', icon: CreditCard, module: 'billing' },
-    { href: '/packages', label: 'Packages', icon: Package, module: 'billing' },
-    { href: '/insurance', label: 'Insurance', icon: ShieldCheck, module: 'billing' },
-    { href: '/pnl', label: 'P&L', icon: BarChart3, module: 'billing' },
-    { href: '/revenue-leakage', label: 'Revenue Leakage', icon: AlertTriangle, module: 'billing' },
-    { href: '/accounting', label: 'Accounting', icon: FileText, module: 'billing' },
+    { href: '/billing', label: 'Billing', icon: CreditCard, module: 'billing', moduleKey: 'billing' },
+    { href: '/packages', label: 'Packages', icon: Package, module: 'billing', moduleKey: 'packages' },
+    { href: '/insurance', label: 'Insurance', icon: ShieldCheck, module: 'billing', moduleKey: 'insurance' },
+    { href: '/pnl', label: 'P&L', icon: BarChart3, module: 'billing', moduleKey: 'billing' },
+    { href: '/revenue-leakage', label: 'Revenue Leakage', icon: AlertTriangle, module: 'billing', moduleKey: 'revenue_leakage' },
+    { href: '/accounting', label: 'Accounting', icon: FileText, module: 'billing', moduleKey: 'accounting' },
   ]},
   { key: 'operations', label: 'OPERATIONS', items: [
-    { href: '/vpms', label: 'Procurement', icon: Truck, module: null },
-    { href: '/homecare', label: 'Homecare', icon: Home, module: 'homecare' },
-    { href: '/crm', label: 'CRM', icon: MessageSquare, module: null },
-    { href: '/biomedical', label: 'Biomedical', icon: Wrench, module: null },
-    { href: '/equipment-lifecycle', label: 'Equipment Lifecycle', icon: Wrench, module: null },
-    { href: '/housekeeping', label: 'Housekeeping', icon: SprayCan, module: null },
-    { href: '/bed-turnover', label: 'Bed Turnover', icon: BedDouble, module: 'ipd' },
-    { href: '/duty-roster', label: 'Duty Roster', icon: ClipboardList, module: 'settings' },
-    { href: '/linen', label: 'Linen', icon: Shirt, module: null },
-    { href: '/infection-control', label: 'Infection Control', icon: Shield, module: null },
-    { href: '/visitors', label: 'Visitors', icon: Users, module: null },
-    { href: '/mortuary', label: 'Mortuary', icon: Cross, module: null },
-    { href: '/quality', label: 'Quality', icon: Shield, module: 'mis' },
+    { href: '/vpms', label: 'Procurement', icon: Truck, module: null, moduleKey: 'procurement' },
+    { href: '/homecare', label: 'Homecare', icon: Home, module: 'homecare', moduleKey: 'homecare' },
+    { href: '/crm', label: 'CRM', icon: MessageSquare, module: null, moduleKey: 'crm' },
+    { href: '/biomedical', label: 'Biomedical', icon: Wrench, module: null, moduleKey: 'biomedical' },
+    { href: '/equipment-lifecycle', label: 'Equipment Lifecycle', icon: Wrench, module: null, moduleKey: 'equipment_lifecycle' },
+    { href: '/housekeeping', label: 'Housekeeping', icon: SprayCan, module: null, moduleKey: 'housekeeping' },
+    { href: '/bed-turnover', label: 'Bed Turnover', icon: BedDouble, module: 'ipd', moduleKey: 'bed_turnover' },
+    { href: '/duty-roster', label: 'Duty Roster', icon: ClipboardList, module: 'settings', moduleKey: 'duty_roster' },
+    { href: '/linen', label: 'Linen', icon: Shirt, module: null, moduleKey: 'linen' },
+    { href: '/infection-control', label: 'Infection Control', icon: Shield, module: null, moduleKey: 'infection_control' },
+    { href: '/visitors', label: 'Visitors', icon: Users, module: null, moduleKey: 'visitors' },
+    { href: '/mortuary', label: 'Mortuary', icon: Cross, module: null, moduleKey: 'mortuary' },
+    { href: '/quality', label: 'Quality', icon: Shield, module: 'mis', moduleKey: 'quality' },
   ]},
   { key: 'admin', label: 'ADMIN', items: [
     { href: '/reports', label: 'Reports', icon: BarChart3, module: 'mis' },
-    { href: '/telemedicine', label: 'Telemedicine', icon: Smartphone, module: null },
+    { href: '/telemedicine', label: 'Telemedicine', icon: Smartphone, module: null, moduleKey: 'telemedicine' },
     { href: '/staff', label: 'Staff', icon: Users, module: 'settings' },
+    { href: '/settings/modules', label: 'Module Config', icon: SlidersHorizontal, module: 'settings' },
     { href: '/settings', label: 'Settings', icon: Settings, module: null },
   ]},
 ];
 
 export function Sidebar({ mobileOpen, onMobileClose }: { mobileOpen?: boolean; onMobileClose?: () => void }) {
   const pathname = usePathname();
-  const { staff, centres, activeCentreId, setActiveCentre, hasPermission } = useAuthStore();
+  const { staff, centres, activeCentreId, setActiveCentre, setEnabledModules, isModuleEnabled, hasPermission } = useAuthStore();
   const [centreOpen, setCentreOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
@@ -96,7 +97,23 @@ export function Sidebar({ mobileOpen, onMobileClose }: { mobileOpen?: boolean; o
     setCollapsedGroups(prev => ({ ...prev, [key]: !prev[key] }));
   }, []);
 
+  // Reload enabled modules when centre changes
+  const switchCentre = useCallback(async (centreId: string) => {
+    setActiveCentre(centreId);
+    setCentreOpen(false);
+    if (typeof window !== 'undefined') {
+      const { sb } = await import('@/lib/supabase/browser');
+      if (sb()) {
+        const { data } = await sb()!.from('hmis_module_config')
+          .select('module_key').eq('centre_id', centreId).eq('is_enabled', true);
+        setEnabledModules(new Set((data || []).map((m: any) => m.module_key)));
+      }
+    }
+  }, [setActiveCentre, setEnabledModules]);
+
   const canSee = (item: NavItem) => {
+    // Module toggle check — if moduleKey is set, it must be enabled for this centre
+    if (item.moduleKey && !isModuleEnabled(item.moduleKey)) return false;
     if (!item.module) return true;
     if (staffType === 'admin') return true;
     if (hasPermission(item.module, 'view')) return true;
@@ -164,7 +181,7 @@ export function Sidebar({ mobileOpen, onMobileClose }: { mobileOpen?: boolean; o
             {centreOpen && centres.length > 1 && (
               <div className="absolute left-3 right-3 mt-1 bg-white border border-gray-200 rounded-lg shadow-xl z-50 overflow-hidden">
                 {centres.map(c => (
-                  <button key={c.centre_id} onClick={() => { setActiveCentre(c.centre_id); setCentreOpen(false); }}
+                  <button key={c.centre_id} onClick={() => switchCentre(c.centre_id)}
                     className={cn('w-full text-left px-3 py-2 text-xs hover:bg-teal-50 border-b last:border-0 transition-colors',
                       c.centre_id === activeCentreId ? 'bg-teal-50 text-teal-700 font-semibold' : 'text-gray-600')}>
                     {c.centre?.name || c.centre_id}

@@ -16,7 +16,7 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { setStaff, setCentres } = useAuthStore();
+  const { setStaff, setCentres, setEnabledModules } = useAuthStore();
 
   useEffect(() => {
     async function loadProfile() {
@@ -47,12 +47,24 @@ export default function DashboardLayout({
           `)
           .eq('staff_id', staff.id);
 
-        if (centres) setCentres(centres);
+        if (centres) {
+          setCentres(centres);
+          // Load enabled modules for active centre
+          const activeCentreId = centres[0]?.centre_id;
+          if (activeCentreId) {
+            const { data: mods } = await supabase
+              .from('hmis_module_config')
+              .select('module_key')
+              .eq('centre_id', activeCentreId)
+              .eq('is_enabled', true);
+            setEnabledModules(new Set((mods || []).map((m: any) => m.module_key)));
+          }
+        }
       }
     }
 
     loadProfile();
-  }, [setStaff, setCentres]);
+  }, [setStaff, setCentres, setEnabledModules]);
 
   // Register service worker for offline support
   useEffect(() => { registerServiceWorker(); }, []);
