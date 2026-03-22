@@ -1453,6 +1453,26 @@ CREATE TABLE IF NOT EXISTS hmis_pharmacy_transfers (
     received_at timestamptz
 );
 
+-- Pharmacy stock (batch-level inventory) — moved here for FK dependency
+CREATE TABLE IF NOT EXISTS hmis_pharmacy_stock (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    centre_id uuid NOT NULL REFERENCES hmis_centres(id),
+    drug_id uuid NOT NULL REFERENCES hmis_drug_master(id),
+    batch_number varchar(30) NOT NULL,
+    expiry_date date NOT NULL,
+    purchase_rate decimal(10,2) NOT NULL,
+    mrp decimal(10,2) NOT NULL,
+    quantity_received int NOT NULL,
+    quantity_available int NOT NULL DEFAULT 0,
+    quantity_dispensed int NOT NULL DEFAULT 0,
+    supplier varchar(100),
+    received_date date NOT NULL DEFAULT CURRENT_DATE,
+    created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_pharm_stock_centre ON hmis_pharmacy_stock(centre_id, drug_id);
+CREATE INDEX IF NOT EXISTS idx_pharm_stock_expiry ON hmis_pharmacy_stock(expiry_date);
+
+
 -- 4. Controlled Substance Register (Schedule H, H1, X)
 CREATE TABLE IF NOT EXISTS hmis_pharmacy_controlled_log (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
