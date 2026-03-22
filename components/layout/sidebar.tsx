@@ -64,6 +64,7 @@ const NAV: NavGroup[] = [
     { href: '/crm', label: 'CRM', icon: MessageSquare, module: null },
     { href: '/biomedical', label: 'Biomedical', icon: Wrench, module: null },
     { href: '/housekeeping', label: 'Housekeeping', icon: SprayCan, module: null },
+    { href: '/bed-turnover', label: 'Bed Turnover', icon: BedDouble, module: 'ipd' },
     { href: '/linen', label: 'Linen', icon: Shirt, module: null },
     { href: '/infection-control', label: 'Infection Control', icon: Shield, module: null },
     { href: '/visitors', label: 'Visitors', icon: Users, module: null },
