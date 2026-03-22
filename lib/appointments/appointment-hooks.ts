@@ -1,348 +1,331 @@
-// lib/appointments/appointment-hooks.ts
+// lib/appointments/appointment-hooks.ts — Rebuilt to match actual schema
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { auditCreate, auditCancel, auditUpdate } from '@/lib/audit/audit-logger';
-import { createOPDVisitFromAppointment } from '@/lib/bridge/cross-module-bridge';
-import { notifyOPDToken } from '@/lib/notifications/notification-dispatcher';
 
 let _sb: any = null;
 function sb() { if (typeof window === 'undefined') return null as any; if (!_sb) { try { _sb = createClient(); } catch { return null; } } return _sb; }
 
 export interface DoctorSchedule {
   id: string; doctorId: string; doctorName: string; specialisation: string;
+  departmentId: string; departmentName: string;
   dayOfWeek: number; startTime: string; endTime: string;
   slotDuration: number; maxPatients: number; room: string; fee: number; isActive: boolean;
 }
 
 export interface Appointment {
   id: string; patientId: string; patientName: string; uhid: string; phone: string;
+  age: number; gender: string;
   doctorId: string; doctorName: string; specialisation: string;
+  departmentId: string; departmentName: string;
   date: string; time: string; endTime: string; type: string;
   status: string; priority: string; token: number;
   visitReason: string; source: string; createdAt: string;
+  checkedInAt: string | null; consultStart: string | null; consultEnd: string | null;
+  waitMinutes: number | null;
 }
 
-export interface TimeSlot {
-  time: string; endTime: string; available: boolean; booked: number; max: number;
-}
+export interface TimeSlot { time: string; endTime: string; available: boolean; booked: number; }
 
-// ============================================================
-// DOCTOR SCHEDULES
-// ============================================================
+// ── Doctor Schedules ──
 export function useDoctorSchedules(centreId: string | null) {
   const [schedules, setSchedules] = useState<DoctorSchedule[]>([]);
+  const [leaves, setLeaves] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
+  const loadSchedules = useCallback(async () => {
     if (!centreId || !sb()) return;
     setLoading(true);
-    sb().from('hmis_doctor_schedules')
-      .select('*, doctor:hmis_staff!inner(full_name, specialisation)')
-      .eq('centre_id', centreId).eq('is_active', true).order('day_of_week, start_time')
-      .then(({ data }: any) => {
-        setSchedules((data || []).map((s: any) => ({
-          id: s.id, doctorId: s.doctor_id, doctorName: s.doctor?.full_name,
-          specialisation: s.doctor?.specialisation || '', dayOfWeek: s.day_of_week,
-          startTime: s.start_time, endTime: s.end_time, slotDuration: s.slot_duration_min,
-          maxPatients: s.max_patients, room: s.room_number || '', fee: parseFloat(s.consultation_fee || 0),
-          isActive: s.is_active,
-        })));
-        setLoading(false);
-      });
+    const { data } = await sb().from('hmis_doctor_schedules')
+      .select('*, doctor:hmis_staff!inner(full_name, specialisation), department:hmis_departments(name)')
+      .eq('centre_id', centreId).eq('is_active', true).order('day_of_week').order('start_time');
+    setSchedules((data || []).map((s: any) => ({
+      id: s.id, doctorId: s.doctor_id, doctorName: s.doctor?.full_name,
+      specialisation: s.doctor?.specialisation || '',
+      departmentId: s.department_id, departmentName: s.department?.name || '',
+      dayOfWeek: s.day_of_week, startTime: s.start_time, endTime: s.end_time,
+      slotDuration: s.slot_duration_min, maxPatients: s.max_patients || 20,
+      room: s.room_number || '', fee: parseFloat(s.consultation_fee || 0), isActive: s.is_active,
+    })));
+    setLoading(false);
   }, [centreId]);
 
+  const loadLeaves = useCallback(async () => {
+    if (!centreId || !sb()) return;
+    const { data } = await sb().from('hmis_doctor_leaves').select('*, doctor:hmis_staff(full_name)')
+      .gte('leave_date', new Date().toISOString().split('T')[0]).order('leave_date');
+    setLeaves(data || []);
+  }, [centreId]);
+
+  useEffect(() => { loadSchedules(); loadLeaves(); }, [loadSchedules, loadLeaves]);
+
   const addSchedule = useCallback(async (data: {
-    doctorId: string; dayOfWeek: number; startTime: string; endTime: string;
+    doctorId: string; departmentId: string; dayOfWeek: number;
+    startTime: string; endTime: string;
     slotDuration?: number; maxPatients?: number; room?: string; fee?: number;
   }) => {
     if (!centreId || !sb()) return { success: false };
     const { error } = await sb().from('hmis_doctor_schedules').insert({
-      centre_id: centreId, doctor_id: data.doctorId, day_of_week: data.dayOfWeek,
-      start_time: data.startTime, end_time: data.endTime,
+      centre_id: centreId, doctor_id: data.doctorId, department_id: data.departmentId,
+      day_of_week: data.dayOfWeek, start_time: data.startTime + ':00', end_time: data.endTime + ':00',
       slot_duration_min: data.slotDuration || 15, max_patients: data.maxPatients || 20,
       room_number: data.room || null, consultation_fee: data.fee || 0,
     });
+    if (!error) loadSchedules();
     return { success: !error, error: error?.message };
-  }, [centreId]);
+  }, [centreId, loadSchedules]);
 
-  return { schedules, loading, addSchedule };
+  const removeSchedule = useCallback(async (id: string) => {
+    if (!sb()) return;
+    await sb().from('hmis_doctor_schedules').update({ is_active: false }).eq('id', id);
+    loadSchedules();
+  }, [loadSchedules]);
+
+  const addLeave = useCallback(async (doctorId: string, date: string, reason: string, approvedBy: string) => {
+    if (!sb()) return { success: false };
+    const { error } = await sb().from('hmis_doctor_leaves').insert({
+      doctor_id: doctorId, leave_date: date, reason, approved_by: approvedBy,
+    });
+    if (!error) loadLeaves();
+    return { success: !error, error: error?.message };
+  }, [loadLeaves]);
+
+  return { schedules, leaves, loading, addSchedule, removeSchedule, addLeave, reload: loadSchedules };
 }
 
-// ============================================================
-// APPOINTMENTS — booking, status, check-in
-// ============================================================
+// ── Appointments ──
 export function useAppointments(centreId: string | null) {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const load = useCallback(async (filters?: { date?: string; doctorId?: string; status?: string }) => {
+  const load = useCallback(async (filters?: { date?: string; doctorId?: string; deptId?: string; status?: string }) => {
     if (!centreId || !sb()) return;
     setLoading(true);
     const date = filters?.date || new Date().toISOString().split('T')[0];
 
     let q = sb().from('hmis_appointments')
-      .select('*, patient:hmis_patients!inner(first_name, last_name, uhid, phone_primary), doctor:hmis_staff!inner(full_name, specialisation)')
-      .eq('centre_id', centreId).eq('appointment_date', date)
-      .order('appointment_time');
+      .select(`*, patient:hmis_patients!inner(first_name, last_name, uhid, phone_primary, age_years, gender),
+        doctor:hmis_staff!hmis_appointments_doctor_id_fkey(full_name, specialisation),
+        department:hmis_departments(name)`)
+      .eq('centre_id', centreId).eq('appointment_date', date).order('token_number', { nullsFirst: false }).order('appointment_time');
 
     if (filters?.doctorId) q = q.eq('doctor_id', filters.doctorId);
+    if (filters?.deptId) q = q.eq('department_id', filters.deptId);
     if (filters?.status && filters.status !== 'all') q = q.eq('status', filters.status);
 
     const { data } = await q;
-    setAppointments((data || []).map((a: any) => ({
-      id: a.id, patientId: a.patient_id,
-      patientName: `${a.patient.first_name} ${a.patient.last_name}`,
-      uhid: a.patient.uhid, phone: a.patient.phone_primary,
-      doctorId: a.doctor_id, doctorName: a.doctor?.full_name, specialisation: a.doctor?.specialisation || '',
-      date: a.appointment_date, time: a.appointment_time, endTime: a.slot_end_time || '',
-      type: a.appointment_type, status: a.status, priority: a.priority,
-      token: a.token_number, visitReason: a.visit_reason || '', source: a.booking_source,
-      createdAt: a.created_at,
-    })));
+    const now = new Date();
+
+    setAppointments((data || []).map((a: any) => {
+      const checkedIn = a.checked_in_at ? new Date(a.checked_in_at) : null;
+      const consultStart = a.consultation_start ? new Date(a.consultation_start) : null;
+      let waitMin: number | null = null;
+      if (checkedIn && !consultStart) waitMin = Math.round((now.getTime() - checkedIn.getTime()) / 60000);
+      else if (checkedIn && consultStart) waitMin = Math.round((consultStart.getTime() - checkedIn.getTime()) / 60000);
+
+      return {
+        id: a.id, patientId: a.patient_id,
+        patientName: `${a.patient.first_name} ${a.patient.last_name}`.trim(),
+        uhid: a.patient.uhid, phone: a.patient.phone_primary || '',
+        age: a.patient.age_years || 0, gender: a.patient.gender || '',
+        doctorId: a.doctor_id, doctorName: a.doctor?.full_name || '', specialisation: a.doctor?.specialisation || '',
+        departmentId: a.department_id, departmentName: a.department?.name || '',
+        date: a.appointment_date, time: a.appointment_time || '', endTime: a.slot_end_time || '',
+        type: a.type, status: a.status, priority: a.priority || 'normal',
+        token: a.token_number || 0, visitReason: a.visit_reason || '', source: a.booking_source || 'counter',
+        createdAt: a.created_at,
+        checkedInAt: a.checked_in_at, consultStart: a.consultation_start, consultEnd: a.consultation_end,
+        waitMinutes: waitMin,
+      };
+    }));
     setLoading(false);
   }, [centreId]);
 
   useEffect(() => { load(); }, [load]);
 
+  // Realtime
+  useEffect(() => {
+    if (!centreId || !sb()) return;
+    const ch = sb().channel('appts-' + centreId)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'hmis_appointments', filter: `centre_id=eq.${centreId}` }, () => load())
+      .subscribe();
+    return () => { sb().removeChannel(ch); };
+  }, [centreId, load]);
+
   const stats = useMemo(() => ({
     total: appointments.length,
-    booked: appointments.filter(a => a.status === 'booked' || a.status === 'confirmed').length,
+    booked: appointments.filter(a => ['scheduled', 'booked', 'confirmed'].includes(a.status)).length,
     checkedIn: appointments.filter(a => a.status === 'checked_in').length,
-    inConsult: appointments.filter(a => a.status === 'in_consultation').length,
+    inConsult: appointments.filter(a => ['in_progress', 'in_consultation'].includes(a.status)).length,
     completed: appointments.filter(a => a.status === 'completed').length,
     cancelled: appointments.filter(a => a.status === 'cancelled').length,
     noShow: appointments.filter(a => a.status === 'no_show').length,
+    avgWait: Math.round(appointments.filter(a => a.waitMinutes !== null).reduce((s, a) => s + (a.waitMinutes || 0), 0) / Math.max(1, appointments.filter(a => a.waitMinutes !== null).length)),
   }), [appointments]);
 
-  // Get available slots for a doctor on a date
+  // Available slots
   const getAvailableSlots = useCallback(async (doctorId: string, date: string): Promise<TimeSlot[]> => {
     if (!centreId || !sb()) return [];
-    const dayOfWeek = new Date(date).getDay();
+    const dayOfWeek = new Date(date + 'T00:00:00').getDay();
 
-    // Get schedule
+    // Check leave
+    const { data: leave } = await sb().from('hmis_doctor_leaves').select('id')
+      .eq('doctor_id', doctorId).eq('leave_date', date).limit(1);
+    if (leave?.length) return []; // On leave
+
     const { data: schedules } = await sb().from('hmis_doctor_schedules')
       .select('*').eq('centre_id', centreId).eq('doctor_id', doctorId)
       .eq('day_of_week', dayOfWeek).eq('is_active', true);
-
     if (!schedules?.length) return [];
 
-    // Get existing appointments
     const { data: existing } = await sb().from('hmis_appointments')
       .select('appointment_time').eq('centre_id', centreId).eq('doctor_id', doctorId)
       .eq('appointment_date', date).not('status', 'in', '(cancelled,rescheduled)');
-
-    const bookedTimes = new Set((existing || []).map((a: any) => a.appointment_time));
+    const bookedSet = new Set((existing || []).map((a: any) => a.appointment_time));
 
     const slots: TimeSlot[] = [];
     for (const sched of schedules) {
       const [sh, sm] = sched.start_time.split(':').map(Number);
       const [eh, em] = sched.end_time.split(':').map(Number);
-      const startMin = sh * 60 + sm;
-      const endMin = eh * 60 + em;
       const dur = sched.slot_duration_min;
-
-      for (let m = startMin; m + dur <= endMin; m += dur) {
-        const h = Math.floor(m / 60); const min = m % 60;
-        const timeStr = `${String(h).padStart(2, '0')}:${String(min).padStart(2, '0')}:00`;
-        const eh2 = Math.floor((m + dur) / 60); const em2 = (m + dur) % 60;
-        const endStr = `${String(eh2).padStart(2, '0')}:${String(em2).padStart(2, '0')}:00`;
-        const bookedCount = [...bookedTimes].filter(t => t === timeStr).length;
-
-        slots.push({
-          time: timeStr, endTime: endStr,
-          available: bookedCount < (sched.max_patients / Math.ceil((endMin - startMin) / dur)),
-          booked: bookedCount, max: Math.ceil(sched.max_patients / Math.ceil((endMin - startMin) / dur)),
-        });
+      for (let m = sh * 60 + sm; m + dur <= eh * 60 + em; m += dur) {
+        const hh = String(Math.floor(m / 60)).padStart(2, '0');
+        const mm = String(m % 60).padStart(2, '0');
+        const timeStr = `${hh}:${mm}:00`;
+        const endM = m + dur;
+        const endStr = `${String(Math.floor(endM / 60)).padStart(2, '0')}:${String(endM % 60).padStart(2, '0')}:00`;
+        const booked = [...bookedSet].filter(t => t === timeStr).length;
+        slots.push({ time: timeStr, endTime: endStr, available: booked === 0, booked });
       }
     }
     return slots;
   }, [centreId]);
 
-  // Book appointment
+  // Book
   const bookAppointment = useCallback(async (data: {
-    patientId: string; doctorId: string; date: string; time: string;
+    patientId: string; doctorId: string; departmentId: string; date: string; time: string;
     type?: string; visitReason?: string; priority?: string; source?: string; staffId: string;
   }): Promise<{ success: boolean; error?: string; appointment?: any }> => {
     if (!centreId || !sb()) return { success: false, error: 'Not ready' };
 
-    // Generate token
+    // Token
     const { data: tokenResult } = await sb().rpc('generate_appointment_token', {
       p_centre_id: centreId, p_doctor_id: data.doctorId, p_date: data.date,
     });
 
     const { data: appt, error } = await sb().from('hmis_appointments').insert({
       centre_id: centreId, patient_id: data.patientId, doctor_id: data.doctorId,
+      department_id: data.departmentId,
       appointment_date: data.date, appointment_time: data.time,
-      appointment_type: data.type || 'new', visit_reason: data.visitReason || '',
-      priority: data.priority || 'routine', booking_source: data.source || 'counter',
-      booked_by: data.staffId, token_number: tokenResult || 1, status: 'booked',
+      type: data.type || 'new', visit_reason: data.visitReason || '',
+      priority: data.priority || 'normal', booking_source: data.source || 'counter',
+      booked_by: data.staffId, token_number: tokenResult || 1, status: 'scheduled',
     }).select('id, token_number').single();
 
     if (error) return { success: false, error: error.message };
-    auditCreate(centreId!, data.staffId, 'appointment', appt?.id, `Appt: ${data.date} ${data.time} Token#${appt?.token_number}`);
     load();
     return { success: true, appointment: appt };
   }, [centreId, load]);
 
-  // Check in
-  const checkIn = useCallback(async (appointmentId: string) => {
-    await sb().from('hmis_appointments').update({
-      status: 'checked_in', checked_in_at: new Date().toISOString(),
-    }).eq('id', appointmentId);
-    // Auto-create OPD visit
-    const appt = appointments.find(a => a.id === appointmentId);
-    if (appt && centreId) {
-      await createOPDVisitFromAppointment({
-        centreId, patientId: appt.patientId, doctorId: appt.doctorId,
-        appointmentId, visitReason: appt.visitReason, staffId: appt.doctorId,
-      });
-    }
-    load();
-  }, [load, appointments, centreId]);
-
-  // Start consultation
-  const startConsultation = useCallback(async (appointmentId: string) => {
-    await sb().from('hmis_appointments').update({
-      status: 'in_consultation', consultation_start: new Date().toISOString(),
-    }).eq('id', appointmentId);
-    load();
+  // Status transitions
+  const checkIn = useCallback(async (id: string) => {
+    const { error } = await sb().from('hmis_appointments').update({ status: 'checked_in', checked_in_at: new Date().toISOString() }).eq('id', id);
+    if (!error) load();
+    return { error: error?.message };
   }, [load]);
 
-  // Complete
-  const complete = useCallback(async (appointmentId: string) => {
-    await sb().from('hmis_appointments').update({
-      status: 'completed', consultation_end: new Date().toISOString(),
-    }).eq('id', appointmentId);
-    load();
+  const startConsultation = useCallback(async (id: string) => {
+    const { error } = await sb().from('hmis_appointments').update({ status: 'in_consultation', consultation_start: new Date().toISOString() }).eq('id', id);
+    if (!error) load();
   }, [load]);
 
-  // Cancel
-  const cancel = useCallback(async (appointmentId: string, reason: string, staffId: string) => {
-    await sb().from('hmis_appointments').update({
+  const complete = useCallback(async (id: string) => {
+    const { error } = await sb().from('hmis_appointments').update({ status: 'completed', consultation_end: new Date().toISOString() }).eq('id', id);
+    if (!error) load();
+  }, [load]);
+
+  const cancel = useCallback(async (id: string, reason: string, staffId: string) => {
+    const { error } = await sb().from('hmis_appointments').update({
       status: 'cancelled', cancel_reason: reason, cancelled_by: staffId, cancelled_at: new Date().toISOString(),
-    }).eq('id', appointmentId);
-    load();
+    }).eq('id', id);
+    if (!error) load();
   }, [load]);
 
-  // Reschedule
-  const reschedule = useCallback(async (appointmentId: string, newDate: string, newTime: string, staffId: string) => {
+  const reschedule = useCallback(async (id: string, newDate: string, newTime: string, staffId: string) => {
     if (!centreId || !sb()) return { success: false };
-    const { data: old } = await sb().from('hmis_appointments').select('*').eq('id', appointmentId).single();
+    const { data: old } = await sb().from('hmis_appointments').select('*').eq('id', id).single();
     if (!old) return { success: false, error: 'Not found' };
-
-    // Mark old as rescheduled
-    await sb().from('hmis_appointments').update({ status: 'rescheduled' }).eq('id', appointmentId);
-
-    // Create new
+    await sb().from('hmis_appointments').update({ status: 'rescheduled' }).eq('id', id);
     const result = await bookAppointment({
-      patientId: old.patient_id, doctorId: old.doctor_id,
-      date: newDate, time: newTime, type: old.appointment_type,
-      visitReason: old.visit_reason, priority: old.priority,
-      source: old.booking_source, staffId,
+      patientId: old.patient_id, doctorId: old.doctor_id, departmentId: old.department_id,
+      date: newDate, time: newTime, type: old.type, visitReason: old.visit_reason,
+      priority: old.priority, source: old.booking_source, staffId,
     });
-
     if (result.success && result.appointment) {
-      await sb().from('hmis_appointments').update({ rescheduled_from: appointmentId }).eq('id', result.appointment.id);
+      await sb().from('hmis_appointments').update({ rescheduled_from: id }).eq('id', result.appointment.id);
     }
     return result;
   }, [centreId, bookAppointment]);
 
-  // Mark no-show
-  const markNoShow = useCallback(async (appointmentId: string) => {
-    await sb().from('hmis_appointments').update({ status: 'no_show' }).eq('id', appointmentId);
+  const markNoShow = useCallback(async (id: string) => {
+    await sb().from('hmis_appointments').update({ status: 'no_show' }).eq('id', id);
     load();
   }, [load]);
 
-  return {
-    appointments, loading, stats, load,
-    getAvailableSlots, bookAppointment, checkIn, startConsultation,
-    complete, cancel, reschedule, markNoShow,
-  };
+  return { appointments, loading, stats, load, getAvailableSlots, bookAppointment, checkIn, startConsultation, complete, cancel, reschedule, markNoShow };
 }
 
-// ============================================================
-// PATIENT DOCUMENTS
-// ============================================================
+// ── Patient Documents ──
 export function usePatientDocuments(patientId: string | null) {
   const [documents, setDocuments] = useState<any[]>([]);
-
   useEffect(() => {
     if (!patientId || !sb()) return;
     sb().from('hmis_patient_documents').select('*').eq('patient_id', patientId).order('created_at', { ascending: false })
       .then(({ data }: any) => setDocuments(data || []));
   }, [patientId]);
-
-  const upload = useCallback(async (file: File, docType: string, staffId: string): Promise<{ success: boolean; error?: string }> => {
+  const upload = useCallback(async (file: File, docType: string, staffId: string) => {
     if (!patientId || !sb()) return { success: false };
-    // Upload to Supabase Storage
-    const ext = file.name.split('.').pop();
-    const path = `patients/${patientId}/${Date.now()}.${ext}`;
-    const { error: uploadErr } = await sb().storage.from('documents').upload(path, file);
-    if (uploadErr) return { success: false, error: uploadErr.message };
-
+    const path = `patients/${patientId}/${Date.now()}.${file.name.split('.').pop()}`;
+    const { error: ue } = await sb().storage.from('documents').upload(path, file);
+    if (ue) return { success: false, error: ue.message };
     const { data: urlData } = sb().storage.from('documents').getPublicUrl(path);
-
-    const { error } = await sb().from('hmis_patient_documents').insert({
-      patient_id: patientId, document_type: docType, document_name: file.name,
-      file_url: urlData.publicUrl, file_size: file.size, mime_type: file.type,
-      uploaded_by: staffId,
-    });
-    if (error) return { success: false, error: error.message };
-    // Reload
-    const { data } = await sb().from('hmis_patient_documents').select('*').eq('patient_id', patientId).order('created_at', { ascending: false });
-    setDocuments(data || []);
-    return { success: true };
+    const { error } = await sb().from('hmis_patient_documents').insert({ patient_id: patientId, document_type: docType, document_name: file.name, file_url: urlData.publicUrl, file_size: file.size, mime_type: file.type, uploaded_by: staffId });
+    if (!error) { const { data } = await sb().from('hmis_patient_documents').select('*').eq('patient_id', patientId).order('created_at', { ascending: false }); setDocuments(data || []); }
+    return { success: !error, error: error?.message };
   }, [patientId]);
-
   return { documents, upload };
 }
 
-// ============================================================
-// PATIENT EMERGENCY CONTACTS
-// ============================================================
+// ── Emergency Contacts ──
 export function useEmergencyContacts(patientId: string | null) {
   const [contacts, setContacts] = useState<any[]>([]);
-
   useEffect(() => {
     if (!patientId || !sb()) return;
     sb().from('hmis_patient_emergency_contacts').select('*').eq('patient_id', patientId).order('is_primary', { ascending: false })
       .then(({ data }: any) => setContacts(data || []));
   }, [patientId]);
-
-  const add = useCallback(async (name: string, relationship: string, phone: string, isPrimary: boolean = false) => {
+  const add = useCallback(async (name: string, relationship: string, phone: string, isPrimary = false) => {
     if (!patientId || !sb()) return;
     await sb().from('hmis_patient_emergency_contacts').insert({ patient_id: patientId, name, relationship, phone, is_primary: isPrimary });
     const { data } = await sb().from('hmis_patient_emergency_contacts').select('*').eq('patient_id', patientId);
     setContacts(data || []);
   }, [patientId]);
-
-  const remove = useCallback(async (id: string) => {
-    if (!sb()) return;
-    await sb().from('hmis_patient_emergency_contacts').delete().eq('id', id);
-    setContacts(prev => prev.filter(c => c.id !== id));
-  }, []);
-
+  const remove = useCallback(async (id: string) => { if (!sb()) return; await sb().from('hmis_patient_emergency_contacts').delete().eq('id', id); setContacts(p => p.filter(c => c.id !== id)); }, []);
   return { contacts, add, remove };
 }
 
-// ============================================================
-// PATIENT INSURANCE
-// ============================================================
+// ── Patient Insurance ──
 export function usePatientInsurance(patientId: string | null) {
   const [policies, setPolicies] = useState<any[]>([]);
-
   useEffect(() => {
     if (!patientId || !sb()) return;
     sb().from('hmis_patient_insurance').select('*').eq('patient_id', patientId).eq('is_active', true).order('valid_to', { ascending: false })
       .then(({ data }: any) => setPolicies(data || []));
   }, [patientId]);
-
   const add = useCallback(async (data: any) => {
     if (!patientId || !sb()) return;
     await sb().from('hmis_patient_insurance').insert({ patient_id: patientId, ...data });
     const { data: d } = await sb().from('hmis_patient_insurance').select('*').eq('patient_id', patientId).eq('is_active', true);
     setPolicies(d || []);
   }, [patientId]);
-
   return { policies, add };
 }
