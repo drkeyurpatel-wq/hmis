@@ -237,30 +237,11 @@ CREATE TABLE IF NOT EXISTS hmis_tpas (
     created_at timestamptz NOT NULL DEFAULT now()
 );
 
-CREATE TABLE IF NOT EXISTS hmis_patient_insurance (
-    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-    patient_id uuid NOT NULL REFERENCES hmis_patients(id) ON DELETE CASCADE,
-    insurer_id uuid NOT NULL REFERENCES hmis_insurers(id),
-    tpa_id uuid REFERENCES hmis_tpas(id),
-    policy_number varchar(50) NOT NULL,
-    policy_type varchar(30),
-    sum_insured decimal(12,2),
-    valid_from date,
-    valid_to date,
-    is_primary boolean NOT NULL DEFAULT true,
-    scheme varchar(30), -- pmjay | cghs | esi | private | none
-    created_at timestamptz NOT NULL DEFAULT now()
-);
+-- [removed: hmis_patient_insurance — better definition in later file]
 
-CREATE TABLE IF NOT EXISTS hmis_patient_documents (
-    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-    patient_id uuid NOT NULL REFERENCES hmis_patients(id) ON DELETE CASCADE,
-    doc_type varchar(30) NOT NULL,
-    file_url text NOT NULL,
-    file_name varchar(200) NOT NULL,
-    uploaded_by uuid NOT NULL REFERENCES hmis_staff(id),
-    created_at timestamptz NOT NULL DEFAULT now()
-);
+
+-- [removed: hmis_patient_documents — better definition in later file]
+
 
 CREATE TABLE IF NOT EXISTS hmis_patient_history (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -313,19 +294,8 @@ CREATE TABLE IF NOT EXISTS hmis_beds (
 -- MODULE: DOCTOR SCHEDULING (3 tables)
 -- ============================================================
 
-CREATE TABLE IF NOT EXISTS hmis_doctor_schedules (
-    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-    doctor_id uuid NOT NULL REFERENCES hmis_staff(id),
-    centre_id uuid NOT NULL REFERENCES hmis_centres(id),
-    department_id uuid NOT NULL REFERENCES hmis_departments(id),
-    day_of_week int NOT NULL CHECK (day_of_week BETWEEN 0 AND 6),
-    start_time time NOT NULL,
-    end_time time NOT NULL,
-    slot_duration_min int NOT NULL DEFAULT 15,
-    max_patients int,
-    is_active boolean NOT NULL DEFAULT true,
-    created_at timestamptz NOT NULL DEFAULT now()
-);
+-- [removed: hmis_doctor_schedules — better definition in later file]
+
 
 CREATE TABLE IF NOT EXISTS hmis_appointment_slots (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -352,25 +322,9 @@ CREATE TABLE IF NOT EXISTS hmis_doctor_leaves (
 -- MODULE: OPD (5 tables)
 -- ============================================================
 
-CREATE TABLE IF NOT EXISTS hmis_appointments (
-    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-    centre_id uuid NOT NULL REFERENCES hmis_centres(id),
-    patient_id uuid NOT NULL REFERENCES hmis_patients(id),
-    doctor_id uuid NOT NULL REFERENCES hmis_staff(id),
-    department_id uuid NOT NULL REFERENCES hmis_departments(id),
-    slot_id uuid REFERENCES hmis_appointment_slots(id),
-    appointment_date date NOT NULL,
-    appointment_time time,
-    type varchar(20) NOT NULL CHECK (type IN ('new','followup','referral','emergency')),
-    status varchar(20) NOT NULL DEFAULT 'scheduled' CHECK (status IN ('scheduled','checked_in','in_progress','completed','no_show','cancelled')),
-    source varchar(20),
-    notes text,
-    created_at timestamptz NOT NULL DEFAULT now(),
-    updated_at timestamptz NOT NULL DEFAULT now()
-);
+-- [removed: hmis_appointments — better definition in later file]
 
-CREATE INDEX idx_appointments_date ON hmis_appointments(centre_id, appointment_date);
-CREATE INDEX idx_appointments_doctor ON hmis_appointments(doctor_id, appointment_date);
+
 
 CREATE TABLE IF NOT EXISTS hmis_opd_visits (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -464,29 +418,12 @@ CREATE TABLE IF NOT EXISTS hmis_nursing_notes (
     created_at timestamptz NOT NULL DEFAULT now()
 );
 
-CREATE TABLE IF NOT EXISTS hmis_diet_orders (
-    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-    admission_id uuid NOT NULL REFERENCES hmis_admissions(id),
-    ordered_by uuid NOT NULL REFERENCES hmis_staff(id),
-    diet_type varchar(30) NOT NULL,
-    instructions text,
-    effective_from timestamptz NOT NULL,
-    effective_to timestamptz,
-    created_at timestamptz NOT NULL DEFAULT now()
-);
+-- [removed: hmis_diet_orders — better definition in later file]
+
 
 -- Referrals (can be from OPD or IPD)
-CREATE TABLE IF NOT EXISTS hmis_referrals (
-    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-    opd_visit_id uuid REFERENCES hmis_opd_visits(id),
-    admission_id uuid REFERENCES hmis_admissions(id),
-    from_doctor_id uuid NOT NULL REFERENCES hmis_staff(id),
-    to_doctor_id uuid REFERENCES hmis_staff(id),
-    to_department_id uuid NOT NULL REFERENCES hmis_departments(id),
-    reason text,
-    urgency varchar(10) NOT NULL DEFAULT 'routine' CHECK (urgency IN ('routine','urgent','emergency')),
-    created_at timestamptz NOT NULL DEFAULT now()
-);
+-- [removed: hmis_referrals — better definition in later file]
+
 
 -- ============================================================
 -- MODULE: EMR / CLINICAL (7 tables)
@@ -714,18 +651,8 @@ CREATE TABLE IF NOT EXISTS hmis_advances (
     created_at timestamptz NOT NULL DEFAULT now()
 );
 
-CREATE TABLE IF NOT EXISTS hmis_refunds (
-    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-    bill_id uuid REFERENCES hmis_bills(id),
-    advance_id uuid REFERENCES hmis_advances(id),
-    patient_id uuid NOT NULL REFERENCES hmis_patients(id),
-    amount decimal(12,2) NOT NULL,
-    reason text NOT NULL,
-    approved_by uuid NOT NULL REFERENCES hmis_staff(id),
-    refund_mode varchar(20) NOT NULL,
-    status varchar(15) NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','approved','processed')),
-    created_at timestamptz NOT NULL DEFAULT now()
-);
+-- [removed: hmis_refunds — better definition in later file]
+
 
 -- ============================================================
 -- MODULE: INSURANCE & TPA (3 tables — insurers/tpas already created above)
@@ -1070,14 +997,8 @@ CREATE TABLE IF NOT EXISTS hmis_homecare_visits (
 -- MODULE: AMBULANCE (2 tables)
 -- ============================================================
 
-CREATE TABLE IF NOT EXISTS hmis_ambulances (
-    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-    centre_id uuid NOT NULL REFERENCES hmis_centres(id),
-    vehicle_number varchar(20) NOT NULL UNIQUE,
-    type varchar(20) NOT NULL,
-    is_available boolean NOT NULL DEFAULT true,
-    created_at timestamptz NOT NULL DEFAULT now()
-);
+-- [removed: hmis_ambulances — better definition in later file]
+
 
 CREATE TABLE IF NOT EXISTS hmis_ambulance_trips (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -1633,18 +1554,8 @@ CREATE TABLE IF NOT EXISTS hmis_pharmacy_grn (
 );
 
 -- 3. Stock Transfer between centres
-CREATE TABLE IF NOT EXISTS hmis_pharmacy_transfers (
-    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-    transfer_number varchar(20) NOT NULL,
-    from_centre_id uuid NOT NULL REFERENCES hmis_centres(id),
-    to_centre_id uuid NOT NULL REFERENCES hmis_centres(id),
-    status varchar(15) NOT NULL DEFAULT 'initiated' CHECK (status IN ('initiated','in_transit','received','cancelled')),
-    items jsonb NOT NULL DEFAULT '[]',
-    initiated_by uuid REFERENCES hmis_staff(id),
-    received_by uuid REFERENCES hmis_staff(id),
-    initiated_at timestamptz NOT NULL DEFAULT now(),
-    received_at timestamptz
-);
+-- [removed: hmis_pharmacy_transfers — better definition in later file]
+
 
 -- 4. Controlled Substance Register (Schedule H, H1, X)
 CREATE TABLE IF NOT EXISTS hmis_pharmacy_controlled_log (
@@ -1666,23 +1577,8 @@ CREATE TABLE IF NOT EXISTS hmis_pharmacy_controlled_log (
 );
 
 -- 5. Drug Returns & Expiry Management
-CREATE TABLE IF NOT EXISTS hmis_pharmacy_returns (
-    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-    centre_id uuid NOT NULL REFERENCES hmis_centres(id),
-    return_type varchar(15) NOT NULL CHECK (return_type IN ('patient_return','supplier_return','expiry_write_off','damage_write_off','adjustment')),
-    drug_id uuid NOT NULL REFERENCES hmis_drug_master(id),
-    batch_id uuid REFERENCES hmis_pharmacy_stock(id),
-    batch_number varchar(50),
-    quantity int NOT NULL,
-    reason text,
-    credit_note_number varchar(30),
-    credit_amount decimal(10,2) DEFAULT 0,
-    patient_id uuid REFERENCES hmis_patients(id),
-    supplier varchar(200),
-    processed_by uuid NOT NULL REFERENCES hmis_staff(id),
-    status varchar(15) NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','approved','processed','rejected')),
-    created_at timestamptz NOT NULL DEFAULT now()
-);
+-- [removed: hmis_pharmacy_returns — better definition in later file]
+
 
 -- 6. Reorder Level Configuration
 ALTER TABLE hmis_drug_master ADD COLUMN IF NOT EXISTS reorder_level int DEFAULT 20;
