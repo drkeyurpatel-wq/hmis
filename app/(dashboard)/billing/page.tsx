@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { RoleGuard } from '@/components/ui/shared';
 import { useAuthStore } from '@/lib/store/auth';
-import { createBrowserClient } from '@supabase/ssr';
+import { createClient } from '@/lib/supabase/client';
 import {
   CreditCard, Plus, Search, FileText, Shield, ArrowDownLeft, Receipt,
   TrendingUp, IndianRupee, Clock, Filter, ChevronRight, Download,
@@ -19,7 +19,8 @@ import ARManagement from '@/components/billing/ar-management';
 import { useCashlessWorkflow, useAccountsReceivable } from '@/lib/billing/revenue-cycle-hooks';
 import { useTariffs, useEstimates } from '@/lib/billing/billing-hooks';
 
-function sb() { return createBrowserClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!); }
+let _sb: any = null;
+function sb() { if (typeof window === 'undefined') return null as any; if (!_sb) { try { _sb = createClient(); } catch { return null; } } return _sb; }
 const fmt = (n: number) => Math.round(n).toLocaleString('en-IN');
 const INR = (n: number) => n >= 100000 ? `₹${(n / 100000).toFixed(1)}L` : `₹${fmt(n)}`;
 

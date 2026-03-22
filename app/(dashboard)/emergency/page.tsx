@@ -2,11 +2,12 @@
 import React, { useState, useEffect } from 'react';
 import { RoleGuard } from '@/components/ui/shared';
 import { useAuthStore } from '@/lib/store/auth';
-import { createBrowserClient } from '@supabase/ssr';
+import { createClient } from '@/lib/supabase/client';
 import { useEmergency } from '@/lib/modules/module-hooks';
 import { AlertTriangle, Plus, Phone, Clock, X, Search, Activity } from 'lucide-react';
 
-function sb() { return createBrowserClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!); }
+let _sb: any = null;
+function sb() { if (typeof window === 'undefined') return null as any; if (!_sb) { try { _sb = createClient(); } catch { return null; } } return _sb; }
 
 const TRIAGE_COLORS: Record<string, { bg: string; text: string; label: string }> = {
   red: { bg: 'bg-red-600', text: 'text-white', label: 'Immediate' },

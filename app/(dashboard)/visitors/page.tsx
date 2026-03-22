@@ -3,10 +3,11 @@ import React, { useState, useMemo } from 'react';
 import { RoleGuard } from '@/components/ui/shared';
 import { useAuthStore } from '@/lib/store/auth';
 import { useVisitors } from '@/lib/modules/module-hooks-3';
-import { createBrowserClient } from '@supabase/ssr';
+import { createClient } from '@/lib/supabase/client';
 import { Plus, X, Search, Users, LogIn, LogOut, Shield, Clock } from 'lucide-react';
 
-function sb() { return createBrowserClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!); }
+let _sb: any = null;
+function sb() { if (typeof window === 'undefined') return null as any; if (!_sb) { try { _sb = createClient(); } catch { return null; } } return _sb; }
 const PASS_BADGE: Record<string, string> = { regular: 'h1-badge-blue', icu: 'h1-badge-red', nicu: 'h1-badge-red', isolation: 'h1-badge-amber', emergency: 'h1-badge-red', attendant: 'h1-badge-purple' };
 const STATUS_BADGE: Record<string, string> = { active: 'h1-badge-green', checked_in: 'h1-badge-blue', checked_out: 'h1-badge-gray', expired: 'h1-badge-gray', revoked: 'h1-badge-red' };
 

@@ -1,6 +1,6 @@
 'use client';
 import React, { useState } from 'react';
-import { createBrowserClient } from '@supabase/ssr';
+import { createClient } from '@/lib/supabase/client';
 
 const GENDERS = ['Male', 'Female', 'Other'];
 const BLOOD_GROUPS = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
@@ -15,7 +15,7 @@ const CL = 'block text-xs font-semibold text-gray-600 mb-1';
 const CC = 'bg-white rounded-2xl border border-gray-200 shadow-sm p-6';
 
 function sb() {
-  return createBrowserClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
+  return createClient();
 }
 
 export default function PatientRegistrationPage() {

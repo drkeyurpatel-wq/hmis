@@ -3,10 +3,11 @@ import React, { useState, useEffect } from 'react';
 import { RoleGuard } from '@/components/ui/shared';
 import { useAuthStore } from '@/lib/store/auth';
 import { useTeleconsults } from '@/lib/modules/module-hooks-2';
-import { createBrowserClient } from '@supabase/ssr';
+import { createClient } from '@/lib/supabase/client';
 import { Plus, X, Video, Phone, Clock, ExternalLink, Search } from 'lucide-react';
 
-function sb() { return createBrowserClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!); }
+let _sb: any = null;
+function sb() { if (typeof window === 'undefined') return null as any; if (!_sb) { try { _sb = createClient(); } catch { return null; } } return _sb; }
 
 type Tab = 'today' | 'schedule' | 'call';
 const STATUS_B: Record<string, string> = { scheduled: 'h1-badge-blue', waiting: 'h1-badge-amber', in_progress: 'h1-badge-purple', completed: 'h1-badge-green', no_show: 'h1-badge-red', cancelled: 'h1-badge-gray' };
