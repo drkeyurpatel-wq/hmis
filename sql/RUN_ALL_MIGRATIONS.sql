@@ -1,8 +1,8 @@
 -- ═══════════════════════════════════════════════════════════════
--- Health1 HMIS — COMPLETE MIGRATION (Prerequisites + All Modules)
--- Run in Supabase SQL Editor (one shot, ~2 seconds)
+-- Health1 HMIS — COMPLETE MIGRATION
+-- Run in Supabase SQL Editor (one shot)
 -- https://supabase.com/dashboard/project/bmuupgrzbfmddjwcqlss/sql/new
--- Safe to run multiple times (all IF NOT EXISTS)
+-- All statements are IF NOT EXISTS — safe to run multiple times
 -- ═══════════════════════════════════════════════════════════════
 
 -- ╔══════════════════════════════════════════════════════════════╗
@@ -114,9 +114,8 @@ CREATE TABLE IF NOT EXISTS hmis_patients (
     created_at timestamptz NOT NULL DEFAULT now(),
     updated_at timestamptz NOT NULL DEFAULT now()
 );
-CREATE INDEX idx_patients_uhid ON hmis_patients(uhid);
-CREATE INDEX idx_patients_phone ON hmis_patients(phone_primary);
-CREATE INDEX idx_patients_name ON hmis_patients USING gin (
+CREATE INDEX IF NOT EXISTS idx_patients_uhid ON hmis_patients(uhid);
+CREATE INDEX IF NOT EXISTS idx_patients_phone ON hmis_patients(phone_primary);
 
 -- hmis_staff
 CREATE TABLE IF NOT EXISTS hmis_staff (
@@ -163,7 +162,7 @@ CREATE TABLE IF NOT EXISTS hmis_admissions (
     created_at timestamptz NOT NULL DEFAULT now(),
     updated_at timestamptz NOT NULL DEFAULT now()
 );
-CREATE INDEX idx_admissions_active ON hmis_admissions(centre_id, status) WHERE status = 'active';
+CREATE INDEX IF NOT EXISTS idx_admissions_active ON hmis_admissions(centre_id, status) WHERE status = 'active';
 
 -- hmis_appointments
 CREATE TABLE IF NOT EXISTS hmis_appointments (
@@ -182,8 +181,8 @@ CREATE TABLE IF NOT EXISTS hmis_appointments (
     created_at timestamptz NOT NULL DEFAULT now(),
     updated_at timestamptz NOT NULL DEFAULT now()
 );
-CREATE INDEX idx_appointments_date ON hmis_appointments(centre_id, appointment_date);
-CREATE INDEX idx_appointments_doctor ON hmis_appointments(doctor_id, appointment_date);
+CREATE INDEX IF NOT EXISTS idx_appointments_date ON hmis_appointments(centre_id, appointment_date);
+CREATE INDEX IF NOT EXISTS idx_appointments_doctor ON hmis_appointments(doctor_id, appointment_date);
 CREATE INDEX IF NOT EXISTS idx_appt_date ON hmis_appointments(centre_id, appointment_date, status);
 CREATE INDEX IF NOT EXISTS idx_appt_doctor ON hmis_appointments(doctor_id, appointment_date);
 CREATE INDEX IF NOT EXISTS idx_appt_patient ON hmis_appointments(patient_id, appointment_date DESC);
@@ -240,7 +239,7 @@ CREATE TABLE IF NOT EXISTS hmis_bills (
     created_at timestamptz NOT NULL DEFAULT now(),
     updated_at timestamptz NOT NULL DEFAULT now()
 );
-CREATE INDEX idx_bills_centre_date ON hmis_bills(centre_id, bill_date);
+CREATE INDEX IF NOT EXISTS idx_bills_centre_date ON hmis_bills(centre_id, bill_date);
 
 -- hmis_bill_items
 CREATE TABLE IF NOT EXISTS hmis_bill_items (
@@ -610,6 +609,7 @@ CREATE TABLE IF NOT EXISTS hmis_physio_sessions (
   created_at timestamp with time zone DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS idx_physio_date ON hmis_physio_sessions(centre_id, session_date);
+
 
 -- ╔══════════════════════════════════════════════════════════════╗
 -- ║  PART 2: MODULE MIGRATIONS                                  ║
