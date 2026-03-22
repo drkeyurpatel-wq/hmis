@@ -1,9 +1,33 @@
 -- ============================================================
--- COST CENTRE MASTER & P&L SUPPORT
+-- ITEM-LEVEL COSTING + COST CENTRE P&L
 -- Run after h1_hmis_migration.sql
 -- ============================================================
 
--- 1. Cost Centre Master
+-- 1. Add cost_price to tariff master (per-service cost)
+ALTER TABLE hmis_tariff_master
+  ADD COLUMN IF NOT EXISTS cost_price DECIMAL(10,2) DEFAULT 0;
+
+COMMENT ON COLUMN hmis_tariff_master.cost_price IS 'Internal cost of delivering this service (staff time, consumables, equipment depreciation)';
+
+-- 2. Add cost fields to bill_items
+ALTER TABLE hmis_bill_items
+  ADD COLUMN IF NOT EXISTS unit_cost DECIMAL(10,2) DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS cost_amount DECIMAL(12,2) DEFAULT 0;
+
+COMMENT ON COLUMN hmis_bill_items.unit_cost IS 'Cost per unit — from tariff cost_price, pharmacy purchase_rate, or implant cost';
+COMMENT ON COLUMN hmis_bill_items.cost_amount IS 'Total cost = quantity × unit_cost';
+
+-- 3. Add total_cost to bills
+ALTER TABLE hmis_bills
+  ADD COLUMN IF NOT EXISTS total_cost DECIMAL(14,2) DEFAULT 0;
+
+COMMENT ON COLUMN hmis_bills.total_cost IS 'Sum of all bill_item cost_amounts — used for margin calculation';
+
+-- 4. Add unit_cost to charge_log
+ALTER TABLE hmis_charge_log
+  ADD COLUMN IF NOT EXISTS unit_cost DECIMAL(10,2) DEFAULT 0;
+
+-- 5. Cost Centre Master (organisational grouping)
 CREATE TABLE IF NOT EXISTS hmis_cost_centres (
   id          UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   centre_id   UUID NOT NULL REFERENCES hmis_centres(id),
@@ -21,9 +45,9 @@ CREATE TABLE IF NOT EXISTS hmis_cost_centres (
   UNIQUE(centre_id, code)
 );
 
-CREATE INDEX idx_cost_centres_centre ON hmis_cost_centres(centre_id, is_active);
+CREATE INDEX IF NOT EXISTS idx_cost_centres_centre ON hmis_cost_centres(centre_id, is_active);
 
--- 2. Mapping rules: department/tariff-category → cost centre
+-- 6. Mapping rules: department/tariff-category → cost centre
 CREATE TABLE IF NOT EXISTS hmis_cost_centre_maps (
   id              UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   centre_id       UUID NOT NULL REFERENCES hmis_centres(id),
@@ -36,27 +60,16 @@ CREATE TABLE IF NOT EXISTS hmis_cost_centre_maps (
   UNIQUE(centre_id, match_type, match_value)
 );
 
-CREATE INDEX idx_cc_maps_lookup ON hmis_cost_centre_maps(centre_id, match_type, is_active);
+CREATE INDEX IF NOT EXISTS idx_cc_maps_lookup ON hmis_cost_centre_maps(centre_id, match_type, is_active);
 
--- 3. Add cost_centre_id to bill_items
+-- 7. Add cost_centre_id to bill_items and charge_log
 ALTER TABLE hmis_bill_items
   ADD COLUMN IF NOT EXISTS cost_centre_id UUID REFERENCES hmis_cost_centres(id);
 
-CREATE INDEX IF NOT EXISTS idx_bill_items_cc ON hmis_bill_items(cost_centre_id);
-
--- 4. Add cost_centre_id to charge_log
 ALTER TABLE hmis_charge_log
   ADD COLUMN IF NOT EXISTS cost_centre_id UUID REFERENCES hmis_cost_centres(id);
 
-CREATE INDEX IF NOT EXISTS idx_charge_log_cc ON hmis_charge_log(cost_centre_id);
-
--- 5. Fix journal_lines.cost_centre_id to reference hmis_cost_centres (not hmis_centres)
--- NOTE: If you have existing data in cost_centre_id pointing to hmis_centres,
--- you will need to migrate that data first. This adds a NEW column.
-ALTER TABLE hmis_journal_lines
-  ADD COLUMN IF NOT EXISTS cost_centre_ref UUID REFERENCES hmis_cost_centres(id);
-
--- 6. Expense tracking table (for cost-side of P&L)
+-- 8. Overhead/indirect expense tracking
 CREATE TABLE IF NOT EXISTS hmis_cost_centre_expenses (
   id              UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   centre_id       UUID NOT NULL REFERENCES hmis_centres(id),
@@ -72,9 +85,9 @@ CREATE TABLE IF NOT EXISTS hmis_cost_centre_expenses (
   created_at      TIMESTAMPTZ DEFAULT now()
 );
 
-CREATE INDEX idx_cc_expenses_lookup ON hmis_cost_centre_expenses(centre_id, cost_centre_id, expense_date);
+CREATE INDEX IF NOT EXISTS idx_cc_expenses_lookup ON hmis_cost_centre_expenses(centre_id, cost_centre_id, expense_date);
 
--- 7. RLS policies
+-- 9. RLS
 ALTER TABLE hmis_cost_centres ENABLE ROW LEVEL SECURITY;
 ALTER TABLE hmis_cost_centre_maps ENABLE ROW LEVEL SECURITY;
 ALTER TABLE hmis_cost_centre_expenses ENABLE ROW LEVEL SECURITY;

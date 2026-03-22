@@ -181,12 +181,13 @@ function SettingsInner() {
         <div className="bg-white rounded-xl border overflow-hidden">
           <table className="w-full text-xs"><thead><tr className="bg-gray-50 border-b">
             <th className="p-2 text-left">Code</th><th className="p-2 text-left">Service</th><th className="p-2">Category</th>
-            <th className="p-2 text-right">Self</th><th className="p-2 text-right">Insurance</th><th className="p-2 text-right">PMJAY</th><th className="p-2 text-right">CGHS</th>
+            <th className="p-2 text-right">Cost</th><th className="p-2 text-right">Self</th><th className="p-2 text-right">Insurance</th><th className="p-2 text-right">PMJAY</th><th className="p-2 text-right">CGHS</th>
           </tr></thead><tbody>{filtered(tariffs).slice(0, 100).map(t => (
             <tr key={t.id} className="border-b hover:bg-gray-50">
               <td className="p-2 font-mono text-[10px]">{t.service_code}</td>
               <td className="p-2 font-medium">{t.service_name}</td>
               <td className="p-2 text-center text-gray-500">{t.category?.replace('_', ' ')}</td>
+              <td className="p-2 text-right"><input type="number" defaultValue={t.cost_price || 0} onBlur={e => updateTariffRate(t.id, 'cost_price', parseFloat(e.target.value))} className="w-20 text-right px-1 py-0.5 border rounded text-[10px] bg-orange-50" /></td>
               <td className="p-2 text-right"><input type="number" defaultValue={t.rate_self} onBlur={e => updateTariffRate(t.id, 'rate_self', parseFloat(e.target.value))} className="w-20 text-right px-1 py-0.5 border rounded text-[10px]" /></td>
               <td className="p-2 text-right"><input type="number" defaultValue={t.rate_insurance} onBlur={e => updateTariffRate(t.id, 'rate_insurance', parseFloat(e.target.value))} className="w-20 text-right px-1 py-0.5 border rounded text-[10px]" /></td>
               <td className="p-2 text-right"><input type="number" defaultValue={t.rate_pmjay} onBlur={e => updateTariffRate(t.id, 'rate_pmjay', parseFloat(e.target.value))} className="w-20 text-right px-1 py-0.5 border rounded text-[10px]" /></td>
