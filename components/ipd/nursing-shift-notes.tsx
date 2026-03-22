@@ -53,7 +53,7 @@ export default function NursingShiftNotes({ admissionId, staffId, patientName, o
   const load = useCallback(async () => {
     if (!admissionId || !sb()) return;
     setLoading(true);
-    const { data } = await sb().from('hmis_nursing_notes')
+    const { data } = await sb()!.from('hmis_nursing_notes')
       .select('*, nurse:hmis_staff!hmis_nursing_notes_nurse_id_fkey(full_name)')
       .eq('admission_id', admissionId).order('created_at', { ascending: false }).limit(30);
     setNotes(data || []);
@@ -86,7 +86,7 @@ export default function NursingShiftNotes({ admissionId, staffId, patientName, o
       `\n--- HANDOVER ---\n${form.handover_notes || 'No specific handover notes'}`,
     ].filter(Boolean).join('\n');
 
-    await sb().from('hmis_nursing_notes').insert({
+    await sb()!.from('hmis_nursing_notes').insert({
       admission_id: admissionId, nurse_id: staffId,
       shift: form.shift, note: noteText,
     });

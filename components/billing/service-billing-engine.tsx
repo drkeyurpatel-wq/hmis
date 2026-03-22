@@ -78,7 +78,7 @@ export default function ServiceBillingEngine({
   useEffect(() => {
     if (patientSearch.length < 2) { setPatientResults([]); return; }
     const t = setTimeout(async () => {
-      const { data } = await sb().from('hmis_patients')
+      const { data } = await sb()!.from('hmis_patients')
         .select('id, uhid, first_name, last_name, phone_primary, gender, age_years')
         .or(`uhid.ilike.%${patientSearch}%,first_name.ilike.%${patientSearch}%,last_name.ilike.%${patientSearch}%,phone_primary.ilike.%${patientSearch}%`)
         .eq('is_active', true).limit(8);

@@ -13,7 +13,7 @@ export function useCashlessWorkflow(centreId: string | null) {
   const loadPreAuths = useCallback(async (status?: string) => {
     if (!centreId || !sb()) return;
     setLoading(true);
-    let q = sb().from('hmis_pre_auth_requests').select(`*, admission:hmis_admissions!inner(id, ipd_number, patient:hmis_patients!inner(first_name, last_name, uhid)), insurance:hmis_patient_insurance!inner(policy_number, insurer:hmis_insurers(name, code), tpa:hmis_tpas(name, code), scheme)`).order('submitted_at', { ascending: false }).limit(100);
+    let q = sb()!.from('hmis_pre_auth_requests').select(`*, admission:hmis_admissions!inner(id, ipd_number, patient:hmis_patients!inner(first_name, last_name, uhid)), insurance:hmis_patient_insurance!inner(policy_number, insurer:hmis_insurers(name, code), tpa:hmis_tpas(name, code), scheme)`).order('submitted_at', { ascending: false }).limit(100);
     if (status && status !== 'all') q = q.eq('status', status);
     const { data } = await q;
     setPreAuths(data || []);
@@ -22,7 +22,7 @@ export function useCashlessWorkflow(centreId: string | null) {
 
   const loadClaims = useCallback(async (status?: string) => {
     if (!centreId || !sb()) return;
-    let q = sb().from('hmis_claims').select(`*, bill:hmis_bills!inner(bill_number, net_amount, patient:hmis_patients!inner(first_name, last_name, uhid)), preauth:hmis_pre_auth_requests(pre_auth_number, approved_amount)`).order('submitted_at', { ascending: false }).limit(100);
+    let q = sb()!.from('hmis_claims').select(`*, bill:hmis_bills!inner(bill_number, net_amount, patient:hmis_patients!inner(first_name, last_name, uhid)), preauth:hmis_pre_auth_requests(pre_auth_number, approved_amount)`).order('submitted_at', { ascending: false }).limit(100);
     if (status && status !== 'all') q = q.eq('status', status);
     const { data } = await q;
     setClaims(data || []);
@@ -32,7 +32,7 @@ export function useCashlessWorkflow(centreId: string | null) {
 
   const submitPreAuth = useCallback(async (data: { admissionId: string; insuranceId: string; amount: number; documents?: any }, staffId: string) => {
     if (!sb()) return;
-    await sb().from('hmis_pre_auth_requests').insert({ admission_id: data.admissionId, patient_insurance_id: data.insuranceId, requested_amount: data.amount, submitted_by: staffId, documents: data.documents || null });
+    await sb()!.from('hmis_pre_auth_requests').insert({ admission_id: data.admissionId, patient_insurance_id: data.insuranceId, requested_amount: data.amount, submitted_by: staffId, documents: data.documents || null });
     loadPreAuths();
   }, [loadPreAuths]);
 
@@ -42,13 +42,13 @@ export function useCashlessWorkflow(centreId: string | null) {
     if (update.approvedAmount) upd.approved_amount = update.approvedAmount;
     if (update.preAuthNumber) upd.pre_auth_number = update.preAuthNumber;
     if (update.remarks) upd.remarks = update.remarks;
-    await sb().from('hmis_pre_auth_requests').update(upd).eq('id', id);
+    await sb()!.from('hmis_pre_auth_requests').update(upd).eq('id', id);
     loadPreAuths();
   }, [loadPreAuths]);
 
   const submitClaim = useCallback(async (data: { billId: string; preAuthId?: string; claimedAmount: number; claimType: string }) => {
     if (!sb()) return;
-    await sb().from('hmis_claims').insert({ bill_id: data.billId, pre_auth_id: data.preAuthId || null, claimed_amount: data.claimedAmount, claim_type: data.claimType, claim_number: `CLM-${Date.now()}` });
+    await sb()!.from('hmis_claims').insert({ bill_id: data.billId, pre_auth_id: data.preAuthId || null, claimed_amount: data.claimedAmount, claim_type: data.claimType, claim_number: `CLM-${Date.now()}` });
     loadClaims();
   }, [loadClaims]);
 
@@ -62,7 +62,7 @@ export function useCashlessWorkflow(centreId: string | null) {
     if (update.disallowanceAmount !== undefined) upd.disallowance_amount = update.disallowanceAmount;
     if (update.disallowanceReason) upd.disallowance_reason = update.disallowanceReason;
     if (update.utrNumber) upd.utr_number = update.utrNumber;
-    await sb().from('hmis_claims').update(upd).eq('id', id);
+    await sb()!.from('hmis_claims').update(upd).eq('id', id);
     loadClaims();
   }, [loadClaims]);
 
@@ -88,13 +88,13 @@ export function useCorporateBilling(centreId: string | null) {
 
   const loadCorporates = useCallback(async () => {
     if (!centreId || !sb()) return;
-    const { data } = await sb().from('hmis_corporates').select('*').eq('centre_id', centreId).eq('status', 'active').order('company_name');
+    const { data } = await sb()!.from('hmis_corporates').select('*').eq('centre_id', centreId).eq('status', 'active').order('company_name');
     setCorporates(data || []);
   }, [centreId]);
 
   const loadEmployees = useCallback(async (corporateId: string) => {
     if (!sb()) return;
-    const { data } = await sb().from('hmis_corporate_employees').select('*, patient:hmis_patients(first_name, last_name, uhid), corporate:hmis_corporates(company_name)').eq('corporate_id', corporateId).eq('is_active', true);
+    const { data } = await sb()!.from('hmis_corporate_employees').select('*, patient:hmis_patients(first_name, last_name, uhid), corporate:hmis_corporates(company_name)').eq('corporate_id', corporateId).eq('is_active', true);
     setEmployees(data || []);
   }, []);
 
@@ -102,13 +102,13 @@ export function useCorporateBilling(centreId: string | null) {
 
   const addCorporate = useCallback(async (data: { company_name: string; contact_person?: string; phone?: string; email?: string; gst_number?: string; credit_limit?: number; discount_percentage?: number; billing_cycle?: string }) => {
     if (!centreId || !sb()) return;
-    await sb().from('hmis_corporates').insert({ centre_id: centreId, ...data, status: 'active', current_outstanding: 0 });
+    await sb()!.from('hmis_corporates').insert({ centre_id: centreId, ...data, status: 'active', current_outstanding: 0 });
     loadCorporates();
   }, [centreId, loadCorporates]);
 
   const addEmployee = useCallback(async (corporateId: string, patientId: string, empId: string, relationship: string, coverage: string) => {
     if (!sb()) return;
-    await sb().from('hmis_corporate_employees').insert({ corporate_id: corporateId, patient_id: patientId, employee_id: empId, relationship, coverage_type: coverage });
+    await sb()!.from('hmis_corporate_employees').insert({ corporate_id: corporateId, patient_id: patientId, employee_id: empId, relationship, coverage_type: coverage });
     loadEmployees(corporateId);
   }, [loadEmployees]);
 
@@ -126,11 +126,11 @@ export function useCorporateBilling(centreId: string | null) {
 
   const creditBills = useCallback(async (corporateId: string): Promise<any[]> => {
     if (!centreId || !sb()) return [];
-    const { data: employees } = await sb().from('hmis_corporate_employees')
+    const { data: employees } = await sb()!.from('hmis_corporate_employees')
       .select('patient_id').eq('corporate_id', corporateId).eq('is_active', true);
     if (!employees?.length) return [];
     const patientIds = employees.map((e: any) => e.patient_id);
-    const { data: bills } = await sb().from('hmis_bills')
+    const { data: bills } = await sb()!.from('hmis_bills')
       .select('id, bill_number, bill_date, net_amount, paid_amount, balance_amount, status, patient:hmis_patients!inner(first_name, last_name, uhid)')
       .eq('centre_id', centreId).in('patient_id', patientIds).gt('balance_amount', 0).order('bill_date', { ascending: false });
     return bills || [];
@@ -150,7 +150,7 @@ export function useAccountsReceivable(centreId: string | null) {
   const load = useCallback(async (filters?: { arType?: string; status?: string; agingBucket?: string }) => {
     if (!centreId || !sb()) return;
     setLoading(true);
-    let q = sb().from('hmis_ar_entries').select('*, patient:hmis_patients(first_name, last_name, uhid), bill:hmis_bills(bill_number), corporate:hmis_corporates(company_name)').eq('centre_id', centreId).order('created_at', { ascending: false });
+    let q = sb()!.from('hmis_ar_entries').select('*, patient:hmis_patients(first_name, last_name, uhid), bill:hmis_bills(bill_number), corporate:hmis_corporates(company_name)').eq('centre_id', centreId).order('created_at', { ascending: false });
     if (filters?.arType && filters.arType !== 'all') q = q.eq('ar_type', filters.arType);
     if (filters?.status && filters.status !== 'all') q = q.eq('status', filters.status);
     if (filters?.agingBucket && filters.agingBucket !== 'all') q = q.eq('aging_bucket', filters.agingBucket);
@@ -180,24 +180,24 @@ export function useAccountsReceivable(centreId: string | null) {
 
   const createEntry = useCallback(async (data: any) => {
     if (!centreId || !sb()) return;
-    await sb().from('hmis_ar_entries').insert({ ...data, centre_id: centreId });
+    await sb()!.from('hmis_ar_entries').insert({ ...data, centre_id: centreId });
     load();
   }, [centreId, load]);
 
   const addFollowup = useCallback(async (arId: string, data: any, staffId: string) => {
     if (!sb()) return;
-    await sb().from('hmis_ar_followups').insert({ ar_entry_id: arId, ...data, created_by: staffId });
-    await sb().from('hmis_ar_entries').update({ last_followup_date: new Date().toISOString().split('T')[0], followup_notes: data.response, updated_at: new Date().toISOString() }).eq('id', arId);
+    await sb()!.from('hmis_ar_followups').insert({ ar_entry_id: arId, ...data, created_by: staffId });
+    await sb()!.from('hmis_ar_entries').update({ last_followup_date: new Date().toISOString().split('T')[0], followup_notes: data.response, updated_at: new Date().toISOString() }).eq('id', arId);
     load();
   }, [load]);
 
   const writeOff = useCallback(async (arId: string, amount: number, staffId: string) => {
     if (!sb()) return;
-    const { data: entry } = await sb().from('hmis_ar_entries').select('written_off_amount, balance_amount').eq('id', arId).single();
+    const { data: entry } = await sb()!.from('hmis_ar_entries').select('written_off_amount, balance_amount').eq('id', arId).single();
     if (!entry) return;
     const newWO = parseFloat(entry.written_off_amount) + amount;
     const newBal = parseFloat(entry.balance_amount) - amount;
-    await sb().from('hmis_ar_entries').update({ written_off_amount: newWO, balance_amount: newBal, status: newBal <= 0 ? 'written_off' : 'partial', updated_at: new Date().toISOString() }).eq('id', arId);
+    await sb()!.from('hmis_ar_entries').update({ written_off_amount: newWO, balance_amount: newBal, status: newBal <= 0 ? 'written_off' : 'partial', updated_at: new Date().toISOString() }).eq('id', arId);
     load();
   }, [load]);
 
@@ -212,7 +212,7 @@ export function useSettlements(centreId: string | null) {
 
   const load = useCallback(async () => {
     if (!centreId || !sb()) return;
-    const { data } = await sb().from('hmis_settlements').select('*, insurer:hmis_insurers(name), tpa:hmis_tpas(name), corporate:hmis_corporates(company_name)').eq('centre_id', centreId).order('settlement_date', { ascending: false }).limit(50);
+    const { data } = await sb()!.from('hmis_settlements').select('*, insurer:hmis_insurers(name), tpa:hmis_tpas(name), corporate:hmis_corporates(company_name)').eq('centre_id', centreId).order('settlement_date', { ascending: false }).limit(50);
     setSettlements(data || []);
   }, [centreId]);
 
@@ -220,13 +220,13 @@ export function useSettlements(centreId: string | null) {
 
   const createSettlement = useCallback(async (data: any, staffId: string) => {
     if (!centreId || !sb()) return;
-    await sb().from('hmis_settlements').insert({ ...data, centre_id: centreId });
+    await sb()!.from('hmis_settlements').insert({ ...data, centre_id: centreId });
     load();
   }, [centreId, load]);
 
   const reconcile = useCallback(async (settlementId: string, staffId: string) => {
     if (!sb()) return;
-    await sb().from('hmis_settlements').update({ reconciled: true, reconciled_by: staffId, reconciled_at: new Date().toISOString() }).eq('id', settlementId);
+    await sb()!.from('hmis_settlements').update({ reconciled: true, reconciled_by: staffId, reconciled_at: new Date().toISOString() }).eq('id', settlementId);
     load();
   }, [load]);
 
@@ -241,7 +241,7 @@ export function useGovtSchemes(centreId: string | null) {
 
   const load = useCallback(async () => {
     if (!centreId || !sb()) return;
-    const { data } = await sb().from('hmis_govt_scheme_config').select('*').eq('centre_id', centreId).eq('is_active', true);
+    const { data } = await sb()!.from('hmis_govt_scheme_config').select('*').eq('centre_id', centreId).eq('is_active', true);
     setSchemes(data || []);
   }, [centreId]);
 
@@ -257,7 +257,7 @@ export function useLoyalty(centreId: string | null) {
 
   const load = useCallback(async () => {
     if (!centreId || !sb()) return;
-    const { data } = await sb().from('hmis_loyalty_cards').select('*, patient:hmis_patients(first_name, last_name, uhid)').eq('centre_id', centreId).eq('is_active', true).order('created_at', { ascending: false }).limit(100);
+    const { data } = await sb()!.from('hmis_loyalty_cards').select('*, patient:hmis_patients(first_name, last_name, uhid)').eq('centre_id', centreId).eq('is_active', true).order('created_at', { ascending: false }).limit(100);
     setCards(data || []);
   }, [centreId]);
 
@@ -266,7 +266,7 @@ export function useLoyalty(centreId: string | null) {
   const issueCard = useCallback(async (patientId: string, cardType: string, discountRules: any) => {
     if (!centreId || !sb()) return;
     const num = `H1-${cardType.toUpperCase().substring(0,3)}-${Date.now().toString().slice(-6)}`;
-    await sb().from('hmis_loyalty_cards').insert({ centre_id: centreId, patient_id: patientId, card_number: num, card_type: cardType, ...discountRules, valid_until: new Date(Date.now() + 365 * 86400000).toISOString().split('T')[0] });
+    await sb()!.from('hmis_loyalty_cards').insert({ centre_id: centreId, patient_id: patientId, card_number: num, card_type: cardType, ...discountRules, valid_until: new Date(Date.now() + 365 * 86400000).toISOString().split('T')[0] });
     load();
   }, [centreId, load]);
 
@@ -292,7 +292,7 @@ export function useIntegrationBridge(centreId: string | null) {
 
   const load = useCallback(async () => {
     if (!centreId || !sb()) return;
-    const { data } = await sb().from('hmis_integration_bridge').select('*').eq('centre_id', centreId).eq('sync_status', 'pending').order('created_at', { ascending: false }).limit(50);
+    const { data } = await sb()!.from('hmis_integration_bridge').select('*').eq('centre_id', centreId).eq('sync_status', 'pending').order('created_at', { ascending: false }).limit(50);
     setPendingSync(data || []);
   }, [centreId]);
 
@@ -300,7 +300,7 @@ export function useIntegrationBridge(centreId: string | null) {
 
   const queueSync = useCallback(async (source: string, target: string, entityType: string, entityId: string, data: any) => {
     if (!centreId || !sb()) return;
-    await sb().from('hmis_integration_bridge').insert({ centre_id: centreId, source_system: source, target_system: target, entity_type: entityType, entity_id: entityId, sync_data: data });
+    await sb()!.from('hmis_integration_bridge').insert({ centre_id: centreId, source_system: source, target_system: target, entity_type: entityType, entity_id: entityId, sync_data: data });
     load();
   }, [centreId, load]);
 
@@ -329,7 +329,7 @@ export function useIntegrationBridge(centreId: string | null) {
 
   const markSynced = useCallback(async (bridgeId: string) => {
     if (!sb()) return;
-    await sb().from('hmis_integration_bridge').update({ sync_status: 'synced', synced_at: new Date().toISOString() }).eq('id', bridgeId);
+    await sb()!.from('hmis_integration_bridge').update({ sync_status: 'synced', synced_at: new Date().toISOString() }).eq('id', bridgeId);
     load();
   }, [load]);
 

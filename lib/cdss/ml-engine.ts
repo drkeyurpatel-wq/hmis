@@ -57,7 +57,7 @@ export interface TemplateEvolution {
 // ============================================================
 export async function trackComplaintUsage(event: UsageEvent): Promise<void> {
   try {
-    await sb().from('hmis_cdss_usage').insert({
+    await sb()!.from('hmis_cdss_usage').insert({
       complaint_name: event.complaint_name,
       doctor_id: event.doctor_id,
       centre_id: event.centre_id,
@@ -88,7 +88,7 @@ export async function getAttributeScores(
     if (Date.now() - parsed.ts < 300000) return parsed.scores; // 5 min cache
   }
 
-  const { data } = await sb().from('hmis_cdss_usage')
+  const { data } = await sb()!.from('hmis_cdss_usage')
     .select('attributes_used, attributes_skipped, chip_selections, free_text_entries')
     .eq('complaint_name', complaintName)
     .eq('doctor_id', doctorId)
@@ -107,7 +107,7 @@ export async function getAttributeScores(
 }
 
 async function getGlobalScores(complaintName: string): Promise<AttributeScore[]> {
-  const { data } = await sb().from('hmis_cdss_usage')
+  const { data } = await sb()!.from('hmis_cdss_usage')
     .select('attributes_used, attributes_skipped, chip_selections, free_text_entries')
     .eq('complaint_name', complaintName)
     .order('created_at', { ascending: false })
@@ -254,7 +254,7 @@ export async function getComplaintAnalytics(centreId: string): Promise<{
   mostSkippedAttributes: { complaint: string; attribute: string; skipRate: number }[];
   suggestedNewChips: { complaint: string; attribute: string; suggestion: string; count: number }[];
 }> {
-  const { data } = await sb().from('hmis_cdss_usage')
+  const { data } = await sb()!.from('hmis_cdss_usage')
     .select('*')
     .eq('centre_id', centreId)
     .order('created_at', { ascending: false })
@@ -358,7 +358,7 @@ export async function syncOfflineQueue(): Promise<number> {
     const queue = JSON.parse(localStorage.getItem('cdss_offline_queue') || '[]');
     if (queue.length === 0) return 0;
 
-    const { error } = await sb().from('hmis_cdss_usage').insert(queue);
+    const { error } = await sb()!.from('hmis_cdss_usage').insert(queue);
     if (!error) {
       localStorage.removeItem('cdss_offline_queue');
       return queue.length;

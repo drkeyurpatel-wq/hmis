@@ -31,7 +31,7 @@ function DietaryInner() {
   useEffect(() => {
     if (patSearch.length < 2 || !sb() || !centreId) { setPatResults([]); return; }
     const t = setTimeout(async () => {
-      const { data } = await sb().from('hmis_admissions')
+      const { data } = await sb()!.from('hmis_admissions')
         .select(`id, ipd_number, patient:hmis_patients!inner(id, uhid, first_name, last_name, age_years, gender),
           bed:hmis_beds!hmis_beds_current_admission_id_fkey(bed_number, room:hmis_rooms(room_number, ward:hmis_wards(name)))`)
         .eq('centre_id', centreId).eq('status', 'active');

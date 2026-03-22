@@ -12,14 +12,14 @@ export async function lookupTariff(centreId: string, serviceName: string, payorT
   if (!sb()) return null;
 
   // Try exact match first
-  let { data } = await sb().from('hmis_tariff_master')
+  let { data } = await sb()!.from('hmis_tariff_master')
     .select('id, service_name, category, rate_self, rate_insurance, rate_pmjay, rate_cghs')
     .eq('centre_id', centreId).eq('is_active', true)
     .ilike('service_name', serviceName).limit(1).maybeSingle();
 
   // Try fuzzy match
   if (!data) {
-    const { data: fuzzy } = await sb().from('hmis_tariff_master')
+    const { data: fuzzy } = await sb()!.from('hmis_tariff_master')
       .select('id, service_name, category, rate_self, rate_insurance, rate_pmjay, rate_cghs')
       .eq('centre_id', centreId).eq('is_active', true)
       .ilike('service_name', `%${serviceName}%`).limit(1).maybeSingle();
@@ -30,7 +30,7 @@ export async function lookupTariff(centreId: string, serviceName: string, payorT
   if (!data) {
     const words = serviceName.split(/[\s\-\/]+/).filter(w => w.length > 2).slice(0, 2);
     if (words.length > 0) {
-      const { data: keyword } = await sb().from('hmis_tariff_master')
+      const { data: keyword } = await sb()!.from('hmis_tariff_master')
         .select('id, service_name, category, rate_self, rate_insurance, rate_pmjay, rate_cghs')
         .eq('centre_id', centreId).eq('is_active', true)
         .ilike('service_name', `%${words[0]}%`).limit(1).maybeSingle();
@@ -42,7 +42,7 @@ export async function lookupTariff(centreId: string, serviceName: string, payorT
 
   const rateMap: Record<string, string> = { self: 'rate_self', insurance: 'rate_insurance', cashless: 'rate_insurance', pmjay: 'rate_pmjay', cghs: 'rate_cghs', echs: 'rate_cghs' };
   const rateField = rateMap[payorType] || 'rate_self';
-  const rate = parseFloat(data[rateField] || data.rate_self || 0);
+  const rate = parseFloat((data as any)[rateField] || data.rate_self || 0);
 
   return { tariffId: data.id, rate, serviceName: data.service_name, category: data.category };
 }
@@ -59,7 +59,7 @@ export async function smartPostLabCharge(params: {
   const amount = tariff?.rate || 0;
   if (amount <= 0) return { posted: false, amount: 0 };
 
-  await sb().from('hmis_charge_log').insert({
+  await sb()!.from('hmis_charge_log').insert({
     centre_id: params.centreId, patient_id: params.patientId,
     admission_id: params.admissionId || null,
     tariff_id: tariff?.tariffId || null,
@@ -82,7 +82,7 @@ export async function smartPostRadiologyCharge(params: {
   const amount = tariff?.rate || 0;
   if (amount <= 0) return { posted: false, amount: 0 };
 
-  await sb().from('hmis_charge_log').insert({
+  await sb()!.from('hmis_charge_log').insert({
     centre_id: params.centreId, patient_id: params.patientId,
     admission_id: params.admissionId || null,
     tariff_id: tariff?.tariffId || null,
@@ -110,7 +110,7 @@ export async function smartPostConsultationCharge(params: {
   const tariff = await lookupTariff(params.centreId, searchTerm, params.payorType || 'self');
   const amount = tariff?.rate || (params.isSuper ? 1500 : 1000); // Fallback from SOC
 
-  await sb().from('hmis_charge_log').insert({
+  await sb()!.from('hmis_charge_log').insert({
     centre_id: params.centreId, patient_id: params.patientId,
     description: `Consultation: Dr. ${params.doctorName} (${params.isSuper ? 'Super Specialist' : 'Specialist'})`,
     category: 'consultation', quantity: 1, unit_rate: amount, amount,
@@ -132,7 +132,7 @@ export async function postPharmacyCharge(params: {
   staffId: string;
 }): Promise<void> {
   if (!sb()) return;
-  await sb().from('hmis_charge_log').insert({
+  await sb()!.from('hmis_charge_log').insert({
     centre_id: params.centreId, patient_id: params.patientId,
     admission_id: params.admissionId || null,
     description: `Pharmacy: ${params.drugName} × ${params.quantity}`,
@@ -156,7 +156,7 @@ export async function postLabCharge(params: {
   staffId: string;
 }): Promise<void> {
   if (!sb()) return;
-  await sb().from('hmis_charge_log').insert({
+  await sb()!.from('hmis_charge_log').insert({
     centre_id: params.centreId, patient_id: params.patientId,
     admission_id: params.admissionId || null,
     description: `Lab: ${params.testName}`,
@@ -178,7 +178,7 @@ export async function postRadiologyCharge(params: {
   staffId: string;
 }): Promise<void> {
   if (!sb()) return;
-  await sb().from('hmis_charge_log').insert({
+  await sb()!.from('hmis_charge_log').insert({
     centre_id: params.centreId, patient_id: params.patientId,
     admission_id: params.admissionId || null,
     description: `Radiology: ${params.testName}`,
@@ -203,7 +203,7 @@ export async function routeCPOEOrder(params: {
 
   if (params.orderType === 'medication' && params.details?.drug) {
     // Create pharmacy dispensing record + AUTO-POST CHARGE
-    const { data, error } = await sb().from('hmis_pharmacy_dispensing').insert({
+    const { data, error } = await sb()!.from('hmis_pharmacy_dispensing').insert({
       centre_id: params.centreId, patient_id: params.patientId,
       encounter_id: params.admissionId,
       prescription_data: [{ drug: params.details.drug, dose: params.details.dose, route: params.details.route, frequency: params.details.frequency }],
@@ -213,7 +213,7 @@ export async function routeCPOEOrder(params: {
       // Auto-post pharmacy charge from tariff
       const tariff = await lookupTariff(params.centreId, params.details.drug, 'self');
       if (tariff) {
-        await sb().from('hmis_charge_log').insert({
+        await sb()!.from('hmis_charge_log').insert({
           centre_id: params.centreId, patient_id: params.patientId,
           admission_id: params.admissionId, service_name: tariff.serviceName,
           tariff_id: tariff.tariffId, amount: tariff.rate, status: 'posted',
@@ -230,18 +230,18 @@ export async function routeCPOEOrder(params: {
     // Create lab orders + resolve test_id so worklist picks them up
     for (const testName of (params.details.tests || [params.orderText])) {
       let testId: string | null = null;
-      const { data: testExact } = await sb().from('hmis_lab_test_master')
+      const { data: testExact } = await sb()!.from('hmis_lab_test_master')
         .select('id').ilike('test_name', testName).eq('is_active', true).limit(1).maybeSingle();
       if (testExact) { testId = testExact.id; }
       else {
         const keyword = testName.split(/[\s\-\/\(\)]+/).filter((w: string) => w.length > 2)[0];
         if (keyword) {
-          const { data: testFuzzy } = await sb().from('hmis_lab_test_master')
+          const { data: testFuzzy } = await sb()!.from('hmis_lab_test_master')
             .select('id').ilike('test_name', `%${keyword}%`).eq('is_active', true).limit(1).maybeSingle();
           if (testFuzzy) testId = testFuzzy.id;
         }
       }
-      const { data: labOrder } = await sb().from('hmis_lab_orders').insert({
+      const { data: labOrder } = await sb()!.from('hmis_lab_orders').insert({
         centre_id: params.centreId, patient_id: params.patientId,
         admission_id: params.admissionId,
         test_id: testId, test_name: testName,
@@ -259,17 +259,17 @@ export async function routeCPOEOrder(params: {
     // Resolve test_id from radiology test master
     let radTestId: string | null = null;
     const bodyPart = params.details.bodyPart || '';
-    const { data: radExact } = await sb().from('hmis_radiology_test_master')
+    const { data: radExact } = await sb()!.from('hmis_radiology_test_master')
       .select('id').ilike('test_name', `${params.details.modality} ${bodyPart}`.trim()).eq('is_active', true).limit(1).maybeSingle();
     if (radExact) { radTestId = radExact.id; }
     else {
-      const { data: radFuzzy } = await sb().from('hmis_radiology_test_master')
+      const { data: radFuzzy } = await sb()!.from('hmis_radiology_test_master')
         .select('id').eq('modality', params.details.modality).ilike('test_name', `%${bodyPart}%`).eq('is_active', true).limit(1).maybeSingle();
       if (radFuzzy) radTestId = radFuzzy.id;
     }
     const testName = `${params.details.modality} ${bodyPart}`.trim();
     const accession = `RAD-${new Date().toISOString().slice(2, 10).replace(/-/g, '')}-${Date.now().toString(36).slice(-4).toUpperCase()}`;
-    const { data, error } = await sb().from('hmis_radiology_orders').insert({
+    const { data, error } = await sb()!.from('hmis_radiology_orders').insert({
       centre_id: params.centreId, patient_id: params.patientId,
       admission_id: params.admissionId,
       test_id: radTestId, test_name: testName,
@@ -300,7 +300,7 @@ export async function createOPDVisitFromAppointment(params: {
 }): Promise<{ success: boolean; visitId?: string }> {
   if (!sb()) return { success: false };
 
-  const { data, error } = await sb().from('hmis_opd_visits').insert({
+  const { data, error } = await sb()!.from('hmis_opd_visits').insert({
     centre_id: params.centreId, patient_id: params.patientId,
     doctor_id: params.doctorId, appointment_id: params.appointmentId,
     status: 'checked_in', check_in_time: new Date().toISOString(),
@@ -325,13 +325,13 @@ export async function triggerFinalBillOnDischarge(params: {
   if (!sb()) return { billExists: false };
 
   // Check if final bill already exists
-  const { data: existing } = await sb().from('hmis_bills')
+  const { data: existing } = await sb()!.from('hmis_bills')
     .select('id, bill_number').eq('encounter_id', params.admissionId).eq('bill_type', 'ipd').maybeSingle();
 
   if (existing) return { billExists: true, billId: existing.id };
 
   // Check if there are any charges to bill
-  const { count } = await sb().from('hmis_charge_log')
+  const { count } = await sb()!.from('hmis_charge_log')
     .select('id', { count: 'exact', head: true })
     .eq('admission_id', params.admissionId).eq('status', 'captured');
 
@@ -349,7 +349,7 @@ export async function generateBillNumber(centreId: string, billType: string): Pr
   const prefix = billType === 'ipd' ? 'IPD' : billType === 'opd' ? 'OPD' : 'BIL';
   const dateStr = new Date().toISOString().slice(2, 10).replace(/-/g, '');
   const today = new Date().toISOString().split('T')[0];
-  const { count } = await sb().from('hmis_bills')
+  const { count } = await sb()!.from('hmis_bills')
     .select('id', { count: 'exact', head: true })
     .eq('centre_id', centreId).eq('bill_type', billType).eq('bill_date', today);
   const seq = ((count || 0) + 1).toString().padStart(4, '0');

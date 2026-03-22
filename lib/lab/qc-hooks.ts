@@ -92,7 +92,7 @@ export function useQCLots(centreId: string | null) {
   const load = useCallback(async () => {
     if (!centreId || !sb()) return;
     setLoading(true);
-    const { data } = await sb().from('hmis_lab_qc_lots')
+    const { data } = await sb()!.from('hmis_lab_qc_lots')
       .select('*, test:hmis_lab_test_master(test_code, test_name), parameter:hmis_lab_test_parameters(parameter_name)')
       .eq('centre_id', centreId).eq('is_active', true)
       .order('test_id').order('level');
@@ -108,7 +108,7 @@ export function useQCLots(centreId: string | null) {
     targetMean: number; targetSd: number; unit?: string; expiryDate: string;
   }) => {
     if (!centreId || !sb()) return;
-    await sb().from('hmis_lab_qc_lots').insert({
+    await sb()!.from('hmis_lab_qc_lots').insert({
       lot_number: lot.lotNumber, material_name: lot.materialName,
       manufacturer: lot.manufacturer, test_id: lot.testId,
       parameter_id: lot.parameterId || null, level: lot.level,
@@ -134,8 +134,8 @@ export function useQCResults(lotId: string | null) {
     setLoading(true);
     const since = new Date(Date.now() - days * 86400000).toISOString().split('T')[0];
     const [{ data: lotData }, { data: res }] = await Promise.all([
-      sb().from('hmis_lab_qc_lots').select('*').eq('id', lotId).single(),
-      sb().from('hmis_lab_qc_results')
+      sb()!.from('hmis_lab_qc_lots').select('*').eq('id', lotId).single(),
+      sb()!.from('hmis_lab_qc_results')
         .select('*, performer:hmis_staff!hmis_lab_qc_results_performed_by_fkey(full_name)')
         .eq('lot_id', lotId).gte('run_date', since)
         .order('run_date').order('run_number'),
@@ -158,7 +158,7 @@ export function useQCResults(lotId: string | null) {
     const isAccepted = !westgard.isRejection;
     const runNum = results.filter(r => r.run_date === new Date().toISOString().split('T')[0]).length + 1;
 
-    const { data, error } = await sb().from('hmis_lab_qc_results').insert({
+    const { data, error } = await sb()!.from('hmis_lab_qc_results').insert({
       lot_id: lotId, measured_value: measuredValue,
       z_score: sdFromMean, sd_from_mean: sdFromMean,
       westgard_violation: westgard.violation,

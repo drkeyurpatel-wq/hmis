@@ -8,14 +8,14 @@ import { sb } from '@/lib/supabase/browser';
 // ============================================================
 async function getConfig(centreId: string, provider: string): Promise<any | null> {
   if (!sb()) return null;
-  const { data } = await sb().from('hmis_integration_config')
+  const { data } = await sb()!.from('hmis_integration_config')
     .select('*').eq('centre_id', centreId).eq('provider', provider).eq('is_enabled', true).maybeSingle();
   return data?.config || null;
 }
 
 async function logSync(centreId: string, provider: string, direction: string, entityType: string, entityId: string, externalId: string, status: string, req?: any, res?: any, error?: string) {
   if (!sb()) return;
-  await sb().from('hmis_integration_sync_log').insert({
+  await sb()!.from('hmis_integration_sync_log').insert({
     centre_id: centreId, provider, direction, entity_type: entityType,
     entity_id: entityId || null, external_id: externalId || null,
     status, request_payload: req || null, response_payload: res || null, error_message: error || null,

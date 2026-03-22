@@ -10,7 +10,7 @@ export function useGrievances(centreId: string | null) {
   const load = useCallback(async (filters?: { status?: string; type?: string; severity?: string }) => {
     if (!centreId || !sb()) return;
     setLoading(true);
-    let q = sb().from('hmis_grievances')
+    let q = sb()!.from('hmis_grievances')
       .select('*, patient:hmis_patients(first_name, last_name, uhid), assignee:hmis_staff!hmis_grievances_assigned_to_fkey(full_name)')
       .eq('centre_id', centreId).order('created_at', { ascending: false }).limit(200);
     if (filters?.status && filters.status !== 'all') q = q.eq('status', filters.status);
@@ -25,14 +25,14 @@ export function useGrievances(centreId: string | null) {
   const create = useCallback(async (data: any) => {
     if (!centreId || !sb()) return { success: false };
     const num = `GRV-${Date.now().toString(36).toUpperCase()}`;
-    const { error } = await sb().from('hmis_grievances').insert({ centre_id: centreId, grievance_number: num, ...data });
+    const { error } = await sb()!.from('hmis_grievances').insert({ centre_id: centreId, grievance_number: num, ...data });
     if (!error) load();
     return { success: !error };
   }, [centreId, load]);
 
   const update = useCallback(async (id: string, updates: any) => {
     if (!sb()) return;
-    await sb().from('hmis_grievances').update({ ...updates, updated_at: new Date().toISOString() }).eq('id', id);
+    await sb()!.from('hmis_grievances').update({ ...updates, updated_at: new Date().toISOString() }).eq('id', id);
     load();
   }, [load]);
 

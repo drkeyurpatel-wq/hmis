@@ -56,10 +56,10 @@ function OTInner() {
 
   useEffect(() => {
     if (!centreId || !sb()) return;
-    sb().from('hmis_admissions').select('id, ipd_number, patient:hmis_patients!inner(first_name, last_name, uhid, age_years, gender)')
+    sb()!.from('hmis_admissions').select('id, ipd_number, patient:hmis_patients!inner(first_name, last_name, uhid, age_years, gender)')
       .eq('centre_id', centreId).eq('status', 'active').order('admission_date', { ascending: false })
       .then(({ data }: any) => setAdmissions(data || []));
-    sb().from('hmis_staff').select('id, full_name, department_name').eq('centre_id', centreId).eq('is_active', true).in('role', ['doctor','surgeon','anaesthetist'])
+    sb()!.from('hmis_staff').select('id, full_name, department_name').eq('centre_id', centreId).eq('is_active', true).in('role', ['doctor','surgeon','anaesthetist'])
       .then(({ data }: any) => setDoctors(data || []));
   }, [centreId]);
 

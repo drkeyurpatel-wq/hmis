@@ -30,7 +30,7 @@ function PharmacyInner() {
   const [centres, setCentres] = useState<any[]>([]);
 
   // Load centres for transfers
-  React.useEffect(() => { if (!sb()) return; sb().from('hmis_centres').select('id, name, code').eq('is_active', true).order('name').then(({ data }: any) => setCentres(data || [])); }, []);
+  React.useEffect(() => { if (!sb()) return; sb()!.from('hmis_centres').select('id, name, code').eq('is_active', true).order('name').then(({ data }: any) => setCentres(data || [])); }, []);
 
   // Return form
   const [retForm, setRetForm] = useState({ drugSearch: '', drugId: '', drugName: '', quantity: '', batchNumber: '', returnType: 'patient_return' as string, reason: '', amount: '' });

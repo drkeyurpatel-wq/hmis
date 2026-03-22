@@ -75,12 +75,12 @@ export default function BillDetail({ bill, staffId, centreId, tariffs, onUpdate,
     let amt = parseFloat(discForm.amount);
     if (discForm.percentage) amt = parseFloat(bill.gross_amount) * parseFloat(discForm.percentage) / 100;
     if (!amt || !discForm.reason) return;
-    const { data: b } = await sb()?.from('hmis_bills').select('gross_amount, discount_amount, paid_amount').eq('id', bill.id).single();
+    const { data: b } = await sb()!.from('hmis_bills').select('gross_amount, discount_amount, paid_amount').eq('id', bill.id).single();
     if (!b) return;
     const newDisc = parseFloat(b.discount_amount) + amt;
     const newNet = parseFloat(b.gross_amount) - newDisc;
-    await sb().from('hmis_bills').update({ discount_amount: newDisc, net_amount: newNet, balance_amount: newNet - parseFloat(b.paid_amount) }).eq('id', bill.id);
-    await sb().from('hmis_discount_log').insert({ bill_id: bill.id, discount_type: discForm.percentage ? 'percentage' : 'flat', discount_amount: amt, discount_percentage: discForm.percentage || null, reason: discForm.reason, authorized_by: staffId, authorization_level: discForm.level });
+    await sb()!.from('hmis_bills').update({ discount_amount: newDisc, net_amount: newNet, balance_amount: newNet - parseFloat(b.paid_amount) }).eq('id', bill.id);
+    await sb()!.from('hmis_discount_log').insert({ bill_id: bill.id, discount_type: discForm.percentage ? 'percentage' : 'flat', discount_amount: amt, discount_percentage: discForm.percentage || null, reason: discForm.reason, authorized_by: staffId, authorization_level: discForm.level });
     setShowDisc(false); setDiscForm({ amount: '', percentage: '', reason: '', level: 'billing_staff' }); onUpdate(); onFlash(`Discount ₹${fmt(amt)} applied`);
   };
 
@@ -95,13 +95,13 @@ export default function BillDetail({ bill, staffId, centreId, tariffs, onUpdate,
   };
 
   const finalize = async () => {
-    await sb()?.from('hmis_bills').update({ status: 'final' }).eq('id', bill.id);
+    await sb()!.from('hmis_bills').update({ status: 'final' }).eq('id', bill.id);
     onUpdate(); onFlash('Bill finalized');
   };
 
   const cancelBill = async () => {
     if (!confirm('Cancel this bill? This cannot be undone.')) return;
-    await sb()?.from('hmis_bills').update({ status: 'cancelled' }).eq('id', bill.id);
+    await sb()!.from('hmis_bills').update({ status: 'cancelled' }).eq('id', bill.id);
     onUpdate(); onFlash('Bill cancelled');
   };
 

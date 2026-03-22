@@ -21,7 +21,7 @@ export interface AuditEntry {
 export async function logAudit(entry: AuditEntry): Promise<void> {
   if (!sb()) return;
   try {
-    await sb().from('hmis_audit_trail').insert({
+    await sb()!.from('hmis_audit_trail').insert({
       centre_id: entry.centreId,
       user_id: entry.userId,
       action: entry.action,

@@ -84,10 +84,10 @@ export function CommandPalette() {
     if (query.length < 2 || !sb()) { setPatients([]); setBills([]); return; }
     const t = setTimeout(async () => {
       const [patRes, billRes] = await Promise.all([
-        sb().from('hmis_patients').select('id, uhid, first_name, last_name, age_years, gender, phone_primary')
+        sb()!.from('hmis_patients').select('id, uhid, first_name, last_name, age_years, gender, phone_primary')
           .or(`uhid.ilike.%${query}%,first_name.ilike.%${query}%,last_name.ilike.%${query}%,phone_primary.ilike.%${query}%`)
           .eq('is_active', true).limit(5),
-        sb().from('hmis_bills').select('id, bill_number, net_amount, patient:hmis_patients!inner(first_name, last_name)')
+        sb()!.from('hmis_bills').select('id, bill_number, net_amount, patient:hmis_patients!inner(first_name, last_name)')
           .or(`bill_number.ilike.%${query}%`).limit(3),
       ]);
       setPatients((patRes.data || []).map((p: any) => ({

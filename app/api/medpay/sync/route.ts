@@ -191,11 +191,7 @@ export async function POST(req: NextRequest) {
             hospital_amt: 0, // MedPay engine calculates
             qty: parseFloat(item.quantity) || 1,
             billing_category: item.billing_category || bill.billing_category || '',
-<<<<<<< HEAD
             package_name: pkgMap[bill.admission_id] || '',
-=======
-            package_name: item.package?.name || '',
->>>>>>> 59535101d2b66be5dbf4ba30e9219cd56e9332f3
             case_type: bill.case_type || 'Hospital Case',
             _bill_id: bill.id, // internal, stripped before insert
           });

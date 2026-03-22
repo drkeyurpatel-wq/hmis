@@ -15,11 +15,11 @@ export function usePackages(centreId: string | null) {
   const load = useCallback(async (search?: string) => {
     if (!centreId || !sb()) return;
     setLoading(true);
-    let q = sb().from('hmis_packages').select('*').eq('centre_id', centreId).eq('is_active', true).order('package_name');
+    let q = sb()!.from('hmis_packages').select('*').eq('centre_id', centreId).eq('is_active', true).order('package_name');
     if (search) q = q.ilike('package_name', `%${search}%`);
     const [pRes, uRes] = await Promise.all([
       q,
-      sb().from('hmis_package_utilization')
+      sb()!.from('hmis_package_utilization')
         .select(`*, patient:hmis_patients(first_name, last_name, uhid), pkg:hmis_packages(package_name, package_code)`)
         .eq('centre_id', centreId).in('status', ['active','completed']).order('created_at', { ascending: false }).limit(100),
     ]);
@@ -36,20 +36,20 @@ export function usePackages(centreId: string | null) {
   const createPackage = useCallback(async (data: any, staffId: string) => {
     if (!centreId || !sb()) return { success: false };
     const code = data.package_code || `PKG-${Date.now().toString(36).toUpperCase()}`;
-    const { error } = await sb().from('hmis_packages').insert({ centre_id: centreId, package_code: code, created_by: staffId, ...data });
+    const { error } = await sb()!.from('hmis_packages').insert({ centre_id: centreId, package_code: code, created_by: staffId, ...data });
     if (!error) load();
     return { success: !error, error: error?.message };
   }, [centreId, load]);
 
   const updatePackage = useCallback(async (id: string, data: any) => {
     if (!sb()) return;
-    await sb().from('hmis_packages').update(data).eq('id', id);
+    await sb()!.from('hmis_packages').update(data).eq('id', id);
     load();
   }, [load]);
 
   const assignPackage = useCallback(async (data: { admission_id: string; package_id: string; patient_id: string; package_rate: number; rate_type: string; insurer_name?: string; expected_los: number }) => {
     if (!centreId || !sb()) return { success: false };
-    const { error } = await sb().from('hmis_package_utilization').insert({ centre_id: centreId, ...data, expected_los: data.expected_los });
+    const { error } = await sb()!.from('hmis_package_utilization').insert({ centre_id: centreId, ...data, expected_los: data.expected_los });
     if (!error) load();
     return { success: !error, error: error?.message };
   }, [centreId, load]);
@@ -57,7 +57,7 @@ export function usePackages(centreId: string | null) {
   const updateUtilization = useCallback(async (id: string, data: any) => {
     if (!sb()) return;
     const actual_total = (data.actual_room_charges || 0) + (data.actual_surgeon_fee || 0) + (data.actual_anaesthesia_fee || 0) + (data.actual_pharmacy || 0) + (data.actual_lab || 0) + (data.actual_consumables || 0) + (data.actual_nursing || 0) + (data.actual_ot_charges || 0) + (data.actual_other || 0);
-    await sb().from('hmis_package_utilization').update({ ...data, actual_total, variance: data.package_rate ? data.package_rate - actual_total : 0, variance_pct: data.package_rate ? ((data.package_rate - actual_total) / data.package_rate * 100) : 0 }).eq('id', id);
+    await sb()!.from('hmis_package_utilization').update({ ...data, actual_total, variance: data.package_rate ? data.package_rate - actual_total : 0, variance_pct: data.package_rate ? ((data.package_rate - actual_total) / data.package_rate * 100) : 0 }).eq('id', id);
     load();
   }, [load]);
 

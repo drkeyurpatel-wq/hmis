@@ -58,7 +58,7 @@ export default function AnaesthesiaForm({ bookingId, staffId, patientName, onFla
   // Load existing record
   useEffect(() => {
     if (!bookingId || !sb()) return;
-    sb().from('hmis_anaesthesia_records').select('*').eq('ot_booking_id', bookingId).single()
+    sb()!.from('hmis_anaesthesia_records').select('*').eq('ot_booking_id', bookingId).single()
       .then(({ data }: any) => {
         if (!data) return;
         setRecord(data);
@@ -115,9 +115,9 @@ export default function AnaesthesiaForm({ bookingId, staffId, patientName, onFla
     };
 
     if (record?.id) {
-      await sb().from('hmis_anaesthesia_records').update(payload).eq('id', record.id);
+      await sb()!.from('hmis_anaesthesia_records').update(payload).eq('id', record.id);
     } else {
-      const { data } = await sb().from('hmis_anaesthesia_records').insert(payload).select().single();
+      const { data } = await sb()!.from('hmis_anaesthesia_records').insert(payload).select().single();
       if (data) setRecord(data);
     }
     onFlash('Anaesthesia record saved');

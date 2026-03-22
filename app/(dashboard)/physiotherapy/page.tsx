@@ -34,7 +34,7 @@ function PhysioInner() {
 
   useEffect(() => {
     if (!sb() || !centreId) return;
-    sb().from('hmis_staff').select('id, full_name, staff_type, specialisation').eq('is_active', true).order('full_name')
+    sb()!.from('hmis_staff').select('id, full_name, staff_type, specialisation').eq('is_active', true).order('full_name')
       .then(({ data }: any) => {
         setTherapists((data || []).filter((s: any) => ['doctor', 'nurse', 'technician'].includes(s.staff_type)));
         setDoctors((data || []).filter((s: any) => s.staff_type === 'doctor'));
@@ -44,7 +44,7 @@ function PhysioInner() {
   useEffect(() => {
     if (patSearch.length < 2 || !sb()) { setPatResults([]); return; }
     const t = setTimeout(async () => {
-      const { data } = await sb().from('hmis_patients').select('id, uhid, first_name, last_name, age_years, gender')
+      const { data } = await sb()!.from('hmis_patients').select('id, uhid, first_name, last_name, age_years, gender')
         .or(`uhid.ilike.%${patSearch}%,first_name.ilike.%${patSearch}%,last_name.ilike.%${patSearch}%`).limit(8);
       setPatResults(data || []);
     }, 300);

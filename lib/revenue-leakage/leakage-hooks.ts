@@ -37,7 +37,7 @@ export function useLeakageScanner(centreId: string | null) {
 
     try {
       // 1. Unbilled charges (charge_log without bill)
-      const { data: charges } = await sb().from('hmis_charge_log')
+      const { data: charges } = await sb()!.from('hmis_charge_log')
         .select('id, amount, category, service_date, patient:hmis_patients!inner(first_name, last_name, uhid)')
         .eq('centre_id', centreId).is('bill_id', null).neq('status', 'reversed')
         .gte('service_date', new Date(Date.now() - 30 * dayMs).toISOString().split('T')[0]).limit(100);
@@ -50,11 +50,11 @@ export function useLeakageScanner(centreId: string | null) {
       });
 
       // 2. Active admissions without today's room charge
-      const { data: admissions } = await sb().from('hmis_admissions')
+      const { data: admissions } = await sb()!.from('hmis_admissions')
         .select('id, admission_date, patient:hmis_patients!inner(id, first_name, last_name, uhid)')
         .eq('centre_id', centreId).eq('status', 'active');
       for (const adm of (admissions || [])) {
-        const { count } = await sb().from('hmis_charge_log').select('id', { count: 'exact', head: true })
+        const { count } = await sb()!.from('hmis_charge_log').select('id', { count: 'exact', head: true })
           .eq('admission_id', adm.id).eq('category', 'room').eq('service_date', todayStr);
         if (count === 0) {
           const d = Math.floor((today.getTime() - new Date(adm.admission_date).getTime()) / dayMs);
@@ -66,7 +66,7 @@ export function useLeakageScanner(centreId: string | null) {
       }
 
       // 3. Completed labs not billed
-      const { data: labs } = await sb().from('hmis_lab_orders')
+      const { data: labs } = await sb()!.from('hmis_lab_orders')
         .select('id, test_name, created_at, patient:hmis_patients!inner(first_name, last_name, uhid)')
         .eq('centre_id', centreId).eq('status', 'completed').eq('billing_done', false)
         .gte('created_at', new Date(Date.now() - 7 * dayMs).toISOString()).limit(50);
@@ -78,7 +78,7 @@ export function useLeakageScanner(centreId: string | null) {
       });
 
       // 4. Dispensed pharmacy not billed
-      const { data: rx } = await sb().from('hmis_pharmacy_dispensing')
+      const { data: rx } = await sb()!.from('hmis_pharmacy_dispensing')
         .select('id, created_at, patient:hmis_patients!inner(first_name, last_name, uhid)')
         .eq('centre_id', centreId).eq('status', 'dispensed').eq('billing_done', false)
         .gte('created_at', new Date(Date.now() - 7 * dayMs).toISOString()).limit(50);
@@ -90,7 +90,7 @@ export function useLeakageScanner(centreId: string | null) {
       });
 
       // 5. Unpaid bills >3 days, >₹10K
-      const { data: bills } = await sb().from('hmis_bills')
+      const { data: bills } = await sb()!.from('hmis_bills')
         .select('id, bill_number, balance_amount, bill_date, patient:hmis_patients!inner(first_name, last_name, uhid)')
         .eq('centre_id', centreId).neq('status', 'cancelled').neq('status', 'paid')
         .gt('balance_amount', 10000).order('bill_date').limit(50);
@@ -103,7 +103,7 @@ export function useLeakageScanner(centreId: string | null) {
       });
 
       // 6. Completed OT bookings not billed
-      const { data: ot } = await sb().from('hmis_ot_bookings')
+      const { data: ot } = await sb()!.from('hmis_ot_bookings')
         .select('id, surgery_name, surgery_date, patient:hmis_patients!inner(first_name, last_name, uhid)')
         .eq('centre_id', centreId).eq('status', 'completed').eq('billing_done', false)
         .gte('surgery_date', new Date(Date.now() - 14 * dayMs).toISOString().split('T')[0]).limit(30);
@@ -115,7 +115,7 @@ export function useLeakageScanner(centreId: string | null) {
       });
 
       // 7. Package overstay
-      const { data: pkgUtils } = await sb().from('hmis_package_utilization')
+      const { data: pkgUtils } = await sb()!.from('hmis_package_utilization')
         .select('id, expected_los, package_rate, patient:hmis_patients(first_name, last_name, uhid), admission:hmis_admissions!inner(admission_date, status)')
         .eq('centre_id', centreId).eq('status', 'active');
       (pkgUtils || []).forEach((u: any) => {

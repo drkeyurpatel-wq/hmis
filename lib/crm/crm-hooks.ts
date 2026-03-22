@@ -13,7 +13,7 @@ export function useLeads(centreId: string | null) {
   const load = useCallback(async (filters?: { status?: string; source?: string; assigned?: string; search?: string; priority?: string }) => {
     if (!centreId || !sb()) return;
     setLoading(true);
-    let q = sb().from('hmis_crm_leads')
+    let q = sb()!.from('hmis_crm_leads')
       .select('*, assigned:hmis_staff!hmis_crm_leads_assigned_to_fkey(full_name), doctor:hmis_staff!hmis_crm_leads_interested_doctor_id_fkey(full_name), patient:hmis_patients(uhid, first_name, last_name)')
       .eq('centre_id', centreId).order('created_at', { ascending: false }).limit(200);
     if (filters?.status && filters.status !== 'all') q = q.eq('status', filters.status);
@@ -30,7 +30,7 @@ export function useLeads(centreId: string | null) {
 
   const create = useCallback(async (data: any, staffId: string): Promise<{ success: boolean; lead?: any; error?: string }> => {
     if (!centreId || !sb()) return { success: false, error: 'Not ready' };
-    const { data: lead, error } = await sb().from('hmis_crm_leads').insert({
+    const { data: lead, error } = await sb()!.from('hmis_crm_leads').insert({
       centre_id: centreId, ...data, assigned_to: data.assigned_to || staffId,
       assigned_at: new Date().toISOString(),
     }).select('*').single();
@@ -39,7 +39,7 @@ export function useLeads(centreId: string | null) {
     const ls = await getLeadSquaredClient(centreId);
     if (ls && lead) {
       const res = await ls.pushLead(lead);
-      if (res.lsId) await sb().from('hmis_crm_leads').update({ leadsquared_id: res.lsId }).eq('id', lead.id);
+      if (res.lsId) await sb()!.from('hmis_crm_leads').update({ leadsquared_id: res.lsId }).eq('id', lead.id);
     }
     load();
     return { success: true, lead };
@@ -47,14 +47,14 @@ export function useLeads(centreId: string | null) {
 
   const update = useCallback(async (leadId: string, updates: any): Promise<{ success: boolean }> => {
     if (!sb()) return { success: false };
-    await sb().from('hmis_crm_leads').update({ ...updates, updated_at: new Date().toISOString() }).eq('id', leadId);
+    await sb()!.from('hmis_crm_leads').update({ ...updates, updated_at: new Date().toISOString() }).eq('id', leadId);
     load();
     return { success: true };
   }, [load]);
 
   const convert = useCallback(async (leadId: string, patientId: string, appointmentId?: string): Promise<{ success: boolean }> => {
     if (!sb()) return { success: false };
-    await sb().from('hmis_crm_leads').update({
+    await sb()!.from('hmis_crm_leads').update({
       status: 'converted', patient_id: patientId, appointment_id: appointmentId || null,
       converted_at: new Date().toISOString(), updated_at: new Date().toISOString(),
     }).eq('id', leadId);
@@ -90,7 +90,7 @@ export function useActivities(leadId: string | null) {
   const load = useCallback(async () => {
     if (!leadId || !sb()) return;
     setLoading(true);
-    const { data } = await sb().from('hmis_crm_activities')
+    const { data } = await sb()!.from('hmis_crm_activities')
       .select('*, performer:hmis_staff!hmis_crm_activities_performed_by_fkey(full_name)')
       .eq('lead_id', leadId).order('performed_at', { ascending: false }).limit(50);
     setActivities(data || []);
@@ -101,7 +101,7 @@ export function useActivities(leadId: string | null) {
 
   const add = useCallback(async (data: any, staffId: string): Promise<{ success: boolean }> => {
     if (!leadId || !sb()) return { success: false };
-    const { error } = await sb().from('hmis_crm_activities').insert({
+    const { error } = await sb()!.from('hmis_crm_activities').insert({
       lead_id: leadId, centre_id: data.centre_id, performed_by: staffId, ...data,
     });
     if (!error) load();
@@ -138,7 +138,7 @@ export function useFollowUps(centreId: string | null, staffId?: string) {
   const load = useCallback(async () => {
     if (!centreId || !sb()) return;
     const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
-    let q = sb().from('hmis_crm_activities')
+    let q = sb()!.from('hmis_crm_activities')
       .select('*, lead:hmis_crm_leads!inner(first_name, last_name, phone, status, interested_department, priority)')
       .eq('centre_id', centreId).eq('follow_up_done', false)
       .lte('follow_up_date', tomorrow + 'T23:59:59')
@@ -152,7 +152,7 @@ export function useFollowUps(centreId: string | null, staffId?: string) {
 
   const markDone = useCallback(async (activityId: string) => {
     if (!sb()) return;
-    await sb().from('hmis_crm_activities').update({ follow_up_done: true }).eq('id', activityId);
+    await sb()!.from('hmis_crm_activities').update({ follow_up_done: true }).eq('id', activityId);
     load();
   }, [load]);
 
@@ -176,14 +176,14 @@ export function useCampaigns(centreId: string | null) {
 
   useEffect(() => {
     if (!centreId || !sb()) return;
-    sb().from('hmis_crm_campaigns').select('*').eq('centre_id', centreId)
+    sb()!.from('hmis_crm_campaigns').select('*').eq('centre_id', centreId)
       .order('created_at', { ascending: false }).limit(50)
       .then(({ data }: any) => setCampaigns(data || []));
   }, [centreId]);
 
   const create = useCallback(async (data: any, staffId: string) => {
     if (!centreId || !sb()) return;
-    await sb().from('hmis_crm_campaigns').insert({ centre_id: centreId, created_by: staffId, ...data });
+    await sb()!.from('hmis_crm_campaigns').insert({ centre_id: centreId, created_by: staffId, ...data });
   }, [centreId]);
 
   return { campaigns, create };

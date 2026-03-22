@@ -29,7 +29,7 @@ export function useLinenInventory(centreId: string | null) {
   const load = useCallback(async () => {
     if (!centreId || !sb()) return;
     setLoading(true);
-    const { data } = await sb().from('hmis_linen_inventory')
+    const { data } = await sb()!.from('hmis_linen_inventory')
       .select('*').eq('centre_id', centreId).order('ward').order('item_type');
     setInventory(data || []);
     setLoading(false);
@@ -58,7 +58,7 @@ export function useLinenInventory(centreId: string | null) {
 
   const addInventory = useCallback(async (data: { itemType: string; ward: string; totalQty: number; parLevel?: number }) => {
     if (!centreId || !sb()) return;
-    await sb().from('hmis_linen_inventory').upsert({
+    await sb()!.from('hmis_linen_inventory').upsert({
       centre_id: centreId, item_type: data.itemType, ward: data.ward,
       total_qty: data.totalQty, in_circulation: data.totalQty,
       in_laundry: 0, damaged: 0, par_level: data.parLevel || 0,
@@ -68,7 +68,7 @@ export function useLinenInventory(centreId: string | null) {
 
   const updateInventory = useCallback(async (id: string, data: Partial<LinenInventory>) => {
     if (!sb()) return;
-    await sb().from('hmis_linen_inventory').update({ ...data, updated_at: new Date().toISOString() }).eq('id', id);
+    await sb()!.from('hmis_linen_inventory').update({ ...data, updated_at: new Date().toISOString() }).eq('id', id);
     load();
   }, [load]);
 
@@ -86,7 +86,7 @@ export function useLinenExchange(centreId: string | null) {
     if (!centreId || !sb()) return;
     setLoading(true);
     const dt = dateFilter || new Date().toISOString().split('T')[0];
-    const { data } = await sb().from('hmis_linen_exchange')
+    const { data } = await sb()!.from('hmis_linen_exchange')
       .select('*, exchanger:hmis_staff!hmis_linen_exchange_exchanged_by_fkey(full_name)')
       .eq('centre_id', centreId).eq('exchange_date', dt)
       .order('created_at', { ascending: false });
@@ -109,7 +109,7 @@ export function useLinenExchange(centreId: string | null) {
     staffId: string; notes?: string;
   }) => {
     if (!centreId || !sb()) return;
-    await sb().from('hmis_linen_exchange').insert({
+    await sb()!.from('hmis_linen_exchange').insert({
       centre_id: centreId, ward: data.ward, item_type: data.itemType,
       exchange_type: data.exchangeType,
       soiled_count: data.soiledCount, clean_received: data.cleanReceived,
@@ -117,12 +117,12 @@ export function useLinenExchange(centreId: string | null) {
       notes: data.notes || null,
     });
     // Update inventory counts
-    const { data: inv } = await sb().from('hmis_linen_inventory')
+    const { data: inv } = await sb()!.from('hmis_linen_inventory')
       .select('id, in_circulation, in_laundry, damaged')
       .eq('centre_id', centreId).eq('item_type', data.itemType).eq('ward', data.ward)
       .maybeSingle();
     if (inv) {
-      await sb().from('hmis_linen_inventory').update({
+      await sb()!.from('hmis_linen_inventory').update({
         in_circulation: Math.max(0, inv.in_circulation - data.soiledCount + data.cleanReceived),
         in_laundry: Math.max(0, inv.in_laundry + data.soiledCount - data.cleanReceived),
         damaged: inv.damaged + data.damagedCount,

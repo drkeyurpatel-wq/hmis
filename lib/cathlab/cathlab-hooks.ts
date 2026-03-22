@@ -58,7 +58,7 @@ export function useCathLab(centreId: string | null) {
     if (!centreId || !sb()) return;
     setLoading(true);
 
-    let q = sb().from('hmis_cathlab_procedures')
+    let q = sb()!.from('hmis_cathlab_procedures')
       .select(`*, patient:hmis_patients!inner(first_name, last_name, uhid, age_years, gender),
         op1:hmis_staff!hmis_cathlab_procedures_primary_operator_fkey(full_name),
         op2:hmis_staff!hmis_cathlab_procedures_secondary_operator_fkey(full_name),
@@ -108,14 +108,14 @@ export function useCathLab(centreId: string | null) {
 
   const schedule = useCallback(async (data: any) => {
     if (!centreId || !sb()) return { success: false };
-    const { error } = await sb().from('hmis_cathlab_procedures').insert({ centre_id: centreId, ...data });
+    const { error } = await sb()!.from('hmis_cathlab_procedures').insert({ centre_id: centreId, ...data });
     if (!error) load(data.procedure_date);
     return { success: !error, error: error?.message };
   }, [centreId, load]);
 
   const updateProcedure = useCallback(async (id: string, updates: any) => {
     if (!sb()) return { success: false };
-    const { error } = await sb().from('hmis_cathlab_procedures').update(updates).eq('id', id);
+    const { error } = await sb()!.from('hmis_cathlab_procedures').update(updates).eq('id', id);
     if (!error) load();
     return { success: !error, error: error?.message };
   }, [load]);
@@ -162,7 +162,7 @@ export function useCathLabInventory(centreId: string | null) {
   const load = useCallback(async (filter?: { type?: string; status?: string }) => {
     if (!centreId || !sb()) return;
     setLoading(true);
-    let q = sb().from('hmis_cathlab_inventory').select('*').eq('centre_id', centreId).order('created_at', { ascending: false });
+    let q = sb()!.from('hmis_cathlab_inventory').select('*').eq('centre_id', centreId).order('created_at', { ascending: false });
     if (filter?.type) q = q.eq('item_type', filter.type);
     if (filter?.status) q = q.eq('status', filter.status);
     else q = q.eq('status', 'in_stock');
@@ -175,14 +175,14 @@ export function useCathLabInventory(centreId: string | null) {
 
   const addItem = useCallback(async (data: any) => {
     if (!centreId || !sb()) return { success: false };
-    const { error } = await sb().from('hmis_cathlab_inventory').insert({ centre_id: centreId, ...data });
+    const { error } = await sb()!.from('hmis_cathlab_inventory').insert({ centre_id: centreId, ...data });
     if (!error) load();
     return { success: !error, error: error?.message };
   }, [centreId, load]);
 
   const markUsed = useCallback(async (itemId: string, procedureId: string, patientId: string) => {
     if (!sb()) return { success: false };
-    const { error } = await sb().from('hmis_cathlab_inventory').update({
+    const { error } = await sb()!.from('hmis_cathlab_inventory').update({
       status: 'used', used_in_procedure_id: procedureId, used_for_patient_id: patientId,
       used_date: new Date().toISOString().split('T')[0],
     }).eq('id', itemId);
@@ -210,7 +210,7 @@ export function useCathLabMonitoring(procedureId: string | null) {
 
   const load = useCallback(async () => {
     if (!procedureId || !sb()) return;
-    const { data } = await sb().from('hmis_cathlab_monitoring').select('*, nurse:hmis_staff(full_name)')
+    const { data } = await sb()!.from('hmis_cathlab_monitoring').select('*, nurse:hmis_staff(full_name)')
       .eq('procedure_id', procedureId).order('check_time');
     setChecks(data || []);
   }, [procedureId]);
@@ -219,7 +219,7 @@ export function useCathLabMonitoring(procedureId: string | null) {
 
   const addCheck = useCallback(async (staffId: string, data: any) => {
     if (!procedureId || !sb()) return;
-    await sb().from('hmis_cathlab_monitoring').insert({ procedure_id: procedureId, checked_by: staffId, ...data });
+    await sb()!.from('hmis_cathlab_monitoring').insert({ procedure_id: procedureId, checked_by: staffId, ...data });
     load();
   }, [procedureId, load]);
 

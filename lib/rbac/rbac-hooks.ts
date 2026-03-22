@@ -39,7 +39,7 @@ export function useRoles() {
 
   const load = useCallback(async () => {
     if (!sb()) return;
-    const { data } = await sb().from('hmis_roles').select('*').order('name');
+    const { data } = await sb()!.from('hmis_roles').select('*').order('name');
     setRoles(data || []);
     setLoading(false);
   }, []);
@@ -47,14 +47,14 @@ export function useRoles() {
   useEffect(() => { load(); }, [load]);
 
   const createRole = useCallback(async (name: string, description: string, permissions: Permissions): Promise<{ success: boolean; error?: string }> => {
-    const { error } = await sb().from('hmis_roles').insert({ name, description, permissions, is_system: false });
+    const { error } = await sb()!.from('hmis_roles').insert({ name, description, permissions, is_system: false });
     if (error) return { success: false, error: error.message };
     load();
     return { success: true };
   }, [load]);
 
   const updatePermissions = useCallback(async (roleId: string, permissions: Permissions): Promise<{ success: boolean }> => {
-    await sb().from('hmis_roles').update({ permissions }).eq('id', roleId);
+    await sb()!.from('hmis_roles').update({ permissions }).eq('id', roleId);
     load();
     return { success: true };
   }, [load]);
@@ -77,7 +77,7 @@ export function useStaffManagement(centreId: string | null) {
 
   const load = useCallback(async () => {
     if (!centreId || !sb()) { setLoading(false); return; }
-    const { data } = await sb().from('hmis_staff')
+    const { data } = await sb()!.from('hmis_staff')
       .select(`*, centres:hmis_staff_centres(centre_id, role:hmis_roles(id, name, permissions), centre:hmis_centres(name, code))`)
       .eq('primary_centre_id', centreId).order('full_name');
     setStaffList(data || []);
@@ -94,7 +94,7 @@ export function useStaffManagement(centreId: string | null) {
     specialisation?: string; medicalRegNo?: string;
   }): Promise<{ success: boolean; error?: string }> => {
     if (!centreId || !sb()) return { success: false, error: 'Not ready' };
-    const { data: result, error } = await sb().rpc('create_staff_user', {
+    const { data: result, error } = await sb()!.rpc('create_staff_user', {
       p_employee_code: data.employeeCode,
       p_full_name: data.fullName,
       p_email: data.email,
@@ -118,7 +118,7 @@ export function useStaffManagement(centreId: string | null) {
   const bulkCreate = useCallback(async (users: any[]): Promise<{ success: number; failed: number; results: any[] }> => {
     if (!centreId || !sb()) return { success: 0, failed: 0, results: [] };
     const payload = users.map(u => ({ ...u, centre_id: centreId }));
-    const { data: result, error } = await sb().rpc('create_staff_batch', { p_users: payload });
+    const { data: result, error } = await sb()!.rpc('create_staff_batch', { p_users: payload });
     if (error) return { success: 0, failed: users.length, results: [{ error: error.message }] };
     load();
     return { success: result?.success || 0, failed: result?.failed || 0, results: result?.results || [] };
@@ -127,20 +127,20 @@ export function useStaffManagement(centreId: string | null) {
   // Change role
   const changeRole = useCallback(async (staffId: string, roleId: string) => {
     if (!centreId || !sb()) return;
-    await sb().from('hmis_staff_centres').update({ role_id: roleId }).eq('staff_id', staffId).eq('centre_id', centreId);
+    await sb()!.from('hmis_staff_centres').update({ role_id: roleId }).eq('staff_id', staffId).eq('centre_id', centreId);
     load();
   }, [centreId, load]);
 
   // Toggle active
   const toggleActive = useCallback(async (staffId: string, isActive: boolean) => {
-    await sb().from('hmis_staff').update({ is_active: isActive }).eq('id', staffId);
+    await sb()!.from('hmis_staff').update({ is_active: isActive }).eq('id', staffId);
     load();
   }, [load]);
 
   // Reset password
   const resetPassword = useCallback(async (authUserId: string, newPassword: string) => {
     if (!sb()) return { success: false };
-    const { error } = await sb().auth.admin.updateUserById(authUserId, { password: newPassword });
+    const { error } = await sb()!.auth.admin.updateUserById(authUserId, { password: newPassword });
     return { success: !error, error: error?.message };
   }, []);
 

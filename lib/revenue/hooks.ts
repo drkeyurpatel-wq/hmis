@@ -25,7 +25,7 @@ export function useOPDQueue(centreId: string | null, doctorId?: string | null) {
     if (!centreId || !sb()) return;
     setLoading(true);
     const today = new Date().toISOString().split('T')[0];
-    let query = sb().from('hmis_opd_visits')
+    let query = sb()!.from('hmis_opd_visits')
       .select(`id, visit_number, token_number, status, check_in_time, consultation_start, consultation_end, chief_complaint, appointment_id,
         patient:hmis_patients!inner(id, uhid, first_name, last_name, age_years, gender, phone_primary),
         doctor:hmis_staff!inner(id, full_name, specialisation)`)
@@ -60,17 +60,17 @@ export function useOPDQueue(centreId: string | null, doctorId?: string | null) {
   // Real-time
   useEffect(() => {
     if (!centreId || !sb()) return;
-    const channel = sb().channel('opd-queue-live')
+    const channel = sb()!.channel('opd-queue-live')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'hmis_opd_visits', filter: `centre_id=eq.${centreId}` }, () => load())
       .subscribe();
-    return () => { sb().removeChannel(channel); };
+    return () => { sb()!.removeChannel(channel); };
   }, [centreId, load]);
 
   const createVisit = useCallback(async (patientId: string, drId: string, type: string = 'new', complaint?: string) => {
     if (!centreId || !sb()) return null;
-    const { data: visitNum } = await sb().rpc('hmis_next_visit_number', { p_centre_id: centreId });
-    const { data: tokenNum } = await sb().rpc('hmis_next_token', { p_centre_id: centreId, p_doctor_id: drId });
-    const { data, error } = await sb().from('hmis_opd_visits').insert({
+    const { data: visitNum } = await sb()!.rpc('hmis_next_visit_number', { p_centre_id: centreId });
+    const { data: tokenNum } = await sb()!.rpc('hmis_next_token', { p_centre_id: centreId, p_doctor_id: drId });
+    const { data, error } = await sb()!.from('hmis_opd_visits').insert({
       centre_id: centreId, patient_id: patientId, doctor_id: drId,
       visit_number: visitNum || 'V-' + Date.now(), token_number: tokenNum || 1,
       chief_complaint: complaint || null, status: 'waiting',
@@ -80,8 +80,8 @@ export function useOPDQueue(centreId: string | null, doctorId?: string | null) {
       load();
       // WhatsApp: send token confirmation
       try {
-        const { data: pt } = await sb().from('hmis_patients').select('phone_primary, first_name').eq('id', patientId).single();
-        const { data: dr } = await sb().from('hmis_staff').select('full_name').eq('id', drId).single();
+        const { data: pt } = await sb()!.from('hmis_patients').select('phone_primary, first_name').eq('id', patientId).single();
+        const { data: dr } = await sb()!.from('hmis_staff').select('full_name').eq('id', drId).single();
         if (pt?.phone_primary) {
           sendOPDTokenConfirmation(pt.phone_primary, pt.first_name || 'Patient', 'T-' + String(tokenNum || 1).padStart(3, '0'), dr?.full_name || 'Doctor');
         }
@@ -95,7 +95,7 @@ export function useOPDQueue(centreId: string | null, doctorId?: string | null) {
     const updates: any = { status };
     if (status === 'with_doctor') updates.consultation_start = new Date().toISOString();
     if (status === 'completed') updates.consultation_end = new Date().toISOString();
-    await sb().from('hmis_opd_visits').update(updates).eq('id', visitId);
+    await sb()!.from('hmis_opd_visits').update(updates).eq('id', visitId);
     load();
   }, [load]);
 
@@ -110,7 +110,7 @@ export function useDoctors(centreId: string | null) {
   useEffect(() => {
     if (!centreId || !sb()) return;
     async function load() {
-      const { data } = await sb().from('hmis_staff')
+      const { data } = await sb()!.from('hmis_staff')
         .select('id, full_name, specialisation, designation')
         .eq('staff_type', 'doctor').eq('is_active', true);
       setDoctors(data || []);
@@ -146,7 +146,7 @@ export function useBilling(centreId: string | null) {
     if (!centreId || !sb()) return;
     setLoading(true);
     const dt = dateFilter || new Date().toISOString().split('T')[0];
-    const { data } = await sb().from('hmis_bills')
+    const { data } = await sb()!.from('hmis_bills')
       .select(`id, bill_number, bill_type, bill_date, payor_type, gross_amount, discount_amount, net_amount, paid_amount, balance_amount, status, encounter_id,
         patient:hmis_patients!inner(id, uhid, first_name, last_name)`)
       .eq('centre_id', centreId).eq('bill_date', dt)
@@ -168,18 +168,18 @@ export function useBilling(centreId: string | null) {
   // Real-time billing updates
   useEffect(() => {
     if (!centreId || !sb()) return;
-    const channel = sb().channel('billing-live')
+    const channel = sb()!.channel('billing-live')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'hmis_bills', filter: `centre_id=eq.${centreId}` }, () => loadBills())
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'hmis_payments' }, () => loadBills())
       .subscribe();
-    return () => { sb().removeChannel(channel); };
+    return () => { sb()!.removeChannel(channel); };
   }, [centreId, loadBills]);
 
   // Load tariff master
   useEffect(() => {
     if (!centreId || !sb()) return;
     async function load() {
-      const { data } = await sb().from('hmis_tariff_master').select('*').eq('centre_id', centreId).eq('is_active', true).order('category');
+      const { data } = await sb()!.from('hmis_tariff_master').select('*').eq('centre_id', centreId).eq('is_active', true).order('category');
       setTariffs(data || []);
     }
     load();
@@ -192,9 +192,9 @@ export function useBilling(centreId: string | null) {
     payorType: string = 'self'
   ) => {
     if (!centreId || !sb()) return null;
-    const { data: billNum } = await sb().rpc('hmis_next_bill_number', { p_centre_id: centreId, p_type: 'opd' });
+    const { data: billNum } = await sb()!.rpc('hmis_next_bill_number', { p_centre_id: centreId, p_type: 'opd' });
     const gross = items.reduce((s, i) => s + i.quantity * i.unitRate, 0);
-    const { data: bill, error } = await sb().from('hmis_bills').insert({
+    const { data: bill, error } = await sb()!.from('hmis_bills').insert({
       centre_id: centreId, patient_id: patientId, bill_number: billNum || 'BL-' + Date.now(),
       bill_type: 'opd', encounter_type: 'opd', encounter_id: encounterId,
       payor_type: payorType, gross_amount: gross, discount_amount: 0, tax_amount: 0,
@@ -210,7 +210,7 @@ export function useBilling(centreId: string | null) {
         service_date: new Date().toISOString().split('T')[0],
         tariff_id: i.tariffId || null,
       }));
-      await sb().from('hmis_bill_items').insert(billItems);
+      await sb()!.from('hmis_bill_items').insert(billItems);
       loadBills();
     }
     return { bill, error };
@@ -219,7 +219,7 @@ export function useBilling(centreId: string | null) {
   // Load bill items
   const loadBillItems = useCallback(async (billId: string): Promise<BillItem[]> => {
     if (!sb()) return [];
-    const { data } = await sb().from('hmis_bill_items').select('*').eq('bill_id', billId);
+    const { data } = await sb()!.from('hmis_bill_items').select('*').eq('bill_id', billId);
     return (data || []).map((i: any) => ({
       id: i.id, description: i.description, quantity: i.quantity,
       unitRate: i.unit_rate, amount: i.amount, discount: i.discount, netAmount: i.net_amount,
@@ -230,7 +230,7 @@ export function useBilling(centreId: string | null) {
   const addBillItem = useCallback(async (billId: string, item: { description: string; quantity: number; unitRate: number; tariffId?: string }) => {
     if (!sb()) return;
     const net = item.quantity * item.unitRate;
-    await sb().from('hmis_bill_items').insert({
+    await sb()!.from('hmis_bill_items').insert({
       bill_id: billId, description: item.description, quantity: item.quantity,
       unit_rate: item.unitRate, amount: net, discount: 0, tax: 0, net_amount: net,
       service_date: new Date().toISOString().split('T')[0], tariff_id: item.tariffId || null,
@@ -240,15 +240,15 @@ export function useBilling(centreId: string | null) {
     const gross = items.reduce((s, i) => s + i.netAmount, 0);
     const bill = bills.find(b => b.id === billId);
     const paid = bill?.paidAmount || 0;
-    await sb().from('hmis_bills').update({ gross_amount: gross, net_amount: gross, balance_amount: gross - paid }).eq('id', billId);
+    await sb()!.from('hmis_bills').update({ gross_amount: gross, net_amount: gross, balance_amount: gross - paid }).eq('id', billId);
     loadBills();
   }, [loadBillItems, loadBills, bills]);
 
   // Collect payment
   const collectPayment = useCallback(async (billId: string, amount: number, mode: string, staffId: string) => {
     if (!centreId || !sb()) return null;
-    const { data: rcpNum } = await sb().rpc('hmis_next_receipt_number', { p_centre_id: centreId });
-    const { data: payment, error } = await sb().from('hmis_payments').insert({
+    const { data: rcpNum } = await sb()!.rpc('hmis_next_receipt_number', { p_centre_id: centreId });
+    const { data: payment, error } = await sb()!.from('hmis_payments').insert({
       bill_id: billId, amount, payment_mode: mode,
       receipt_number: rcpNum || 'RCP-' + Date.now(),
       payment_date: new Date().toISOString().split('T')[0], received_by: staffId,
@@ -260,11 +260,11 @@ export function useBilling(centreId: string | null) {
         const newPaid = bill.paidAmount + amount;
         const newBalance = bill.netAmount - newPaid;
         const newStatus = newBalance <= 0 ? 'paid' : newPaid > 0 ? 'partially_paid' : 'draft';
-        await sb().from('hmis_bills').update({ paid_amount: newPaid, balance_amount: Math.max(0, newBalance), status: newStatus }).eq('id', billId);
+        await sb()!.from('hmis_bills').update({ paid_amount: newPaid, balance_amount: Math.max(0, newBalance), status: newStatus }).eq('id', billId);
 
         // WhatsApp: send payment receipt
         try {
-          const { data: pt } = await sb().from('hmis_patients').select('phone_primary, first_name').eq('id', bill.patientId).single();
+          const { data: pt } = await sb()!.from('hmis_patients').select('phone_primary, first_name').eq('id', bill.patientId).single();
           if (pt?.phone_primary) {
             sendPaymentReceipt(pt.phone_primary, pt.first_name || 'Patient', `Rs.${amount.toLocaleString('en-IN')}`, rcpNum || 'RCP');
           }
@@ -278,7 +278,7 @@ export function useBilling(centreId: string | null) {
   // Finalize bill
   const finalizeBill = useCallback(async (billId: string) => {
     if (!sb()) return;
-    await sb().from('hmis_bills').update({ status: 'final' }).eq('id', billId);
+    await sb()!.from('hmis_bills').update({ status: 'final' }).eq('id', billId);
     loadBills();
   }, [loadBills]);
 
@@ -289,14 +289,14 @@ export function useBilling(centreId: string | null) {
     if (!bill) return;
     const net = bill.grossAmount - discount;
     const balance = net - bill.paidAmount;
-    await sb().from('hmis_bills').update({ discount_amount: discount, net_amount: net, balance_amount: Math.max(0, balance) }).eq('id', billId);
+    await sb()!.from('hmis_bills').update({ discount_amount: discount, net_amount: net, balance_amount: Math.max(0, balance) }).eq('id', billId);
     loadBills();
   }, [bills, loadBills]);
 
   // Load payments for a bill
   const loadPayments = useCallback(async (billId: string) => {
     if (!sb()) return [];
-    const { data } = await sb().from('hmis_payments').select('*').eq('bill_id', billId).order('created_at', { ascending: false });
+    const { data } = await sb()!.from('hmis_payments').select('*').eq('bill_id', billId).order('created_at', { ascending: false });
     return (data || []).map((p: any) => ({
       id: p.id, amount: p.amount, mode: p.payment_mode,
       receipt: p.receipt_number, date: p.payment_date, createdAt: p.created_at,
@@ -324,7 +324,7 @@ export function usePharmacy(centreId: string | null) {
   const loadOrders = useCallback(async (statusFilter?: string) => {
     if (!centreId || !sb()) return;
     setLoading(true);
-    let query = sb().from('hmis_pharmacy_dispensing')
+    let query = sb()!.from('hmis_pharmacy_dispensing')
       .select(`id, prescription_data, status, total_amount, bill_id, dispensed_by, dispensed_at, created_at, encounter_id,
         patient:hmis_patients!inner(id, uhid, first_name, last_name)`)
       .eq('centre_id', centreId)
@@ -350,16 +350,16 @@ export function usePharmacy(centreId: string | null) {
   // Real-time
   useEffect(() => {
     if (!centreId || !sb()) return;
-    const channel = sb().channel('pharmacy-live')
+    const channel = sb()!.channel('pharmacy-live')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'hmis_pharmacy_dispensing', filter: `centre_id=eq.${centreId}` }, () => loadOrders())
       .subscribe();
-    return () => { sb().removeChannel(channel); };
+    return () => { sb()!.removeChannel(channel); };
   }, [centreId, loadOrders]);
 
   // Create pharmacy order from EMR encounter
   const createFromEncounter = useCallback(async (patientId: string, encounterId: string, prescriptions: any[]) => {
     if (!centreId || !sb()) return null;
-    const { data, error } = await sb().from('hmis_pharmacy_dispensing').insert({
+    const { data, error } = await sb()!.from('hmis_pharmacy_dispensing').insert({
       centre_id: centreId, patient_id: patientId, encounter_id: encounterId,
       prescription_data: prescriptions, status: 'pending',
     }).select().single();
@@ -371,8 +371,8 @@ export function usePharmacy(centreId: string | null) {
   const dispenseOrder = useCallback(async (orderId: string, dispensedItems: any[], staffId: string, totalAmount: number) => {
     if (!sb()) return;
     // Get patient info before update for WhatsApp
-    const { data: order } = await sb().from('hmis_pharmacy_dispensing').select('patient_id').eq('id', orderId).single();
-    await sb().from('hmis_pharmacy_dispensing').update({
+    const { data: order } = await sb()!.from('hmis_pharmacy_dispensing').select('patient_id').eq('id', orderId).single();
+    await sb()!.from('hmis_pharmacy_dispensing').update({
       dispensed_items: dispensedItems, status: 'dispensed',
       total_amount: totalAmount, dispensed_by: staffId,
       dispensed_at: new Date().toISOString(),
@@ -380,7 +380,7 @@ export function usePharmacy(centreId: string | null) {
     // WhatsApp: pharmacy ready
     if (order?.patient_id) {
       try {
-        const { data: pt } = await sb().from('hmis_patients').select('phone_primary, first_name').eq('id', order.patient_id).single();
+        const { data: pt } = await sb()!.from('hmis_patients').select('phone_primary, first_name').eq('id', order.patient_id).single();
         if (pt?.phone_primary) {
           sendPharmacyReady(pt.phone_primary, pt.first_name || 'Patient');
         }
@@ -392,7 +392,7 @@ export function usePharmacy(centreId: string | null) {
   // Mark in progress
   const startDispensing = useCallback(async (orderId: string) => {
     if (!sb()) return;
-    await sb().from('hmis_pharmacy_dispensing').update({ status: 'in_progress' }).eq('id', orderId);
+    await sb()!.from('hmis_pharmacy_dispensing').update({ status: 'in_progress' }).eq('id', orderId);
     loadOrders();
   }, [loadOrders]);
 

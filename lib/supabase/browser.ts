@@ -3,7 +3,7 @@
 //
 // Usage:
 //   import { sb } from '@/lib/supabase/browser';
-//   const { data } = await sb().from('table').select('*');
+//   const { data } = await sb()!.from('table').select('*');
 //
 // Safe during SSR/build: returns null when running server-side or if env vars are missing.
 

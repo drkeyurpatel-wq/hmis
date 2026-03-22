@@ -13,7 +13,7 @@ export function usePharmacyReturns(centreId: string | null) {
   const load = useCallback(async () => {
     if (!centreId || !sb()) return;
     setLoading(true);
-    const { data } = await sb().from('hmis_pharmacy_returns')
+    const { data } = await sb()!.from('hmis_pharmacy_returns')
       .select('*, drug:hmis_drug_master(drug_name, generic_name), staff:hmis_staff!hmis_pharmacy_returns_processed_by_fkey(full_name)')
       .eq('centre_id', centreId).order('created_at', { ascending: false }).limit(100);
     setReturns(data || []);
@@ -28,7 +28,7 @@ export function usePharmacyReturns(centreId: string | null) {
   }): Promise<{ success: boolean; error?: string }> => {
     if (!centreId || !sb()) return { success: false };
 
-    const { error } = await sb().from('hmis_pharmacy_returns').insert({
+    const { error } = await sb()!.from('hmis_pharmacy_returns').insert({
       centre_id: centreId, drug_id: data.drugId, quantity: data.quantity,
       batch_number: data.batchNumber, return_type: data.returnType,
       reason: data.reason, patient_id: data.patientId || null,
@@ -39,11 +39,11 @@ export function usePharmacyReturns(centreId: string | null) {
 
     // Restock (except write-offs and damage)
     if (['patient_return', 'supplier_return'].includes(data.returnType)) {
-      const { data: stock } = await sb().from('hmis_pharmacy_stock')
+      const { data: stock } = await sb()!.from('hmis_pharmacy_stock')
         .select('id, quantity').eq('centre_id', centreId).eq('drug_id', data.drugId)
         .eq('batch_number', data.batchNumber).maybeSingle();
       if (stock) {
-        await sb().from('hmis_pharmacy_stock').update({ quantity: parseFloat(stock.quantity) + data.quantity }).eq('id', stock.id);
+        await sb()!.from('hmis_pharmacy_stock').update({ quantity: parseFloat(stock.quantity) + data.quantity }).eq('id', stock.id);
       }
     }
 
@@ -71,7 +71,7 @@ export function useStockTransfers(centreId: string | null) {
   const load = useCallback(async () => {
     if (!centreId || !sb()) return;
     setLoading(true);
-    const { data } = await sb().from('hmis_pharmacy_transfers')
+    const { data } = await sb()!.from('hmis_pharmacy_transfers')
       .select('*, drug:hmis_drug_master(drug_name), from_centre:hmis_centres!hmis_pharmacy_transfers_from_centre_id_fkey(name, code), to_centre:hmis_centres!hmis_pharmacy_transfers_to_centre_id_fkey(name, code)')
       .or(`from_centre_id.eq.${centreId},to_centre_id.eq.${centreId}`)
       .order('created_at', { ascending: false }).limit(50);
@@ -88,19 +88,19 @@ export function useStockTransfers(centreId: string | null) {
     if (!centreId || !sb()) return { success: false };
 
     // Deduct from source
-    const { data: stock } = await sb().from('hmis_pharmacy_stock')
+    const { data: stock } = await sb()!.from('hmis_pharmacy_stock')
       .select('id, quantity').eq('centre_id', centreId).eq('drug_id', data.drugId)
       .eq('batch_number', data.batchNumber).maybeSingle();
     if (!stock || parseFloat(stock.quantity) < data.quantity) return { success: false, error: 'Insufficient stock' };
 
-    const { error } = await sb().from('hmis_pharmacy_transfers').insert({
+    const { error } = await sb()!.from('hmis_pharmacy_transfers').insert({
       from_centre_id: centreId, to_centre_id: data.toCentreId,
       drug_id: data.drugId, quantity: data.quantity, batch_number: data.batchNumber,
       reason: data.reason, status: 'initiated', initiated_by: data.staffId,
     });
     if (error) return { success: false, error: error.message };
 
-    await sb().from('hmis_pharmacy_stock').update({ quantity: parseFloat(stock.quantity) - data.quantity }).eq('id', stock.id);
+    await sb()!.from('hmis_pharmacy_stock').update({ quantity: parseFloat(stock.quantity) - data.quantity }).eq('id', stock.id);
     load();
     return { success: true };
   }, [centreId, load]);
@@ -110,15 +110,15 @@ export function useStockTransfers(centreId: string | null) {
     if (!transfer) return;
 
     // Add stock at receiving centre
-    const { data: existingStock } = await sb().from('hmis_pharmacy_stock')
+    const { data: existingStock } = await sb()!.from('hmis_pharmacy_stock')
       .select('id, quantity').eq('centre_id', transfer.to_centre_id).eq('drug_id', transfer.drug_id)
       .eq('batch_number', transfer.batch_number).maybeSingle();
 
     if (existingStock) {
-      await sb().from('hmis_pharmacy_stock').update({ quantity: parseFloat(existingStock.quantity) + parseFloat(transfer.quantity) }).eq('id', existingStock.id);
+      await sb()!.from('hmis_pharmacy_stock').update({ quantity: parseFloat(existingStock.quantity) + parseFloat(transfer.quantity) }).eq('id', existingStock.id);
     }
 
-    await sb().from('hmis_pharmacy_transfers').update({ status: 'received', received_by: staffId, received_at: new Date().toISOString() }).eq('id', transferId);
+    await sb()!.from('hmis_pharmacy_transfers').update({ status: 'received', received_by: staffId, received_at: new Date().toISOString() }).eq('id', transferId);
     load();
   }, [transfers, load]);
 
@@ -135,7 +135,7 @@ export function useControlledSubstances(centreId: string | null) {
   const load = useCallback(async () => {
     if (!centreId || !sb()) return;
     setLoading(true);
-    const { data } = await sb().from('hmis_controlled_substance_log')
+    const { data } = await sb()!.from('hmis_controlled_substance_log')
       .select('*, drug:hmis_drug_master(drug_name, generic_name, schedule), staff:hmis_staff!hmis_controlled_substance_log_administered_by_fkey(full_name), witness:hmis_staff!hmis_controlled_substance_log_witnessed_by_fkey(full_name)')
       .eq('centre_id', centreId).order('created_at', { ascending: false }).limit(100);
     setRegister(data || []);
@@ -153,7 +153,7 @@ export function useControlledSubstances(centreId: string | null) {
     if (!centreId || !sb()) return { success: false };
     if (!data.witnessedBy) return { success: false, error: 'Witness required for controlled substances' };
 
-    const { error } = await sb().from('hmis_controlled_substance_log').insert({
+    const { error } = await sb()!.from('hmis_controlled_substance_log').insert({
       centre_id: centreId, drug_id: data.drugId, quantity: data.quantity,
       batch_number: data.batchNumber, transaction_type: data.transactionType,
       patient_id: data.patientId || null, admission_id: data.admissionId || null,

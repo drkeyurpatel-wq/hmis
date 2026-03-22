@@ -29,13 +29,13 @@ function IPDPageInner() {
 
   useEffect(() => {
     if (!centreId || !sb()) return;
-    sb().from('hmis_departments').select('id, name').eq('is_active', true).then(({ data }: any) => setDepartments(data || []));
+    sb()!.from('hmis_departments').select('id, name').eq('is_active', true).then(({ data }: any) => setDepartments(data || []));
   }, [centreId]);
   useEffect(() => { loadAdmissions(statusFilter); }, [statusFilter, loadAdmissions]);
   useEffect(() => {
     if (searchQ.length < 2 || !sb()) { setSearchResults([]); return; }
     const t = setTimeout(async () => {
-      const { data } = await sb().from('hmis_patients').select('id, uhid, first_name, last_name, age_years, gender, phone_primary')
+      const { data } = await sb()!.from('hmis_patients').select('id, uhid, first_name, last_name, age_years, gender, phone_primary')
         .or(`uhid.ilike.%${searchQ}%,first_name.ilike.%${searchQ}%,phone_primary.ilike.%${searchQ}%`).eq('is_active', true).limit(8);
       setSearchResults(data || []);
     }, 300);

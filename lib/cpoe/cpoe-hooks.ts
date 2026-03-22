@@ -71,7 +71,7 @@ export function useCPOE(admissionId: string | null) {
   const load = useCallback(async () => {
     if (!admissionId || !sb()) return;
     setLoading(true);
-    const { data } = await sb().from('hmis_cpoe_orders')
+    const { data } = await sb()!.from('hmis_cpoe_orders')
       .select('*, orderer:hmis_staff!hmis_cpoe_orders_ordered_by_fkey(full_name), cosigner:hmis_staff!hmis_cpoe_orders_cosigned_by_fkey(full_name)')
       .eq('admission_id', admissionId).order('created_at', { ascending: false });
 
@@ -102,7 +102,7 @@ export function useCPOE(admissionId: string | null) {
     priority?: string; isVerbal?: boolean; notes?: string; staffId: string; centreId?: string;
   }): Promise<{ success: boolean; error?: string }> => {
     if (!admissionId || !sb()) return { success: false, error: 'Not ready' };
-    const { error } = await sb().from('hmis_cpoe_orders').insert({
+    const { error } = await sb()!.from('hmis_cpoe_orders').insert({
       admission_id: admissionId, patient_id: data.patientId,
       order_type: data.orderType, order_text: data.orderText,
       details: data.details || {}, priority: data.priority || 'routine',
@@ -134,7 +134,7 @@ export function useCPOE(admissionId: string | null) {
       status: 'ordered', ordered_by: staffId,
       is_verbal: o.isVerbal, notes: o.notes || '',
     }));
-    const { error } = await sb().from('hmis_cpoe_orders').insert(inserts);
+    const { error } = await sb()!.from('hmis_cpoe_orders').insert(inserts);
     if (error) return { success: false, count: 0 };
     load();
     return { success: true, count: inserts.length };
@@ -142,13 +142,13 @@ export function useCPOE(admissionId: string | null) {
 
   // Verify order (pharmacy/lab/radiology confirms)
   const verifyOrder = useCallback(async (orderId: string) => {
-    await sb().from('hmis_cpoe_orders').update({ status: 'verified' }).eq('id', orderId);
+    await sb()!.from('hmis_cpoe_orders').update({ status: 'verified' }).eq('id', orderId);
     load();
   }, [load]);
 
   // Cancel order
   const cancelOrder = useCallback(async (orderId: string, reason: string, staffId: string) => {
-    await sb().from('hmis_cpoe_orders').update({
+    await sb()!.from('hmis_cpoe_orders').update({
       status: 'cancelled', notes: reason, cosigned_by: staffId, cosigned_at: new Date().toISOString(),
     }).eq('id', orderId);
     load();
@@ -156,7 +156,7 @@ export function useCPOE(admissionId: string | null) {
 
   // Cosign verbal order
   const cosignOrder = useCallback(async (orderId: string, staffId: string) => {
-    await sb().from('hmis_cpoe_orders').update({
+    await sb()!.from('hmis_cpoe_orders').update({
       cosigned_by: staffId, cosigned_at: new Date().toISOString(),
     }).eq('id', orderId);
     load();

@@ -11,7 +11,7 @@ export function useEmergency(centreId: string | null) {
     if (!centreId || !sb()) return;
     setLoading(true);
     const d = dateFilter || new Date().toISOString().split('T')[0];
-    const { data } = await sb().from('hmis_er_visits')
+    const { data } = await sb()!.from('hmis_er_visits')
       .select('*, patient:hmis_patients!inner(first_name, last_name, uhid, age_years, gender), doctor:hmis_staff!hmis_er_visits_attending_doctor_id_fkey(full_name), triage_staff:hmis_staff!hmis_er_visits_triage_by_fkey(full_name)')
       .eq('centre_id', centreId).gte('arrival_time', d + 'T00:00:00').order('arrival_time', { ascending: false }).limit(100);
     setVisits(data || []);
@@ -21,14 +21,14 @@ export function useEmergency(centreId: string | null) {
 
   const register = useCallback(async (data: any, staffId: string) => {
     if (!centreId || !sb()) return { success: false };
-    const { error } = await sb().from('hmis_er_visits').insert({ centre_id: centreId, triage_by: staffId, ...data });
+    const { error } = await sb()!.from('hmis_er_visits').insert({ centre_id: centreId, triage_by: staffId, ...data });
     if (!error) load();
     return { success: !error, error: error?.message };
   }, [centreId, load]);
 
   const updateStatus = useCallback(async (id: string, status: string, extras?: any) => {
     if (!sb()) return;
-    await sb().from('hmis_er_visits').update({ status, ...extras, updated_at: new Date().toISOString() }).eq('id', id);
+    await sb()!.from('hmis_er_visits').update({ status, ...extras, updated_at: new Date().toISOString() }).eq('id', id);
     load();
   }, [load]);
 

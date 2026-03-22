@@ -15,9 +15,9 @@ export function useOrganismMaster() {
   const load = useCallback(async () => {
     if (!sb()) return;
     const [{ data: org }, { data: abx }, { data: pan }] = await Promise.all([
-      sb().from('hmis_lab_organisms').select('*').eq('is_active', true).order('organism_name'),
-      sb().from('hmis_lab_antibiotics').select('*').eq('is_active', true).order('sort_order'),
-      sb().from('hmis_lab_antibiotic_panels').select('*, antibiotic:hmis_lab_antibiotics(*)').order('sort_order'),
+      sb()!.from('hmis_lab_organisms').select('*').eq('is_active', true).order('organism_name'),
+      sb()!.from('hmis_lab_antibiotics').select('*').eq('is_active', true).order('sort_order'),
+      sb()!.from('hmis_lab_antibiotic_panels').select('*, antibiotic:hmis_lab_antibiotics(*)').order('sort_order'),
     ]);
     setOrganisms(org || []);
     setAntibiotics(abx || []);
@@ -47,10 +47,10 @@ export function useCulture(orderId: string | null) {
   const load = useCallback(async () => {
     if (!orderId || !sb()) return;
     setLoading(true);
-    const { data: c } = await sb().from('hmis_lab_cultures').select('*').eq('order_id', orderId).single();
+    const { data: c } = await sb()!.from('hmis_lab_cultures').select('*').eq('order_id', orderId).single();
     setCulture(c);
     if (c) {
-      const { data: iso } = await sb().from('hmis_lab_culture_isolates')
+      const { data: iso } = await sb()!.from('hmis_lab_culture_isolates')
         .select('*, organism:hmis_lab_organisms(*), sensitivities:hmis_lab_sensitivity(*, antibiotic:hmis_lab_antibiotics(antibiotic_code, antibiotic_name, antibiotic_class, is_restricted))')
         .eq('culture_id', c.id).order('isolate_number');
       setIsolates(iso || []);
@@ -64,7 +64,7 @@ export function useCulture(orderId: string | null) {
   const initCulture = useCallback(async (specimenType: string, specimenSource?: string) => {
     if (!orderId || !sb()) return null;
     if (culture) return culture;
-    const { data, error } = await sb().from('hmis_lab_cultures').insert({
+    const { data, error } = await sb()!.from('hmis_lab_cultures').insert({
       order_id: orderId, specimen_type: specimenType, specimen_source: specimenSource,
       incubation_start: new Date().toISOString(), culture_status: 'incubating',
     }).select().single();
@@ -75,19 +75,19 @@ export function useCulture(orderId: string | null) {
   // Update culture status
   const updateCulture = useCallback(async (updates: any) => {
     if (!culture?.id || !sb()) return;
-    await sb().from('hmis_lab_cultures').update(updates).eq('id', culture.id);
+    await sb()!.from('hmis_lab_cultures').update(updates).eq('id', culture.id);
     load();
   }, [culture, load]);
 
   // Report no growth
   const reportNoGrowth = useCallback(async (staffId: string) => {
     if (!culture?.id || !sb()) return;
-    await sb().from('hmis_lab_cultures').update({
+    await sb()!.from('hmis_lab_cultures').update({
       culture_status: 'no_growth', is_sterile: true, final_report: 'No bacterial growth after 48 hours of incubation.',
       reported_by: staffId, reported_at: new Date().toISOString(),
     }).eq('id', culture.id);
     // Update order status
-    await sb().from('hmis_lab_orders').update({ status: 'completed', reported_at: new Date().toISOString(), reported_by: staffId }).eq('id', orderId);
+    await sb()!.from('hmis_lab_orders').update({ status: 'completed', reported_at: new Date().toISOString(), reported_by: staffId }).eq('id', orderId);
     load();
   }, [culture, orderId, load]);
 
@@ -95,18 +95,18 @@ export function useCulture(orderId: string | null) {
   const addIsolate = useCallback(async (organismId: string, quantity: string, morphology?: string, notes?: string) => {
     if (!culture?.id || !sb()) return;
     const nextNum = isolates.length + 1;
-    await sb().from('hmis_lab_culture_isolates').insert({
+    await sb()!.from('hmis_lab_culture_isolates').insert({
       culture_id: culture.id, organism_id: organismId, isolate_number: nextNum,
       quantity, colony_morphology: morphology, notes, is_significant: true,
     });
-    await sb().from('hmis_lab_cultures').update({ culture_status: 'growth', growth_description: `${nextNum} organism(s) isolated` }).eq('id', culture.id);
+    await sb()!.from('hmis_lab_cultures').update({ culture_status: 'growth', growth_description: `${nextNum} organism(s) isolated` }).eq('id', culture.id);
     load();
   }, [culture, isolates, load]);
 
   // Add sensitivity result for an isolate
   const addSensitivity = useCallback(async (isolateId: string, antibioticId: string, interpretation: string, zoneMm?: number, mic?: number, method?: string) => {
     if (!sb()) return;
-    await sb().from('hmis_lab_sensitivity').upsert({
+    await sb()!.from('hmis_lab_sensitivity').upsert({
       isolate_id: isolateId, antibiotic_id: antibioticId, interpretation,
       zone_diameter_mm: zoneMm || null, mic_value: mic || null,
       method: method || 'disc_diffusion',
@@ -123,7 +123,7 @@ export function useCulture(orderId: string | null) {
       mic_value: r.mic || null, method: 'disc_diffusion',
     }));
     for (const ins of inserts) {
-      await sb().from('hmis_lab_sensitivity').upsert(ins, { onConflict: 'isolate_id,antibiotic_id' });
+      await sb()!.from('hmis_lab_sensitivity').upsert(ins, { onConflict: 'isolate_id,antibiotic_id' });
     }
     load();
   }, [load]);
@@ -131,20 +131,20 @@ export function useCulture(orderId: string | null) {
   // Finalize culture report
   const finalizeCulture = useCallback(async (finalReport: string, staffId: string) => {
     if (!culture?.id || !sb()) return;
-    await sb().from('hmis_lab_cultures').update({
+    await sb()!.from('hmis_lab_cultures').update({
       final_report: finalReport, reported_by: staffId, reported_at: new Date().toISOString(),
     }).eq('id', culture.id);
-    await sb().from('hmis_lab_orders').update({ status: 'completed', reported_at: new Date().toISOString(), reported_by: staffId }).eq('id', orderId);
+    await sb()!.from('hmis_lab_orders').update({ status: 'completed', reported_at: new Date().toISOString(), reported_by: staffId }).eq('id', orderId);
     load();
   }, [culture, orderId, load]);
 
   // Verify culture
   const verifyCulture = useCallback(async (staffId: string) => {
     if (!culture?.id || !sb()) return;
-    await sb().from('hmis_lab_cultures').update({
+    await sb()!.from('hmis_lab_cultures').update({
       verified_by: staffId, verified_at: new Date().toISOString(),
     }).eq('id', culture.id);
-    await sb().from('hmis_lab_orders').update({ verified_at: new Date().toISOString(), verified_by: staffId }).eq('id', orderId);
+    await sb()!.from('hmis_lab_orders').update({ verified_at: new Date().toISOString(), verified_by: staffId }).eq('id', orderId);
     load();
   }, [culture, orderId, load]);
 
@@ -159,7 +159,7 @@ export function useAntibiogram(centreId: string | null) {
 
   const load = useCallback(async (periodStart?: string, periodEnd?: string) => {
     if (!centreId || !sb()) return;
-    let q = sb().from('hmis_lab_antibiogram')
+    let q = sb()!.from('hmis_lab_antibiogram')
       .select('*, organism:hmis_lab_organisms(organism_name, organism_type), antibiotic:hmis_lab_antibiotics(antibiotic_name, antibiotic_code)')
       .eq('centre_id', centreId);
     if (periodStart) q = q.gte('period_start', periodStart);
@@ -172,7 +172,7 @@ export function useAntibiogram(centreId: string | null) {
   const generate = useCallback(async (periodStart: string, periodEnd: string) => {
     if (!centreId || !sb()) return;
     // Fetch all sensitivities in period
-    const { data: sens } = await sb().from('hmis_lab_sensitivity')
+    const { data: sens } = await sb()!.from('hmis_lab_sensitivity')
       .select('interpretation, antibiotic_id, isolate:hmis_lab_culture_isolates!inner(organism_id, culture:hmis_lab_cultures!inner(created_at))')
       .gte('isolate.culture.created_at', periodStart + 'T00:00:00')
       .lte('isolate.culture.created_at', periodEnd + 'T23:59:59');
@@ -192,7 +192,7 @@ export function useAntibiogram(centreId: string | null) {
     // Upsert
     for (const [key, val] of Object.entries(agg)) {
       const [orgId, abxId] = key.split('__');
-      await sb().from('hmis_lab_antibiogram').upsert({
+      await sb()!.from('hmis_lab_antibiogram').upsert({
         centre_id: centreId, period_start: periodStart, period_end: periodEnd,
         organism_id: orgId, antibiotic_id: abxId,
         total_isolates: val.total, sensitive_count: val.S,

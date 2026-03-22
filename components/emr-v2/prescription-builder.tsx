@@ -206,7 +206,7 @@ export default function PrescriptionBuilder({ prescriptions, onChange, allergies
     // Log override to DB
     const alert = alerts.find(a => a.id === alertId);
     if (alert && sb() && patientId && staffId) {
-      await sb().from('hmis_cdss_overrides').insert({
+      await sb()!.from('hmis_cdss_overrides').insert({
         centre_id: centreId || null,
         patient_id: patientId,
         staff_id: staffId,

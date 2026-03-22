@@ -36,22 +36,22 @@ export default function DashboardPage() {
     for (let i=6; i>=0; i--) days.push(new Date(now.getTime()-i*86400000).toISOString().split('T')[0]);
 
     const [billsWeek,billsYest,opdToday,opdYest,ipdActive,ipdNew,beds,labToday,radToday,otToday,pharmaQ,chargeToday,advToday,recentV,recentB,recentA] = await Promise.all([
-      sb().from('hmis_bills').select('bill_date,net_amount,paid_amount,payor_type,bill_type').eq('centre_id',centreId).gte('bill_date',days[0]).lte('bill_date',today).neq('status','cancelled'),
-      sb().from('hmis_bills').select('net_amount,paid_amount').eq('centre_id',centreId).eq('bill_date',yesterday).neq('status','cancelled'),
-      sb().from('hmis_opd_visits').select('id,status').eq('centre_id',centreId).gte('created_at',today+'T00:00:00').lte('created_at',today+'T23:59:59'),
-      sb().from('hmis_opd_visits').select('id',{count:'exact',head:true}).eq('centre_id',centreId).gte('created_at',yesterday+'T00:00:00').lte('created_at',yesterday+'T23:59:59'),
-      sb().from('hmis_admissions').select('id',{count:'exact',head:false}).eq('centre_id',centreId).eq('status','active'),
-      sb().from('hmis_admissions').select('id',{count:'exact',head:true}).eq('centre_id',centreId).gte('admission_date',today+'T00:00:00'),
-      sb().from('hmis_beds').select('id,status,room:hmis_rooms!inner(ward:hmis_wards!inner(centre_id))').eq('room.ward.centre_id',centreId).eq('is_active',true),
-      sb().from('hmis_lab_orders').select('id,status').eq('centre_id',centreId).gte('created_at',today+'T00:00:00'),
-      sb().from('hmis_radiology_orders').select('id,status').eq('centre_id',centreId).gte('created_at',today+'T00:00:00'),
-      sb().from('hmis_ot_bookings').select('id,status').eq('centre_id',centreId).eq('scheduled_date',today),
-      sb().from('hmis_pharmacy_dispensing').select('id',{count:'exact',head:true}).eq('centre_id',centreId).eq('status','pending'),
-      sb().from('hmis_charge_log').select('amount,category').eq('centre_id',centreId).eq('service_date',today).neq('status','reversed'),
-      sb().from('hmis_advances').select('amount').gte('created_at',today+'T00:00:00'),
-      sb().from('hmis_opd_visits').select('id,status,created_at,patient:hmis_patients!inner(first_name,last_name,uhid),doctor:hmis_staff!hmis_opd_visits_doctor_id_fkey(full_name)').eq('centre_id',centreId).order('created_at',{ascending:false}).limit(8),
-      sb().from('hmis_bills').select('id,bill_number,net_amount,paid_amount,status,payor_type,patient:hmis_patients!inner(first_name,last_name,uhid)').eq('centre_id',centreId).order('created_at',{ascending:false}).limit(6),
-      sb().from('hmis_admissions').select('id,ipd_number,status,admission_date,patient:hmis_patients!inner(first_name,last_name,uhid)').eq('centre_id',centreId).order('admission_date',{ascending:false}).limit(5),
+      sb()!.from('hmis_bills').select('bill_date,net_amount,paid_amount,payor_type,bill_type').eq('centre_id',centreId).gte('bill_date',days[0]).lte('bill_date',today).neq('status','cancelled'),
+      sb()!.from('hmis_bills').select('net_amount,paid_amount').eq('centre_id',centreId).eq('bill_date',yesterday).neq('status','cancelled'),
+      sb()!.from('hmis_opd_visits').select('id,status').eq('centre_id',centreId).gte('created_at',today+'T00:00:00').lte('created_at',today+'T23:59:59'),
+      sb()!.from('hmis_opd_visits').select('id',{count:'exact',head:true}).eq('centre_id',centreId).gte('created_at',yesterday+'T00:00:00').lte('created_at',yesterday+'T23:59:59'),
+      sb()!.from('hmis_admissions').select('id',{count:'exact',head:false}).eq('centre_id',centreId).eq('status','active'),
+      sb()!.from('hmis_admissions').select('id',{count:'exact',head:true}).eq('centre_id',centreId).gte('admission_date',today+'T00:00:00'),
+      sb()!.from('hmis_beds').select('id,status,room:hmis_rooms!inner(ward:hmis_wards!inner(centre_id))').eq('room.ward.centre_id',centreId).eq('is_active',true),
+      sb()!.from('hmis_lab_orders').select('id,status').eq('centre_id',centreId).gte('created_at',today+'T00:00:00'),
+      sb()!.from('hmis_radiology_orders').select('id,status').eq('centre_id',centreId).gte('created_at',today+'T00:00:00'),
+      sb()!.from('hmis_ot_bookings').select('id,status').eq('centre_id',centreId).eq('scheduled_date',today),
+      sb()!.from('hmis_pharmacy_dispensing').select('id',{count:'exact',head:true}).eq('centre_id',centreId).eq('status','pending'),
+      sb()!.from('hmis_charge_log').select('amount,category').eq('centre_id',centreId).eq('service_date',today).neq('status','reversed'),
+      sb()!.from('hmis_advances').select('amount').gte('created_at',today+'T00:00:00'),
+      sb()!.from('hmis_opd_visits').select('id,status,created_at,patient:hmis_patients!inner(first_name,last_name,uhid),doctor:hmis_staff!hmis_opd_visits_doctor_id_fkey(full_name)').eq('centre_id',centreId).order('created_at',{ascending:false}).limit(8),
+      sb()!.from('hmis_bills').select('id,bill_number,net_amount,paid_amount,status,payor_type,patient:hmis_patients!inner(first_name,last_name,uhid)').eq('centre_id',centreId).order('created_at',{ascending:false}).limit(6),
+      sb()!.from('hmis_admissions').select('id,ipd_number,status,admission_date,patient:hmis_patients!inner(first_name,last_name,uhid)').eq('centre_id',centreId).order('admission_date',{ascending:false}).limit(5),
     ]);
 
     const bw=billsWeek.data||[]; const by=billsYest.data||[]; const od=opdToday.data||[]; const bd=beds.data||[];
@@ -98,12 +98,12 @@ export default function DashboardPage() {
   useEffect(()=>{
     const iv=setInterval(load,60000);
     if(!centreId||!sb()) return ()=>clearInterval(iv);
-    const ch=sb().channel('ceo-'+centreId)
+    const ch=sb()!.channel('ceo-'+centreId)
       .on('postgres_changes',{event:'INSERT',schema:'public',table:'hmis_bills',filter:`centre_id=eq.${centreId}`},load)
       .on('postgres_changes',{event:'*',schema:'public',table:'hmis_admissions',filter:`centre_id=eq.${centreId}`},load)
       .on('postgres_changes',{event:'INSERT',schema:'public',table:'hmis_opd_visits',filter:`centre_id=eq.${centreId}`},load)
       .subscribe();
-    return ()=>{ clearInterval(iv); sb().removeChannel(ch); };
+    return ()=>{ clearInterval(iv); sb()!.removeChannel(ch); };
   },[load,centreId]);
 
   const payorData = useMemo(()=>{

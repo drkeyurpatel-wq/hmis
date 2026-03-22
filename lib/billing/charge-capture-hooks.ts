@@ -31,7 +31,7 @@ export function useChargeCapture(centreId: string | null) {
     if (!centreId || !sb()) return;
     setLoading(true);
 
-    let q = sb().from('hmis_charge_log')
+    let q = sb()!.from('hmis_charge_log')
       .select(`*, patient:hmis_patients!inner(first_name, last_name, uhid)`)
       .eq('centre_id', centreId)
       .order('created_at', { ascending: false })
@@ -92,7 +92,7 @@ export function useChargeCapture(centreId: string | null) {
 
     const amount = data.quantity * data.unitRate;
 
-    const { data: charge, error } = await sb().from('hmis_charge_log').insert({
+    const { data: charge, error } = await sb()!.from('hmis_charge_log').insert({
       centre_id: centreId, patient_id: data.patientId, admission_id: data.admissionId,
       charge_code: data.chargeCode, description: data.description, category: data.category,
       quantity: data.quantity, unit_rate: data.unitRate, amount,
@@ -114,7 +114,7 @@ export function useChargeCapture(centreId: string | null) {
     if (!chargeIds.length) return { success: false, error: 'No charges selected' };
 
     // Get the charges
-    const { data: chargesToPost } = await sb().from('hmis_charge_log')
+    const { data: chargesToPost } = await sb()!.from('hmis_charge_log')
       .select('*').in('id', chargeIds).eq('status', 'captured');
     if (!chargesToPost?.length) return { success: false, error: 'No captured charges found' };
 
@@ -127,19 +127,19 @@ export function useChargeCapture(centreId: string | null) {
       service_date: c.service_date, department_id: c.department_id, doctor_id: c.doctor_id,
     }));
 
-    const { error: insertErr } = await sb().from('hmis_bill_items').insert(items);
+    const { error: insertErr } = await sb()!.from('hmis_bill_items').insert(items);
     if (insertErr) return { success: false, error: insertErr.message };
 
     // Mark charges as posted
-    await sb().from('hmis_charge_log').update({
+    await sb()!.from('hmis_charge_log').update({
       status: 'posted', bill_id: billId, posted_to_bill_at: new Date().toISOString(),
     }).in('id', chargeIds);
 
     // Update bill totals
     const totalPosted = chargesToPost.reduce((s: number, c: any) => s + parseFloat(c.amount), 0);
-    const { data: bill } = await sb().from('hmis_bills').select('gross_amount, net_amount, balance_amount').eq('id', billId).single();
+    const { data: bill } = await sb()!.from('hmis_bills').select('gross_amount, net_amount, balance_amount').eq('id', billId).single();
     if (bill) {
-      await sb().from('hmis_bills').update({
+      await sb()!.from('hmis_bills').update({
         gross_amount: parseFloat(bill.gross_amount) + totalPosted,
         net_amount: parseFloat(bill.net_amount) + totalPosted,
         balance_amount: parseFloat(bill.balance_amount) + totalPosted,
@@ -155,14 +155,14 @@ export function useChargeCapture(centreId: string | null) {
     if (!sb()) return { success: false, error: 'Not ready' };
     if (!reason.trim()) return { success: false, error: 'Reversal reason required' };
 
-    const { data: charge } = await sb().from('hmis_charge_log').select('status, bill_id, amount').eq('id', chargeId).single();
+    const { data: charge } = await sb()!.from('hmis_charge_log').select('status, bill_id, amount').eq('id', chargeId).single();
     if (!charge) return { success: false, error: 'Charge not found' };
     if (charge.status === 'reversed') return { success: false, error: 'Already reversed' };
     if (charge.status === 'posted' && charge.bill_id) {
       return { success: false, error: 'Cannot reverse a posted charge. Use credit note from billing instead.' };
     }
 
-    await sb().from('hmis_charge_log').update({
+    await sb()!.from('hmis_charge_log').update({
       status: 'reversed', reversed_at: new Date().toISOString(),
       reversed_by: staffId, reversal_reason: reason,
     }).eq('id', chargeId);
@@ -184,7 +184,7 @@ export function useAutoChargeRules(centreId: string | null) {
 
   useEffect(() => {
     if (!centreId || !sb()) return;
-    sb().from('hmis_billing_auto_rules').select('*').eq('centre_id', centreId).order('trigger_type, ward_type, charge_amount')
+    sb()!.from('hmis_billing_auto_rules').select('*').eq('centre_id', centreId).order('trigger_type, ward_type, charge_amount')
       .then(({ data }: any) => setRules((data || []).map((r: any) => ({
         id: r.id, ruleName: r.rule_name, triggerType: r.trigger_type,
         wardType: r.ward_type, chargeDescription: r.charge_description,
@@ -193,7 +193,7 @@ export function useAutoChargeRules(centreId: string | null) {
 
     // Last run
     const today = new Date().toISOString().split('T')[0];
-    sb().from('hmis_auto_charge_runs').select('*').eq('centre_id', centreId)
+    sb()!.from('hmis_auto_charge_runs').select('*').eq('centre_id', centreId)
       .order('run_date', { ascending: false }).limit(1).maybeSingle()
       .then(({ data }: any) => setLastRun(data));
   }, [centreId]);
@@ -204,12 +204,12 @@ export function useAutoChargeRules(centreId: string | null) {
     const today = new Date().toISOString().split('T')[0];
 
     // Check if already run
-    const { data: existing } = await sb().from('hmis_auto_charge_runs')
+    const { data: existing } = await sb()!.from('hmis_auto_charge_runs')
       .select('id').eq('centre_id', centreId).eq('run_date', today).maybeSingle();
     if (existing) return { success: false, error: `Daily charges already run for ${today}` };
 
     // Call RPC
-    const { data, error } = await sb().rpc('run_daily_auto_charges', {
+    const { data, error } = await sb()!.rpc('run_daily_auto_charges', {
       p_centre_id: centreId, p_date: today, p_staff_id: staffId,
     });
 
@@ -220,7 +220,7 @@ export function useAutoChargeRules(centreId: string | null) {
 
   const toggleRule = useCallback(async (ruleId: string, isActive: boolean): Promise<void> => {
     if (!sb()) return;
-    await sb().from('hmis_billing_auto_rules').update({ is_active: isActive }).eq('id', ruleId);
+    await sb()!.from('hmis_billing_auto_rules').update({ is_active: isActive }).eq('id', ruleId);
     setRules(prev => prev.map(r => r.id === ruleId ? { ...r, isActive } : r));
   }, []);
 
@@ -267,21 +267,22 @@ export function useBarcodeScanner() {
     setResult(null);
 
     // Try UHID match first
-    let { data: patient } = await sb().from('hmis_patients')
+    let { data: patient } = await sb()!.from('hmis_patients')
       .select('id, uhid, first_name, last_name')
       .eq('uhid', code).maybeSingle();
 
     // Try IPD number
     if (!patient) {
-      const { data: admission } = await sb().from('hmis_admissions')
+      const { data: admission } = await sb()!.from('hmis_admissions')
         .select('id, ipd_number, patient:hmis_patients!inner(id, uhid, first_name, last_name), bed:hmis_beds(room:hmis_rooms(ward:hmis_wards(type)))')
         .eq('ipd_number', code).eq('status', 'active').maybeSingle();
       if (admission) {
+        const pt = admission.patient as any;
         setResult({
-          patientId: admission.patient.id, uhid: admission.patient.uhid,
-          name: `${admission.patient.first_name} ${admission.patient.last_name}`,
+          patientId: pt.id, uhid: pt.uhid,
+          name: `${pt.first_name} ${pt.last_name}`,
           admissionId: admission.id, ipd: admission.ipd_number,
-          wardType: admission.bed?.room?.ward?.type,
+          wardType: (admission.bed as any)?.room?.ward?.type,
         });
         return;
       }
@@ -289,10 +290,10 @@ export function useBarcodeScanner() {
 
     // Try partial UHID match
     if (!patient) {
-      const { data: patients } = await sb().from('hmis_patients')
+      const { data: patients } = await sb()!.from('hmis_patients')
         .select('id, uhid, first_name, last_name')
         .ilike('uhid', `%${code}%`).limit(1);
-      patient = patients?.[0];
+      patient = patients?.[0] || null;
     }
 
     if (!patient) {
@@ -301,7 +302,7 @@ export function useBarcodeScanner() {
     }
 
     // Find active admission
-    const { data: admission } = await sb().from('hmis_admissions')
+    const { data: admission } = await sb()!.from('hmis_admissions')
       .select('id, ipd_number, bed:hmis_beds(room:hmis_rooms(ward:hmis_wards(type)))')
       .eq('patient_id', patient.id).eq('status', 'active').maybeSingle();
 
@@ -309,7 +310,7 @@ export function useBarcodeScanner() {
       patientId: patient.id, uhid: patient.uhid,
       name: `${patient.first_name} ${patient.last_name}`,
       admissionId: admission?.id, ipd: admission?.ipd_number,
-      wardType: admission?.bed?.room?.ward?.type,
+      wardType: (admission?.bed as any)?.room?.ward?.type,
     });
   }, []);
 
@@ -337,7 +338,7 @@ export function useIPDRunningBill(admissionId: string | null) {
     setLoading(true);
 
     // Get all charges for this admission
-    const { data } = await sb().from('hmis_charge_log')
+    const { data } = await sb()!.from('hmis_charge_log')
       .select('*')
       .eq('admission_id', admissionId)
       .neq('status', 'reversed')
@@ -354,7 +355,7 @@ export function useIPDRunningBill(admissionId: string | null) {
     })));
 
     // Get linked bill
-    const { data: billData } = await sb().from('hmis_bills')
+    const { data: billData } = await sb()!.from('hmis_bills')
       .select('id, bill_number, gross_amount, discount_amount, net_amount, paid_amount, balance_amount, status')
       .eq('encounter_id', admissionId).eq('bill_type', 'ipd').maybeSingle();
     setBill(billData);

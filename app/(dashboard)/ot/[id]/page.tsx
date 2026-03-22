@@ -41,7 +41,7 @@ export default function OTDetailPage() {
   // Load booking
   useEffect(() => {
     if (!bookingId || !sb()) return;
-    sb().from('hmis_ot_bookings')
+    sb()!.from('hmis_ot_bookings')
       .select('*, patient:hmis_admissions!inner(ipd_number, admission_date, patient:hmis_patients!inner(first_name, last_name, uhid, age_years, gender)), surgeon:hmis_staff!hmis_ot_bookings_surgeon_id_fkey(full_name), anaesthetist:hmis_staff!hmis_ot_bookings_anaesthetist_id_fkey(full_name), ot_room:hmis_ot_rooms(name, type)')
       .eq('id', bookingId).single()
       .then(({ data }: any) => setBooking(data));
@@ -50,7 +50,7 @@ export default function OTDetailPage() {
   // Load WHO checklist
   const loadChecklist = useCallback(async () => {
     if (!bookingId || !sb()) return;
-    const { data } = await sb().from('hmis_ot_safety_checklist').select('*').eq('ot_booking_id', bookingId).maybeSingle();
+    const { data } = await sb()!.from('hmis_ot_safety_checklist').select('*').eq('ot_booking_id', bookingId).maybeSingle();
     setChecklist(data);
   }, [bookingId]);
   useEffect(() => { loadChecklist(); }, [loadChecklist]);
@@ -58,7 +58,7 @@ export default function OTDetailPage() {
   // Load OT notes
   const loadNotes = useCallback(async () => {
     if (!bookingId || !sb()) return;
-    const { data } = await sb().from('hmis_ot_notes').select('*').eq('ot_booking_id', bookingId);
+    const { data } = await sb()!.from('hmis_ot_notes').select('*').eq('ot_booking_id', bookingId);
     const map: any = { pre_op: {}, intra_op: {}, post_op: {} };
     (data || []).forEach((n: any) => { map[n.note_type] = n; });
     setNotes(map);
@@ -68,7 +68,7 @@ export default function OTDetailPage() {
   // Load implants
   const loadImplants = useCallback(async () => {
     if (!bookingId || !sb()) return;
-    const { data } = await sb().from('hmis_ot_implants').select('*').eq('ot_booking_id', bookingId).order('created_at');
+    const { data } = await sb()!.from('hmis_ot_implants').select('*').eq('ot_booking_id', bookingId).order('created_at');
     setImplants(data || []);
   }, [bookingId]);
   useEffect(() => { loadImplants(); }, [loadImplants]);
@@ -78,9 +78,9 @@ export default function OTDetailPage() {
     if (!bookingId || !sb()) return;
     const updates = { [field]: value };
     if (checklist?.id) {
-      await sb().from('hmis_ot_safety_checklist').update(updates).eq('id', checklist.id);
+      await sb()!.from('hmis_ot_safety_checklist').update(updates).eq('id', checklist.id);
     } else {
-      await sb().from('hmis_ot_safety_checklist').insert({ ot_booking_id: bookingId, ...updates });
+      await sb()!.from('hmis_ot_safety_checklist').insert({ ot_booking_id: bookingId, ...updates });
     }
     loadChecklist();
   };
@@ -98,9 +98,9 @@ export default function OTDetailPage() {
     if (!bookingId || !sb()) return;
     const existing = notes[noteType];
     if (existing?.id) {
-      await sb().from('hmis_ot_notes').update({ ...data, updated_at: new Date().toISOString() }).eq('id', existing.id);
+      await sb()!.from('hmis_ot_notes').update({ ...data, updated_at: new Date().toISOString() }).eq('id', existing.id);
     } else {
-      await sb().from('hmis_ot_notes').insert({ ot_booking_id: bookingId, note_type: noteType, author_id: staffId, ...data });
+      await sb()!.from('hmis_ot_notes').insert({ ot_booking_id: bookingId, note_type: noteType, author_id: staffId, ...data });
     }
     loadNotes();
     flash(`${noteType.replace('_', '-')} note saved`);
@@ -112,7 +112,7 @@ export default function OTDetailPage() {
     if (!implantForm.implant_name.trim()) { setActionError('Implant name required'); return; }
     if (implantForm.quantity < 1) { setActionError('Quantity must be at least 1'); return; }
     setActionError('');
-    await sb().from('hmis_ot_implants').insert({
+    await sb()!.from('hmis_ot_implants').insert({
       ot_booking_id: bookingId, ...implantForm,
       cost: parseFloat(implantForm.cost) || 0, mrp: parseFloat(implantForm.mrp) || 0,
     });
@@ -123,7 +123,7 @@ export default function OTDetailPage() {
 
   const removeImplant = async (implantId: string) => {
     if (!sb()) return;
-    await sb().from('hmis_ot_implants').delete().eq('id', implantId);
+    await sb()!.from('hmis_ot_implants').delete().eq('id', implantId);
     loadImplants();
   };
 

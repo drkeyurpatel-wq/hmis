@@ -78,9 +78,9 @@ function EMRInner() {
 
   const selectPatientById = async (id: string) => {
     if (!sb()) return;
-    const { data: pt } = await sb().from('hmis_patients').select('id, uhid, first_name, last_name, age_years, gender, phone_primary, blood_group').eq('id', id).single();
+    const { data: pt } = await sb()!.from('hmis_patients').select('id, uhid, first_name, last_name, age_years, gender, phone_primary, blood_group').eq('id', id).single();
     if (!pt) return;
-    const { data: allergies } = await sb().from('hmis_patient_allergies').select('allergen').eq('patient_id', id);
+    const { data: allergies } = await sb()!.from('hmis_patient_allergies').select('allergen').eq('patient_id', id);
     setPatient({
       id: pt.id, name: `${pt.first_name} ${pt.last_name || ''}`.trim(), age: pt.age_years?.toString() || '--',
       gender: pt.gender || '--', uhid: pt.uhid, phone: pt.phone_primary || '',
@@ -118,18 +118,18 @@ function EMRInner() {
         for (const inv of labInvs) {
           // Lookup test_id by name (exact → fuzzy)
           let testId: string | null = null;
-          const { data: testExact } = await sb().from('hmis_lab_test_master')
+          const { data: testExact } = await sb()!.from('hmis_lab_test_master')
             .select('id').ilike('test_name', inv.name).eq('is_active', true).limit(1).maybeSingle();
           if (testExact) { testId = testExact.id; }
           else {
             const keyword = inv.name.split(/[\s\-\/\(\)]+/).filter((w: string) => w.length > 2)[0];
             if (keyword) {
-              const { data: testFuzzy } = await sb().from('hmis_lab_test_master')
+              const { data: testFuzzy } = await sb()!.from('hmis_lab_test_master')
                 .select('id').ilike('test_name', `%${keyword}%`).eq('is_active', true).limit(1).maybeSingle();
               if (testFuzzy) testId = testFuzzy.id;
             }
           }
-          const { data: labOrder } = await sb().from('hmis_lab_orders').insert({
+          const { data: labOrder } = await sb()!.from('hmis_lab_orders').insert({
             centre_id: centreId, patient_id: patient.id,
             test_id: testId, test_name: inv.name,
             encounter_id: encounterId,
@@ -150,16 +150,16 @@ function EMRInner() {
           const bodyPart = inv.name.replace(/^(X-Ray|CT|MRI|USG|HRCT|2D)\s*/i, '').trim() || inv.name;
           // Lookup test_id
           let radTestId: string | null = null;
-          const { data: radExact } = await sb().from('hmis_radiology_test_master')
+          const { data: radExact } = await sb()!.from('hmis_radiology_test_master')
             .select('id').ilike('test_name', inv.name).eq('is_active', true).limit(1).maybeSingle();
           if (radExact) { radTestId = radExact.id; }
           else {
-            const { data: radFuzzy } = await sb().from('hmis_radiology_test_master')
+            const { data: radFuzzy } = await sb()!.from('hmis_radiology_test_master')
               .select('id').ilike('test_name', `%${bodyPart}%`).eq('modality', modality).eq('is_active', true).limit(1).maybeSingle();
             if (radFuzzy) radTestId = radFuzzy.id;
           }
           const accession = `RAD-${new Date().toISOString().slice(2, 10).replace(/-/g, '')}-${Date.now().toString(36).slice(-4).toUpperCase()}`;
-          const { data: radOrder } = await sb().from('hmis_radiology_orders').insert({
+          const { data: radOrder } = await sb()!.from('hmis_radiology_orders').insert({
             centre_id: centreId, patient_id: patient.id,
             test_id: radTestId, test_name: inv.name,
             accession_number: accession,
@@ -177,7 +177,7 @@ function EMRInner() {
 
         // Create pharmacy dispensing record — linked to encounter
         if (prescriptions.length > 0) {
-          await sb().from('hmis_pharmacy_dispensing').insert({
+          await sb()!.from('hmis_pharmacy_dispensing').insert({
             centre_id: centreId, patient_id: patient.id,
             encounter_id: encounterId,
             prescription_data: prescriptions.map(p => ({

@@ -31,9 +31,9 @@ export function GlobalHeader() {
     async function loadCounts() {
       const today = new Date().toISOString().split('T')[0];
       const [rx, lab, pa] = await Promise.all([
-        sb().from('hmis_pharmacy_dispensing').select('id', { count: 'exact', head: true }).in('status', ['pending', 'in_progress']),
-        sb().from('hmis_emr_encounters').select('id', { count: 'exact', head: true }).not('investigations', 'eq', '[]').gte('encounter_date', today),
-        sb().from('hmis_pre_auth_requests').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
+        sb()!.from('hmis_pharmacy_dispensing').select('id', { count: 'exact', head: true }).in('status', ['pending', 'in_progress']),
+        sb()!.from('hmis_emr_encounters').select('id', { count: 'exact', head: true }).not('investigations', 'eq', '[]').gte('encounter_date', today),
+        sb()!.from('hmis_pre_auth_requests').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
       ]);
       setPendingCounts({ rx: rx.count || 0, lab: lab.count || 0, preauth: pa.count || 0 });
     }
@@ -45,7 +45,7 @@ export function GlobalHeader() {
   useEffect(() => {
     if (searchQ.length < 2 || !sb()) { setResults([]); return; }
     const timer = setTimeout(async () => {
-      const { data } = await sb().from('hmis_patients')
+      const { data } = await sb()!.from('hmis_patients')
         .select('id, uhid, first_name, last_name, age_years, gender, phone_primary')
         .or(`uhid.ilike.%${searchQ}%,first_name.ilike.%${searchQ}%,last_name.ilike.%${searchQ}%,phone_primary.ilike.%${searchQ}%`)
         .eq('is_active', true).limit(8);

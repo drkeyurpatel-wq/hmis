@@ -25,7 +25,7 @@ export function useIPD(centreId: string | null) {
   const loadAdmissions = useCallback(async (statusFilter?: string) => {
     if (!centreId || !sb()) return;
     setLoading(true);
-    let query = sb().from('hmis_admissions')
+    let query = sb()!.from('hmis_admissions')
       .select(`id, ipd_number, admission_type, admission_date, expected_discharge, actual_discharge, discharge_type, payor_type, provisional_diagnosis, status,
         patient:hmis_patients!inner(id, uhid, first_name, last_name, age_years, gender),
         admitting_doctor:hmis_staff!hmis_admissions_admitting_doctor_id_fkey(full_name),
@@ -50,7 +50,7 @@ export function useIPD(centreId: string | null) {
 
   const loadBeds = useCallback(async () => {
     if (!centreId || !sb()) return;
-    const { data } = await sb().from('hmis_beds')
+    const { data } = await sb()!.from('hmis_beds')
       .select('id, bed_number, status, room:hmis_rooms!inner(name, ward:hmis_wards!inner(name))')
       .eq('is_active', true).order('bed_number');
     setBeds(data || []);
@@ -63,8 +63,8 @@ export function useIPD(centreId: string | null) {
     bedId?: string; admissionType: string; payorType: string; provisionalDiagnosis?: string; expectedDischarge?: string;
   }) => {
     if (!centreId || !sb()) return null;
-    const { data: ipdNum } = await sb().rpc('hmis_next_sequence', { p_centre_id: centreId, p_type: 'ipd' });
-    const { data: admission, error } = await sb().from('hmis_admissions').insert({
+    const { data: ipdNum } = await sb()!.rpc('hmis_next_sequence', { p_centre_id: centreId, p_type: 'ipd' });
+    const { data: admission, error } = await sb()!.from('hmis_admissions').insert({
       centre_id: centreId, patient_id: data.patientId, ipd_number: ipdNum || 'IPD-' + Date.now(),
       admitting_doctor_id: data.admittingDoctorId, primary_doctor_id: data.primaryDoctorId,
       department_id: data.departmentId, bed_id: data.bedId || null,
@@ -73,7 +73,7 @@ export function useIPD(centreId: string | null) {
       provisional_diagnosis: data.provisionalDiagnosis || null, status: 'active',
     }).select().single();
     if (data.bedId && !error) {
-      await sb().from('hmis_beds').update({ status: 'occupied', current_admission_id: admission?.id }).eq('id', data.bedId);
+      await sb()!.from('hmis_beds').update({ status: 'occupied', current_admission_id: admission?.id }).eq('id', data.bedId);
     }
     if (!error) loadAdmissions('active');
     return { admission, error };
@@ -82,15 +82,15 @@ export function useIPD(centreId: string | null) {
   const dischargePatient = useCallback(async (admissionId: string, dischargeType: string, finalDiagnosis?: string) => {
     if (!sb()) return;
     // Get patient info for WhatsApp before updating
-    const { data: admInfo } = await sb().from('hmis_admissions')
+    const { data: admInfo } = await sb()!.from('hmis_admissions')
       .select('bed_id, ipd_number, patient:hmis_patients!inner(phone_primary, first_name)')
       .eq('id', admissionId).single();
-    await sb().from('hmis_admissions').update({
+    await sb()!.from('hmis_admissions').update({
       status: 'discharged', actual_discharge: new Date().toISOString(),
       discharge_type: dischargeType, final_diagnosis: finalDiagnosis || null,
     }).eq('id', admissionId);
     // Free the bed
-    if (admInfo?.bed_id) await sb().from('hmis_beds').update({ status: 'available', current_admission_id: null }).eq('id', admInfo.bed_id);
+    if (admInfo?.bed_id) await sb()!.from('hmis_beds').update({ status: 'available', current_admission_id: null }).eq('id', admInfo.bed_id);
     // WhatsApp: discharge alert
     try {
       const pt = (admInfo as any)?.patient;
@@ -103,7 +103,7 @@ export function useIPD(centreId: string | null) {
 
   const initiateDischarge = useCallback(async (admissionId: string) => {
     if (!sb()) return;
-    await sb().from('hmis_admissions').update({ status: 'discharge_initiated' }).eq('id', admissionId);
+    await sb()!.from('hmis_admissions').update({ status: 'discharge_initiated' }).eq('id', admissionId);
     loadAdmissions('active');
   }, [loadAdmissions]);
 
@@ -130,7 +130,7 @@ export function useOT(centreId: string | null) {
     if (!centreId || !sb()) return;
     setLoading(true);
     const dt = dateFilter || new Date().toISOString().split('T')[0];
-    const { data } = await sb().from('hmis_ot_bookings')
+    const { data } = await sb()!.from('hmis_ot_bookings')
       .select(`id, procedure_name, scheduled_date, scheduled_start, estimated_duration_min, actual_start, actual_end, status,
         admission:hmis_admissions!inner(ipd_number, patient:hmis_patients!inner(first_name, last_name, uhid)),
         ot_room:hmis_ot_rooms!inner(name),
@@ -151,7 +151,7 @@ export function useOT(centreId: string | null) {
   useEffect(() => {
     if (!centreId || !sb()) return;
     async function loadRooms() {
-      const { data } = await sb().from('hmis_ot_rooms').select('*').eq('centre_id', centreId).eq('is_active', true);
+      const { data } = await sb()!.from('hmis_ot_rooms').select('*').eq('centre_id', centreId).eq('is_active', true);
       setRooms(data || []);
     }
     loadRooms(); loadBookings();
@@ -162,7 +162,7 @@ export function useOT(centreId: string | null) {
     procedureName: string; scheduledDate: string; scheduledStart: string; estimatedDuration?: number;
   }) => {
     if (!sb()) return null;
-    const { data: booking, error } = await sb().from('hmis_ot_bookings').insert({
+    const { data: booking, error } = await sb()!.from('hmis_ot_bookings').insert({
       admission_id: data.admissionId, ot_room_id: data.otRoomId, surgeon_id: data.surgeonId,
       anaesthetist_id: data.anaesthetistId || null, procedure_name: data.procedureName,
       scheduled_date: data.scheduledDate, scheduled_start: data.scheduledStart,
@@ -177,7 +177,7 @@ export function useOT(centreId: string | null) {
     const updates: any = { status };
     if (status === 'in_progress') updates.actual_start = new Date().toISOString();
     if (status === 'completed') updates.actual_end = new Date().toISOString();
-    await sb().from('hmis_ot_bookings').update(updates).eq('id', bookingId);
+    await sb()!.from('hmis_ot_bookings').update(updates).eq('id', bookingId);
     loadBookings();
   }, [loadBookings]);
 
@@ -208,7 +208,7 @@ export function useInsurance(centreId: string | null) {
   const loadPreAuths = useCallback(async (statusFilter?: string) => {
     if (!centreId || !sb()) return;
     setLoading(true);
-    let query = sb().from('hmis_pre_auth_requests')
+    let query = sb()!.from('hmis_pre_auth_requests')
       .select(`id, requested_amount, approved_amount, status, pre_auth_number, submitted_at, responded_at, remarks,
         admission:hmis_admissions!inner(ipd_number, patient:hmis_patients!inner(first_name, last_name)),
         patient_insurance:hmis_patient_insurance!inner(insurer:hmis_insurers!inner(name))`)
@@ -228,7 +228,7 @@ export function useInsurance(centreId: string | null) {
 
   const loadClaims = useCallback(async (statusFilter?: string) => {
     if (!centreId || !sb()) return;
-    let query = sb().from('hmis_claims')
+    let query = sb()!.from('hmis_claims')
       .select(`id, claim_number, claim_type, claimed_amount, approved_amount, settled_amount, status, submitted_at,
         bill:hmis_bills!inner(bill_number, patient:hmis_patients!inner(first_name, last_name))`)
       .order('submitted_at', { ascending: false }).limit(100);
@@ -250,7 +250,7 @@ export function useInsurance(centreId: string | null) {
     if (updates.approvedAmount !== undefined) payload.approved_amount = updates.approvedAmount;
     if (updates.preAuthNumber) payload.pre_auth_number = updates.preAuthNumber;
     if (updates.remarks) payload.remarks = updates.remarks;
-    await sb().from('hmis_pre_auth_requests').update(payload).eq('id', id);
+    await sb()!.from('hmis_pre_auth_requests').update(payload).eq('id', id);
     loadPreAuths();
   }, [loadPreAuths]);
 
@@ -267,14 +267,14 @@ export function useAccounting(centreId: string | null) {
 
   const loadAccounts = useCallback(async () => {
     if (!sb()) return;
-    const { data } = await sb().from('hmis_chart_of_accounts').select('*').eq('is_active', true).order('account_code');
+    const { data } = await sb()!.from('hmis_chart_of_accounts').select('*').eq('is_active', true).order('account_code');
     setAccounts(data || []);
   }, []);
 
   const loadJournals = useCallback(async (dateFrom?: string, dateTo?: string) => {
     if (!centreId || !sb()) return;
     setLoading(true);
-    let query = sb().from('hmis_journal_entries')
+    let query = sb()!.from('hmis_journal_entries')
       .select(`id, entry_number, entry_date, description, source_type, is_auto, status, created_by,
         lines:hmis_journal_lines(id, debit, credit, account:hmis_chart_of_accounts(account_code, account_name))`)
       .eq('centre_id', centreId).order('entry_date', { ascending: false }).limit(100);
@@ -290,13 +290,13 @@ export function useAccounting(centreId: string | null) {
   const createJournal = useCallback(async (description: string, lines: { accountId: string; debit: number; credit: number }[], staffId: string) => {
     if (!centreId || !sb()) return null;
     const entryNum = 'JE-' + new Date().toISOString().slice(2, 10).replace(/-/g, '') + '-' + Date.now().toString(36).slice(-4).toUpperCase();
-    const { data: je, error } = await sb().from('hmis_journal_entries').insert({
+    const { data: je, error } = await sb()!.from('hmis_journal_entries').insert({
       centre_id: centreId, entry_number: entryNum, entry_date: new Date().toISOString().split('T')[0],
       description, created_by: staffId, status: 'draft',
     }).select().single();
     if (je && !error) {
       const jLines = lines.map(l => ({ journal_entry_id: je.id, account_id: l.accountId, debit: l.debit, credit: l.credit, cost_centre_id: centreId }));
-      await sb().from('hmis_journal_lines').insert(jLines);
+      await sb()!.from('hmis_journal_lines').insert(jLines);
       loadJournals();
     }
     return { je, error };
@@ -305,7 +305,7 @@ export function useAccounting(centreId: string | null) {
   // Trial balance
   const getTrialBalance = useCallback(async () => {
     if (!centreId || !sb()) return [];
-    const { data } = await sb().from('hmis_journal_lines')
+    const { data } = await sb()!.from('hmis_journal_lines')
       .select('debit, credit, account:hmis_chart_of_accounts(account_code, account_name, account_type)');
     const grouped: Record<string, { code: string; name: string; type: string; debit: number; credit: number }> = {};
     (data || []).forEach((l: any) => {
@@ -329,7 +329,7 @@ export function useReports(centreId: string | null) {
   const getRevenueReport = useCallback(async (dateFrom: string, dateTo: string) => {
     if (!centreId || !sb()) return { daily: [], byType: [], byPayor: [], total: 0 };
     setLoading(true);
-    const { data: bills } = await sb().from('hmis_bills')
+    const { data: bills } = await sb()!.from('hmis_bills')
       .select('bill_date, bill_type, payor_type, net_amount, paid_amount, discount_amount, status')
       .eq('centre_id', centreId).gte('bill_date', dateFrom).lte('bill_date', dateTo);
     const b = bills || [];
@@ -360,7 +360,7 @@ export function useReports(centreId: string | null) {
 
   const getOPDReport = useCallback(async (dateFrom: string, dateTo: string) => {
     if (!centreId || !sb()) return { daily: [], byDoctor: [], total: 0 };
-    const { data } = await sb().from('hmis_opd_visits')
+    const { data } = await sb()!.from('hmis_opd_visits')
       .select('created_at, status, doctor:hmis_staff!inner(full_name)')
       .eq('centre_id', centreId).gte('created_at', dateFrom + 'T00:00:00').lte('created_at', dateTo + 'T23:59:59');
     const v = data || [];
@@ -381,7 +381,7 @@ export function useReports(centreId: string | null) {
 
   const getPharmacyReport = useCallback(async (dateFrom: string, dateTo: string) => {
     if (!centreId || !sb()) return { orders: [], totalAmount: 0, totalOrders: 0, dispensed: 0, pending: 0 };
-    const { data } = await sb().from('hmis_pharmacy_dispensing')
+    const { data } = await sb()!.from('hmis_pharmacy_dispensing')
       .select('id, status, total_amount, dispensed_at, created_at, patient:hmis_patients!inner(first_name, last_name)')
       .eq('centre_id', centreId).gte('created_at', dateFrom + 'T00:00:00').lte('created_at', dateTo + 'T23:59:59');
     const d = data || [];
@@ -396,7 +396,7 @@ export function useReports(centreId: string | null) {
 
   const getLabReport = useCallback(async (dateFrom: string, dateTo: string) => {
     if (!centreId || !sb()) return { encounters: [], totalTests: 0, completed: 0, pending: 0 };
-    const { data } = await sb().from('hmis_emr_encounters')
+    const { data } = await sb()!.from('hmis_emr_encounters')
       .select('id, encounter_date, investigations, patient:hmis_patients!inner(first_name, last_name), doctor:hmis_staff!inner(full_name)')
       .eq('centre_id', centreId).not('investigations', 'eq', '[]')
       .gte('encounter_date', dateFrom).lte('encounter_date', dateTo);
@@ -420,7 +420,7 @@ export function useReports(centreId: string | null) {
 
   const getIPDReport = useCallback(async (dateFrom: string, dateTo: string) => {
     if (!centreId || !sb()) return { admissions: [], total: 0, active: 0, discharged: 0, byDept: [], byPayor: [], avgLOS: 0 };
-    const { data } = await sb().from('hmis_admissions')
+    const { data } = await sb()!.from('hmis_admissions')
       .select('id, admission_date, actual_discharge, status, admission_type, payor_type, department:hmis_departments!inner(name), patient:hmis_patients!inner(first_name, last_name)')
       .eq('centre_id', centreId).gte('admission_date', dateFrom + 'T00:00:00').lte('admission_date', dateTo + 'T23:59:59');
     const a = data || [];

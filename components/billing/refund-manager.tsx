@@ -22,7 +22,7 @@ export default function RefundManager({ centreId, onFlash }: Props) {
   const load = useCallback(async () => {
     if (!centreId || !sb()) { setLoading(false); return; }
     setLoading(true);
-    const { data } = await sb().from('hmis_refunds')
+    const { data } = await sb()!.from('hmis_refunds')
       .select('*, bill:hmis_bills(bill_number, patient:hmis_patients!inner(first_name, last_name, uhid)), approver:hmis_staff!hmis_refunds_approved_by_fkey(full_name), processor:hmis_staff!hmis_refunds_processed_by_fkey(full_name)')
       .eq('centre_id', centreId).order('created_at', { ascending: false }).limit(50);
     setRefunds(data || []);
@@ -35,7 +35,7 @@ export default function RefundManager({ centreId, onFlash }: Props) {
   useEffect(() => {
     if (form.billSearch.length < 2 || !sb()) { setBillResults([]); return; }
     const t = setTimeout(async () => {
-      const { data } = await sb().from('hmis_bills')
+      const { data } = await sb()!.from('hmis_bills')
         .select('id, bill_number, paid_amount, net_amount, patient:hmis_patients!inner(first_name, last_name, uhid)')
         .eq('centre_id', centreId).gt('paid_amount', 0)
         .or(`bill_number.ilike.%${form.billSearch}%`)
@@ -62,7 +62,7 @@ export default function RefundManager({ centreId, onFlash }: Props) {
     if (!form.reason) { setError('Reason required'); return; }
     setError('');
 
-    const { error: err } = await sb().from('hmis_refunds').insert({
+    const { error: err } = await sb()!.from('hmis_refunds').insert({
       centre_id: centreId, bill_id: form.billId, refund_amount: amt,
       reason: form.reason, refund_mode: form.mode, bank_details: form.bankDetails,
       status: 'initiated', initiated_by: staffId,
@@ -76,7 +76,7 @@ export default function RefundManager({ centreId, onFlash }: Props) {
   };
 
   const approveRefund = async (id: string) => {
-    await sb().from('hmis_refunds').update({ status: 'approved', approved_by: staffId, approved_at: new Date().toISOString() }).eq('id', id);
+    await sb()!.from('hmis_refunds').update({ status: 'approved', approved_by: staffId, approved_at: new Date().toISOString() }).eq('id', id);
     auditApprove(centreId, staffId, 'refund', id, 'Refund approved');
     onFlash('Refund approved'); load();
   };
@@ -85,11 +85,11 @@ export default function RefundManager({ centreId, onFlash }: Props) {
     const refund = refunds.find(r => r.id === id);
     if (!refund) return;
     // Update refund status
-    await sb().from('hmis_refunds').update({ status: 'processed', processed_by: staffId, processed_at: new Date().toISOString() }).eq('id', id);
+    await sb()!.from('hmis_refunds').update({ status: 'processed', processed_by: staffId, processed_at: new Date().toISOString() }).eq('id', id);
     // Reduce paid_amount on bill
-    const { data: bill } = await sb().from('hmis_bills').select('paid_amount, balance_amount').eq('id', refund.bill_id).single();
+    const { data: bill } = await sb()!.from('hmis_bills').select('paid_amount, balance_amount').eq('id', refund.bill_id).single();
     if (bill) {
-      await sb().from('hmis_bills').update({
+      await sb()!.from('hmis_bills').update({
         paid_amount: parseFloat(bill.paid_amount) - parseFloat(refund.refund_amount),
         balance_amount: parseFloat(bill.balance_amount) + parseFloat(refund.refund_amount),
       }).eq('id', refund.bill_id);
@@ -99,7 +99,7 @@ export default function RefundManager({ centreId, onFlash }: Props) {
   };
 
   const rejectRefund = async (id: string) => {
-    await sb().from('hmis_refunds').update({ status: 'rejected', approved_by: staffId, approved_at: new Date().toISOString() }).eq('id', id);
+    await sb()!.from('hmis_refunds').update({ status: 'rejected', approved_by: staffId, approved_at: new Date().toISOString() }).eq('id', id);
     onFlash('Refund rejected'); load();
   };
 

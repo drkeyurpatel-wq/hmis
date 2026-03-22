@@ -10,7 +10,7 @@ export function useIndents(centreId: string | null, staffId?: string) {
   const load = useCallback(async (filters?: { status?: string; dept?: string; mine?: boolean }) => {
     if (!centreId || !sb()) return;
     setLoading(true);
-    let q = sb().from('hmis_purchase_indents')
+    let q = sb()!.from('hmis_purchase_indents')
       .select('*, requester:hmis_staff!hmis_purchase_indents_requested_by_fkey(full_name), approver:hmis_staff!hmis_purchase_indents_approved_by_fkey(full_name)')
       .eq('centre_id', centreId).order('created_at', { ascending: false }).limit(200);
     if (filters?.status && filters.status !== 'all') q = q.eq('status', filters.status);
@@ -27,7 +27,7 @@ export function useIndents(centreId: string | null, staffId?: string) {
     const num = `IND-${Date.now().toString(36).toUpperCase()}`;
     const items = data.items || [];
     const totalEst = items.reduce((s: number, i: any) => s + (parseFloat(i.estimated_cost || 0) * parseFloat(i.qty || 1)), 0);
-    const { error } = await sb().from('hmis_purchase_indents').insert({
+    const { error } = await sb()!.from('hmis_purchase_indents').insert({
       centre_id: centreId, indent_number: num, requested_by: requesterId,
       total_estimated_cost: totalEst, ...data,
     });
@@ -37,13 +37,13 @@ export function useIndents(centreId: string | null, staffId?: string) {
 
   const submit = useCallback(async (id: string) => {
     if (!sb()) return;
-    await sb().from('hmis_purchase_indents').update({ status: 'submitted', updated_at: new Date().toISOString() }).eq('id', id);
+    await sb()!.from('hmis_purchase_indents').update({ status: 'submitted', updated_at: new Date().toISOString() }).eq('id', id);
     load();
   }, [load]);
 
   const approve = useCallback(async (id: string, approverId: string) => {
     if (!sb()) return;
-    await sb().from('hmis_purchase_indents').update({
+    await sb()!.from('hmis_purchase_indents').update({
       status: 'approved', approved_by: approverId, approved_at: new Date().toISOString(), updated_at: new Date().toISOString(),
     }).eq('id', id);
     load();
@@ -51,7 +51,7 @@ export function useIndents(centreId: string | null, staffId?: string) {
 
   const reject = useCallback(async (id: string, rejectedBy: string, reason: string) => {
     if (!sb()) return;
-    await sb().from('hmis_purchase_indents').update({
+    await sb()!.from('hmis_purchase_indents').update({
       status: 'rejected', rejected_by: rejectedBy, rejected_at: new Date().toISOString(), rejection_reason: reason, updated_at: new Date().toISOString(),
     }).eq('id', id);
     load();
@@ -80,7 +80,7 @@ export function usePurchaseOrders(centreId: string | null) {
   const load = useCallback(async (statusFilter?: string) => {
     if (!centreId || !sb()) return;
     setLoading(true);
-    let q = sb().from('hmis_pharmacy_po')
+    let q = sb()!.from('hmis_pharmacy_po')
       .select('*, creator:hmis_staff!hmis_pharmacy_po_created_by_fkey(full_name)')
       .eq('centre_id', centreId).order('order_date', { ascending: false }).limit(100);
     if (statusFilter && statusFilter !== 'all') q = q.eq('status', statusFilter);
@@ -109,7 +109,7 @@ export function useGRNs(centreId: string | null) {
   const load = useCallback(async (statusFilter?: string) => {
     if (!centreId || !sb()) return;
     setLoading(true);
-    let q = sb().from('hmis_pharmacy_grn')
+    let q = sb()!.from('hmis_pharmacy_grn')
       .select('*, receiver:hmis_staff!hmis_pharmacy_grn_received_by_fkey(full_name), po:hmis_pharmacy_po(po_number)')
       .eq('centre_id', centreId).order('received_date', { ascending: false }).limit(100);
     if (statusFilter && statusFilter !== 'all') q = q.eq('status', statusFilter);
@@ -137,7 +137,7 @@ export function useVendors(centreId: string | null) {
   const load = useCallback(async (filters?: { category?: string; search?: string }) => {
     if (!centreId || !sb()) return;
     setLoading(true);
-    let q = sb().from('hmis_vendors').select('*')
+    let q = sb()!.from('hmis_vendors').select('*')
       .eq('centre_id', centreId).eq('is_active', true).order('name').limit(200);
     if (filters?.category && filters.category !== 'all') q = q.eq('category', filters.category);
     if (filters?.search) q = q.or(`name.ilike.%${filters.search}%,contact_person.ilike.%${filters.search}%,gst_number.ilike.%${filters.search}%`);
@@ -150,14 +150,14 @@ export function useVendors(centreId: string | null) {
   const create = useCallback(async (data: any) => {
     if (!centreId || !sb()) return { success: false };
     const code = `VND-${Date.now().toString(36).toUpperCase()}`;
-    const { error } = await sb().from('hmis_vendors').insert({ centre_id: centreId, code, ...data });
+    const { error } = await sb()!.from('hmis_vendors').insert({ centre_id: centreId, code, ...data });
     if (!error) load();
     return { success: !error };
   }, [centreId, load]);
 
   const update = useCallback(async (id: string, updates: any) => {
     if (!sb()) return;
-    await sb().from('hmis_vendors').update(updates).eq('id', id);
+    await sb()!.from('hmis_vendors').update(updates).eq('id', id);
     load();
   }, [load]);
 

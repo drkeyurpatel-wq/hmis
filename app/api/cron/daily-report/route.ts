@@ -10,14 +10,10 @@ const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 const RESEND_API_KEY = process.env.RESEND_API_KEY || '';
 const CRON_SECRET = process.env.CRON_SECRET || '';
-<<<<<<< HEAD
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://hmis.hospital.com';
-=======
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || '';
 if (!APP_URL && process.env.NODE_ENV === 'production') {
   console.warn('[CRON] NEXT_PUBLIC_APP_URL is not set. Email links will be broken. Set this env var to your deployment URL.');
 }
->>>>>>> 59535101d2b66be5dbf4ba30e9219cd56e9332f3
 
 function adminSb() {
   if (!SUPABASE_URL || !SUPABASE_KEY) return null;

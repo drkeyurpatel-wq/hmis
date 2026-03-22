@@ -109,7 +109,7 @@ export function useLinkStudy() {
         update.status = 'in_progress';
         update.updated_at = new Date().toISOString();
 
-        const { error } = await sb().from('hmis_radiology_orders').update(update).eq('id', data.orderId);
+        const { error } = await sb()!.from('hmis_radiology_orders').update(update).eq('id', data.orderId);
         if (error) { setLinking(false); return { success: false, error: error.message }; }
         setLinking(false);
         return { success: true };
@@ -119,11 +119,11 @@ export function useLinkStudy() {
       const accession = data.accessionNumber || `RAD-${new Date().toISOString().slice(2, 10).replace(/-/g, '')}-${Date.now().toString(36).slice(-4).toUpperCase()}`;
 
       // Try to find test in master
-      const { data: testMatch } = await sb().from('hmis_radiology_test_master')
+      const { data: testMatch } = await sb()!.from('hmis_radiology_test_master')
         .select('id, modality, body_part')
         .eq('modality', data.modality).limit(1).maybeSingle();
 
-      const { error } = await sb().from('hmis_radiology_orders').insert({
+      const { error } = await sb()!.from('hmis_radiology_orders').insert({
         centre_id: data.centreId,
         patient_id: data.patientId,
         test_id: testMatch?.id || null,
@@ -160,7 +160,7 @@ export function useRadiologyTests() {
 
   useEffect(() => {
     if (!sb()) { setLoading(false); return; }
-    sb().from('hmis_radiology_test_master').select('*').eq('is_active', true).order('modality, test_name')
+    sb()!.from('hmis_radiology_test_master').select('*').eq('is_active', true).order('modality, test_name')
       .then(({ data }: any) => { setTests(data || []); setLoading(false); });
   }, []);
 
@@ -207,7 +207,7 @@ export function useRadiologyWorklist(centreId: string | null) {
     setLoading(true);
     const activeFilters = f || filters;
 
-    let q = sb().from('hmis_radiology_orders')
+    let q = sb()!.from('hmis_radiology_orders')
       .select(`*, test:hmis_radiology_test_master(id, test_name, test_code, modality, body_part, tat_hours, is_contrast),
         patient:hmis_patients!inner(id, first_name, last_name, uhid, age_years, gender, phone_primary, date_of_birth),
         ordered_by_doc:hmis_staff!hmis_radiology_orders_ordered_by_fkey(id, full_name),
@@ -255,10 +255,10 @@ export function useRadiologyWorklist(centreId: string | null) {
   // Real-time: worklist auto-refreshes on order changes
   useEffect(() => {
     if (!centreId || !sb()) return;
-    const ch = sb().channel('radiology-worklist-' + centreId)
+    const ch = sb()!.channel('radiology-worklist-' + centreId)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'hmis_radiology_orders', filter: `centre_id=eq.${centreId}` }, () => load())
       .subscribe();
-    return () => { sb().removeChannel(ch); };
+    return () => { sb()!.removeChannel(ch); };
   }, [centreId, load]);
 
   // ---- Stats ----
@@ -329,7 +329,7 @@ export function useRadiologyWorklist(centreId: string | null) {
     const accession = `RAD-${dateStr}-${seq}`;
 
     // Get test details
-    const { data: test } = await sb().from('hmis_radiology_test_master')
+    const { data: test } = await sb()!.from('hmis_radiology_test_master')
       .select('modality, body_part, is_contrast, tat_hours').eq('id', data.test_id).single();
 
     if (!test) return { success: false, error: 'Test not found in master' };
@@ -356,7 +356,7 @@ export function useRadiologyWorklist(centreId: string | null) {
     }
 
     // Insert
-    const { data: order, error } = await sb().from('hmis_radiology_orders').insert({
+    const { data: order, error } = await sb()!.from('hmis_radiology_orders').insert({
       centre_id: centreId,
       test_id: data.test_id,
       patient_id: data.patient_id,
@@ -382,7 +382,7 @@ export function useRadiologyWorklist(centreId: string | null) {
     if (error) return { success: false, error: error.message };
     auditCreate(centreId, data.ordered_by || '', 'radiology_order', order?.id, `Radiology: ${test.modality} ${test.body_part} [${accession}]`);
     // Auto-post charge from tariff
-    const { data: testDetail } = await sb().from('hmis_radiology_test_master').select('test_name').eq('id', data.test_id).maybeSingle();
+    const { data: testDetail } = await sb()!.from('hmis_radiology_test_master').select('test_name').eq('id', data.test_id).maybeSingle();
     await smartPostRadiologyCharge({
       centreId, patientId: data.patient_id, admissionId: data.admission_id || undefined,
       radiologyOrderId: order?.id, testName: testDetail?.test_name || `${test.modality} ${test.body_part}`,
@@ -400,12 +400,12 @@ export function useRadiologyWorklist(centreId: string | null) {
     if (status === 'in_progress' && !extra?.started_at) update.started_at = new Date().toISOString();
     if (status === 'reported') {
       if (!extra?.reported_at) update.reported_at = new Date().toISOString();
-      const { data: order } = await sb().from('hmis_radiology_orders').select('created_at').eq('id', orderId).single();
+      const { data: order } = await sb()!.from('hmis_radiology_orders').select('created_at').eq('id', orderId).single();
       if (order) update.tat_minutes = Math.round((Date.now() - new Date(order.created_at).getTime()) / 60000);
     }
     if (status === 'verified' && !extra?.verified_at) update.verified_at = new Date().toISOString();
 
-    const { error } = await sb().from('hmis_radiology_orders').update(update).eq('id', orderId);
+    const { error } = await sb()!.from('hmis_radiology_orders').update(update).eq('id', orderId);
     if (error) return { success: false, error: error.message };
     load();
     return { success: true };
@@ -428,7 +428,7 @@ export function useRadiologyWorklist(centreId: string | null) {
       if (match) update.pacs_study_uid = decodeURIComponent(match[1]);
     }
 
-    const { error } = await sb().from('hmis_radiology_orders').update(update).eq('id', orderId);
+    const { error } = await sb()!.from('hmis_radiology_orders').update(update).eq('id', orderId);
     if (error) return { success: false, error: error.message };
     load();
     return { success: true };
@@ -437,7 +437,7 @@ export function useRadiologyWorklist(centreId: string | null) {
   // ---- Assign technician ----
   const assignTechnician = useCallback(async (orderId: string, technicianId: string, scheduledDate?: string, scheduledTime?: string): Promise<{ success: boolean; error?: string }> => {
     if (!sb()) return { success: false, error: 'Not ready' };
-    const { error } = await sb().from('hmis_radiology_orders').update({
+    const { error } = await sb()!.from('hmis_radiology_orders').update({
       technician_id: technicianId,
       scheduled_date: scheduledDate || null,
       scheduled_time: scheduledTime || null,
@@ -452,7 +452,7 @@ export function useRadiologyWorklist(centreId: string | null) {
   // ---- Assign Radiologist ----
   const assignRadiologist = useCallback(async (orderId: string, radiologistId: string): Promise<{ success: boolean; error?: string }> => {
     if (!sb()) return { success: false, error: 'Not ready' };
-    const { error } = await sb().from('hmis_radiology_orders').update({
+    const { error } = await sb()!.from('hmis_radiology_orders').update({
       assigned_to: radiologistId || null,
       updated_at: new Date().toISOString(),
     }).eq('id', orderId);
@@ -478,7 +478,7 @@ export function useRadiologyReport(orderId: string | null) {
   const load = useCallback(async () => {
     if (!orderId || !sb()) return;
     setLoading(true);
-    const { data } = await sb().from('hmis_radiology_reports')
+    const { data } = await sb()!.from('hmis_radiology_reports')
       .select('*, reporter:hmis_staff!hmis_radiology_reports_reported_by_fkey(full_name), verifier:hmis_staff!hmis_radiology_reports_verified_by_fkey(full_name)')
       .eq('radiology_order_id', orderId).order('created_at', { ascending: false });
     setReports(data || []);
@@ -496,7 +496,7 @@ export function useRadiologyReport(orderId: string | null) {
     if (!data.impression?.trim()) return { success: false, error: 'Impression is required' };
 
     if (latestReport?.id && !data.is_addendum) {
-      const { error } = await sb().from('hmis_radiology_reports').update({
+      const { error } = await sb()!.from('hmis_radiology_reports').update({
         ...data, reported_by: staffId,
       }).eq('id', latestReport.id);
       if (error) return { success: false, error: error.message };
@@ -505,7 +505,7 @@ export function useRadiologyReport(orderId: string | null) {
         radiology_order_id: orderId, reported_by: staffId, ...data,
       };
       if (data.is_addendum && latestReport?.id) insert.parent_report_id = latestReport.id;
-      const { error } = await sb().from('hmis_radiology_reports').insert(insert);
+      const { error } = await sb()!.from('hmis_radiology_reports').insert(insert);
       if (error) return { success: false, error: error.message };
     }
     load();
@@ -516,7 +516,7 @@ export function useRadiologyReport(orderId: string | null) {
     if (!latestReport?.id || !sb()) return { success: false, error: 'No report to verify' };
     if (latestReport.reported_by === staffId) return { success: false, error: 'Cannot verify your own report. A different radiologist must verify.' };
 
-    const { error } = await sb().from('hmis_radiology_reports').update({
+    const { error } = await sb()!.from('hmis_radiology_reports').update({
       verified_by: staffId, verified_at: new Date().toISOString(), status: 'verified',
     }).eq('id', latestReport.id);
     if (error) return { success: false, error: error.message };
@@ -526,7 +526,7 @@ export function useRadiologyReport(orderId: string | null) {
 
   const markCritical = useCallback(async (notifiedTo: string): Promise<{ success: boolean; error?: string }> => {
     if (!latestReport?.id || !sb()) return { success: false, error: 'No report' };
-    const { error } = await sb().from('hmis_radiology_reports').update({
+    const { error } = await sb()!.from('hmis_radiology_reports').update({
       is_critical: true, critical_notified: true,
       critical_notified_to: notifiedTo, critical_notified_at: new Date().toISOString(),
     }).eq('id', latestReport.id);
@@ -550,7 +550,7 @@ export function usePatientImaging(patientId: string | null) {
     if (!patientId || !sb()) return;
     setLoading(true);
 
-    const { data } = await sb().from('hmis_radiology_orders')
+    const { data } = await sb()!.from('hmis_radiology_orders')
       .select(`id, accession_number, modality, body_part, is_contrast, urgency, status, clinical_indication, admission_id,
         pacs_study_uid, stradus_viewer_url, created_at, reported_at,
         test:hmis_radiology_test_master(test_name, modality, body_part),
@@ -636,7 +636,7 @@ export function useStudyDetail(orderId: string | null) {
     if (!orderId || !sb()) { setLoading(false); return; }
     setLoading(true);
 
-    const { data } = await sb().from('hmis_radiology_orders')
+    const { data } = await sb()!.from('hmis_radiology_orders')
       .select(`id, accession_number, modality, body_part, is_contrast, urgency, status, clinical_indication,
         pacs_study_uid, stradus_viewer_url, scheduled_date, scheduled_time, started_at, reported_at, verified_at, tat_minutes,
         centre_id, patient_id, created_at,
@@ -707,7 +707,7 @@ export function useRadiologyTemplates(modality?: string) {
   const load = useCallback(async (mod?: string) => {
     if (!sb()) return;
     setLoading(true);
-    let q = sb().from('hmis_radiology_templates').select('*').eq('is_active', true).order('template_name');
+    let q = sb()!.from('hmis_radiology_templates').select('*').eq('is_active', true).order('template_name');
     if (mod || modality) q = q.eq('modality', mod || modality);
     const { data } = await q;
     setTemplates(data || []);
@@ -723,10 +723,10 @@ export function useRadiologyTemplates(modality?: string) {
     if (!data.findings_template?.trim()) return { success: false, error: 'Findings template required' };
 
     if (data.id) {
-      const { error } = await sb().from('hmis_radiology_templates').update(data).eq('id', data.id);
+      const { error } = await sb()!.from('hmis_radiology_templates').update(data).eq('id', data.id);
       if (error) return { success: false, error: error.message };
     } else {
-      const { error } = await sb().from('hmis_radiology_templates').insert(data);
+      const { error } = await sb()!.from('hmis_radiology_templates').insert(data);
       if (error) return { success: false, error: error.message };
     }
     load();
@@ -744,7 +744,7 @@ export function usePACSConfig(centreId: string | null) {
 
   useEffect(() => {
     if (!centreId || !sb()) return;
-    sb().from('hmis_pacs_config').select('*').eq('centre_id', centreId).eq('is_active', true).maybeSingle()
+    sb()!.from('hmis_pacs_config').select('*').eq('centre_id', centreId).eq('is_active', true).maybeSingle()
       .then(({ data }: any) => setConfig(data));
   }, [centreId]);
 
@@ -773,17 +773,17 @@ export function useRadiologyRooms(centreId: string | null) {
 
   useEffect(() => {
     if (!centreId || !sb()) return;
-    sb().from('hmis_radiology_rooms').select('*').eq('centre_id', centreId).eq('is_active', true).order('modality, name')
+    sb()!.from('hmis_radiology_rooms').select('*').eq('centre_id', centreId).eq('is_active', true).order('modality, name')
       .then(({ data }: any) => setRooms(data || []));
   }, [centreId]);
 
   const saveRoom = useCallback(async (data: any): Promise<{ success: boolean; error?: string }> => {
     if (!centreId || !sb()) return { success: false, error: 'Not ready' };
     if (data.id) {
-      const { error } = await sb().from('hmis_radiology_rooms').update(data).eq('id', data.id);
+      const { error } = await sb()!.from('hmis_radiology_rooms').update(data).eq('id', data.id);
       if (error) return { success: false, error: error.message };
     } else {
-      const { error } = await sb().from('hmis_radiology_rooms').insert({ ...data, centre_id: centreId });
+      const { error } = await sb()!.from('hmis_radiology_rooms').insert({ ...data, centre_id: centreId });
       if (error) return { success: false, error: error.message };
     }
     return { success: true };

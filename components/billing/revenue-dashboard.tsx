@@ -35,13 +35,13 @@ export default function RevenueDashboard({ centreId }: Props) {
     }
 
     const [bills, payments, charges, advances] = await Promise.all([
-      sb().from('hmis_bills').select('id, bill_type, bill_date, payor_type, gross_amount, discount_amount, net_amount, paid_amount, balance_amount, status')
+      sb()!.from('hmis_bills').select('id, bill_type, bill_date, payor_type, gross_amount, discount_amount, net_amount, paid_amount, balance_amount, status')
         .eq('centre_id', centreId).gte('bill_date', dateFrom).lte('bill_date', today).neq('status', 'cancelled'),
-      sb().from('hmis_payments').select('id, amount, payment_mode, payment_date, bill_id')
+      sb()!.from('hmis_payments').select('id, amount, payment_mode, payment_date, bill_id')
         .gte('payment_date', dateFrom).lte('payment_date', today),
-      sb().from('hmis_charge_log').select('id, amount, status, category')
+      sb()!.from('hmis_charge_log').select('id, amount, status, category')
         .eq('centre_id', centreId).gte('service_date', dateFrom).lte('service_date', today),
-      sb().from('hmis_advances').select('id, amount, payment_mode')
+      sb()!.from('hmis_advances').select('id, amount, payment_mode')
         .gte('created_at', dateFrom + 'T00:00:00'),
     ]);
 

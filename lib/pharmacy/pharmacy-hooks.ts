@@ -15,7 +15,7 @@ export function useDrugMaster() {
   const load = useCallback(async () => {
     if (!sb()) return;
     setLoading(true);
-    const { data } = await sb().from('hmis_drug_master').select('*').eq('is_active', true).order('generic_name');
+    const { data } = await sb()!.from('hmis_drug_master').select('*').eq('is_active', true).order('generic_name');
     setDrugs(data || []);
     setLoading(false);
   }, []);
@@ -30,7 +30,7 @@ export function useDrugMaster() {
 
   const addDrug = useCallback(async (data: any) => {
     if (!sb()) return;
-    await sb().from('hmis_drug_master').insert(data);
+    await sb()!.from('hmis_drug_master').insert(data);
     load();
   }, [load]);
 
@@ -50,7 +50,7 @@ export function usePharmacyStock(centreId: string | null) {
   const load = useCallback(async (filters?: { lowStock?: boolean; expiringSoon?: boolean; drugId?: string }) => {
     if (!centreId || !sb()) return;
     setLoading(true);
-    let q = sb().from('hmis_pharmacy_stock')
+    let q = sb()!.from('hmis_pharmacy_stock')
       .select('*, drug:hmis_drug_master(generic_name, brand_name, formulation, strength, unit, schedule, is_narcotic, is_antibiotic)')
       .eq('centre_id', centreId).gt('quantity_available', 0).order('expiry_date', { ascending: true });
     if (filters?.drugId) q = q.eq('drug_id', filters.drugId);
@@ -131,7 +131,7 @@ export function usePharmacyStock(centreId: string | null) {
     }
 
     // Check for duplicate batch in same centre
-    const { data: existing } = await sb().from('hmis_pharmacy_stock')
+    const { data: existing } = await sb()!.from('hmis_pharmacy_stock')
       .select('id, quantity_available')
       .eq('centre_id', centreId).eq('drug_id', data.drug_id).eq('batch_number', data.batch_number.trim())
       .limit(1);
@@ -140,7 +140,7 @@ export function usePharmacyStock(centreId: string | null) {
       return { success: false, error: `Batch "${data.batch_number}" already exists for this drug at this centre (${existing[0].quantity_available} units remaining). Use GRN to add more to an existing batch.` };
     }
 
-    const { error } = await sb().from('hmis_pharmacy_stock').insert({
+    const { error } = await sb()!.from('hmis_pharmacy_stock').insert({
       ...data,
       centre_id: centreId,
       batch_number: data.batch_number.trim(),
@@ -168,7 +168,7 @@ export function useDispensingQueue(centreId: string | null) {
   const load = useCallback(async (status?: string) => {
     if (!centreId || !sb()) return;
     setLoading(true);
-    let q = sb().from('hmis_pharmacy_dispensing')
+    let q = sb()!.from('hmis_pharmacy_dispensing')
       .select('*, patient:hmis_patients(first_name, last_name, uhid)')
       .eq('centre_id', centreId).order('created_at', { ascending: true }).limit(100);
     if (status && status !== 'all') q = q.eq('status', status);
@@ -194,7 +194,7 @@ export function useDispensingQueue(centreId: string | null) {
 
     for (const item of items) {
       // Get available batches for this drug, sorted by expiry (FEFO)
-      const { data: batches } = await sb().from('hmis_pharmacy_stock')
+      const { data: batches } = await sb()!.from('hmis_pharmacy_stock')
         .select('id, batch_number, expiry_date, quantity_available, quantity_dispensed, mrp, purchase_rate')
         .eq('centre_id', centreId).eq('drug_id', item.drugId)
         .gt('quantity_available', 0).gt('expiry_date', new Date().toISOString().split('T')[0])
@@ -216,7 +216,7 @@ export function useDispensingQueue(centreId: string | null) {
         pickedBatches.push({ batchId: batch.id, batchNumber: batch.batch_number, expiry: batch.expiry_date, qty: pick, mrp: batch.mrp, cost: batch.purchase_rate });
 
         // Deduct stock
-        const { error: deductErr } = await sb().from('hmis_pharmacy_stock').update({
+        const { error: deductErr } = await sb()!.from('hmis_pharmacy_stock').update({
           quantity_available: batch.quantity_available - pick,
           quantity_dispensed: (batch.quantity_dispensed || 0) + pick,
         }).eq('id', batch.id);
@@ -236,7 +236,7 @@ export function useDispensingQueue(centreId: string | null) {
     const computedTotal = dispensedItems.reduce((s: number, i: any) => s + (i.totalMRP || 0), 0);
 
     // Update dispensing record
-    const { error: updateErr } = await sb().from('hmis_pharmacy_dispensing').update({
+    const { error: updateErr } = await sb()!.from('hmis_pharmacy_dispensing').update({
       status: 'dispensed',
       dispensed_items: dispensedItems,
       total_amount: totalAmount > 0 ? totalAmount : computedTotal,
@@ -248,7 +248,7 @@ export function useDispensingQueue(centreId: string | null) {
     if (updateErr) return { success: false, error: `Update failed: ${updateErr.message}` };
 
     // Auto-post charges to billing
-    const disp = await sb().from('hmis_pharmacy_dispensing').select('patient_id, encounter_id').eq('id', dispensingId).single();
+    const disp = await sb()!.from('hmis_pharmacy_dispensing').select('patient_id, encounter_id').eq('id', dispensingId).single();
     if (disp.data) {
       for (const item of dispensedItems) {
         await postPharmacyCharge({
@@ -259,7 +259,7 @@ export function useDispensingQueue(centreId: string | null) {
       }
       // Notify patient
       if (disp.data?.patient_id) {
-        const { data: ptInfo } = await sb().from('hmis_patients').select('phone_primary, first_name, last_name').eq('id', disp.data.patient_id).maybeSingle();
+        const { data: ptInfo } = await sb()!.from('hmis_patients').select('phone_primary, first_name, last_name').eq('id', disp.data.patient_id).maybeSingle();
         if (ptInfo?.phone_primary) notifyPharmacyReady(centreId, ptInfo.phone_primary, `${ptInfo.first_name} ${ptInfo.last_name}`);
       }
       auditCreate(centreId, staffId, 'pharmacy_dispense', dispensingId, `Dispensed ${dispensedItems.length} items — ₹${computedTotal}`);
@@ -273,7 +273,7 @@ export function useDispensingQueue(centreId: string | null) {
   const getBatchesForDrug = useCallback(async (drugId: string): Promise<any[]> => {
     if (!centreId || !sb()) return [];
     const today = new Date().toISOString().split('T')[0];
-    const { data } = await sb().from('hmis_pharmacy_stock')
+    const { data } = await sb()!.from('hmis_pharmacy_stock')
       .select('id, batch_number, expiry_date, quantity_available, mrp, purchase_rate')
       .eq('centre_id', centreId).eq('drug_id', drugId)
       .gt('quantity_available', 0).gt('expiry_date', today)
@@ -299,7 +299,7 @@ export function usePurchaseOrders(centreId: string | null) {
   const load = useCallback(async () => {
     if (!centreId || !sb()) return;
     // POs would come from VPMS integration — check hmis_integration_bridge
-    const { data } = await sb().from('hmis_integration_bridge')
+    const { data } = await sb()!.from('hmis_integration_bridge')
       .select('*').eq('centre_id', centreId).eq('entity_type', 'purchase_order').order('created_at', { ascending: false }).limit(50);
     setOrders(data || []);
   }, [centreId]);
@@ -322,14 +322,14 @@ export function usePharmacyDashboard(centreId: string | null) {
     const monthStart = today.substring(0, 7) + '-01';
 
     (async () => {
-      const { data: todayData } = await sb().from('hmis_pharmacy_dispensing')
+      const { data: todayData } = await sb()!.from('hmis_pharmacy_dispensing')
         .select('total_amount').eq('centre_id', centreId).eq('status', 'dispensed')
         .gte('dispensed_at', today);
       const td = todayData || [];
       setTodayDispensed(td.length);
       setTodayRevenue(td.reduce((s: number, d: any) => s + parseFloat(d.total_amount || 0), 0));
 
-      const { data: monthData } = await sb().from('hmis_pharmacy_dispensing')
+      const { data: monthData } = await sb()!.from('hmis_pharmacy_dispensing')
         .select('total_amount').eq('centre_id', centreId).eq('status', 'dispensed')
         .gte('dispensed_at', monthStart);
       setMonthRevenue((monthData || []).reduce((s: number, d: any) => s + parseFloat(d.total_amount || 0), 0));

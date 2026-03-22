@@ -31,7 +31,7 @@ function VisitorInner() {
   React.useEffect(() => {
     if (patSearch.length < 2) { setPatResults([]); return; }
     const t = setTimeout(async () => {
-      const { data } = await sb().from('hmis_patients').select('id, uhid, first_name, last_name, age_years, gender')
+      const { data } = await sb()!.from('hmis_patients').select('id, uhid, first_name, last_name, age_years, gender')
         .or(`uhid.ilike.%${patSearch}%,first_name.ilike.%${patSearch}%`).eq('is_active', true).limit(5);
       setPatResults(data || []);
     }, 300);

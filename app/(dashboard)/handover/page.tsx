@@ -35,18 +35,18 @@ function HandoverInner() {
 
     try {
       const [admissions, newAdm, discharged, deaths, vitals, pendingLab, meds, pendingDisch, otBookings, erVisits] = await Promise.all([
-        sb().from('hmis_admissions').select('id').eq('centre_id', centreId).eq('status', 'active'),
-        sb().from('hmis_admissions').select('id, patient:hmis_patients!inner(first_name, last_name, uhid), department_id, bed:hmis_beds(name, room:hmis_rooms(name, ward:hmis_wards(name)))').eq('centre_id', centreId).gte('admission_date', ts),
-        sb().from('hmis_admissions').select('id').eq('centre_id', centreId).eq('status', 'discharged').gte('discharge_date', ts),
-        sb().from('hmis_admissions').select('id').eq('centre_id', centreId).eq('discharge_type', 'death').gte('discharge_date', ts),
+        sb()!.from('hmis_admissions').select('id').eq('centre_id', centreId).eq('status', 'active'),
+        sb()!.from('hmis_admissions').select('id, patient:hmis_patients!inner(first_name, last_name, uhid), department_id, bed:hmis_beds(name, room:hmis_rooms(name, ward:hmis_wards(name)))').eq('centre_id', centreId).gte('admission_date', ts),
+        sb()!.from('hmis_admissions').select('id').eq('centre_id', centreId).eq('status', 'discharged').gte('discharge_date', ts),
+        sb()!.from('hmis_admissions').select('id').eq('centre_id', centreId).eq('discharge_type', 'death').gte('discharge_date', ts),
         // Get patients with abnormal vitals (last reading)
-        sb().from('hmis_vitals').select('patient_id, bp_systolic, bp_diastolic, heart_rate, spo2, temperature, respiratory_rate, gcs_score, recorded_at, patient:hmis_patients!inner(first_name, last_name, uhid), admission:hmis_admissions!inner(bed:hmis_beds(name, room:hmis_rooms(ward:hmis_wards(name))))')
+        sb()!.from('hmis_vitals').select('patient_id, bp_systolic, bp_diastolic, heart_rate, spo2, temperature, respiratory_rate, gcs_score, recorded_at, patient:hmis_patients!inner(first_name, last_name, uhid), admission:hmis_admissions!inner(bed:hmis_beds(name, room:hmis_rooms(ward:hmis_wards(name))))')
           .gte('recorded_at', new Date(Date.now() - 8 * 3600000).toISOString()).order('recorded_at', { ascending: false }).limit(200),
-        sb().from('hmis_lab_orders').select('id, test_name, patient:hmis_patients!inner(first_name, last_name, uhid), created_at').eq('centre_id', centreId).in('status', ['ordered', 'collected', 'in_progress']).gte('created_at', new Date(Date.now() - 24 * 3600000).toISOString()).limit(20),
-        sb().from('hmis_ipd_medication_orders').select('id, drug_name, dose, frequency, next_due, patient:hmis_patients!inner(first_name, last_name, uhid)').eq('status', 'active').lte('next_due', new Date().toISOString()).limit(20),
-        sb().from('hmis_admissions').select('id, patient:hmis_patients!inner(first_name, last_name, uhid), discharge_date, bed:hmis_beds(name)').eq('centre_id', centreId).eq('status', 'discharge_initiated'),
-        sb().from('hmis_ot_bookings').select('id, procedure_name, scheduled_start, status, patient:hmis_patients!inner(first_name, last_name), surgeon:hmis_staff!hmis_ot_bookings_surgeon_id_fkey(full_name), ot_room:hmis_ot_rooms(name)').eq('centre_id', centreId).eq('scheduled_date', today),
-        sb().from('hmis_er_visits').select('id, triage_category, chief_complaint, patient:hmis_patients!inner(first_name, last_name), arrival_time').eq('centre_id', centreId).in('status', ['triaged', 'being_seen', 'under_observation']),
+        sb()!.from('hmis_lab_orders').select('id, test_name, patient:hmis_patients!inner(first_name, last_name, uhid), created_at').eq('centre_id', centreId).in('status', ['ordered', 'collected', 'in_progress']).gte('created_at', new Date(Date.now() - 24 * 3600000).toISOString()).limit(20),
+        sb()!.from('hmis_ipd_medication_orders').select('id, drug_name, dose, frequency, next_due, patient:hmis_patients!inner(first_name, last_name, uhid)').eq('status', 'active').lte('next_due', new Date().toISOString()).limit(20),
+        sb()!.from('hmis_admissions').select('id, patient:hmis_patients!inner(first_name, last_name, uhid), discharge_date, bed:hmis_beds(name)').eq('centre_id', centreId).eq('status', 'discharge_initiated'),
+        sb()!.from('hmis_ot_bookings').select('id, procedure_name, scheduled_start, status, patient:hmis_patients!inner(first_name, last_name), surgeon:hmis_staff!hmis_ot_bookings_surgeon_id_fkey(full_name), ot_room:hmis_ot_rooms(name)').eq('centre_id', centreId).eq('scheduled_date', today),
+        sb()!.from('hmis_er_visits').select('id, triage_category, chief_complaint, patient:hmis_patients!inner(first_name, last_name), arrival_time').eq('centre_id', centreId).in('status', ['triaged', 'being_seen', 'under_observation']),
       ]);
 
       // Find critical patients: NEWS2 >= 5 or abnormal vitals

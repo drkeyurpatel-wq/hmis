@@ -24,7 +24,7 @@ export function useDonors(centreId: string | null) {
   const load = useCallback(async (search?: string) => {
     if (!centreId || !sb()) return;
     setLoading(true);
-    let q = sb().from('hmis_bb_donors').select('*').eq('centre_id', centreId).eq('is_active', true).order('created_at', { ascending: false }).limit(100);
+    let q = sb()!.from('hmis_bb_donors').select('*').eq('centre_id', centreId).eq('is_active', true).order('created_at', { ascending: false }).limit(100);
     if (search) q = q.or(`first_name.ilike.%${search}%,donor_number.ilike.%${search}%,phone.ilike.%${search}%`);
     const { data } = await q;
     setDonors(data || []);
@@ -35,8 +35,8 @@ export function useDonors(centreId: string | null) {
 
   const register = useCallback(async (donor: any) => {
     if (!centreId || !sb()) return null;
-    const { data: num } = await sb().rpc('hmis_next_donor_number');
-    const { data, error } = await sb().from('hmis_bb_donors').insert({
+    const { data: num } = await sb()!.rpc('hmis_next_donor_number');
+    const { data, error } = await sb()!.from('hmis_bb_donors').insert({
       ...donor, donor_number: num || `D-${Date.now()}`, centre_id: centreId,
     }).select().single();
     if (!error) load();
@@ -45,7 +45,7 @@ export function useDonors(centreId: string | null) {
 
   const defer = useCallback(async (donorId: string, reason: string, type: string, until?: string) => {
     if (!sb()) return;
-    await sb().from('hmis_bb_donors').update({
+    await sb()!.from('hmis_bb_donors').update({
       is_deferred: true, deferral_reason: reason, deferral_type: type, deferral_until: until || null,
     }).eq('id', donorId);
     load();
@@ -64,7 +64,7 @@ export function useDonations(centreId: string | null) {
   const load = useCallback(async (statusFilter?: string) => {
     if (!centreId || !sb()) return;
     setLoading(true);
-    let q = sb().from('hmis_bb_donations')
+    let q = sb()!.from('hmis_bb_donations')
       .select('*, donor:hmis_bb_donors(donor_number, first_name, last_name, blood_group)')
       .eq('centre_id', centreId).order('donation_date', { ascending: false }).limit(100);
     if (statusFilter && statusFilter !== 'all') q = q.eq('status', statusFilter);
@@ -77,8 +77,8 @@ export function useDonations(centreId: string | null) {
 
   const collect = useCallback(async (donorId: string, bagNumber: string, aboGroup: string, rhType: string, staffId: string, volumeMl?: number) => {
     if (!centreId || !sb()) return null;
-    const { data: num } = await sb().rpc('hmis_next_donation_number');
-    const { data, error } = await sb().from('hmis_bb_donations').insert({
+    const { data: num } = await sb()!.rpc('hmis_next_donation_number');
+    const { data, error } = await sb()!.from('hmis_bb_donations').insert({
       donation_number: num || `BLD-${Date.now()}`, donor_id: donorId,
       bag_number: bagNumber, abo_group: aboGroup, rh_type: rhType,
       volume_ml: volumeMl || 450, collected_by: staffId, centre_id: centreId,
@@ -86,8 +86,8 @@ export function useDonations(centreId: string | null) {
     }).select().single();
     if (!error) {
       // Update donor stats
-      await sb().from('hmis_bb_donors').update({
-        total_donations: sb().rpc ? undefined : 1, // increment via SQL better
+      await sb()!.from('hmis_bb_donors').update({
+        total_donations: 1, // ideally increment via SQL
         last_donation_date: new Date().toISOString().split('T')[0],
       }).eq('id', donorId);
       load();
@@ -98,7 +98,7 @@ export function useDonations(centreId: string | null) {
   const updateTTI = useCallback(async (donationId: string, results: { hbsag: string; hcv: string; hiv: string; vdrl: string; malaria: string }) => {
     if (!sb()) return;
     const allNR = Object.values(results).every(r => r === 'non_reactive');
-    await sb().from('hmis_bb_donations').update({
+    await sb()!.from('hmis_bb_donations').update({
       hbsag_result: results.hbsag, hcv_result: results.hcv, hiv_result: results.hiv,
       vdrl_result: results.vdrl, malaria_result: results.malaria,
       tti_status: allNR ? 'non_reactive' : 'reactive',
@@ -121,7 +121,7 @@ export function useInventory(centreId: string | null) {
   const load = useCallback(async () => {
     if (!centreId || !sb()) return;
     setLoading(true);
-    const { data: comp } = await sb().from('hmis_bb_components')
+    const { data: comp } = await sb()!.from('hmis_bb_components')
       .select('*, donation:hmis_bb_donations(donation_number, donor:hmis_bb_donors(first_name, last_name))')
       .eq('centre_id', centreId).in('status', ['available','reserved','crossmatched'])
       .order('expiry_date');
@@ -151,7 +151,7 @@ export function useInventory(centreId: string | null) {
       const expiryDays = EXPIRY_DAYS[cType] || 35;
       const expiry = new Date(Date.now() + expiryDays * 86400000).toISOString().split('T')[0];
       const compNum = `${cType.toUpperCase().replace(/_/g, '-')}-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
-      await sb().from('hmis_bb_components').insert({
+      await sb()!.from('hmis_bb_components').insert({
         component_number: compNum, donation_id: donationId,
         component_type: cType, blood_group: bloodGroup,
         volume_ml: cType === 'prbc' ? 280 : cType === 'ffp' ? 200 : cType === 'platelet_concentrate' ? 50 : cType === 'cryoprecipitate' ? 20 : 450,
@@ -160,13 +160,13 @@ export function useInventory(centreId: string | null) {
       });
     }
     // Update donation status
-    await sb().from('hmis_bb_donations').update({ status: 'separated' }).eq('id', donationId);
+    await sb()!.from('hmis_bb_donations').update({ status: 'separated' }).eq('id', donationId);
     load();
   }, [centreId, load]);
 
   const discard = useCallback(async (componentId: string, reason: string) => {
     if (!sb()) return;
-    await sb().from('hmis_bb_components').update({ status: 'discarded' }).eq('id', componentId);
+    await sb()!.from('hmis_bb_components').update({ status: 'discarded' }).eq('id', componentId);
     // Also update donation discard reason if needed
     load();
   }, [load]);
@@ -182,7 +182,7 @@ export function useCrossmatch(centreId: string | null) {
 
   const load = useCallback(async () => {
     if (!centreId || !sb()) return;
-    const { data } = await sb().from('hmis_bb_crossmatch')
+    const { data } = await sb()!.from('hmis_bb_crossmatch')
       .select('*, patient:hmis_patients(first_name, last_name, uhid), component:hmis_bb_components(component_number, component_type, blood_group)')
       .eq('centre_id', centreId).order('requested_at', { ascending: false }).limit(50);
     setMatches(data || []);
@@ -192,19 +192,19 @@ export function useCrossmatch(centreId: string | null) {
 
   const request = useCallback(async (patientId: string, admissionId: string | null, componentId: string, patientAbo: string, patientRh: string, staffId: string, urgency: string, indication?: string) => {
     if (!centreId || !sb()) return;
-    await sb().from('hmis_bb_crossmatch').insert({
+    await sb()!.from('hmis_bb_crossmatch').insert({
       patient_id: patientId, admission_id: admissionId, component_id: componentId,
       patient_abo: patientAbo, patient_rh: patientRh, requested_by: staffId,
       urgency, clinical_indication: indication, centre_id: centreId,
       valid_until: new Date(Date.now() + 72 * 3600000).toISOString(),
     });
-    await sb().from('hmis_bb_components').update({ status: 'crossmatched', reserved_for_patient: patientId }).eq('id', componentId);
+    await sb()!.from('hmis_bb_components').update({ status: 'crossmatched', reserved_for_patient: patientId }).eq('id', componentId);
     load();
   }, [centreId, load]);
 
   const complete = useCallback(async (xmatchId: string, result: string, immediateSpin: string, incubation: string, ictAgt: string, staffId: string) => {
     if (!sb()) return;
-    await sb().from('hmis_bb_crossmatch').update({
+    await sb()!.from('hmis_bb_crossmatch').update({
       result, immediate_spin: immediateSpin, incubation_37c: incubation, ict_agt: ictAgt,
       performed_by: staffId, completed_at: new Date().toISOString(),
     }).eq('id', xmatchId);
@@ -222,7 +222,7 @@ export function useBloodRequests(centreId: string | null) {
 
   const load = useCallback(async () => {
     if (!centreId || !sb()) return;
-    const { data } = await sb().from('hmis_bb_requests')
+    const { data } = await sb()!.from('hmis_bb_requests')
       .select('*, patient:hmis_patients(first_name, last_name, uhid, blood_group), doctor:hmis_staff!hmis_bb_requests_requested_by_fkey(full_name)')
       .eq('centre_id', centreId).order('requested_at', { ascending: false }).limit(50);
     setRequests(data || []);
@@ -236,7 +236,7 @@ export function useBloodRequests(centreId: string | null) {
     hbLevel?: number; plateletCount?: number; inr?: number;
   }, staffId: string) => {
     if (!centreId || !sb()) return;
-    await sb().from('hmis_bb_requests').insert({
+    await sb()!.from('hmis_bb_requests').insert({
       patient_id: req.patientId, admission_id: req.admissionId || null,
       requested_by: staffId, blood_group: req.bloodGroup, component_type: req.componentType,
       units_requested: req.unitsRequested, urgency: req.urgency,
@@ -249,7 +249,7 @@ export function useBloodRequests(centreId: string | null) {
 
   const updateStatus = useCallback(async (id: string, status: string) => {
     if (!sb()) return;
-    await sb().from('hmis_bb_requests').update({ status }).eq('id', id);
+    await sb()!.from('hmis_bb_requests').update({ status }).eq('id', id);
     load();
   }, [load]);
 
@@ -264,7 +264,7 @@ export function useTransfusions(centreId: string | null) {
 
   const load = useCallback(async () => {
     if (!centreId || !sb()) return;
-    const { data } = await sb().from('hmis_bb_transfusions')
+    const { data } = await sb()!.from('hmis_bb_transfusions')
       .select('*, patient:hmis_patients(first_name, last_name, uhid), component:hmis_bb_components(component_number, component_type, blood_group)')
       .eq('centre_id', centreId).order('issued_at', { ascending: false }).limit(50);
     setTransfusions(data || []);
@@ -274,17 +274,17 @@ export function useTransfusions(centreId: string | null) {
 
   const issue = useCallback(async (patientId: string, admissionId: string | null, componentId: string, crossmatchId: string | null, staffId: string) => {
     if (!centreId || !sb()) return;
-    await sb().from('hmis_bb_transfusions').insert({
+    await sb()!.from('hmis_bb_transfusions').insert({
       patient_id: patientId, admission_id: admissionId, component_id: componentId,
       crossmatch_id: crossmatchId, issued_by: staffId, centre_id: centreId, status: 'issued',
     });
-    await sb().from('hmis_bb_components').update({ status: 'issued' }).eq('id', componentId);
+    await sb()!.from('hmis_bb_components').update({ status: 'issued' }).eq('id', componentId);
     load();
   }, [centreId, load]);
 
   const startTransfusion = useCallback(async (transfusionId: string, staffId: string, vitals: { temp: number; pulse: number; bpSys: number; bpDia: number }) => {
     if (!sb()) return;
-    await sb().from('hmis_bb_transfusions').update({
+    await sb()!.from('hmis_bb_transfusions').update({
       status: 'in_progress', transfusion_start: new Date().toISOString(), administered_by: staffId,
       pre_temp: vitals.temp, pre_pulse: vitals.pulse, pre_bp_sys: vitals.bpSys, pre_bp_dia: vitals.bpDia,
     }).eq('id', transfusionId);
@@ -293,23 +293,23 @@ export function useTransfusions(centreId: string | null) {
 
   const completeTransfusion = useCallback(async (transfusionId: string, componentId: string, volumeMl: number, vitals: { temp: number; pulse: number; bpSys: number; bpDia: number }) => {
     if (!sb()) return;
-    await sb().from('hmis_bb_transfusions').update({
+    await sb()!.from('hmis_bb_transfusions').update({
       status: 'completed', transfusion_end: new Date().toISOString(), volume_transfused_ml: volumeMl,
       post_temp: vitals.temp, post_pulse: vitals.pulse, post_bp_sys: vitals.bpSys, post_bp_dia: vitals.bpDia,
     }).eq('id', transfusionId);
-    await sb().from('hmis_bb_components').update({ status: 'transfused' }).eq('id', componentId);
+    await sb()!.from('hmis_bb_components').update({ status: 'transfused' }).eq('id', componentId);
     load();
   }, [load]);
 
   const reportReaction = useCallback(async (transfusionId: string, patientId: string, reactionType: string, severity: string, symptoms: string, actions: string, staffId: string) => {
     if (!sb()) return;
-    const { data } = await sb().from('hmis_bb_reactions').insert({
+    const { data } = await sb()!.from('hmis_bb_reactions').insert({
       transfusion_id: transfusionId, patient_id: patientId,
       reaction_type: reactionType, severity, symptoms, actions_taken: actions,
       reported_by: staffId,
     }).select().single();
     if (data) {
-      await sb().from('hmis_bb_transfusions').update({ has_reaction: true, reaction_id: data.id, status: 'stopped' }).eq('id', transfusionId);
+      await sb()!.from('hmis_bb_transfusions').update({ has_reaction: true, reaction_id: data.id, status: 'stopped' }).eq('id', transfusionId);
     }
     load();
   }, [load]);

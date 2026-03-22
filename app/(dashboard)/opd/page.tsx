@@ -47,7 +47,7 @@ function OPDInner() {
   useEffect(() => {
     if (patSearch.length < 2 || !sb()) { setPatResults([]); return; }
     const t = setTimeout(async () => {
-      const { data } = await sb().from('hmis_patients').select('id, uhid, first_name, last_name, age_years, gender, phone_primary')
+      const { data } = await sb()!.from('hmis_patients').select('id, uhid, first_name, last_name, age_years, gender, phone_primary')
         .or(`uhid.ilike.%${patSearch}%,first_name.ilike.%${patSearch}%,last_name.ilike.%${patSearch}%,phone_primary.ilike.%${patSearch}%`)
         .eq('is_active', true).limit(8);
       setPatResults(data || []);
@@ -68,7 +68,7 @@ function OPDInner() {
 
   const handleQuickReg = async () => {
     if (!regForm.first_name || !regForm.phone) return;
-    const { data } = await sb().from('hmis_patients').insert({
+    const { data } = await sb()!.from('hmis_patients').insert({
       first_name: regForm.first_name, last_name: regForm.last_name, phone_primary: regForm.phone,
       gender: regForm.gender, age_years: parseInt(regForm.age) || null, centre_id: centreId,
     }).select('id, uhid, first_name, last_name, age_years, gender, phone_primary').single();

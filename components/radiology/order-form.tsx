@@ -45,7 +45,7 @@ export default function RadiologyOrderForm({ centreId, staffId, onComplete, onFl
   useEffect(() => {
     if (patSearch.length < 2 || prefilledPatientId || !sb()) { setPatResults([]); return; }
     const t = setTimeout(async () => {
-      const { data } = await sb().from('hmis_patients')
+      const { data } = await sb()!.from('hmis_patients')
         .select('id, uhid, first_name, last_name, age_years, gender, date_of_birth')
         .or(`uhid.ilike.%${patSearch}%,first_name.ilike.%${patSearch}%,phone_primary.ilike.%${patSearch}%`)
         .eq('is_active', true).limit(8);
@@ -57,7 +57,7 @@ export default function RadiologyOrderForm({ centreId, staffId, onComplete, onFl
   // Auto-fetch recent creatinine for contrast studies
   useEffect(() => {
     if (!selectedTest?.is_contrast || !form.patient_id || !sb()) return;
-    sb().from('hmis_lab_orders')
+    sb()!.from('hmis_lab_orders')
       .select('id, status, created_at, test:hmis_lab_test_master!inner(test_name)')
       .eq('patient_id', form.patient_id).eq('test.test_name', 'Serum Creatinine')
       .eq('status', 'completed').order('created_at', { ascending: false }).limit(1)

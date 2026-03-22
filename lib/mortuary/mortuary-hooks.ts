@@ -27,7 +27,7 @@ export function useMortuary(centreId: string | null) {
   const load = useCallback(async (showReleased?: boolean) => {
     if (!centreId || !sb()) return;
     setLoading(true);
-    let q = sb().from('hmis_mortuary')
+    let q = sb()!.from('hmis_mortuary')
       .select(`*, patient:hmis_patients(first_name, last_name, uhid, age_years, gender),
         declarer:hmis_staff!hmis_mortuary_declared_by_fkey(full_name),
         authorizer:hmis_staff!hmis_mortuary_release_authorized_by_fkey(full_name)`)
@@ -59,7 +59,7 @@ export function useMortuary(centreId: string | null) {
     postMortemRequired?: boolean; policeIntimation?: boolean; notes?: string;
   }) => {
     if (!centreId || !sb()) return;
-    await sb().from('hmis_mortuary').insert({
+    await sb()!.from('hmis_mortuary').insert({
       centre_id: centreId, patient_id: data.patientId || null,
       admission_id: data.admissionId || null,
       cause_of_death: data.causeOfDeath || null,
@@ -75,7 +75,7 @@ export function useMortuary(centreId: string | null) {
 
   const updateRecord = useCallback(async (id: string, updates: Partial<MortuaryRecord>) => {
     if (!sb()) return;
-    await sb().from('hmis_mortuary').update(updates).eq('id', id);
+    await sb()!.from('hmis_mortuary').update(updates).eq('id', id);
     load();
   }, [load]);
 
@@ -93,7 +93,7 @@ export function useMortuary(centreId: string | null) {
     if (record?.police_intimation && !data.nocFromPolice) {
       return { error: 'Police NOC required before release' };
     }
-    await sb().from('hmis_mortuary').update({
+    await sb()!.from('hmis_mortuary').update({
       status: 'released', released_to: data.releasedTo,
       released_at: new Date().toISOString(),
       release_authorized_by: data.authorizedBy,

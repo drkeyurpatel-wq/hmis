@@ -38,23 +38,23 @@ export default function PatientDetailPage() {
   useEffect(() => {
     if (!patientId || !sb()) return;
     async function load() {
-      const { data: pt } = await sb().from('hmis_patients').select('*').eq('id', patientId).single();
+      const { data: pt } = await sb()!.from('hmis_patients').select('*').eq('id', patientId).single();
       if (pt) { setPatient(pt); setEditForm(pt); }
 
-      const { data: alg } = await sb().from('hmis_patient_allergies').select('*').eq('patient_id', patientId);
+      const { data: alg } = await sb()!.from('hmis_patient_allergies').select('*').eq('patient_id', patientId);
       setAllergies(alg || []);
 
-      const { data: enc } = await sb().from('hmis_emr_encounters')
+      const { data: enc } = await sb()!.from('hmis_emr_encounters')
         .select('id, encounter_date, encounter_type, status, primary_diagnosis_code, primary_diagnosis_label, prescription_count, investigation_count, doctor:hmis_staff(full_name)')
         .eq('patient_id', patientId).order('encounter_date', { ascending: false }).limit(50);
       setEncounters(enc || []);
 
-      const { data: vis } = await sb().from('hmis_opd_visits')
+      const { data: vis } = await sb()!.from('hmis_opd_visits')
         .select('id, visit_number, token_number, status, check_in_time, doctor:hmis_staff(full_name)')
         .eq('patient_id', patientId).order('created_at', { ascending: false }).limit(20);
       setVisits(vis || []);
 
-      const { data: bl } = await sb().from('hmis_bills')
+      const { data: bl } = await sb()!.from('hmis_bills')
         .select('id, bill_number, bill_type, net_amount, paid_amount, balance_amount, status, bill_date')
         .eq('patient_id', patientId).order('bill_date', { ascending: false }).limit(20);
       setBills(bl || []);
@@ -66,7 +66,7 @@ export default function PatientDetailPage() {
 
   const saveEdit = async () => {
     if (!sb() || !patientId) return;
-    const { error } = await sb().from('hmis_patients').update({
+    const { error } = await sb()!.from('hmis_patients').update({
       first_name: editForm.first_name, last_name: editForm.last_name, middle_name: editForm.middle_name,
       date_of_birth: editForm.date_of_birth, gender: editForm.gender, blood_group: editForm.blood_group,
       phone_primary: editForm.phone_primary, phone_secondary: editForm.phone_secondary, email: editForm.email,

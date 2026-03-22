@@ -35,6 +35,7 @@ const NAV: NavGroup[] = [
     { href: '/handover', label: 'Shift Handover', icon: ClipboardList, module: 'ipd' },
     { href: '/emergency', label: 'Emergency', icon: Siren, module: 'ipd' },
     { href: '/ot', label: 'OT', icon: Scissors, module: 'ot' },
+    { href: '/surgical-planning', label: 'Surgical Planning', icon: ClipboardList, module: 'ot' },
     { href: '/cathlab', label: 'Cath Lab', icon: Heart, module: 'ot' },
     { href: '/endoscopy', label: 'Endoscopy', icon: Eye, module: 'ot' },
     { href: '/dialysis', label: 'Dialysis', icon: Droplets, module: 'ipd' },

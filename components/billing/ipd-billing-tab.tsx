@@ -27,7 +27,7 @@ export default function IPDBillingTab({ centreId, staffId, bills, onSelectBill, 
 
   const loadAdmissions = async () => {
     setLoading(true);
-    const { data } = await sb().from('hmis_admissions')
+    const { data } = await sb()!.from('hmis_admissions')
       .select('id, admission_date, status, patient:hmis_patients!inner(id, first_name, last_name, uhid, phone_primary), doctor:hmis_staff!inner(full_name)')
       .eq('centre_id', centreId).eq('status', 'active')
       .order('admission_date', { ascending: false });

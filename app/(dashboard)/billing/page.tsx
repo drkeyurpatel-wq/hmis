@@ -63,7 +63,7 @@ function BillingInner() {
   const loadBills = useCallback(async () => {
     if (!centreId) return;
     setBillsLoading(true);
-    const { data } = await sb().from('hmis_bills')
+    const { data } = await sb()!.from('hmis_bills')
       .select('id, bill_number, bill_type, bill_date, payor_type, gross_amount, discount_amount, net_amount, paid_amount, balance_amount, status, patient:hmis_patients!inner(first_name, last_name, uhid)')
       .eq('centre_id', centreId).order('created_at', { ascending: false }).limit(200);
     setBills(data || []);
@@ -72,7 +72,7 @@ function BillingInner() {
 
   const loadAdvances = useCallback(async () => {
     if (!centreId) return;
-    const { data } = await sb().from('hmis_advances')
+    const { data } = await sb()!.from('hmis_advances')
       .select('id, amount, payment_mode, receipt_number, created_at, is_adjusted, patient:hmis_patients!inner(first_name, last_name, uhid)')
       .order('created_at', { ascending: false }).limit(50);
     setAdvances(data || []);
@@ -84,7 +84,7 @@ function BillingInner() {
   useEffect(() => {
     if (advForm.search.length < 2) { setAdvPatResults([]); return; }
     const t = setTimeout(async () => {
-      const { data } = await sb().from('hmis_patients')
+      const { data } = await sb()!.from('hmis_patients')
         .select('id, first_name, last_name, uhid')
         .or(`uhid.ilike.%${advForm.search}%,first_name.ilike.%${advForm.search}%,last_name.ilike.%${advForm.search}%`)
         .eq('is_active', true).limit(5);
@@ -95,8 +95,8 @@ function BillingInner() {
 
   const collectAdvance = async () => {
     if (!advForm.patientId || !advForm.amount) return;
-    const { data: receiptNo } = await sb().rpc('hmis_next_sequence', { p_centre_id: centreId, p_type: 'advance' });
-    await sb().from('hmis_advances').insert({
+    const { data: receiptNo } = await sb()!.rpc('hmis_next_sequence', { p_centre_id: centreId, p_type: 'advance' });
+    await sb()!.from('hmis_advances').insert({
       patient_id: advForm.patientId, amount: parseFloat(advForm.amount),
       payment_mode: advForm.mode, receipt_number: receiptNo || `ADV-${Date.now()}`,
       centre_id: centreId, collected_by: staffId,

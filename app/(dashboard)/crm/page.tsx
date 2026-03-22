@@ -39,7 +39,7 @@ function CRMInner() {
   const [doctors, setDoctors] = useState<any[]>([]);
   useEffect(() => {
     if (!centreId) return;
-    sb().from('hmis_staff').select('id, full_name, specialisation').eq('staff_type', 'doctor').eq('is_active', true)
+    sb()!.from('hmis_staff').select('id, full_name, specialisation').eq('staff_type', 'doctor').eq('is_active', true)
       .then(({ data }: any) => setDoctors(data || []));
   }, [centreId]);
 

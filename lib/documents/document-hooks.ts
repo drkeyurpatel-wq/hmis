@@ -9,7 +9,7 @@ export function useDocuments(centreId: string | null) {
   const load = useCallback(async (filters?: { type?: string; dept?: string; status?: string; search?: string }) => {
     if (!centreId || !sb()) return;
     setLoading(true);
-    let q = sb().from('hmis_documents')
+    let q = sb()!.from('hmis_documents')
       .select('*, creator:hmis_staff!hmis_documents_created_by_fkey(full_name), approver:hmis_staff!hmis_documents_approved_by_fkey(full_name)')
       .eq('centre_id', centreId).order('updated_at', { ascending: false }).limit(200);
     if (filters?.type && filters.type !== 'all') q = q.eq('doc_type', filters.type);
@@ -25,14 +25,14 @@ export function useDocuments(centreId: string | null) {
   const create = useCallback(async (data: any, staffId: string) => {
     if (!centreId || !sb()) return { success: false };
     const num = `DOC-${data.doc_type?.toUpperCase().slice(0, 3)}-${Date.now().toString(36).toUpperCase()}`;
-    const { error } = await sb().from('hmis_documents').insert({ centre_id: centreId, doc_number: num, created_by: staffId, ...data });
+    const { error } = await sb()!.from('hmis_documents').insert({ centre_id: centreId, doc_number: num, created_by: staffId, ...data });
     if (!error) load();
     return { success: !error };
   }, [centreId, load]);
 
   const update = useCallback(async (id: string, updates: any) => {
     if (!sb()) return;
-    await sb().from('hmis_documents').update({ ...updates, updated_at: new Date().toISOString() }).eq('id', id);
+    await sb()!.from('hmis_documents').update({ ...updates, updated_at: new Date().toISOString() }).eq('id', id);
     load();
   }, [load]);
 
@@ -42,12 +42,12 @@ export function useDocuments(centreId: string | null) {
 
   const newVersion = useCallback(async (docId: string, data: any, staffId: string) => {
     if (!centreId || !sb()) return { success: false };
-    const { data: old } = await sb().from('hmis_documents').select('version, doc_number').eq('id', docId).single();
+    const { data: old } = await sb()!.from('hmis_documents').select('version, doc_number').eq('id', docId).single();
     if (!old) return { success: false };
     // Supersede old
-    await sb().from('hmis_documents').update({ status: 'superseded', superseded_date: new Date().toISOString().split('T')[0] }).eq('id', docId);
+    await sb()!.from('hmis_documents').update({ status: 'superseded', superseded_date: new Date().toISOString().split('T')[0] }).eq('id', docId);
     // Create new version
-    const { error } = await sb().from('hmis_documents').insert({
+    const { error } = await sb()!.from('hmis_documents').insert({
       centre_id: centreId, ...data, doc_number: old.doc_number, version: (old.version || 1) + 1,
       previous_version_id: docId, created_by: staffId, status: 'draft',
     });

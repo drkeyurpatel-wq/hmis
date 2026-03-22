@@ -48,16 +48,16 @@ export function useCssd(centreId: string | null) {
     setLoading(true);
     const now = new Date();
     const [sRes, cRes, iRes, aRes] = await Promise.all([
-      sb().from('hmis_cssd_instrument_sets').select('*').eq('centre_id', centreId).eq('is_active', true).order('set_name'),
-      sb().from('hmis_cssd_cycles').select('*, operator:hmis_staff!hmis_cssd_cycles_operator_id_fkey(full_name)')
+      sb()!.from('hmis_cssd_instrument_sets').select('*').eq('centre_id', centreId).eq('is_active', true).order('set_name'),
+      sb()!.from('hmis_cssd_cycles').select('*, operator:hmis_staff!hmis_cssd_cycles_operator_id_fkey(full_name)')
         .eq('centre_id', centreId).order('created_at', { ascending: false }).limit(100),
-      sb().from('hmis_cssd_issue_return')
+      sb()!.from('hmis_cssd_issue_return')
         .select(`*, set:hmis_cssd_instrument_sets(set_name, set_code),
           issuer:hmis_staff!hmis_cssd_issue_return_issued_by_fkey(full_name),
           returner:hmis_staff!hmis_cssd_issue_return_returned_by_fkey(full_name),
           patient:hmis_patients(first_name, last_name)`)
         .eq('centre_id', centreId).order('issued_at', { ascending: false }).limit(100),
-      sb().from('hmis_cssd_autoclaves').select('*').eq('centre_id', centreId).eq('is_active', true).order('autoclave_number'),
+      sb()!.from('hmis_cssd_autoclaves').select('*').eq('centre_id', centreId).eq('is_active', true).order('autoclave_number'),
     ]);
 
     setSets((sRes.data || []).map((s: any) => {
@@ -110,14 +110,14 @@ export function useCssd(centreId: string | null) {
   // ── Instrument Sets ──
   const createSet = useCallback(async (data: any) => {
     if (!centreId || !sb()) return { success: false };
-    const { error } = await sb().from('hmis_cssd_instrument_sets').insert({ centre_id: centreId, ...data });
+    const { error } = await sb()!.from('hmis_cssd_instrument_sets').insert({ centre_id: centreId, ...data });
     if (!error) load();
     return { success: !error, error: error?.message };
   }, [centreId, load]);
 
   const updateSet = useCallback(async (id: string, data: any) => {
     if (!sb()) return;
-    await sb().from('hmis_cssd_instrument_sets').update(data).eq('id', id);
+    await sb()!.from('hmis_cssd_instrument_sets').update(data).eq('id', id);
     load();
   }, [load]);
 
@@ -125,13 +125,13 @@ export function useCssd(centreId: string | null) {
   const startCycle = useCallback(async (data: any, staffId: string) => {
     if (!centreId || !sb()) return { success: false };
     const cycleNum = `CY-${Date.now().toString(36).toUpperCase()}`;
-    const { error } = await sb().from('hmis_cssd_cycles').insert({
+    const { error } = await sb()!.from('hmis_cssd_cycles').insert({
       centre_id: centreId, cycle_number: cycleNum, operator_id: staffId,
       start_time: new Date().toISOString(), status: 'in_progress', ...data,
     });
     // Mark sets as sterilizing
     for (const item of (data.load_items || [])) {
-      if (item.set_id) await sb().from('hmis_cssd_instrument_sets').update({ status: 'sterilizing' }).eq('id', item.set_id);
+      if (item.set_id) await sb()!.from('hmis_cssd_instrument_sets').update({ status: 'sterilizing' }).eq('id', item.set_id);
     }
     if (!error) load();
     return { success: !error, error: error?.message };
@@ -139,8 +139,8 @@ export function useCssd(centreId: string | null) {
 
   const completeCycle = useCallback(async (cycleId: string, biResult: string, updates?: any) => {
     if (!sb()) return;
-    const { data: cycle } = await sb().from('hmis_cssd_cycles').select('load_items').eq('id', cycleId).single();
-    await sb().from('hmis_cssd_cycles').update({
+    const { data: cycle } = await sb()!.from('hmis_cssd_cycles').select('load_items').eq('id', cycleId).single();
+    await sb()!.from('hmis_cssd_cycles').update({
       status: biResult === 'pass' ? 'completed' : 'failed',
       bi_test_result: biResult, end_time: new Date().toISOString(), ...updates,
     }).eq('id', cycleId);
@@ -149,17 +149,17 @@ export function useCssd(centreId: string | null) {
       for (const item of cycle.load_items) {
         if (!item.set_id) continue;
         if (biResult === 'pass') {
-          await sb().from('hmis_cssd_instrument_sets').update({
+          await sb()!.from('hmis_cssd_instrument_sets').update({
             status: 'available', last_sterilized_at: new Date().toISOString(),
             location: 'cssd_store',
           }).eq('id', item.set_id);
           // Increment sterilization_count
-          await sb().rpc('increment_cssd_cycle_count', { p_set_id: item.set_id }).catch(() => {
+          await Promise.resolve(sb()!.rpc('increment_cssd_cycle_count', { p_set_id: item.set_id })).catch(() => {
             // Fallback if RPC doesn't exist
           });
         } else {
           // Failed — mark for re-sterilization
-          await sb().from('hmis_cssd_instrument_sets').update({ status: 'available' }).eq('id', item.set_id);
+          await sb()!.from('hmis_cssd_instrument_sets').update({ status: 'available' }).eq('id', item.set_id);
         }
       }
     }
@@ -168,7 +168,7 @@ export function useCssd(centreId: string | null) {
 
   const updateCycle = useCallback(async (id: string, data: any) => {
     if (!sb()) return;
-    await sb().from('hmis_cssd_cycles').update(data).eq('id', id);
+    await sb()!.from('hmis_cssd_cycles').update(data).eq('id', id);
     load();
   }, [load]);
 
@@ -179,14 +179,14 @@ export function useCssd(centreId: string | null) {
     ot_booking_id?: string;
   }) => {
     if (!centreId || !sb()) return { success: false };
-    const { error } = await sb().from('hmis_cssd_issue_return').insert({
+    const { error } = await sb()!.from('hmis_cssd_issue_return').insert({
       centre_id: centreId, set_id: data.set_id, issued_to: data.issued_to,
       issued_to_location: data.issued_to_location,
       patient_id: data.patient_id || null, surgery_name: data.surgery_name || '',
       issued_by: data.staffId, ot_booking_id: data.ot_booking_id || null,
     });
     if (!error) {
-      await sb().from('hmis_cssd_instrument_sets').update({ status: 'in_use', location: data.issued_to_location }).eq('id', data.set_id);
+      await sb()!.from('hmis_cssd_instrument_sets').update({ status: 'in_use', location: data.issued_to_location }).eq('id', data.set_id);
       load();
     }
     return { success: !error, error: error?.message };
@@ -197,7 +197,7 @@ export function useCssd(centreId: string | null) {
     sharps_count_match?: boolean; contamination_level?: string; return_wash_done?: boolean;
   }) => {
     if (!sb()) return { success: false };
-    const { error } = await sb().from('hmis_cssd_issue_return').update({
+    const { error } = await sb()!.from('hmis_cssd_issue_return').update({
       returned_at: new Date().toISOString(), returned_by: staffId,
       condition_on_return: data.condition, missing_items: data.missing_items || [],
       instrument_count_verified: data.instrument_count_verified,
@@ -205,7 +205,7 @@ export function useCssd(centreId: string | null) {
       return_wash_done: data.return_wash_done,
     }).eq('id', issueId);
     if (!error) {
-      await sb().from('hmis_cssd_instrument_sets').update({ status: 'available', location: 'cssd_store' }).eq('id', setId);
+      await sb()!.from('hmis_cssd_instrument_sets').update({ status: 'available', location: 'cssd_store' }).eq('id', setId);
       load();
     }
     return { success: !error };
@@ -214,16 +214,16 @@ export function useCssd(centreId: string | null) {
   // ── Recall ──
   const recallCycle = useCallback(async (cycleId: string, reason: string, staffId: string) => {
     if (!centreId || !sb()) return;
-    const { data: cycle } = await sb().from('hmis_cssd_cycles').select('load_items').eq('id', cycleId).single();
-    await sb().from('hmis_cssd_cycles').update({ recalled: true, recall_reason: reason }).eq('id', cycleId);
+    const { data: cycle } = await sb()!.from('hmis_cssd_cycles').select('load_items').eq('id', cycleId).single();
+    await sb()!.from('hmis_cssd_cycles').update({ recalled: true, recall_reason: reason }).eq('id', cycleId);
 
     for (const item of (cycle?.load_items || [])) {
       if (!item.set_id) continue;
       // Find if set was issued
-      const { data: issue } = await sb().from('hmis_cssd_issue_return').select('id, patient_id')
+      const { data: issue } = await sb()!.from('hmis_cssd_issue_return').select('id, patient_id')
         .eq('set_id', item.set_id).is('returned_at', null).order('issued_at', { ascending: false }).limit(1).single();
 
-      await sb().from('hmis_cssd_recall_log').insert({
+      await sb()!.from('hmis_cssd_recall_log').insert({
         centre_id: centreId, cycle_id: cycleId, set_id: item.set_id,
         issue_id: issue?.id || null, recall_reason: reason,
         set_location: 'unknown', patient_affected_id: issue?.patient_id || null,

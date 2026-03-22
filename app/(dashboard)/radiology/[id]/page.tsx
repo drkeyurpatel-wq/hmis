@@ -40,7 +40,7 @@ export default function StudyDetailPage() {
     if (!reportForm.findings.trim() || !reportForm.impression.trim()) { setActionError('Findings and Impression required'); return; }
     setActionError('');
 
-    const { error } = await sb().from('hmis_imaging_reports').insert({
+    const { error } = await sb()!.from('hmis_imaging_reports').insert({
       study_id: study.id, centre_id: study.centreId,
       report_status: 'final', source: 'manual',
       reported_by_id: staffId, reported_by_name: staff?.full_name,
@@ -49,9 +49,9 @@ export default function StudyDetailPage() {
     });
     if (error) { setActionError(error.message); return; }
 
-    await sb().from('hmis_imaging_studies').update({ status: 'reported', updated_at: new Date().toISOString() }).eq('id', study.id);
+    await sb()!.from('hmis_imaging_studies').update({ status: 'reported', updated_at: new Date().toISOString() }).eq('id', study.id);
     if (study.orderId) {
-      await sb().from('hmis_radiology_orders').update({ status: 'reported', reported_at: new Date().toISOString() }).eq('id', study.orderId);
+      await sb()!.from('hmis_radiology_orders').update({ status: 'reported', reported_at: new Date().toISOString() }).eq('id', study.orderId);
     }
 
     flash('Report saved');
@@ -61,12 +61,12 @@ export default function StudyDetailPage() {
 
   const verifyReport = async (reportId: string) => {
     if (!sb()) return;
-    const { error } = await sb().from('hmis_imaging_reports').update({
+    const { error } = await sb()!.from('hmis_imaging_reports').update({
       report_status: 'verified', verified_by_id: staffId, verified_by_name: staff?.full_name,
       verified_at: new Date().toISOString(),
     }).eq('id', reportId);
     if (error) { setActionError(error.message); return; }
-    await sb().from('hmis_imaging_studies').update({ status: 'verified', updated_at: new Date().toISOString() }).eq('id', study!.id);
+    await sb()!.from('hmis_imaging_studies').update({ status: 'verified', updated_at: new Date().toISOString() }).eq('id', study!.id);
     flash('Report verified'); load();
   };
 

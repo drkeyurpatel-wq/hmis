@@ -31,7 +31,7 @@ export default function PackageBuilder({ centreId, onFlash }: Props) {
   // Load existing packages
   useEffect(() => {
     if (!centreId || !sb()) { setLoading(false); return; }
-    sb().from('hmis_packages').select('*').eq('centre_id', centreId).order('name')
+    sb()!.from('hmis_packages').select('*').eq('centre_id', centreId).order('name')
       .then(({ data }: any) => {
         setPackages((data || []).map((p: any) => ({
           id: p.id, name: p.name, description: p.description || '',
@@ -48,7 +48,7 @@ export default function PackageBuilder({ centreId, onFlash }: Props) {
   useEffect(() => {
     if (search.length < 2 || !sb()) { setResults([]); return; }
     const t = setTimeout(async () => {
-      const { data } = await sb().from('hmis_tariff_master')
+      const { data } = await sb()!.from('hmis_tariff_master')
         .select('id, service_name, category, rate_self')
         .eq('centre_id', centreId).eq('is_active', true)
         .ilike('service_name', `%${search}%`).limit(8);
@@ -83,7 +83,7 @@ export default function PackageBuilder({ centreId, onFlash }: Props) {
   // Quick-add common package components
   const quickAdd = async (searchTerm: string, qty: number = 1, days: number = 1) => {
     if (!sb()) return;
-    const { data } = await sb().from('hmis_tariff_master')
+    const { data } = await sb()!.from('hmis_tariff_master')
       .select('id, service_name, category, rate_self')
       .eq('centre_id', centreId).eq('is_active', true)
       .ilike('service_name', `%${searchTerm}%`).limit(1).maybeSingle();
@@ -93,7 +93,7 @@ export default function PackageBuilder({ centreId, onFlash }: Props) {
   // Save package
   const savePackage = async () => {
     if (!pkgName || items.length === 0) return;
-    const { error } = await sb().from('hmis_packages').insert({
+    const { error } = await sb()!.from('hmis_packages').insert({
       centre_id: centreId, name: pkgName, description: pkgDesc,
       room_category: roomCat, expected_los: los,
       items: items, gross_amount: gross, discount_amount: discountAmt,
@@ -103,7 +103,7 @@ export default function PackageBuilder({ centreId, onFlash }: Props) {
     onFlash(`Package saved: ${pkgName} — ${fmt(net)}`);
     setPkgName(''); setPkgDesc(''); setItems([]); setShowNew(false);
     // Reload
-    const { data } = await sb().from('hmis_packages').select('*').eq('centre_id', centreId).order('name');
+    const { data } = await sb()!.from('hmis_packages').select('*').eq('centre_id', centreId).order('name');
     setPackages((data || []).map((p: any) => ({ id: p.id, name: p.name, description: p.description || '', roomCategory: p.room_category || 'economy', los: p.expected_los || 3, items: p.items || [], gross: parseFloat(p.gross_amount || 0), discount: parseFloat(p.discount_amount || 0), net: parseFloat(p.net_amount || 0), isActive: p.is_active })));
   };
 

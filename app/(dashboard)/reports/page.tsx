@@ -38,7 +38,7 @@ function ReportsInner() {
 
   useEffect(() => {
     if (!sb()) return;
-    sb().from('hmis_centres').select('id, name, code').eq('is_active', true).order('name')
+    sb()!.from('hmis_centres').select('id, name, code').eq('is_active', true).order('name')
       .then(({ data }: any) => setCentres(data || []));
   }, []);
 

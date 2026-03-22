@@ -26,7 +26,7 @@ export function useReportEngine() {
     if (!sb()) return;
     setLoading(true); setError(null);
 
-    const { data: bills } = await sb().from('hmis_bills')
+    const { data: bills } = await sb()!.from('hmis_bills')
       .select('id, bill_number, bill_date, bill_type, payor_type, gross_amount, discount_amount, net_amount, paid_amount, balance_amount, status, centre_id, centre:hmis_centres(name, code)')
       .gte('bill_date', f.dateFrom).lte('bill_date', f.dateTo)
       
@@ -77,25 +77,25 @@ export function useReportEngine() {
     setLoading(true); setError(null);
 
     // OPD visits by doctor
-    const { data: opd } = await sb().from('hmis_opd_visits')
+    const { data: opd } = await sb()!.from('hmis_opd_visits')
       .select('doctor_id, doctor:hmis_staff!inner(full_name, department:hmis_departments(name))')
       .gte('created_at', f.dateFrom + 'T00:00:00').lte('created_at', f.dateTo + 'T23:59:59')
       ;
 
     // Admissions by doctor
-    const { data: adm } = await sb().from('hmis_admissions')
+    const { data: adm } = await sb()!.from('hmis_admissions')
       .select('primary_doctor_id, primary_doctor:hmis_staff!hmis_admissions_primary_doctor_id_fkey(full_name)')
       .gte('admission_date', f.dateFrom + 'T00:00:00').lte('admission_date', f.dateTo + 'T23:59:59')
       ;
 
     // Surgeries by surgeon
-    const { data: surg } = await sb().from('hmis_ot_bookings')
+    const { data: surg } = await sb()!.from('hmis_ot_bookings')
       .select('surgeon_id, surgeon:hmis_staff!hmis_ot_bookings_surgeon_id_fkey(full_name), status')
       .gte('scheduled_date', f.dateFrom).lte('scheduled_date', f.dateTo)
       .neq('status', 'cancelled');
 
     // Bill items by doctor (revenue)
-    const { data: rev } = await sb().from('hmis_bill_items')
+    const { data: rev } = await sb()!.from('hmis_bill_items')
       .select('doctor_id, net_amount, doctor:hmis_staff!hmis_bill_items_doctor_id_fkey(full_name)')
       .gte('service_date', f.dateFrom).lte('service_date', f.dateTo)
       .not('doctor_id', 'is', null);
@@ -121,12 +121,12 @@ export function useReportEngine() {
     if (!sb()) return;
     setLoading(true); setError(null);
 
-    const { data: admissions } = await sb().from('hmis_admissions')
+    const { data: admissions } = await sb()!.from('hmis_admissions')
       .select('id, admission_date, actual_discharge, status, bed:hmis_beds(room:hmis_rooms(ward:hmis_wards(name, type))), centre:hmis_centres(name, code)')
       .gte('admission_date', f.dateFrom + 'T00:00:00')
       ;
 
-    const { data: beds } = await sb().from('hmis_beds')
+    const { data: beds } = await sb()!.from('hmis_beds')
       .select('id, status, room:hmis_rooms!inner(ward:hmis_wards!inner(name, type, centre_id, centre:hmis_centres(name)))')
       .eq('is_active', true);
 
@@ -172,7 +172,7 @@ export function useReportEngine() {
     if (!sb()) return;
     setLoading(true); setError(null);
 
-    const { data: visits } = await sb().from('hmis_opd_visits')
+    const { data: visits } = await sb()!.from('hmis_opd_visits')
       .select('id, status, check_in_time, consultation_start, consultation_end, created_at, doctor:hmis_staff!inner(full_name, department:hmis_departments(name)), centre:hmis_centres(name)')
       .gte('created_at', f.dateFrom + 'T00:00:00').lte('created_at', f.dateTo + 'T23:59:59')
       ;
@@ -216,7 +216,7 @@ export function useReportEngine() {
     if (!sb()) return;
     setLoading(true); setError(null);
 
-    const { data: admissions } = await sb().from('hmis_admissions')
+    const { data: admissions } = await sb()!.from('hmis_admissions')
       .select('id, ipd_number, admission_date, actual_discharge, status, discharge_type, payor_type, patient:hmis_patients!inner(first_name, last_name, uhid), centre:hmis_centres(name)')
       .in('status', ['discharged', 'discharge_initiated'])
       .gte('actual_discharge', f.dateFrom + 'T00:00:00').lte('actual_discharge', f.dateTo + 'T23:59:59')
@@ -256,7 +256,7 @@ export function useReportEngine() {
     if (!sb()) return;
     setLoading(true); setError(null);
 
-    const { data: claims } = await sb().from('hmis_claims')
+    const { data: claims } = await sb()!.from('hmis_claims')
       .select('id, claim_number, claim_type, claimed_amount, approved_amount, settled_amount, tds_amount, disallowance_amount, status, submitted_at, settled_at, bill:hmis_bills!inner(bill_number, patient:hmis_patients!inner(first_name, last_name, uhid), centre:hmis_centres(name))')
       .gte('submitted_at', f.dateFrom + 'T00:00:00').lte('submitted_at', f.dateTo + 'T23:59:59');
 
@@ -288,7 +288,7 @@ export function useReportEngine() {
     if (!sb()) return;
     setLoading(true); setError(null);
 
-    const { data: stock } = await sb().from('hmis_pharmacy_stock')
+    const { data: stock } = await sb()!.from('hmis_pharmacy_stock')
       .select('drug_id, quantity, cost_price, mrp, expiry_date, batch_number, drug:hmis_drug_master(drug_name, generic_name, category)')
       
       .gt('quantity', 0);
@@ -320,7 +320,7 @@ export function useReportEngine() {
     if (!sb()) return;
     setLoading(true); setError(null);
 
-    const { data: orders } = await sb().from('hmis_lab_orders')
+    const { data: orders } = await sb()!.from('hmis_lab_orders')
       .select('id, status, created_at, updated_at, test:hmis_lab_test_master(test_name, department)')
       .gte('created_at', f.dateFrom + 'T00:00:00').lte('created_at', f.dateTo + 'T23:59:59')
       ;
@@ -347,7 +347,7 @@ export function useReportEngine() {
     if (!sb()) return;
     setLoading(true); setError(null);
 
-    const { data: orders } = await sb().from('hmis_radiology_orders')
+    const { data: orders } = await sb()!.from('hmis_radiology_orders')
       .select('id, modality, status, urgency, tat_minutes, created_at, test:hmis_radiology_test_master(test_name)')
       .gte('created_at', f.dateFrom + 'T00:00:00').lte('created_at', f.dateTo + 'T23:59:59')
       ;
@@ -374,7 +374,7 @@ export function useReportEngine() {
     if (!sb()) return;
     setLoading(true); setError(null);
 
-    const { data: bills } = await sb().from('hmis_bills')
+    const { data: bills } = await sb()!.from('hmis_bills')
       .select('id, bill_number, bill_date, payor_type, net_amount, paid_amount, balance_amount, status, patient:hmis_patients!inner(first_name, last_name, uhid), centre:hmis_centres(name)')
       .gt('balance_amount', 0).neq('status', 'cancelled')
       ;
@@ -407,7 +407,7 @@ export function useReportEngine() {
     if (!sb()) return;
     setLoading(true); setError(null);
 
-    const { data: charges } = await sb().from('hmis_charge_log')
+    const { data: charges } = await sb()!.from('hmis_charge_log')
       .select('id, description, category, source, amount, status, service_date')
       .gte('service_date', f.dateFrom).lte('service_date', f.dateTo)
       
@@ -440,21 +440,21 @@ export function useReportEngine() {
     if (!sb()) return;
     setLoading(true); setError(null);
 
-    const { data: centres } = await sb().from('hmis_centres').select('id, name, code').eq('is_active', true);
+    const { data: centres } = await sb()!.from('hmis_centres').select('id, name, code').eq('is_active', true);
 
     const results: any[] = [];
     for (const c of (centres || [])) {
-      const { data: bills } = await sb().from('hmis_bills')
+      const { data: bills } = await sb()!.from('hmis_bills')
         .select('net_amount, paid_amount, balance_amount').eq('centre_id', c.id)
         .gte('bill_date', f.dateFrom).lte('bill_date', f.dateTo).neq('status', 'cancelled');
 
-      const { count: opdCount } = await sb().from('hmis_opd_visits').select('id', { count: 'exact', head: true })
+      const { count: opdCount } = await sb()!.from('hmis_opd_visits').select('id', { count: 'exact', head: true })
         .eq('centre_id', c.id).gte('created_at', f.dateFrom + 'T00:00:00').lte('created_at', f.dateTo + 'T23:59:59');
 
-      const { count: ipdCount } = await sb().from('hmis_admissions').select('id', { count: 'exact', head: true })
+      const { count: ipdCount } = await sb()!.from('hmis_admissions').select('id', { count: 'exact', head: true })
         .eq('centre_id', c.id).gte('admission_date', f.dateFrom + 'T00:00:00').lte('admission_date', f.dateTo + 'T23:59:59');
 
-      const { data: beds } = await sb().from('hmis_beds')
+      const { data: beds } = await sb()!.from('hmis_beds')
         .select('id, status, room:hmis_rooms!inner(ward:hmis_wards!inner(centre_id))')
         .eq('room.ward.centre_id', c.id).eq('is_active', true);
 

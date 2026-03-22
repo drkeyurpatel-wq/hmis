@@ -2,17 +2,10 @@
 // Multi-channel dispatcher with proper result tracking
 // Notifications should never block clinical workflow — all errors are caught and logged.
 
-<<<<<<< HEAD
 import { sendAppointmentReminder, sendOPDTokenConfirmation, sendLabResultsReady, sendPharmacyReady, sendDischargeAlert, sendPaymentReceipt, sendFollowUpReminder } from './whatsapp';
 import { smsAppointmentReminder, smsOPDToken, smsLabReady, smsPharmacyReady, smsDischargeAlert, smsPaymentReceipt, smsFollowUpReminder } from './sms';
 import { type NotificationResult } from './notification-status';
-import { createClient } from '@/lib/supabase/client';
-
-let _sb: any = null;
-function sb() { if (typeof window === 'undefined') return null as any; if (!_sb) { try { _sb = createClient(); } catch { return null; } } return _sb; }
-=======
 import { sb } from '@/lib/supabase/browser';
->>>>>>> 59535101d2b66be5dbf4ba30e9219cd56e9332f3
 
 interface DispatchResult {
   whatsapp?: NotificationResult;
@@ -24,7 +17,7 @@ interface DispatchResult {
 async function getEnabledChannels(centreId: string | undefined, eventType: string): Promise<{ whatsapp: boolean; sms: boolean }> {
   const defaults = { whatsapp: true, sms: false };
   if (!centreId || !sb()) return defaults;
-  const { data } = await sb().from('hmis_notification_templates').select('whatsapp_enabled, sms_enabled')
+  const { data } = await sb()!.from('hmis_notification_templates').select('whatsapp_enabled, sms_enabled')
     .eq('centre_id', centreId).eq('event_type', eventType).eq('is_active', true).maybeSingle();
   if (data) return { whatsapp: data.whatsapp_enabled ?? true, sms: data.sms_enabled ?? false };
   return defaults;

@@ -26,7 +26,7 @@ export default function PatientLabHistory({ patientId, compact = false, admissio
     if (!patientId || !sb()) { setLoading(false); return; }
     setLoading(true);
 
-    let q = sb().from('hmis_lab_orders')
+    let q = sb()!.from('hmis_lab_orders')
       .select(`id, status, created_at, test:hmis_lab_test_master(test_name, test_code, department),
         results:hmis_lab_results(id, parameter_name, result_value, unit, reference_range, is_abnormal, is_critical, flag)`)
       .eq('patient_id', patientId)

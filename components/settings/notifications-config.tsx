@@ -26,7 +26,7 @@ export default function NotificationsConfig({ centreId, flash }: Props) {
   const load = useCallback(async () => {
     if (!centreId || !sb()) return;
     setLoading(true);
-    const { data } = await sb().from('hmis_notification_preferences').select('*').eq('centre_id', centreId).order('event_type');
+    const { data } = await sb()!.from('hmis_notification_preferences').select('*').eq('centre_id', centreId).order('event_type');
     setPrefs(data || []);
     setLoading(false);
   }, [centreId]);
@@ -41,11 +41,11 @@ export default function NotificationsConfig({ centreId, flash }: Props) {
     const existing = getPref(eventType, channel);
     if (existing?.id) {
       const newVal = !existing.is_enabled;
-      await sb().from('hmis_notification_preferences').update({ is_enabled: newVal }).eq('id', existing.id);
+      await sb()!.from('hmis_notification_preferences').update({ is_enabled: newVal }).eq('id', existing.id);
       setPrefs(prev => prev.map(p => p.id === existing.id ? { ...p, is_enabled: newVal } : p));
       flash(`${channel} for ${eventType} ${newVal ? 'enabled' : 'disabled'}`);
     } else {
-      const { data } = await sb().from('hmis_notification_preferences').insert({ centre_id: centreId, event_type: eventType, channel, is_enabled: true }).select('*').maybeSingle();
+      const { data } = await sb()!.from('hmis_notification_preferences').insert({ centre_id: centreId, event_type: eventType, channel, is_enabled: true }).select('*').maybeSingle();
       if (data) setPrefs(prev => [...prev, data]);
       flash(`${channel} for ${eventType} enabled`);
     }
