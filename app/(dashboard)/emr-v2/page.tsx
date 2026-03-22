@@ -391,8 +391,8 @@ function EMRInner() {
                   const dxLine = diagnoses.map(d => `${d.name} (${d.code})`).join(', ');
                   openPrintWindow(`<div style="max-width:600px;margin:0 auto;font-family:Segoe UI,Arial;color:#1a1a1a">
                     <div style="text-align:center;border-bottom:3px solid #1e40af;padding-bottom:8px;margin-bottom:10px">
-                      <div style="font-size:16px;font-weight:700;color:#1e40af">Health1 Super Speciality Hospital</div>
-                      <div style="font-size:8px;color:#666">Shilaj, Ahmedabad | NABH Accredited</div>
+                      <div style="font-size:16px;font-weight:700;color:#1e40af">Hospital</div>
+                      <div style="font-size:8px;color:#666"> | NABH Accredited</div>
                       <div style="font-size:12px;font-weight:700;margin-top:4px;color:#dc2626">℞ PRESCRIPTION</div>
                     </div>
                     <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;font-size:10px;padding:6px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:4px;margin-bottom:10px">
@@ -420,7 +420,7 @@ function EMRInner() {
                     investigations: investigations.map(inv => ({ name: inv.name, urgency: inv.urgency })),
                     prescriptions: prescriptions.map(p => ({ brand: p.drug, generic: p.generic, strength: p.dose, dose: p.dose, frequency: p.frequency, duration: p.duration, instructions: p.instructions })),
                     advice: advice ? [advice] : [], followUp: followUpDate || '',
-                  }, { name: 'Health1 Super Speciality Hospital', address: 'Shilaj, Ahmedabad', phone: '', tagline: 'NABH Accredited' });
+                  }, { name: 'Hospital', address: '', phone: '', tagline: 'NABH Accredited' });
                 }} className="px-4 py-2.5 bg-teal-600 text-white text-sm rounded-lg">Print Summary</button>
               </div>
             </div>

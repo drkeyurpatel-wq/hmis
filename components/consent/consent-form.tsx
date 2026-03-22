@@ -138,7 +138,7 @@ export default function ConsentForm({ templates, patientName, patientId, admissi
 
     openPrintWindow(`<div style="max-width:700px;margin:0 auto;font-family:Segoe UI,Arial,sans-serif;font-size:11px">
       <div style="text-align:center;border-bottom:2px solid #0d9488;padding-bottom:8px;margin-bottom:12px">
-        <div style="font-size:16px;font-weight:700;color:#0d9488">Health1 Super Speciality Hospital</div>
+        <div style="font-size:16px;font-weight:700;color:#0d9488">Hospital</div>
         <div style="font-size:9px;color:#666">Shilaj, Ahmedabad | NABH Accredited</div>
         <div style="font-size:14px;font-weight:700;margin-top:6px">${form.procedureName || 'INFORMED CONSENT FORM'}</div>
       </div>
@@ -163,7 +163,7 @@ export default function ConsentForm({ templates, patientName, patientId, admissi
         <div style="text-align:center"><div style="height:60px;border-bottom:1px solid #333">${form.witnessSignature ? `<img src="${form.witnessSignature}" style="height:55px"/>` : ''}</div><div style="font-size:9px;margin-top:4px"><b>Witness</b><br/>Name: ${form.witnessName}<br/>Relation: ${form.witnessRelation}</div></div>
         <div style="text-align:center"><div style="height:60px;border-bottom:1px solid #333">${form.doctorSignature ? `<img src="${form.doctorSignature}" style="height:55px"/>` : ''}</div><div style="font-size:9px;margin-top:4px"><b>Doctor</b><br/>Date: ${new Date().toLocaleDateString('en-IN')}</div></div>
       </div>
-      <div style="margin-top:15px;font-size:7px;color:#aaa;text-align:center">Health1 HMIS — Digital Consent Management</div>
+      <div style="margin-top:15px;font-size:7px;color:#aaa;text-align:center">HMIS — Digital Consent Management</div>
     </div>`, `Consent — ${patientName} — ${form.procedureName}`);
   };
 

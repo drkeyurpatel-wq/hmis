@@ -187,7 +187,7 @@ export function CommandPalette() {
           <span><kbd className="px-1 py-0.5 bg-gray-200 rounded font-mono text-[8px]">↑↓</kbd> navigate</span>
           <span><kbd className="px-1 py-0.5 bg-gray-200 rounded font-mono text-[8px]">↵</kbd> select</span>
           <span><kbd className="px-1 py-0.5 bg-gray-200 rounded font-mono text-[8px]">esc</kbd> close</span>
-          <span className="ml-auto">Health1 HMIS</span>
+          <span className="ml-auto">HMIS</span>
         </div>
       </div>
     </div>

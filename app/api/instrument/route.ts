@@ -17,7 +17,7 @@ function getAdminClient() {
 export async function GET() {
   return NextResponse.json({
     status: 'ok',
-    service: 'Health1 LIMS Instrument Interface',
+    service: 'LIMS Instrument Interface',
     version: '1.0',
     supabaseConfigured: !!SUPABASE_URL && !!SUPABASE_SERVICE_KEY,
     endpoints: {

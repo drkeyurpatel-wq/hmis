@@ -9,9 +9,9 @@ const uuidv4 = () => crypto.randomUUID ? crypto.randomUUID() : 'xxxxxxxx-xxxx-4x
 // TYPES
 // ============================================================
 export interface NHCXConfig {
-  participantCode: string;  // Health1's NHCX participant code
+  participantCode: string;  // Hospital's NHCX participant code
   facilityHfrId: string;    // HFR ID (IN3XXXXXXXX)
-  facilityName: string;     // "Health1 Super Speciality Hospital"
+  facilityName: string;     // "Hospital"
   facilityCity: string;
   facilityState: string;
   facilityPincode: string;
@@ -75,7 +75,7 @@ function buildPatient(patient: PatientData): any {
     id: uuidv4(),
     meta: { profile: ['https://nrces.in/ndhm/fhir/r4/StructureDefinition/Patient'] },
     identifier: [
-      { type: { coding: [{ system: 'http://terminology.hl7.org/CodeSystem/v2-0203', code: 'MR' }] }, system: 'https://health1hospitals.com/uhid', value: patient.uhid },
+      { type: { coding: [{ system: 'http://terminology.hl7.org/CodeSystem/v2-0203', code: 'MR' }] }, system: 'https://hospital.example.com/uhid', value: patient.uhid },
     ],
     name: [{ text: `${patient.firstName} ${patient.lastName}`, given: [patient.firstName], family: patient.lastName }],
     gender: patient.gender,
@@ -93,7 +93,7 @@ function buildPatient(patient: PatientData): any {
   return resource;
 }
 
-/** Build FHIR Organization resource (Health1) */
+/** Build FHIR Organization resource (Hospital) */
 function buildProviderOrganization(config: NHCXConfig): any {
   return {
     resourceType: 'Organization',
@@ -164,7 +164,7 @@ export function buildCoverageEligibilityRequestBundle(
     resourceType: 'Bundle',
     id: uuidv4(),
     meta: { lastUpdated: new Date().toISOString(), profile: ['https://nrces.in/ndhm/fhir/r4/StructureDefinition/CoverageEligibilityRequestBundle'] },
-    identifier: { system: 'https://health1hospitals.com/bundle', value: uuidv4() },
+    identifier: { system: 'https://hospital.example.com/bundle', value: uuidv4() },
     type: 'collection',
     timestamp: new Date().toISOString(),
     entry: [
@@ -209,11 +209,11 @@ export function buildClaimBundle(
     })),
     item: claim.billItems.map((item, i) => ({
       sequence: i + 1,
-      productOrService: { coding: [{ system: 'https://health1hospitals.com/tariff', code: `ITEM-${i + 1}`, display: item.description }] },
+      productOrService: { coding: [{ system: 'https://hospital.example.com/tariff', code: `ITEM-${i + 1}`, display: item.description }] },
       quantity: { value: item.quantity },
       unitPrice: { value: item.unitPrice, currency: 'INR' },
       net: { value: item.totalAmount, currency: 'INR' },
-      ...(item.category ? { category: { coding: [{ system: 'https://health1hospitals.com/category', code: item.category }] } } : {}),
+      ...(item.category ? { category: { coding: [{ system: 'https://hospital.example.com/category', code: item.category }] } } : {}),
     })),
     total: { value: claim.totalAmount, currency: 'INR' },
   };
@@ -262,7 +262,7 @@ export function buildClaimBundle(
     resourceType: 'Bundle',
     id: uuidv4(),
     meta: { lastUpdated: new Date().toISOString(), profile: ['https://nrces.in/ndhm/fhir/r4/StructureDefinition/ClaimRequestBundle'] },
-    identifier: { system: 'https://health1hospitals.com/bundle', value: uuidv4() },
+    identifier: { system: 'https://hospital.example.com/bundle', value: uuidv4() },
     type: 'collection',
     timestamp: new Date().toISOString(),
     entry: [

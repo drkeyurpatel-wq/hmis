@@ -86,7 +86,7 @@ function OTInner() {
       {toast && <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-emerald-600 text-white px-4 py-2 rounded-xl shadow-lg text-sm">{toast}</div>}
       <div className="flex items-center justify-between mb-3">
         <div><h1 className="text-xl font-bold text-gray-900">Operation Theatre Management</h1>
-          <p className="text-xs text-gray-500">Health1 — {schedule.rooms.length} OT rooms | SSI Mantra 3.0 + Cuvis Robotic</p></div>
+          <p className="text-xs text-gray-500">{schedule.rooms.length} OT rooms</p></div>
         <div className="flex items-center gap-2">
           <input type="date" value={date} onChange={e => { setDate(e.target.value); schedule.loadBookings(e.target.value); }} className="px-2 py-1.5 border rounded-lg text-xs" />
           <button onClick={() => setTab('new_booking')} className="px-4 py-2 bg-teal-600 text-white text-sm rounded-lg">+ Book Surgery</button>

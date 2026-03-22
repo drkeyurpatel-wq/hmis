@@ -3,9 +3,9 @@
 // Handles: URL building, HL7 ORU parsing, report ingestion, study linking
 
 export interface StradusConfig {
-  pacsUrl: string;          // e.g., https://pacs.health1hospitals.com
-  viewerUrl: string;        // e.g., https://pacs.health1hospitals.com/viewer
-  risUrl?: string;          // e.g., https://pacs.health1hospitals.com/ris
+  pacsUrl: string;          // e.g., https://pacs.hospital.example.com
+  viewerUrl: string;        // e.g., https://pacs.hospital.example.com/viewer
+  risUrl?: string;          // e.g., https://pacs.hospital.example.com/ris
   dicomAeTitle: string;     // e.g., HEALTH1_HMIS
   dicomIp: string;
   dicomPort: number;

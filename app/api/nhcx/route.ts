@@ -25,7 +25,7 @@ function getNHCXConfig(): NHCXConfig {
   return {
     participantCode: process.env.NHCX_PARTICIPANT_CODE || '',
     facilityHfrId: process.env.NHCX_HFR_ID || 'IN2410013685',
-    facilityName: 'Health1 Super Speciality Hospital',
+    facilityName: 'Hospital',
     facilityCity: 'Ahmedabad',
     facilityState: 'Gujarat',
     facilityPincode: '380058',

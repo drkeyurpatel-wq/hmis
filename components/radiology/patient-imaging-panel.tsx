@@ -146,7 +146,7 @@ function LinkStudyForm({ patientId, centreId, onSuccess, onCancel }: {
       <div className="grid grid-cols-3 gap-3">
         <div><label className="text-[10px] text-gray-500">Stradus URL *</label>
           <input type="url" value={form.stradusUrl} onChange={e => setForm(f => ({ ...f, stradusUrl: e.target.value }))}
-            className="w-full px-2 py-1.5 border rounded text-xs" placeholder="https://stradus.health1.in/viewer?StudyInstanceUID=..." /></div>
+            className="w-full px-2 py-1.5 border rounded text-xs" placeholder="https://pacs.hospital.example.com/viewer?StudyInstanceUID=..." /></div>
         <div><label className="text-[10px] text-gray-500">Study Description *</label>
           <input type="text" value={form.studyDescription} onChange={e => setForm(f => ({ ...f, studyDescription: e.target.value }))}
             className="w-full px-2 py-1.5 border rounded text-xs" placeholder="MRI Brain, CT Abdomen..." /></div>

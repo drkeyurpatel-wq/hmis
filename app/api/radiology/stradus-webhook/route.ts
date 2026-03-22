@@ -233,7 +233,7 @@ export async function POST(request: NextRequest) {
 // GET — health check and webhook info
 export async function GET() {
   return NextResponse.json({
-    service: 'Health1 HMIS Radiology Webhook',
+    service: 'HMIS Radiology Webhook',
     accepts: ['application/json', 'application/hl7-v2', 'text/plain'],
     events: ['report.finalized', 'report.amended', 'report.addendum'],
     headers: {

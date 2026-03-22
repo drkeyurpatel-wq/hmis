@@ -132,7 +132,7 @@ export function Sidebar({ mobileOpen, onMobileClose }: { mobileOpen?: boolean; o
             </div>
             {!collapsed && (
               <div className="min-w-0">
-                <p className="font-display font-bold text-sm text-gray-900 leading-none">Health1</p>
+                <p className="font-display font-bold text-sm text-gray-900 leading-none">Hospital</p>
                 <p className="text-[9px] text-teal-600 font-semibold uppercase tracking-[0.15em] mt-0.5">HMIS</p>
               </div>
             )}
@@ -151,7 +151,7 @@ export function Sidebar({ mobileOpen, onMobileClose }: { mobileOpen?: boolean; o
                 <Building2 size={12} className="text-teal-700" />
               </div>
               <span className="text-xs font-medium text-gray-700 truncate flex-1">
-                {activeCentre?.centre?.name?.replace('Health1 ', '').replace('Hospital', '').replace('Super Speciality', 'SS').trim() || 'Select centre'}
+                {activeCentre?.centre?.name?.replace('Hospital ', '').replace('Hospital', '').replace('Super Speciality', 'SS').trim() || 'Select centre'}
               </span>
               <ChevronDown size={12} className={cn('text-gray-400 transition-transform shrink-0', centreOpen && 'rotate-180')} />
             </button>
@@ -243,7 +243,7 @@ export function Sidebar({ mobileOpen, onMobileClose }: { mobileOpen?: boolean; o
                 <p className="text-[10px] text-gray-400 truncate">{staff?.designation || staff?.staff_type}</p>
               </div>
               <button onClick={async () => {
-                if (!confirm('Sign out of Health1 HMIS?')) return;
+                if (!confirm('Sign out of HMIS?')) return;
                 try { const { createClient: cc } = await import('@/lib/supabase/client'); await cc().auth.signOut(); } catch {}
                 window.location.href = '/auth/login';
               }} className="text-gray-400 hover:text-red-500 transition-colors p-1" title="Sign out">

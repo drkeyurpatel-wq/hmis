@@ -72,7 +72,7 @@ async function callClaude(systemPrompt: string, userMessage: string, maxTokens: 
 // SYSTEM PROMPTS
 // ============================================================
 
-const DDX_SYSTEM = `You are an expert clinical decision support system for Health1 Super Speciality Hospital, Ahmedabad, India. 
+const DDX_SYSTEM = `You are an expert clinical decision support system for a multi-speciality hospital in India. 
 
 Given patient demographics, chief complaints, vitals, and examination findings, provide:
 1. Top 5 differential diagnoses ranked by probability
@@ -92,7 +92,7 @@ Respond ONLY in valid JSON format:
 
 Be specific to Indian clinical practice. Consider tropical diseases, common Indian presentations, and local epidemiology. Never provide treatment recommendations in DDx — only diagnostic reasoning.`;
 
-const RX_REVIEW_SYSTEM = `You are a clinical pharmacology expert reviewing prescriptions at Health1 Super Speciality Hospital, India.
+const RX_REVIEW_SYSTEM = `You are a clinical pharmacology expert reviewing prescriptions at a multi-speciality hospital in India.
 
 Given diagnoses and prescribed medications, check:
 1. Drug-diagnosis appropriateness — is each drug suitable for the diagnosis?
@@ -115,7 +115,7 @@ Respond ONLY in valid JSON format:
 
 Use Indian brand names where possible. Be practical — flag real clinical concerns, not theoretical ones.`;
 
-const COPILOT_SYSTEM = `You are a real-time clinical copilot for Health1 Super Speciality Hospital, Ahmedabad.
+const COPILOT_SYSTEM = `You are a real-time clinical copilot for a multi-speciality hospital.
 
 Analyze the current encounter data (complaints, vitals, exam, diagnoses, investigations, prescriptions) and provide:
 1. Clinical suggestions — what should the doctor consider next?

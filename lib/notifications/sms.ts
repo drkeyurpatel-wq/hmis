@@ -1,193 +1,93 @@
 // lib/notifications/sms.ts
-// MSG91 SMS gateway integration for Health1 HMIS
-// API docs: https://docs.msg91.com/reference/send-sms
-//
-// Configuration: Store in hmis_integration_config or .env:
-//   MSG91_AUTH_KEY (from MSG91 dashboard)
-//   MSG91_SENDER_ID (6-char DLT-registered sender, e.g. HELTH1)
-//   MSG91_ROUTE (4 = transactional, 1 = promotional)
+// MSG91 SMS integration — hardened for production
+// Config: hmis_integration_config (provider='msg91') or env vars
 
 import { createClient } from '@/lib/supabase/client';
+import { validatePhone, type NotificationResult, logNotification } from './notification-status';
 
 let _sb: any = null;
 function sb() { if (typeof window === 'undefined') return null as any; if (!_sb) { try { _sb = createClient(); } catch { return null; } } return _sb; }
 
 const MSG91_API = 'https://control.msg91.com/api/v5/flow/';
 
-// ============================================================
-// CONFIG LOADER — from DB or env
-// ============================================================
-interface MSG91Config {
-  authKey: string;
-  senderId: string;
-}
+interface MSG91Config { authKey: string; senderId: string; }
 
 async function getConfig(): Promise<MSG91Config | null> {
-  // Try DB first
   if (sb()) {
-    const { data } = await sb()
-      .from('hmis_integration_config')
-      .select('config_json')
-      .eq('provider', 'msg91')
-      .eq('is_active', true)
-      .maybeSingle();
-    if (data?.config_json) {
-      const cfg = data.config_json;
-      if (cfg.auth_key && cfg.sender_id) {
-        return { authKey: cfg.auth_key, senderId: cfg.sender_id };
-      }
+    const { data } = await sb().from('hmis_integration_config').select('config_json')
+      .eq('provider', 'msg91').eq('is_active', true).maybeSingle();
+    if (data?.config_json?.auth_key && data?.config_json?.sender_id) {
+      return { authKey: data.config_json.auth_key, senderId: data.config_json.sender_id };
     }
   }
-  // Fallback to env
-  const authKey = process.env.MSG91_AUTH_KEY || '';
-  const senderId = process.env.MSG91_SENDER_ID || 'HELTH1';
-  if (!authKey) return null;
-  return { authKey, senderId };
+  const authKey = process.env.MSG91_AUTH_KEY;
+  const senderId = process.env.MSG91_SENDER_ID;
+  if (authKey && senderId) return { authKey, senderId };
+  return null;
 }
 
-// ============================================================
-// PHONE FORMATTING
-// ============================================================
-function formatPhone(phone: string): string {
-  let cleaned = phone.replace(/[\s\-\+\(\)]/g, '');
-  if (cleaned.length === 10) cleaned = '91' + cleaned;
-  if (cleaned.startsWith('0')) cleaned = '91' + cleaned.slice(1);
-  return cleaned;
-}
+async function sendSMS(phone: string, templateId: string, variables: Record<string, string>, centreId?: string): Promise<NotificationResult> {
+  const result: NotificationResult = { channel: 'sms', success: false, timestamp: new Date().toISOString() };
 
-// ============================================================
-// CORE SEND — MSG91 Flow API
-// ============================================================
-export async function sendSMS(
-  phone: string,
-  templateId: string,
-  variables: Record<string, string>
-): Promise<{ success: boolean; requestId?: string; error?: string }> {
+  const phoneCheck = validatePhone(phone);
+  if (!phoneCheck.valid) {
+    result.error = phoneCheck.error; result.errorCode = 'invalid_phone';
+    return result;
+  }
+
   const config = await getConfig();
   if (!config) {
-    return { success: false, error: 'MSG91 not configured. Set MSG91_AUTH_KEY in environment or hmis_integration_config.' };
+    result.error = 'MSG91 not configured. Set MSG91_AUTH_KEY + MSG91_SENDER_ID in env or hmis_integration_config.';
+    result.errorCode = 'not_configured';
+    return result;
   }
 
   try {
-    const body = {
-      template_id: templateId,
-      short_url: '0',
-      recipients: [{
-        mobiles: formatPhone(phone),
-        ...variables,
-      }],
-    };
-
-    const response = await fetch(MSG91_API, {
+    const body: any = { flow_id: templateId, sender: config.senderId, mobiles: phoneCheck.formatted, ...variables };
+    const res = await fetch(MSG91_API, {
       method: 'POST',
-      headers: {
-        'authkey': config.authKey,
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      },
+      headers: { authkey: config.authKey, 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     });
 
-    const data = await response.json();
-    if (data.type === 'success' || data.message === 'success') {
-      return { success: true, requestId: data.request_id };
+    if (res.ok) {
+      const data = await res.json();
+      result.success = true;
+      result.messageId = data.request_id || data.message;
+    } else {
+      const errText = await res.text().catch(() => 'Unknown');
+      result.error = `MSG91 ${res.status}: ${errText}`;
+      result.errorCode = res.status === 429 ? 'rate_limited' : 'api_error';
     }
-    return { success: false, error: data.message || JSON.stringify(data) };
-  } catch (err: any) {
-    return { success: false, error: err.message };
+  } catch (e: any) {
+    result.error = e.message || 'Network error';
+    result.errorCode = 'network_error';
   }
+
+  if (centreId) logNotification(sb(), centreId, { phone: phoneCheck.formatted, channel: 'sms', event_type: templateId, template_name: templateId, result });
+  return result;
 }
 
-// ============================================================
-// SMS TEMPLATE IDs — register these in MSG91 DLT portal
-// ============================================================
-// Store template IDs in hmis_integration_config.config_json.templates
-// or use these defaults (replace with real DLT-approved template IDs)
-const DEFAULT_TEMPLATES: Record<string, string> = {
-  appointment_reminder: 'h1_sms_appointment',
-  lab_ready: 'h1_sms_lab_ready',
-  pharmacy_ready: 'h1_sms_pharmacy_ready',
-  discharge_summary: 'h1_sms_discharge',
-  payment_receipt: 'h1_sms_payment',
-  opd_token: 'h1_sms_opd_token',
-  follow_up_reminder: 'h1_sms_followup',
-  otp: 'h1_sms_otp',
-};
+// ── Event-specific wrappers ──
 
-async function getTemplateId(eventType: string): Promise<string> {
-  if (sb()) {
-    const { data } = await sb()
-      .from('hmis_integration_config')
-      .select('config_json')
-      .eq('provider', 'msg91')
-      .eq('is_active', true)
-      .maybeSingle();
-    if (data?.config_json?.templates?.[eventType]) {
-      return data.config_json.templates[eventType];
-    }
-  }
-  return DEFAULT_TEMPLATES[eventType] || eventType;
+export async function smsAppointmentReminder(phone: string, name: string, date: string, time: string, doctor: string, centreId?: string) {
+  return sendSMS(phone, process.env.MSG91_TPL_APPOINTMENT || 'appointment_reminder', { name, date, time, doctor }, centreId);
 }
-
-// ============================================================
-// TEMPLATE MESSAGE SENDERS
-// ============================================================
-
-export async function smsAppointmentReminder(phone: string, patientName: string, doctorName: string, date: string, time: string, centreName: string) {
-  const templateId = await getTemplateId('appointment_reminder');
-  return sendSMS(phone, templateId, {
-    patient_name: patientName, doctor_name: doctorName,
-    date, time, centre_name: centreName,
-  });
+export async function smsOPDToken(phone: string, name: string, token: string, doctor: string, centreId?: string) {
+  return sendSMS(phone, process.env.MSG91_TPL_OPD_TOKEN || 'opd_token', { name, token, doctor }, centreId);
 }
-
-export async function smsLabReady(phone: string, patientName: string, testNames: string, collectionPoint: string) {
-  const templateId = await getTemplateId('lab_ready');
-  return sendSMS(phone, templateId, {
-    patient_name: patientName, test_names: testNames, collection_point: collectionPoint,
-  });
+export async function smsLabReady(phone: string, name: string, test: string, centreId?: string) {
+  return sendSMS(phone, process.env.MSG91_TPL_LAB_READY || 'lab_ready', { name, test }, centreId);
 }
-
-export async function smsPharmacyReady(phone: string, patientName: string, medicineCount: string, pharmacyCounter: string) {
-  const templateId = await getTemplateId('pharmacy_ready');
-  return sendSMS(phone, templateId, {
-    patient_name: patientName, medicine_count: medicineCount, pharmacy_counter: pharmacyCounter,
-  });
+export async function smsPharmacyReady(phone: string, name: string, centreId?: string) {
+  return sendSMS(phone, process.env.MSG91_TPL_PHARMACY_READY || 'pharmacy_ready', { name }, centreId);
 }
-
-export async function smsDischargeAlert(phone: string, patientName: string, ipdNumber: string, dischargeDate: string, followUpDate: string) {
-  const templateId = await getTemplateId('discharge_summary');
-  return sendSMS(phone, templateId, {
-    patient_name: patientName, ipd_number: ipdNumber,
-    discharge_date: dischargeDate, follow_up_date: followUpDate,
-  });
+export async function smsDischargeAlert(phone: string, name: string, centreId?: string) {
+  return sendSMS(phone, process.env.MSG91_TPL_DISCHARGE || 'discharge_alert', { name }, centreId);
 }
-
-export async function smsPaymentReceipt(phone: string, patientName: string, receiptNumber: string, amount: string, paymentMode: string) {
-  const templateId = await getTemplateId('payment_receipt');
-  return sendSMS(phone, templateId, {
-    patient_name: patientName, receipt_number: receiptNumber,
-    amount, payment_mode: paymentMode,
-  });
+export async function smsPaymentReceipt(phone: string, name: string, amount: string, billNo: string, centreId?: string) {
+  return sendSMS(phone, process.env.MSG91_TPL_PAYMENT || 'payment_receipt', { name, amount, bill_no: billNo }, centreId);
 }
-
-export async function smsOPDToken(phone: string, patientName: string, tokenNumber: string, doctorName: string, estimatedWait: string) {
-  const templateId = await getTemplateId('opd_token');
-  return sendSMS(phone, templateId, {
-    patient_name: patientName, token_number: tokenNumber,
-    doctor_name: doctorName, estimated_wait: estimatedWait,
-  });
-}
-
-export async function smsFollowUpReminder(phone: string, patientName: string, doctorName: string, date: string, centreName: string, advice: string) {
-  const templateId = await getTemplateId('follow_up_reminder');
-  return sendSMS(phone, templateId, {
-    patient_name: patientName, doctor_name: doctorName,
-    date, centre_name: centreName, advice,
-  });
-}
-
-export async function smsOTP(phone: string, otp: string) {
-  const templateId = await getTemplateId('otp');
-  return sendSMS(phone, templateId, { otp });
+export async function smsFollowUpReminder(phone: string, name: string, date: string, doctor: string, centreId?: string) {
+  return sendSMS(phone, process.env.MSG91_TPL_FOLLOWUP || 'follow_up', { name, date, doctor }, centreId);
 }

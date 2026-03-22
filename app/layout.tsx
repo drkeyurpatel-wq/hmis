@@ -10,8 +10,8 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: 'Health1 HMIS',
-  description: 'Health1 Hospital Management Information System',
+  title: 'HMIS',
+  description: 'Hospital Management Information System',
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,

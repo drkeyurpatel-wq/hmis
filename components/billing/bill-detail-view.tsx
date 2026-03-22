@@ -61,7 +61,7 @@ export default function BillDetailView({ billId, centreId, staffId, onFlash, onC
         </div>
         <div className="flex items-center gap-2">
           {bal > 0 && <button onClick={() => setShowPay(true)} className="flex items-center gap-1.5 px-4 py-2 bg-emerald-600 text-white text-sm rounded-xl font-semibold hover:bg-emerald-700 transition-colors"><Plus size={14} /> Collect Payment</button>}
-          <button onClick={() => printBillInvoice(bill, items, payments, bill.patient || {}, { name: 'Health1 Super Speciality Hospital', address: 'Shilaj, Ahmedabad', gstin: '24AADCH1234F1Z5' })}
+          <button onClick={() => printBillInvoice(bill, items, payments, bill.patient || {}, { name: 'Hospital', address: 'Shilaj, Ahmedabad', gstin: '24AADCH1234F1Z5' })}
             className="flex items-center gap-1.5 px-3 py-2 bg-white text-gray-600 text-sm rounded-xl border border-gray-200 hover:bg-gray-50 transition-colors"><Printer size={14} /> Print</button>
         </div>
       </div>

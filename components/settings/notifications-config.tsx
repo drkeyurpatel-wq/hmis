@@ -60,7 +60,7 @@ export default function NotificationsConfig({ centreId, flash }: Props) {
     try {
       const res = await fetch('/api/notify', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({
         type: eventType, phone: testPhone, centre_id: centreId,
-        data: { patient_name: 'Test Patient', doctor_name: 'Dr. Test', date: new Date().toLocaleDateString('en-IN'), time: '10:00 AM', centre_name: 'Health1 Hospital', test_names: 'CBC, LFT', collection_point: 'Lab Reception', medicine_count: '3', pharmacy_counter: 'Counter 1', ipd_number: 'IPD-TEST-001', discharge_date: new Date().toLocaleDateString('en-IN'), follow_up_date: 'In 7 days' },
+        data: { patient_name: 'Test Patient', doctor_name: 'Dr. Test', date: new Date().toLocaleDateString('en-IN'), time: '10:00 AM', centre_name: 'Hospital', test_names: 'CBC, LFT', collection_point: 'Lab Reception', medicine_count: '3', pharmacy_counter: 'Counter 1', ipd_number: 'IPD-TEST-001', discharge_date: new Date().toLocaleDateString('en-IN'), follow_up_date: 'In 7 days' },
       }) });
       const r = await res.json();
       flash(r.success ? 'Test sent!' : (r.skipped ? 'Skipped (disabled)' : `Failed: ${r.error}`));

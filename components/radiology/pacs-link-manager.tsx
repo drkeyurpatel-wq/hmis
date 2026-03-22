@@ -80,7 +80,7 @@ export default function PACSLinkManager({ order, centreId, pacsConfig, onClose, 
             <label className="text-xs text-gray-500 font-medium">Stradus Viewer URL</label>
             <input type="url" value={stradusUrl} onChange={e => handleUrlChange(e.target.value)}
               className="w-full px-3 py-2.5 border rounded-lg text-sm mt-1 font-mono text-[11px]"
-              placeholder="https://pacs.health1hospitals.com/viewer?StudyInstanceUID=..." />
+              placeholder="https://pacs.hospital.example.com/viewer?StudyInstanceUID=..." />
             <div className="text-[10px] text-gray-400 mt-0.5">Paste the full Stradus viewer URL here</div>
           </div>
 

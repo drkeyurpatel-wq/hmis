@@ -1,5 +1,5 @@
 // lib/nhcx/nhcx-client.ts
-// NHCX Gateway API client for Health1 HMIS
+// NHCX Gateway API client for HMIS
 // Protocol: HCX v0.9 | Auth: JWT Bearer | Payload: JWE (RSA-OAEP + A256GCM)
 
 const uuidv4 = () => crypto.randomUUID ? crypto.randomUUID() : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => { const r = Math.random() * 16 | 0; return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16); });

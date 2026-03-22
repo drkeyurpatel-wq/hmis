@@ -83,10 +83,10 @@ export async function POST(request: NextRequest) {
         result = await sendAppointmentReminder(
           phone,
           data.patient_name || 'Patient',
-          data.doctor_name || 'Doctor',
           data.date || '',
           data.time || '',
-          data.centre_name || 'Health1 Hospital'
+          data.doctor_name || 'Doctor',
+          centre_id
         );
         break;
 
@@ -95,7 +95,7 @@ export async function POST(request: NextRequest) {
           phone,
           data.patient_name || 'Patient',
           Array.isArray(data.test_names) ? data.test_names.join(', ') : (data.test_names || ''),
-          data.collection_point || 'Lab Reception'
+          centre_id
         );
         break;
 
@@ -103,8 +103,7 @@ export async function POST(request: NextRequest) {
         result = await sendPharmacyReady(
           phone,
           data.patient_name || 'Patient',
-          String(data.medicine_count || 0),
-          data.pharmacy_counter || 'Pharmacy Counter'
+          centre_id
         );
         break;
 
@@ -112,9 +111,7 @@ export async function POST(request: NextRequest) {
         result = await sendDischargeAlert(
           phone,
           data.patient_name || 'Patient',
-          data.ipd_number || '',
-          data.discharge_date || '',
-          data.follow_up_date || 'As advised'
+          centre_id
         );
         break;
 

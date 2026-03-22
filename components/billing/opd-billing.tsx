@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase/client';
 import { smartPostConsultationCharge, generateBillNumber, lookupTariff } from '@/lib/bridge/cross-module-bridge';
 import { printBillInvoice, printPaymentReceipt } from '@/components/billing/bill-pdf';
 import { auditCreate } from '@/lib/audit/audit-logger';
-import { notifyPayment } from '@/lib/notifications/notification-dispatcher';
+import { notifyPaymentReceipt as notifyPayment } from '@/lib/notifications/notification-dispatcher';
 
 let _sb: any = null;
 function sb() { if (typeof window === 'undefined') return null as any; if (!_sb) { try { _sb = createClient(); } catch { return null; } } return _sb; }
@@ -107,7 +107,7 @@ export default function OPDBilling({ centreId, staffId, patient, doctor, visitId
     }).select('id, receipt_number, amount, payment_mode, reference_number, created_at').single();
 
     // Notify patient
-    if (patient.phone) notifyPayment({ phone: patient.phone, patientName: patient.name, receiptNumber: receiptNumber, amount: net, paymentMode: payMode });
+    if (patient.phone) notifyPayment(centreId, patient.phone, patient.name, String(net), billNumber);
     auditCreate(centreId, staffId, 'bill', billData.id, `OPD Bill: ${billNumber} ₹${net} — ${patient.name}`);
 
     setBill({ ...billData, gross_amount: gross, discount_amount: discount, net_amount: net, paid_amount: net, balance_amount: 0, bill_date: new Date().toISOString().split('T')[0], payor_type: 'self', bill_type: 'opd', payment });
@@ -211,9 +211,9 @@ export default function OPDBilling({ centreId, staffId, patient, doctor, visitId
           <div className="text-xs text-gray-400">{payMode.toUpperCase()} {payRef ? `— ${payRef}` : ''}</div>
         </div>
         <div className="flex gap-3 justify-center">
-          <button onClick={() => printBillInvoice(bill, charges.map(c => ({ description: c.desc, quantity: 1, unit_rate: c.amount, net_amount: c.amount, service_date: bill.bill_date })), [bill.payment], { first_name: patient.name.split(' ')[0], last_name: patient.name.split(' ').slice(1).join(' '), uhid: patient.uhid, age_years: patient.age, gender: patient.gender, phone_primary: patient.phone }, { name: 'Health1 Super Speciality Hospital', address: 'Shilaj, Ahmedabad', gstin: '24AADCH1234F1Z5' })}
+          <button onClick={() => printBillInvoice(bill, charges.map(c => ({ description: c.desc, quantity: 1, unit_rate: c.amount, net_amount: c.amount, service_date: bill.bill_date })), [bill.payment], { first_name: patient.name.split(' ')[0], last_name: patient.name.split(' ').slice(1).join(' '), uhid: patient.uhid, age_years: patient.age, gender: patient.gender, phone_primary: patient.phone }, { name: 'Hospital', address: 'Shilaj, Ahmedabad', gstin: '24AADCH1234F1Z5' })}
             className="px-4 py-2 bg-blue-600 text-white text-xs rounded-lg">Print Bill</button>
-          <button onClick={() => printPaymentReceipt(bill.payment, bill, { first_name: patient.name.split(' ')[0], last_name: patient.name.split(' ').slice(1).join(' '), uhid: patient.uhid }, { name: 'Health1 Super Speciality Hospital', address: 'Shilaj, Ahmedabad' })}
+          <button onClick={() => printPaymentReceipt(bill.payment, bill, { first_name: patient.name.split(' ')[0], last_name: patient.name.split(' ').slice(1).join(' '), uhid: patient.uhid }, { name: 'Hospital', address: 'Shilaj, Ahmedabad' })}
             className="px-4 py-2 bg-green-600 text-white text-xs rounded-lg">Print Receipt</button>
           {onDone && <button onClick={onDone} className="px-4 py-2 bg-gray-200 text-xs rounded-lg">Done — Next Patient</button>}
         </div>

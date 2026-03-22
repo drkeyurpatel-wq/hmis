@@ -110,12 +110,12 @@ export default function BillDetail({ bill, staffId, centreId, tariffs, onUpdate,
 
   // Print bill
   const printBillDoc = () => {
-    printBillInvoice(bill, items.items, pay.payments, bill.patient, { name: 'Health1 Super Speciality Hospital', address: 'Shilaj, Ahmedabad', gstin: '24AADCH1234F1Z5', cin: 'U85110GJ2019PTC109866' });
+    printBillInvoice(bill, items.items, pay.payments, bill.patient, { name: 'Hospital', address: 'Shilaj, Ahmedabad', gstin: '24AADCH1234F1Z5', cin: 'U85110GJ2019PTC109866' });
   };
 
   // Print receipt for specific payment
   const printReceipt = (payment: any) => {
-    printPaymentReceipt(payment, bill, bill.patient, { name: 'Health1 Super Speciality Hospital', address: 'Shilaj, Ahmedabad' });
+    printPaymentReceipt(payment, bill, bill.patient, { name: 'Hospital', address: 'Shilaj, Ahmedabad' });
   };
 
   const pt = bill.patient;

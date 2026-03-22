@@ -211,7 +211,7 @@ export default function CommandCentrePage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-gray-900">Health1 Command Centre</h1>
+          <h1 className="text-xl font-bold text-gray-900">Command Centre</h1>
           <p className="text-[10px] text-gray-400">{centres.length} centres | Updated {lastRefresh.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })} | Auto-refresh 3m</p>
         </div>
         <div className="flex items-center gap-2">

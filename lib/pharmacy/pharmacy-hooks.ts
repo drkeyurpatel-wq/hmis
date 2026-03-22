@@ -263,7 +263,7 @@ export function useDispensingQueue(centreId: string | null) {
       // Notify patient
       if (disp.data?.patient_id) {
         const { data: ptInfo } = await sb().from('hmis_patients').select('phone_primary, first_name, last_name').eq('id', disp.data.patient_id).maybeSingle();
-        if (ptInfo?.phone_primary) notifyPharmacyReady({ phone: ptInfo.phone_primary, patientName: `${ptInfo.first_name} ${ptInfo.last_name}`, medicineCount: dispensedItems.length });
+        if (ptInfo?.phone_primary) notifyPharmacyReady(centreId, ptInfo.phone_primary, `${ptInfo.first_name} ${ptInfo.last_name}`);
       }
       auditCreate(centreId, staffId, 'pharmacy_dispense', dispensingId, `Dispensed ${dispensedItems.length} items — ₹${computedTotal}`);
     }

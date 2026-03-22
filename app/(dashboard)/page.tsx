@@ -140,7 +140,7 @@ export default function DashboardPage() {
 
       {/* HEADER */}
       <div className={`flex items-center justify-between ${alertSystem.counts.emergency > 0 ? 'mt-10' : ''}`}>
-        <div><h1 className="text-2xl font-black tracking-tight text-gray-900">Health1 <span className="text-teal-600">Command</span></h1><p className="text-xs text-gray-400 mt-0.5">{new Date().toLocaleDateString('en-IN',{weekday:'long',day:'2-digit',month:'long',year:'numeric'})} · {staff?.full_name}</p></div>
+        <div><h1 className="text-2xl font-black tracking-tight text-gray-900">Hospital <span className="text-teal-600">Command</span></h1><p className="text-xs text-gray-400 mt-0.5">{new Date().toLocaleDateString('en-IN',{weekday:'long',day:'2-digit',month:'long',year:'numeric'})} · {staff?.full_name}</p></div>
         <div className="flex items-center gap-2">
           {alertSystem.counts.total > 0 && (
             <Link href="/nursing-station" className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border ${alertSystem.counts.emergency > 0 ? 'bg-red-50 border-red-300' : alertSystem.counts.critical > 0 ? 'bg-amber-50 border-amber-300' : 'bg-blue-50 border-blue-200'}`}>

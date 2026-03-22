@@ -27,7 +27,7 @@ export function useTeleconsults(centreId: string | null, doctorId?: string) {
 
   const schedule = useCallback(async (data: any) => {
     if (!centreId || !sb()) return { success: false };
-    const roomId = `health1-${Date.now().toString(36)}`;
+    const roomId = `hmis-${Date.now().toString(36)}`;
     const jitsiDomain = typeof window !== 'undefined' ? (window as any).__NEXT_DATA__?.runtimeConfig?.NEXT_PUBLIC_JITSI_DOMAIN || 'meet.jit.si' : 'meet.jit.si';
     const roomUrl = `https://${jitsiDomain}/${roomId}`;
     const { data: consult, error } = await sb().from('hmis_teleconsults').insert({

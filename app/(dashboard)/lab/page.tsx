@@ -99,7 +99,7 @@ function LabPageInner() {
                 {o.status === 'completed' && <button onClick={() => { setSelectedOrder(o); setTab('verify'); }} className="px-2 py-0.5 bg-blue-50 text-blue-700 rounded text-[10px] hover:bg-blue-100">Print</button>}
                 {o.status === 'completed' && <button onClick={() => {
                   const phone = prompt('Patient phone number for WhatsApp:');
-                  if (phone) sendLabReportWhatsApp(phone, { patientName: o.patientName, uhid: o.patientUhid, testName: o.testName, resultSummary: 'Your lab report is ready. Please collect from Health1 Hospital.' });
+                  if (phone) sendLabReportWhatsApp(phone, { patientName: o.patientName, uhid: o.patientUhid, testName: o.testName, resultSummary: 'Your lab report is ready. Your lab report is ready for collection.' });
                 }} className="px-2 py-0.5 bg-green-50 text-green-700 rounded text-[10px] hover:bg-green-100">WhatsApp</button>}
                 {o.status === 'ordered' && <button onClick={async () => {
                   const lab = prompt('External lab name:'); if (!lab) return;

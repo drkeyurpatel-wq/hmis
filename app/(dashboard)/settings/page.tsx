@@ -115,7 +115,7 @@ function SettingsInner() {
     <div className="max-w-7xl mx-auto space-y-4">
       {toast && <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-green-600 text-white px-4 py-2 rounded-lg shadow-lg text-sm">{toast}</div>}
       <div className="flex items-center justify-between">
-        <div><h1 className="text-xl font-bold">Settings & Configuration</h1><p className="text-xs text-gray-500">System-wide configuration for Health1 HMIS</p></div>
+        <div><h1 className="text-xl font-bold">Settings & Configuration</h1><p className="text-xs text-gray-500">System-wide configuration</p></div>
         <input type="text" value={search} onChange={e => setSearch(e.target.value)} className="px-3 py-1.5 border rounded-lg text-xs w-56" placeholder="Search..." />
       </div>
 
@@ -266,12 +266,12 @@ function SettingsInner() {
         <div className="bg-white rounded-xl border p-4">
           <h3 className="font-bold text-sm mb-2">System Information</h3>
           <div className="grid grid-cols-2 gap-2 text-xs">
-            <div className="bg-gray-50 rounded p-2"><b>Version:</b> Health1 HMIS v2.0</div>
+            <div className="bg-gray-50 rounded p-2"><b>Version:</b> HMIS v2.0</div>
             <div className="bg-gray-50 rounded p-2"><b>Stack:</b> Next.js 14 + Supabase + Vercel</div>
-            <div className="bg-gray-50 rounded p-2"><b>Supabase:</b> bmuupgrzbfmddjwcqlss (Mumbai)</div>
-            <div className="bg-gray-50 rounded p-2"><b>HFR ID:</b> IN2410013685</div>
-            <div className="bg-gray-50 rounded p-2"><b>PACS:</b> Stradus (Shilaj)</div>
-            <div className="bg-gray-50 rounded p-2"><b>Lab Instrument:</b> Mindray BC-5000 (TCP 5100)</div>
+            <div className="bg-gray-50 rounded p-2"><b>Database:</b> PostgreSQL 17 (Supabase)</div>
+            <div className="bg-gray-50 rounded p-2"><b>HFR ID:</b> Configure in Hospital Setup</div>
+            <div className="bg-gray-50 rounded p-2"><b>PACS:</b> Configure in Integrations</div>
+            <div className="bg-gray-50 rounded p-2"><b>Lab Instruments:</b> Configure in Integrations</div>
           </div>
         </div>
         <div className="bg-white rounded-xl border p-4">
@@ -279,11 +279,11 @@ function SettingsInner() {
           <p className="text-xs text-gray-500 mb-3">For detailed config, use the Integrations tab above.</p>
           <div className="grid grid-cols-3 gap-2 text-xs">
             {[
-              { name: 'NHCX Insurance', status: 'Sandbox pending', color: 'text-amber-600' },
-              { name: 'Stradus PACS', status: 'Webhook configured', color: 'text-green-600' },
-              { name: 'Mindray BC-5000', status: 'API endpoint ready', color: 'text-green-600' },
-              { name: 'VPMS (Purchase)', status: 'Cross-DB bridge live', color: 'text-green-600' },
-              { name: 'WhatsApp Alerts', status: 'Template ready', color: 'text-blue-600' },
+              { name: 'NHCX Insurance', status: 'Configurable', color: 'text-blue-600' },
+              { name: 'PACS / RIS', status: 'Webhook ready', color: 'text-blue-600' },
+              { name: 'Lab Instruments', status: 'HL7/TCP bridge ready', color: 'text-blue-600' },
+              { name: 'Purchase (VPMS)', status: 'Cross-DB bridge ready', color: 'text-blue-600' },
+              { name: 'WhatsApp / SMS', status: 'Template ready', color: 'text-blue-600' },
               { name: 'Tally (Accounting)', status: 'Routes built', color: 'text-blue-600' },
             ].map(i => (
               <div key={i.name} className="flex justify-between border rounded-lg px-3 py-2">

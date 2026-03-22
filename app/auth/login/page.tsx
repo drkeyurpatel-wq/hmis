@@ -53,10 +53,10 @@ export default function LoginPage() {
       <div className="w-full max-w-sm">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="w-14 h-14 rounded-2xl bg-health1-teal flex items-center justify-center mx-auto mb-4">
+          <div className="w-14 h-14 rounded-2xl bg-brand-teal flex items-center justify-center mx-auto mb-4">
             <span className="text-white font-bold text-xl">H1</span>
           </div>
-          <h1 className="font-display font-bold text-xl text-gray-900">Health1 HMIS</h1>
+          <h1 className="font-display font-bold text-xl text-gray-900">HMIS</h1>
           <p className="text-sm text-gray-500 mt-1">Sign in to continue</p>
         </div>
 
@@ -86,7 +86,7 @@ export default function LoginPage() {
               required
               autoComplete="email"
               className="w-full px-3 py-2.5 rounded-lg border border-gray-300 text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition-colors"
-              placeholder="you@health1.in"
+              placeholder="admin@hospital.com"
             />
           </div>
 
@@ -109,7 +109,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-2.5 px-4 bg-health1-teal text-white font-medium text-sm rounded-lg hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="w-full py-2.5 px-4 bg-brand-teal text-white font-medium text-sm rounded-lg hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {loading ? (mode === 'login' ? 'Signing in...' : 'Sending reset...') : (mode === 'login' ? 'Sign in' : 'Send Reset Link')}
           </button>
@@ -120,7 +120,7 @@ export default function LoginPage() {
         </form>
 
         <p className="text-center text-xs text-gray-400 mt-6">
-          Health1 Super Speciality Hospitals Pvt. Ltd.
+          Hospital Management Information System
         </p>
       </div>
     </div>

@@ -284,7 +284,7 @@ export function StatusBadge({ status, size = 'sm' }: { status: string; size?: 'x
 // ============================================================
 // PRINT TEMPLATE WRAPPER
 // ============================================================
-export function openPrintWindow(html: string, title: string = 'Health1 Print') {
+export function openPrintWindow(html: string, title: string = 'Hospital Print') {
   const w = window.open('', '_blank');
   if (!w) return;
   w.document.write(`<!DOCTYPE html><html><head><title>${title}</title>
@@ -514,7 +514,7 @@ export function printLabReport(data: {
   <!-- Header -->
   <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid #1e40af;padding-bottom:10px;margin-bottom:12px">
     <div>
-      <div style="font-size:18px;font-weight:700;color:#1e40af">${data.centreName || 'Health1 Super Speciality Hospital'}</div>
+      <div style="font-size:18px;font-weight:700;color:#1e40af">${data.centreName || 'Hospital'}</div>
       <div style="font-size:8px;color:#666">${data.centreAddress || 'Shilaj, Ahmedabad'} | ${data.centrePhone || ''}</div>
     </div>
     <div style="text-align:right;font-size:9px;color:#666">
@@ -568,7 +568,7 @@ export function printLabReport(data: {
 
   <div style="margin-top:16px;font-size:7px;color:#aaa;text-align:center">
     This is a computer-generated report. ${data.reportedAt ? 'Reported: ' + data.reportedAt : ''}<br/>
-    Health1 Super Speciality Hospital — Quality Healthcare for All
+    Hospital — Quality Healthcare for All
   </div>
 </div>
   `, 'Lab Report — ' + data.uhid + ' — ' + data.testCode);

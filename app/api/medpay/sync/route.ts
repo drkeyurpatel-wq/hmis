@@ -117,9 +117,14 @@ export async function POST(req: NextRequest) {
     // Step 3: Get IPD numbers for admission-linked bills
     const admIds = [...new Set(bills.map(b => (b as any).admission_id).filter(Boolean))];
     const admMap: Record<string, string> = {};
+    const pkgMap: Record<string, string> = {}; // admission_id → package_name
     if (admIds.length) {
       const { data: adms } = await db.from('hmis_admissions').select('id, ipd_number').in('id', admIds);
       (adms || []).forEach((a: any) => { admMap[a.id] = a.ipd_number; });
+      // Lookup package names via utilization
+      const { data: pkgUtils } = await db.from('hmis_package_utilization')
+        .select('admission_id, pkg:hmis_packages(package_name, name)').in('admission_id', admIds);
+      (pkgUtils || []).forEach((u: any) => { pkgMap[u.admission_id] = u.pkg?.package_name || u.pkg?.name || ''; });
     }
 
     // Step 4: Get OT surgery details for items with ot_booking_id
@@ -185,7 +190,7 @@ export async function POST(req: NextRequest) {
             hospital_amt: 0, // MedPay engine calculates
             qty: parseFloat(item.quantity) || 1,
             billing_category: item.billing_category || bill.billing_category || '',
-            package_name: '', // TODO: resolve from package_id
+            package_name: pkgMap[bill.admission_id] || '',
             case_type: bill.case_type || 'Hospital Case',
             _bill_id: bill.id, // internal, stripped before insert
           });

@@ -1,170 +1,81 @@
 // lib/notifications/notification-dispatcher.ts
-// Multi-channel dispatcher: checks hmis_notification_preferences then sends via WhatsApp + SMS.
-// Silent-fail: notifications should never block clinical workflow.
+// Multi-channel dispatcher with proper result tracking
+// Notifications should never block clinical workflow — all errors are caught and logged.
 
-import {
-  sendDischargeAlert,
-  sendLabResultsReady,
-  sendPharmacyReady,
-  sendOPDTokenConfirmation,
-  sendPaymentReceipt,
-  sendAppointmentReminder,
-  sendFollowUpReminder,
-} from './whatsapp';
-
-import {
-  smsDischargeAlert,
-  smsLabReady,
-  smsPharmacyReady,
-  smsOPDToken,
-  smsPaymentReceipt,
-  smsAppointmentReminder,
-  smsFollowUpReminder,
-} from './sms';
-
+import { sendAppointmentReminder, sendOPDTokenConfirmation, sendLabResultsReady, sendPharmacyReady, sendDischargeAlert, sendPaymentReceipt, sendFollowUpReminder } from './whatsapp';
+import { smsAppointmentReminder, smsOPDToken, smsLabReady, smsPharmacyReady, smsDischargeAlert, smsPaymentReceipt, smsFollowUpReminder } from './sms';
+import { type NotificationResult } from './notification-status';
 import { createClient } from '@/lib/supabase/client';
 
 let _sb: any = null;
 function sb() { if (typeof window === 'undefined') return null as any; if (!_sb) { try { _sb = createClient(); } catch { return null; } } return _sb; }
 
-async function safe(fn: () => Promise<any>): Promise<void> {
-  try { await fn(); } catch (e) { console.warn('[NOTIFY]', e); }
+interface DispatchResult {
+  whatsapp?: NotificationResult;
+  sms?: NotificationResult;
+  anySuccess: boolean;
 }
 
-// ============================================================
-// PREFERENCE CHECK — which channels are enabled for this event?
-// ============================================================
+// ── Channel preference check ──
 async function getEnabledChannels(centreId: string | undefined, eventType: string): Promise<{ whatsapp: boolean; sms: boolean }> {
   const defaults = { whatsapp: true, sms: false };
   if (!centreId || !sb()) return defaults;
+  const { data } = await sb().from('hmis_notification_templates').select('whatsapp_enabled, sms_enabled')
+    .eq('centre_id', centreId).eq('event_type', eventType).eq('is_active', true).maybeSingle();
+  if (data) return { whatsapp: data.whatsapp_enabled ?? true, sms: data.sms_enabled ?? false };
+  return defaults;
+}
 
-  const { data } = await sb()
-    .from('hmis_notification_preferences')
-    .select('channel, is_enabled')
-    .eq('centre_id', centreId)
-    .eq('event_type', eventType);
+async function dispatch(centreId: string | undefined, eventType: string,
+  waFn: () => Promise<NotificationResult>,
+  smsFn: () => Promise<NotificationResult>,
+): Promise<DispatchResult> {
+  const channels = await getEnabledChannels(centreId, eventType);
+  const result: DispatchResult = { anySuccess: false };
 
-  if (!data || data.length === 0) return defaults;
-
-  const channels = { whatsapp: true, sms: false };
-  for (const row of data) {
-    if (row.channel === 'whatsapp') channels.whatsapp = row.is_enabled;
-    if (row.channel === 'sms') channels.sms = row.is_enabled;
+  if (channels.whatsapp) {
+    try { result.whatsapp = await waFn(); if (result.whatsapp.success) result.anySuccess = true; } catch { result.whatsapp = { channel: 'whatsapp', success: false, error: 'Dispatch exception', timestamp: new Date().toISOString() }; }
   }
-  return channels;
+  if (channels.sms) {
+    try { result.sms = await smsFn(); if (result.sms.success) result.anySuccess = true; } catch { result.sms = { channel: 'sms', success: false, error: 'Dispatch exception', timestamp: new Date().toISOString() }; }
+  }
+  return result;
 }
 
-// ---- CLINICAL EVENT DISPATCHERS ----
+// ── Public API ──
 
-export async function notifyDischarge(params: {
-  phone: string; patientName: string; ipdNumber: string;
-  dischargeDate: string; followUpDate?: string; centreId?: string;
-}): Promise<void> {
-  if (!params.phone) return;
-  const ch = await getEnabledChannels(params.centreId, 'discharge_summary');
-  if (ch.whatsapp) await safe(() => sendDischargeAlert(
-    params.phone, params.patientName, params.ipdNumber,
-    params.dischargeDate, params.followUpDate || 'As advised',
-  ));
-  if (ch.sms) await safe(() => smsDischargeAlert(
-    params.phone, params.patientName, params.ipdNumber,
-    params.dischargeDate, params.followUpDate || 'As advised',
-  ));
+export async function notifyAppointmentReminder(centreId: string | undefined, phone: string, name: string, date: string, time: string, doctor: string) {
+  return dispatch(centreId, 'appointment_reminder',
+    () => sendAppointmentReminder(phone, name, date, time, doctor, centreId),
+    () => smsAppointmentReminder(phone, name, date, time, doctor, centreId));
 }
-
-export async function notifyLabResults(params: {
-  phone: string; patientName: string; testNames: string[]; centreId?: string;
-}): Promise<void> {
-  if (!params.phone) return;
-  const ch = await getEnabledChannels(params.centreId, 'lab_ready');
-  if (ch.whatsapp) await safe(() => sendLabResultsReady(
-    params.phone, params.patientName,
-    params.testNames.join(', '), 'Lab Reception',
-  ));
-  if (ch.sms) await safe(() => smsLabReady(
-    params.phone, params.patientName,
-    params.testNames.join(', '), 'Lab Reception',
-  ));
+export async function notifyOPDToken(centreId: string | undefined, phone: string, name: string, token: string, doctor: string) {
+  return dispatch(centreId, 'opd_token',
+    () => sendOPDTokenConfirmation(phone, name, token, doctor, centreId),
+    () => smsOPDToken(phone, name, token, doctor, centreId));
 }
-
-export async function notifyPharmacyReady(params: {
-  phone: string; patientName: string; medicineCount: number; centreId?: string;
-}): Promise<void> {
-  if (!params.phone) return;
-  const ch = await getEnabledChannels(params.centreId, 'pharmacy_ready');
-  if (ch.whatsapp) await safe(() => sendPharmacyReady(
-    params.phone, params.patientName,
-    String(params.medicineCount), 'Pharmacy Counter',
-  ));
-  if (ch.sms) await safe(() => smsPharmacyReady(
-    params.phone, params.patientName,
-    String(params.medicineCount), 'Pharmacy Counter',
-  ));
+export async function notifyLabReady(centreId: string | undefined, phone: string, name: string, test: string) {
+  return dispatch(centreId, 'lab_ready',
+    () => sendLabResultsReady(phone, name, test, centreId),
+    () => smsLabReady(phone, name, test, centreId));
 }
-
-export async function notifyOPDToken(params: {
-  phone: string; patientName: string; tokenNumber: string;
-  doctorName: string; estimatedWait: string; centreId?: string;
-}): Promise<void> {
-  if (!params.phone) return;
-  const ch = await getEnabledChannels(params.centreId, 'opd_token');
-  if (ch.whatsapp) await safe(() => sendOPDTokenConfirmation(
-    params.phone, params.patientName, params.tokenNumber,
-    params.doctorName, params.estimatedWait,
-  ));
-  if (ch.sms) await safe(() => smsOPDToken(
-    params.phone, params.patientName, params.tokenNumber,
-    params.doctorName, params.estimatedWait,
-  ));
+export async function notifyPharmacyReady(centreId: string | undefined, phone: string, name: string) {
+  return dispatch(centreId, 'pharmacy_ready',
+    () => sendPharmacyReady(phone, name, centreId),
+    () => smsPharmacyReady(phone, name, centreId));
 }
-
-export async function notifyPayment(params: {
-  phone: string; patientName: string; receiptNumber: string;
-  amount: number; paymentMode: string; centreId?: string;
-}): Promise<void> {
-  if (!params.phone) return;
-  const ch = await getEnabledChannels(params.centreId, 'payment_receipt');
-  const amtStr = `₹${Math.round(params.amount).toLocaleString('en-IN')}`;
-  if (ch.whatsapp) await safe(() => sendPaymentReceipt(
-    params.phone, params.patientName, params.receiptNumber,
-    amtStr, params.paymentMode,
-  ));
-  if (ch.sms) await safe(() => smsPaymentReceipt(
-    params.phone, params.patientName, params.receiptNumber,
-    amtStr, params.paymentMode,
-  ));
+export async function notifyDischarge(centreId: string | undefined, phone: string, name: string) {
+  return dispatch(centreId, 'discharge_summary',
+    () => sendDischargeAlert(phone, name, centreId),
+    () => smsDischargeAlert(phone, name, centreId));
 }
-
-export async function notifyAppointmentReminder(params: {
-  phone: string; patientName: string; doctorName: string;
-  date: string; time: string; centreId?: string;
-}): Promise<void> {
-  if (!params.phone) return;
-  const ch = await getEnabledChannels(params.centreId, 'appointment_reminder');
-  const centre = 'Health1 Super Speciality Hospital';
-  if (ch.whatsapp) await safe(() => sendAppointmentReminder(
-    params.phone, params.patientName, params.doctorName,
-    params.date, params.time, centre,
-  ));
-  if (ch.sms) await safe(() => smsAppointmentReminder(
-    params.phone, params.patientName, params.doctorName,
-    params.date, params.time, centre,
-  ));
+export async function notifyPaymentReceipt(centreId: string | undefined, phone: string, name: string, amount: string, billNo: string) {
+  return dispatch(centreId, 'payment_receipt',
+    () => sendPaymentReceipt(phone, name, amount, billNo, centreId),
+    () => smsPaymentReceipt(phone, name, amount, billNo, centreId));
 }
-
-export async function notifyFollowUp(params: {
-  phone: string; patientName: string; doctorName: string;
-  date: string; advice?: string; centreId?: string;
-}): Promise<void> {
-  if (!params.phone) return;
-  const ch = await getEnabledChannels(params.centreId, 'follow_up_reminder');
-  const centre = 'Health1 Super Speciality Hospital';
-  if (ch.whatsapp) await safe(() => sendFollowUpReminder(
-    params.phone, params.patientName, params.doctorName,
-    params.date, centre, params.advice || '',
-  ));
-  if (ch.sms) await safe(() => smsFollowUpReminder(
-    params.phone, params.patientName, params.doctorName,
-    params.date, centre, params.advice || '',
-  ));
+export async function notifyFollowUp(centreId: string | undefined, phone: string, name: string, date: string, doctor: string) {
+  return dispatch(centreId, 'follow_up_reminder',
+    () => sendFollowUpReminder(phone, name, date, doctor, centreId),
+    () => smsFollowUpReminder(phone, name, date, doctor, centreId));
 }

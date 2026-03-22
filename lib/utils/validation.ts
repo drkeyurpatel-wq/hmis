@@ -1,5 +1,5 @@
 // lib/utils/validation.ts
-// Reusable form validators for Health1 HMIS
+// Reusable form validators for HMIS
 
 export type ValidationError = { field: string; message: string };
 export type ValidationResult = { valid: boolean; errors: ValidationError[] };

@@ -102,7 +102,7 @@ export function useIPD(centreId: string | null) {
     try {
       const pt = (admInfo as any)?.patient;
       if (pt?.phone_primary) {
-        sendDischargeAlert(pt.phone_primary, pt.first_name || 'Patient', admInfo?.ipd_number || '', new Date().toLocaleDateString('en-IN'), 'As advised by doctor');
+        sendDischargeAlert(pt.phone_primary, pt.first_name || 'Patient');
       }
     } catch { /* non-blocking */ }
     loadAdmissions('active');

@@ -1,219 +1,95 @@
 // lib/notifications/whatsapp.ts
-// WhatsApp Business API integration for Health1
-// Supports: appointment reminders, lab results ready, discharge alerts, payment receipts
-//
-// Configuration: Set these in Supabase environment or .env:
-//   WHATSAPP_API_URL (e.g., https://graph.facebook.com/v18.0/PHONE_NUMBER_ID/messages)
-//   WHATSAPP_ACCESS_TOKEN (from Meta Business Suite)
-//   WHATSAPP_PHONE_ID (WhatsApp Business Phone Number ID)
+// WhatsApp Business API integration — hardened for production
+// Config: env WHATSAPP_API_URL + WHATSAPP_ACCESS_TOKEN
 
-const WHATSAPP_API = process.env.NEXT_PUBLIC_WHATSAPP_API_URL || '';
-const WHATSAPP_TOKEN = process.env.WHATSAPP_ACCESS_TOKEN || '';
+import { validatePhone, type NotificationResult, logNotification } from './notification-status';
+import { createClient } from '@/lib/supabase/client';
 
-interface WhatsAppMessage {
-  to: string;           // phone number with country code (e.g., 919876543210)
-  templateName: string;
-  templateParams: string[];
-  language?: string;
+let _sb: any = null;
+function sb() { if (typeof window === 'undefined') return null as any; if (!_sb) { try { _sb = createClient(); } catch { return null; } } return _sb; }
+
+function getConfig(): { apiUrl: string; token: string } | null {
+  const apiUrl = process.env.NEXT_PUBLIC_WHATSAPP_API_URL || process.env.WHATSAPP_API_URL || '';
+  const token = process.env.WHATSAPP_ACCESS_TOKEN || '';
+  if (!apiUrl || !token) return null;
+  return { apiUrl, token };
 }
 
-// ============================================================
-// CORE SEND FUNCTION
-// ============================================================
-async function sendWhatsAppTemplate(msg: WhatsAppMessage): Promise<{ success: boolean; messageId?: string; error?: string }> {
-  if (!WHATSAPP_API || !WHATSAPP_TOKEN) {
-    return { success: false, error: 'WhatsApp API not configured. Set WHATSAPP_API_URL and WHATSAPP_ACCESS_TOKEN in environment.' };
+function formatPhone(phone: string): string {
+  const clean = phone.replace(/[\s\-\(\)+]/g, '');
+  if (clean.length === 10) return `91${clean}`;
+  return clean;
+}
+
+async function sendTemplate(phone: string, templateName: string, params: string[], language: string = 'en', centreId?: string): Promise<NotificationResult> {
+  const result: NotificationResult = { channel: 'whatsapp', success: false, timestamp: new Date().toISOString() };
+
+  const phoneCheck = validatePhone(phone);
+  if (!phoneCheck.valid) {
+    result.error = phoneCheck.error; result.errorCode = 'invalid_phone';
+    return result;
+  }
+
+  const config = getConfig();
+  if (!config) {
+    result.error = 'WhatsApp API not configured. Set WHATSAPP_API_URL + WHATSAPP_ACCESS_TOKEN.';
+    result.errorCode = 'not_configured';
+    return result;
   }
 
   try {
-    const response = await fetch(WHATSAPP_API, {
+    const res = await fetch(config.apiUrl, {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${WHATSAPP_TOKEN}`,
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Authorization': `Bearer ${config.token}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
         messaging_product: 'whatsapp',
-        to: formatPhone(msg.to),
+        to: phoneCheck.formatted,
         type: 'template',
         template: {
-          name: msg.templateName,
-          language: { code: msg.language || 'en' },
-          components: [{
-            type: 'body',
-            parameters: msg.templateParams.map(p => ({ type: 'text', text: p })),
-          }],
+          name: templateName, language: { code: language },
+          components: params.length > 0 ? [{ type: 'body', parameters: params.map(p => ({ type: 'text', text: p })) }] : [],
         },
       }),
     });
 
-    const data = await response.json();
-    if (data.messages?.[0]?.id) {
-      return { success: true, messageId: data.messages[0].id };
+    if (res.ok) {
+      const data = await res.json();
+      result.success = true;
+      result.messageId = data.messages?.[0]?.id;
+    } else {
+      const err = await res.json().catch(() => ({ error: { message: 'Unknown' } }));
+      result.error = `WhatsApp ${res.status}: ${err.error?.message || 'Unknown error'}`;
+      result.errorCode = res.status === 429 ? 'rate_limited' : 'api_error';
     }
-    return { success: false, error: data.error?.message || 'Unknown error' };
-  } catch (err: any) {
-    return { success: false, error: err.message };
-  }
-}
-
-// ============================================================
-// PHONE FORMATTING
-// ============================================================
-function formatPhone(phone: string): string {
-  let cleaned = phone.replace(/[\s\-\+\(\)]/g, '');
-  // If 10 digits, prepend 91 (India)
-  if (cleaned.length === 10) cleaned = '91' + cleaned;
-  // Remove leading 0
-  if (cleaned.startsWith('0')) cleaned = '91' + cleaned.slice(1);
-  return cleaned;
-}
-
-// ============================================================
-// TEMPLATE MESSAGES
-// ============================================================
-
-// Template: h1_appointment_reminder
-// Params: patient_name, doctor_name, date, time, centre_name
-export async function sendAppointmentReminder(phone: string, patientName: string, doctorName: string, date: string, time: string, centreName: string) {
-  return sendWhatsAppTemplate({
-    to: phone,
-    templateName: 'h1_appointment_reminder',
-    templateParams: [patientName, doctorName, date, time, centreName],
-  });
-}
-
-// Template: h1_opd_token
-// Params: patient_name, token_number, doctor_name, estimated_wait
-export async function sendOPDTokenConfirmation(phone: string, patientName: string, tokenNumber: string, doctorName: string, estimatedWait: string) {
-  return sendWhatsAppTemplate({
-    to: phone,
-    templateName: 'h1_opd_token',
-    templateParams: [patientName, tokenNumber, doctorName, estimatedWait],
-  });
-}
-
-// Template: h1_lab_results_ready
-// Params: patient_name, test_names, collection_point
-export async function sendLabResultsReady(phone: string, patientName: string, testNames: string, collectionPoint: string) {
-  return sendWhatsAppTemplate({
-    to: phone,
-    templateName: 'h1_lab_results_ready',
-    templateParams: [patientName, testNames, collectionPoint],
-  });
-}
-
-// Template: h1_discharge_alert
-// Params: patient_name, ipd_number, discharge_date, follow_up_date
-export async function sendDischargeAlert(phone: string, patientName: string, ipdNumber: string, dischargeDate: string, followUpDate: string) {
-  return sendWhatsAppTemplate({
-    to: phone,
-    templateName: 'h1_discharge_alert',
-    templateParams: [patientName, ipdNumber, dischargeDate, followUpDate],
-  });
-}
-
-// Template: h1_payment_receipt
-// Params: patient_name, receipt_number, amount, payment_mode
-export async function sendPaymentReceipt(phone: string, patientName: string, receiptNumber: string, amount: string, paymentMode: string) {
-  return sendWhatsAppTemplate({
-    to: phone,
-    templateName: 'h1_payment_receipt',
-    templateParams: [patientName, receiptNumber, amount, paymentMode],
-  });
-}
-
-// Template: h1_pharmacy_ready
-// Params: patient_name, medicine_count, pharmacy_counter
-export async function sendPharmacyReady(phone: string, patientName: string, medicineCount: string, pharmacyCounter: string) {
-  return sendWhatsAppTemplate({
-    to: phone,
-    templateName: 'h1_pharmacy_ready',
-    templateParams: [patientName, medicineCount, pharmacyCounter],
-  });
-}
-
-// Template: h1_follow_up_reminder
-// Params: patient_name, doctor_name, date, centre_name, advice
-export async function sendFollowUpReminder(phone: string, patientName: string, doctorName: string, date: string, centreName: string, advice: string) {
-  return sendWhatsAppTemplate({
-    to: phone,
-    templateName: 'h1_follow_up_reminder',
-    templateParams: [patientName, doctorName, date, centreName, advice],
-  });
-}
-
-// ============================================================
-// PLAIN TEXT FALLBACK (for testing without approved templates)
-// ============================================================
-export async function sendPlainMessage(phone: string, message: string): Promise<{ success: boolean; error?: string }> {
-  if (!WHATSAPP_API || !WHATSAPP_TOKEN) {
-    return { success: false, error: 'Not configured' };
+  } catch (e: any) {
+    result.error = e.message || 'Network error';
+    result.errorCode = 'network_error';
   }
 
-  try {
-    const response = await fetch(WHATSAPP_API, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${WHATSAPP_TOKEN}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        messaging_product: 'whatsapp',
-        to: formatPhone(phone),
-        type: 'text',
-        text: { body: message },
-      }),
-    });
-    const data = await response.json();
-    return data.messages?.[0]?.id ? { success: true } : { success: false, error: data.error?.message };
-  } catch (err: any) {
-    return { success: false, error: err.message };
-  }
+  if (centreId) logNotification(sb(), centreId, { phone: phoneCheck.formatted, channel: 'whatsapp', event_type: templateName, template_name: templateName, result });
+  return result;
 }
 
-// ============================================================
-// BATCH SEND (for daily appointment reminders)
-// ============================================================
-export async function sendBatchReminders(
-  appointments: { phone: string; patientName: string; doctorName: string; date: string; time: string; centreName: string }[]
-): Promise<{ sent: number; failed: number; errors: string[] }> {
-  let sent = 0, failed = 0;
-  const errors: string[] = [];
+// ── Event-specific wrappers ──
 
-  for (const appt of appointments) {
-    const result = await sendAppointmentReminder(appt.phone, appt.patientName, appt.doctorName, appt.date, appt.time, appt.centreName);
-    if (result.success) sent++;
-    else { failed++; if (result.error) errors.push(`${appt.patientName}: ${result.error}`); }
-    // Rate limit: 1 msg per 100ms
-    await new Promise(r => setTimeout(r, 100));
-  }
-
-  return { sent, failed, errors };
+export async function sendAppointmentReminder(phone: string, name: string, date: string, time: string, doctor: string, centreId?: string) {
+  return sendTemplate(phone, 'appointment_reminder', [name, date, time, doctor], 'en', centreId);
 }
-
-// ============================================================
-// TEMPLATE REGISTRATION GUIDE
-// ============================================================
-// Register these templates in Meta Business Suite → WhatsApp Manager → Message Templates:
-//
-// 1. h1_appointment_reminder (Utility)
-//    "Hello {{1}}, this is a reminder for your appointment with {{2}} on {{3}} at {{4}} at {{5}}. Please arrive 15 minutes early."
-//
-// 2. h1_opd_token (Utility)
-//    "Hello {{1}}, your OPD token is {{2}}. You will see {{3}}. Estimated wait: {{4}}."
-//
-// 3. h1_lab_results_ready (Utility)
-//    "Hello {{1}}, your lab results for {{2}} are ready. Please collect from {{3}}."
-//
-// 4. h1_discharge_alert (Utility)
-//    "Hello {{1}}, patient with IPD# {{2}} is being discharged on {{3}}. Follow-up on {{4}}."
-//
-// 5. h1_payment_receipt (Utility)
-//    "Hello {{1}}, payment received. Receipt: {{2}}, Amount: Rs.{{3}}, Mode: {{4}}. Thank you."
-//
-// 6. h1_pharmacy_ready (Utility)
-//    "Hello {{1}}, your {{2}} medicines are ready for pickup at {{3}}."
-//
-// 7. h1_follow_up_reminder (Utility)
-//    "Hello {{1}}, reminder: your follow-up with {{2}} is on {{3}} at {{4}}. {{5}}"
+export async function sendOPDTokenConfirmation(phone: string, name: string, token: string, doctor: string, centreId?: string) {
+  return sendTemplate(phone, 'opd_token_confirmation', [name, token, doctor], 'en', centreId);
+}
+export async function sendLabResultsReady(phone: string, name: string, test: string, centreId?: string) {
+  return sendTemplate(phone, 'lab_results_ready', [name, test], 'en', centreId);
+}
+export async function sendPharmacyReady(phone: string, name: string, centreId?: string) {
+  return sendTemplate(phone, 'pharmacy_ready', [name], 'en', centreId);
+}
+export async function sendDischargeAlert(phone: string, name: string, centreId?: string) {
+  return sendTemplate(phone, 'discharge_alert', [name], 'en', centreId);
+}
+export async function sendPaymentReceipt(phone: string, name: string, amount: string, billNo: string, centreId?: string) {
+  return sendTemplate(phone, 'payment_receipt', [name, amount, billNo], 'en', centreId);
+}
+export async function sendFollowUpReminder(phone: string, name: string, date: string, doctor: string, centreId?: string) {
+  return sendTemplate(phone, 'follow_up_reminder', [name, date, doctor], 'en', centreId);
+}

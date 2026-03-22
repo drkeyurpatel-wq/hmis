@@ -13,7 +13,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
               <span className="text-white font-black text-xs">H1</span>
             </div>
             <div>
-              <p className="font-bold text-sm text-gray-900 leading-none">Health1</p>
+              <p className="font-bold text-sm text-gray-900 leading-none">Hospital</p>
               <p className="text-[9px] text-teal-600 font-semibold uppercase tracking-wider">Patient Portal</p>
             </div>
           </Link>
@@ -21,7 +21,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
       </header>
       <main className="max-w-lg mx-auto px-4 py-6">{children}</main>
       {/* Footer */}
-      <footer className="text-center py-4 text-[10px] text-gray-400">Health1 Super Speciality Hospital, Shilaj</footer>
+      <footer className="text-center py-4 text-[10px] text-gray-400">Hospital Management System</footer>
     </div>
   );
 }

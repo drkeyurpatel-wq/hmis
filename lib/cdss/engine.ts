@@ -1,4 +1,4 @@
-// Health1 HMIS — Clinical Decision Support System (CDSS)
+// HMIS — Clinical Decision Support System (CDSS)
 // Ported from Python (~1500 lines) to TypeScript
 // Rule-based: vitals analysis, NEWS2, drug interactions, dose validation
 

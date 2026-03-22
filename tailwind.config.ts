@@ -20,8 +20,6 @@ const config: Config = {
           800: '#153E9E',
           900: '#17377D',
           950: '#0F224C',
-        },
-        health1: {
           teal: '#0D9488',
           navy: '#1B2A4A',
           coral: '#E8593C',

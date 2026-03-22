@@ -67,7 +67,7 @@ function ReportsInner() {
     if (!d) return { sheets: [], title: '' };
     const centreLabel = centreId ? centres.find(c => c.id === centreId)?.name || 'Centre' : 'All Centres';
     const period = `${dateFrom} to ${dateTo}`;
-    const title = `Health1 — ${REPORT_META[report].label} — ${centreLabel} — ${period}`;
+    const title = `${REPORT_META[report].label} — ${centreLabel} — ${period}`;
     const sheets: ExcelSheet[] = [];
 
     if (report === 'revenue') {
@@ -140,7 +140,7 @@ function ReportsInner() {
 
   const exportReport = () => {
     const { sheets } = buildSheets();
-    if (sheets.length > 0) exportToExcel(sheets, `Health1_${report}_${dateFrom}_${dateTo}`);
+    if (sheets.length > 0) exportToExcel(sheets, `HMIS_${report}_${dateFrom}_${dateTo}`);
   };
 
   const exportPDFReport = () => {
@@ -164,7 +164,7 @@ function ReportsInner() {
   return (
     <div className="max-w-7xl mx-auto space-y-4">
       <div className="flex items-center justify-between">
-        <div><h1 className="text-xl font-bold text-gray-900">Reports &amp; MIS</h1><p className="text-xs text-gray-500">Health1 Super Speciality — Multi-centre Analytics</p></div>
+        <div><h1 className="text-xl font-bold text-gray-900">Reports &amp; MIS</h1><p className="text-xs text-gray-500">Multi-centre Analytics</p></div>
         <div className="flex gap-2">
           <button onClick={exportPDFReport} disabled={!d} className="px-4 py-2 bg-red-600 text-white text-sm rounded-lg disabled:opacity-40">Export PDF</button>
           <button onClick={exportReport} disabled={!d} className="px-4 py-2 bg-green-600 text-white text-sm rounded-lg disabled:opacity-40">Export to Excel</button>

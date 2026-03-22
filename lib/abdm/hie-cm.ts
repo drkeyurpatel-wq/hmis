@@ -212,7 +212,7 @@ export async function buildHealthRecord(
     resourceType: 'Patient',
     id: patient.id,
     identifier: [
-      { system: 'https://health1hospitals.com/uhid', value: patient.uhid },
+      { system: 'https://hospital.com/uhid', value: patient.uhid },
       ...(patient.abha_number ? [{ system: 'https://healthid.ndhm.gov.in', value: patient.abha_number }] : []),
     ],
     name: [{ text: `${patient.first_name} ${patient.last_name}` }],

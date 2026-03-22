@@ -10,7 +10,7 @@ const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 const RESEND_API_KEY = process.env.RESEND_API_KEY || '';
 const CRON_SECRET = process.env.CRON_SECRET || '';
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://hmis.health1.in';
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://hmis.hospital.com';
 
 function adminSb() {
   if (!SUPABASE_URL || !SUPABASE_KEY) return null;
@@ -100,7 +100,7 @@ function buildEmailHTML(centreName: string, dateStr: string, d: any) {
     .red{color:#dc2626}
   </style></head><body><div class="container">
     <div class="header">
-      <h1>Health1 Daily Report</h1>
+      <h1>HMIS Daily Report</h1>
       <p>${centreName} — ${dateFormatted}</p>
     </div>
     <div class="content">
@@ -130,7 +130,7 @@ function buildEmailHTML(centreName: string, dateStr: string, d: any) {
       </div>
     </div>
     <div class="footer">
-      This is an automated report from Health1 HMIS. Generated at ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })} IST.
+      This is an automated report from HMIS. Generated at ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })} IST.
       <br/>To unsubscribe, go to Settings → Report Subscriptions.
     </div>
   </div></body></html>`;
@@ -177,7 +177,7 @@ export async function GET(request: NextRequest) {
     const byCentre = new Map<string, { centreName: string; centreId: string; emails: string[] }>();
     for (const s of subs) {
       const cid = s.centre?.id || s.centre_id;
-      const cname = s.centre?.name || 'Health1 Hospital';
+      const cname = s.centre?.name || 'Hospital';
       if (!byCentre.has(cid)) byCentre.set(cid, { centreName: cname, centreId: cid, emails: [] });
       byCentre.get(cid)!.emails.push(s.email);
     }
@@ -203,7 +203,7 @@ export async function GET(request: NextRequest) {
 
         try {
           await resend.emails.send({
-            from: 'Health1 HMIS <reports@health1.in>',
+            from: 'HMIS <reports@hospital.com>',
             to: email,
             subject,
             html,

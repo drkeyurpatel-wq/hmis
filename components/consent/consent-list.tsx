@@ -34,7 +34,7 @@ export default function ConsentList({ consents, staffId, onRevoke, onFlash }: Pr
   const printConsentRecord = (c: any) => {
     openPrintWindow(`<div style="max-width:700px;margin:0 auto;font-family:Segoe UI,Arial,sans-serif;font-size:11px">
       <div style="text-align:center;border-bottom:2px solid #0d9488;padding-bottom:8px;margin-bottom:12px">
-        <div style="font-size:16px;font-weight:700;color:#0d9488">Health1 Super Speciality Hospital</div>
+        <div style="font-size:16px;font-weight:700;color:#0d9488">Hospital</div>
         <div style="font-size:9px;color:#666">Shilaj, Ahmedabad | NABH Accredited</div>
         <div style="font-size:14px;font-weight:700;margin-top:6px">${c.procedure_name || 'INFORMED CONSENT'}</div>
         ${!c.is_valid ? '<div style="color:red;font-weight:bold;margin-top:4px">*** REVOKED ***</div>' : ''}
@@ -61,7 +61,7 @@ export default function ConsentList({ consents, staffId, onRevoke, onFlash }: Pr
         </div>
       </div>
       ${!c.is_valid ? `<div style="margin-top:15px;padding:8px;border:2px solid red;border-radius:4px;font-size:10px;color:red"><b>REVOKED</b> on ${c.revoked_at ? new Date(c.revoked_at).toLocaleString('en-IN') : '—'}<br/>Reason: ${c.revoke_reason || '—'}</div>` : ''}
-      <div style="margin-top:15px;font-size:7px;color:#aaa;text-align:center">Health1 HMIS — Digital Consent Record</div>
+      <div style="margin-top:15px;font-size:7px;color:#aaa;text-align:center">HMIS — Digital Consent Record</div>
     </div>`, `Consent — ${c.consent_type} — ${c.procedure_name || ''}`);
   };
 

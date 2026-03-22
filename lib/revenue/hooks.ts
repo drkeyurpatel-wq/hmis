@@ -90,7 +90,7 @@ export function useOPDQueue(centreId: string | null, doctorId?: string | null) {
         const { data: pt } = await sb().from('hmis_patients').select('phone_primary, first_name').eq('id', patientId).single();
         const { data: dr } = await sb().from('hmis_staff').select('full_name').eq('id', drId).single();
         if (pt?.phone_primary) {
-          sendOPDTokenConfirmation(pt.phone_primary, pt.first_name || 'Patient', 'T-' + String(tokenNum || 1).padStart(3, '0'), dr?.full_name || 'Doctor', '~20 min');
+          sendOPDTokenConfirmation(pt.phone_primary, pt.first_name || 'Patient', 'T-' + String(tokenNum || 1).padStart(3, '0'), dr?.full_name || 'Doctor');
         }
       } catch { /* WhatsApp send is non-blocking */ }
     }
@@ -273,7 +273,7 @@ export function useBilling(centreId: string | null) {
         try {
           const { data: pt } = await sb().from('hmis_patients').select('phone_primary, first_name').eq('id', bill.patientId).single();
           if (pt?.phone_primary) {
-            sendPaymentReceipt(pt.phone_primary, pt.first_name || 'Patient', rcpNum || 'RCP', `Rs.${amount.toLocaleString('en-IN')}`, mode.toUpperCase());
+            sendPaymentReceipt(pt.phone_primary, pt.first_name || 'Patient', `Rs.${amount.toLocaleString('en-IN')}`, rcpNum || 'RCP');
           }
         } catch { /* non-blocking */ }
       }
@@ -389,7 +389,7 @@ export function usePharmacy(centreId: string | null) {
       try {
         const { data: pt } = await sb().from('hmis_patients').select('phone_primary, first_name').eq('id', order.patient_id).single();
         if (pt?.phone_primary) {
-          sendPharmacyReady(pt.phone_primary, pt.first_name || 'Patient', String(dispensedItems.length), 'Pharmacy Counter');
+          sendPharmacyReady(pt.phone_primary, pt.first_name || 'Patient');
         }
       } catch { /* non-blocking */ }
     }

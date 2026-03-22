@@ -1,11 +1,11 @@
 // lib/lab/lims-hooks.ts
-// Core LIMS hooks for Health1 Laboratory Module
+// Core LIMS hooks for Hospital Laboratory Module
 
 import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { auditCreate, auditUpdate, auditSign } from '@/lib/audit/audit-logger';
 import { smartPostLabCharge } from '@/lib/bridge/cross-module-bridge';
-import { notifyLabResults } from '@/lib/notifications/notification-dispatcher';
+import { notifyLabReady } from '@/lib/notifications/notification-dispatcher';
 
 let _sb: ReturnType<typeof createClient> | null = null;
 function sb() {
@@ -296,7 +296,7 @@ export function useResultEntry(orderId: string | null) {
       .select('test:hmis_lab_test_master(test_name), patient:hmis_patients!inner(phone_primary, first_name, last_name)')
       .eq('id', orderId).maybeSingle();
     if (orderInfo?.patient?.phone_primary) {
-      notifyLabResults({ phone: orderInfo.patient.phone_primary, patientName: `${orderInfo.patient.first_name} ${orderInfo.patient.last_name}`, testNames: [orderInfo?.test?.test_name || 'Lab test'] });
+      notifyLabReady(undefined, orderInfo.patient.phone_primary, `${orderInfo.patient.first_name} ${orderInfo.patient.last_name}`, orderInfo?.test?.test_name || 'Lab test');
     }
     load();
   }, [orderId, load]);

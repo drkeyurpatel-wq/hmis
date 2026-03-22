@@ -18,7 +18,7 @@ interface ConsentTemplate {
 }
 
 const TEMPLATES: ConsentTemplate[] = [
-  { type: 'general', title: 'General Consent for Treatment', description: 'I consent to the general medical treatment, nursing care, diagnostic procedures, and routine hospital services during my stay at Health1 Hospital.',
+  { type: 'general', title: 'General Consent for Treatment', description: 'I consent to the general medical treatment, nursing care, diagnostic procedures, and routine hospital services during my stay at Hospital.',
     risks: ['Allergic reactions to medications','Infection','Pain or discomfort','Unexpected complications'], alternatives: ['Refusal of treatment','Alternative therapies'] },
   { type: 'surgical', title: 'Informed Consent for Surgery', description: 'I consent to undergo the surgical procedure as explained by my surgeon, including any additional procedures that may become necessary during the operation.',
     risks: ['Bleeding requiring transfusion','Infection (wound/deep)','Anesthesia complications','Injury to surrounding structures','Blood clots (DVT/PE)','Need for ICU admission','Conversion to open surgery','Need for re-operation','Scarring','Chronic pain','Death (rare)'], alternatives: ['Conservative management','Alternative surgical approach','Observation and monitoring'] },
@@ -127,7 +127,7 @@ export default function ConsentBuilder({ consents, patientId, patientName, admis
 
     openPrintWindow(`<div style="max-width:700px;margin:0 auto;font-family:Segoe UI,Arial,sans-serif;font-size:11px">
       <div style="text-align:center;border-bottom:2px solid #1e40af;padding-bottom:8px;margin-bottom:12px">
-        <div style="font-size:16px;font-weight:700;color:#1e40af">Health1 Super Speciality Hospital</div>
+        <div style="font-size:16px;font-weight:700;color:#1e40af">Hospital</div>
         <div style="font-size:9px;color:#666">Shilaj, Ahmedabad | NABH Accredited</div>
         <div style="font-size:14px;font-weight:700;margin-top:6px">${form.procedureName || 'INFORMED CONSENT FORM'}</div>
       </div>

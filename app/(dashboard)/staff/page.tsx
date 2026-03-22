@@ -43,7 +43,7 @@ function StaffInner() {
   }, [mgmt.staffList, search, typeFilter]);
 
   // Auto-generate email from name
-  const autoEmail = (name: string) => name.toLowerCase().replace(/[^a-z ]/g, '').trim().split(/\s+/).join('.') + '@health1.in';
+  const autoEmail = (name: string) => name.toLowerCase().replace(/[^a-z ]/g, '').trim().split(/\s+/).join('.') + '@hospital.com';
   const autoCode = (type: string) => `H1-${type.slice(0, 3).toUpperCase()}-${String(mgmt.stats.total + 1).padStart(3, '0')}`;
 
   const handleCreate = async () => {
@@ -61,7 +61,7 @@ function StaffInner() {
     const lines = csvText.trim().split('\n').filter(l => l.trim() && !l.startsWith('employee_code'));
     const users = lines.map(l => {
       const [employee_code, full_name, email, password, phone, staff_type, designation, role_name, specialisation, medical_reg_no] = l.split(',').map(s => s.trim());
-      return { employee_code, full_name, email, password: password || 'Health1@2026', phone, staff_type: staff_type || 'support', designation: designation || '', role_name: role_name || 'receptionist', specialisation, medical_reg_no };
+      return { employee_code, full_name, email, password: password || 'Hospital@2026', phone, staff_type: staff_type || 'support', designation: designation || '', role_name: role_name || 'receptionist', specialisation, medical_reg_no };
     });
     const result = await mgmt.bulkCreate(users);
     setBulkResult(result);
@@ -165,7 +165,7 @@ function StaffInner() {
           <div><label className="text-xs text-gray-500">Email (Login ID) *</label>
             <input type="email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} className="w-full px-3 py-2 border rounded-lg text-sm" /></div>
           <div><label className="text-xs text-gray-500">Password *</label>
-            <input type="text" value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value }))} className="w-full px-3 py-2 border rounded-lg text-sm" placeholder="Health1@2026" /></div>
+            <input type="text" value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value }))} className="w-full px-3 py-2 border rounded-lg text-sm" placeholder="Hospital@2026" /></div>
           <div><label className="text-xs text-gray-500">Phone</label>
             <input type="text" value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} className="w-full px-3 py-2 border rounded-lg text-sm" placeholder="9876543210" /></div>
           <div><label className="text-xs text-gray-500">Designation</label>
@@ -184,9 +184,9 @@ function StaffInner() {
       {tab === 'bulk' && <div className="bg-white rounded-xl border p-5 space-y-4 max-w-4xl">
         <h2 className="font-bold text-sm">Bulk Import — CSV Format</h2>
         <div className="bg-gray-50 rounded-lg p-3 text-[10px] font-mono">employee_code,full_name,email,password,phone,staff_type,designation,role_name,specialisation,medical_reg_no</div>
-        <div className="text-xs text-gray-500">Paste CSV below. Default password: <code className="bg-gray-100 px-1 rounded">Health1@2026</code> if left blank. Default role: <code className="bg-gray-100 px-1 rounded">receptionist</code> if not specified.</div>
+        <div className="text-xs text-gray-500">Paste CSV below. Default password: <code className="bg-gray-100 px-1 rounded">Hospital@2026</code> if left blank. Default role: <code className="bg-gray-100 px-1 rounded">receptionist</code> if not specified.</div>
         <textarea value={csvText} onChange={e => setCsvText(e.target.value)} rows={12} className="w-full px-3 py-2 border rounded-lg text-xs font-mono"
-          placeholder={`H1-DOC-001,Dr. Amit Shah,amit.shah@health1.in,Health1@2026,9876543210,doctor,Consultant Cardiologist,doctor,Cardiology,GJ-12345\nH1-NRS-001,Priya Patel,priya.patel@health1.in,,9876543211,nurse,Staff Nurse ICU,nurse,,\nH1-REC-001,Ravi Kumar,ravi.kumar@health1.in,,9876543212,receptionist,Front Desk,receptionist,,`} />
+          placeholder={`H1-DOC-001,Dr. Amit Shah,amit.shah@hospital.com,Hospital@2026,9876543210,doctor,Consultant Cardiologist,doctor,Cardiology,GJ-12345\nH1-NRS-001,Priya Patel,priya.patel@hospital.com,,9876543211,nurse,Staff Nurse ICU,nurse,,\nH1-REC-001,Ravi Kumar,ravi.kumar@hospital.com,,9876543212,receptionist,Front Desk,receptionist,,`} />
         <div className="flex gap-3 items-center">
           <button onClick={handleBulk} disabled={bulking || !csvText.trim()} className="px-6 py-2.5 bg-emerald-600 text-white text-sm rounded-lg font-medium disabled:opacity-40">{bulking ? 'Importing...' : `Import ${csvText.trim().split('\n').filter(l => l.trim() && !l.startsWith('employee')).length} Users`}</button>
           {bulkResult && <span className="text-xs"><span className="text-green-700 font-bold">{bulkResult.success} created</span> {bulkResult.failed > 0 && <span className="text-red-700 font-bold">{bulkResult.failed} failed</span>}</span>}
