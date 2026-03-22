@@ -30,6 +30,7 @@ const NAV: NavGroup[] = [
     { href: '/emr-v2', label: 'EMR', icon: Stethoscope, module: 'emr' },
     { href: '/voice-notes', label: 'Voice Notes', icon: Mic, module: 'emr' },
     { href: '/ipd', label: 'IPD', icon: BedDouble, module: 'ipd' },
+    { href: '/handover', label: 'Shift Handover', icon: FileText, module: 'ipd' },
     { href: '/bed-management', label: 'Beds', icon: BedDouble, module: 'ipd' },
     { href: '/nursing-station', label: 'Nursing', icon: Heart, module: 'ipd' },
     { href: '/ot', label: 'OT', icon: Scissors, module: 'ot' },
@@ -52,6 +53,7 @@ const NAV: NavGroup[] = [
     { href: '/referrals', label: 'Referrals', icon: Users, module: 'billing' },
     { href: '/packages', label: 'Packages', icon: FileText, module: 'billing' },
     { href: '/accounting', label: 'Accounting', icon: FileText, module: 'billing' },
+    { href: '/revenue-leakage', label: 'Leakage Detector', icon: AlertTriangle, module: 'billing' },
   ]},
   { key: 'operations', label: 'OPERATIONS', items: [
     { href: '/vpms', label: 'Procurement', icon: Truck, module: null },

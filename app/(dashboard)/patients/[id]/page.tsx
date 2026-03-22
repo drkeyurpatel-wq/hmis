@@ -8,6 +8,7 @@ import PatientImagingPanel from '@/components/radiology/patient-imaging-panel';
 import PatientLabHistory from '@/components/lab/patient-lab-history';
 import { usePatientDocuments, useEmergencyContacts, usePatientInsurance } from '@/lib/appointments/appointment-hooks';
 import { exportPatientData } from '@/lib/utils/data-export';
+import { PatientTimeline } from '@/components/patient/patient-timeline';
 
 let _sb: any = null;
 function sb() { if (typeof window === 'undefined') return null as any; if (!_sb) { try { _sb = createClient(); } catch { return null; } } return _sb; }
@@ -127,7 +128,7 @@ export default function PatientDetailPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 mb-4 border-b">{[['overview','Overview'],['imaging','Imaging'],['lab','Lab Results'],['documents','Documents'],['insurance','Insurance'],['emergency','Emergency Contacts'],['encounters','Encounters'],['billing','Billing'],['edit','Edit Details']].map(([k,l]) =>
+      <div className="flex gap-1 mb-4 border-b">{[['overview','Overview'],['timeline','Timeline'],['imaging','Imaging'],['lab','Lab Results'],['documents','Documents'],['insurance','Insurance'],['emergency','Emergency Contacts'],['encounters','Encounters'],['billing','Billing'],['edit','Edit Details']].map(([k,l]) =>
         <button key={k} onClick={() => { setActiveTab(k); if (k === 'edit') setEditing(true); }}
           className={`px-4 py-2 text-sm font-medium rounded-xl ${activeTab === k ? 'bg-teal-600 text-white shadow-sm' : 'bg-white text-gray-500 border border-gray-100 hover:bg-gray-50'}`}>{l}</button>
       )}</div>
@@ -166,6 +167,13 @@ export default function PatientDetailPage() {
               ))}
             </div>
           </div>
+        </div>
+      )}
+
+      {activeTab === 'timeline' && (
+        <div className="bg-white rounded-2xl border border-gray-100 p-5">
+          <h3 className="text-sm font-bold text-gray-800 mb-4">Patient Journey</h3>
+          <PatientTimeline patientId={patientId} />
         </div>
       )}
 

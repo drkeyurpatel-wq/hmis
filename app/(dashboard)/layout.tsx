@@ -9,6 +9,7 @@ import { useAuthStore } from '@/lib/store/auth';
 import { createClient } from '@/lib/supabase/client';
 import { useKeyboardShortcuts, ShortcutHelpModal } from '@/components/ui/keyboard-shortcuts';
 import { registerServiceWorker } from '@/lib/offline/sync-manager';
+import { CommandPalette } from '@/components/ui/command-palette';
 
 export default function DashboardLayout({
   children,
@@ -75,6 +76,7 @@ export default function DashboardLayout({
       <div className="min-h-screen bg-gray-50">
         {!online && <div className="fixed top-0 left-0 right-0 z-[60] bg-amber-500 text-white text-center py-1.5 text-xs font-medium">⚡ Offline — changes will sync when connection returns</div>}
         <ShortcutHelpModal show={showHelp} onClose={() => setShowHelp(false)} />
+        <CommandPalette />
         <Sidebar mobileOpen={mobileOpen} onMobileClose={() => setMobileOpen(false)} />
         {/* Mobile hamburger */}
         <button onClick={() => setMobileOpen(true)}

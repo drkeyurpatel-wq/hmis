@@ -5,6 +5,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import Link from 'next/link';
 import { DarkModeToggle } from '@/components/ui/dark-mode-toggle';
+import { NotificationBell } from '@/components/ui/notification-bell';
 
 let _sb: any = null;
 function sb() { if (typeof window === 'undefined') return null as any; if (!_sb) { try { _sb = createClient(); } catch { return null; } } return _sb; }
@@ -121,8 +122,9 @@ export function GlobalHeader() {
             <span className="w-1.5 h-1.5 bg-purple-500 rounded-full" />{pendingCounts.preauth} PA</Link>}
         </div>
 
-        {/* Dark mode */}
-        <div className="hidden lg:flex items-center">
+        {/* Notifications + Dark mode */}
+        <div className="hidden lg:flex items-center gap-1">
+          <NotificationBell />
           <DarkModeToggle />
         </div>
       </div>
