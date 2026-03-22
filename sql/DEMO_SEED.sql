@@ -203,10 +203,10 @@ BEGIN
       IF random()>0.3 THEN
         INSERT INTO hmis_emr_encounters (centre_id,patient_id,doctor_id,opd_visit_id,encounter_date,encounter_type,status,complaints,diagnoses,prescriptions,vitals)
         VALUES (cid,pid,did,vid,CURRENT_DATE,'opd','completed',
-          '[{"text":"'||cc[1+(random()*19)::int]||'"}]',
-          '[{"code":"J06.9","label":"URI"},{"code":"R50.9","label":"Fever"}]',
-          '[{"drug":"'||drugs[1+(random()*7)::int]||'","dose":"1 tab","route":"oral","frequency":"TDS","duration":"5 days"}]',
-          '{"temperature":98.6,"pulse":78,"bp_systolic":124,"bp_diastolic":80,"spo2":98}');
+          ('[{"text":"'||cc[1+(random()*19)::int]||'"}]')::jsonb,
+          ('[{"code":"J06.9","label":"URI"},{"code":"R50.9","label":"Fever"}]')::jsonb,
+          ('[{"drug":"'||drugs[1+(random()*7)::int]||'","dose":"1 tab","route":"oral","frequency":"TDS","duration":"5 days"}]')::jsonb,
+          '{"temperature":98.6,"pulse":78,"bp_systolic":124,"bp_diastolic":80,"spo2":98}'::jsonb);
       END IF;
     END LOOP;
 
@@ -224,10 +224,10 @@ BEGIN
 
       INSERT INTO hmis_emr_encounters (centre_id,patient_id,doctor_id,opd_visit_id,encounter_date,encounter_type,status,complaints,diagnoses,prescriptions,vitals)
       VALUES (cid,pid,did,vid,vdt::date,'opd','completed',
-        '[{"text":"'||cc[1+(random()*19)::int]||'"}]',
-        '[{"code":"'||CASE WHEN random()>0.5 THEN 'J06.9' ELSE 'I10' END||'","label":"'||CASE WHEN random()>0.5 THEN 'URI' ELSE 'HTN' END||'"}]',
-        '[{"drug":"'||drugs[1+(random()*7)::int]||'","dose":"1 tab","route":"oral","frequency":"'||(ARRAY['OD','BD','TDS'])[1+(random()*2)::int]||'","duration":"'||(2+random()*12)::int||' days"}]',
-        '{"temperature":'||(97+random()*3)::numeric(4,1)||',"pulse":'||(65+random()*30)::int||',"bp_systolic":'||(110+random()*40)::int||',"bp_diastolic":'||(65+random()*25)::int||',"spo2":'||(95+random()*5)::numeric(4,1)||'}');
+        ('[{"text":"'||cc[1+(random()*19)::int]||'"}]')::jsonb,
+        ('[{"code":"'||CASE WHEN random()>0.5 THEN 'J06.9' ELSE 'I10' END||'","label":"'||CASE WHEN random()>0.5 THEN 'URI' ELSE 'HTN' END||'"}]')::jsonb,
+        ('[{"drug":"'||drugs[1+(random()*7)::int]||'","dose":"1 tab","route":"oral","frequency":"'||(ARRAY['OD','BD','TDS'])[1+(random()*2)::int]||'","duration":"'||(2+random()*12)::int||' days"}]')::jsonb,
+        ('{"temperature":'||(97+random()*3)::numeric(4,1)||',"pulse":'||(65+random()*30)::int||',"bp_systolic":'||(110+random()*40)::int||',"bp_diastolic":'||(65+random()*25)::int||',"spo2":'||(95+random()*5)::numeric(4,1)||'}')::jsonb);
     END LOOP;
   END LOOP;
 END $$;
@@ -311,7 +311,7 @@ DECLARE
 BEGIN
   FOR rec IN SELECT v.id,v.centre_id,v.patient_id,v.created_at FROM hmis_opd_visits v WHERE v.status='completed' AND random()<0.4 LIMIT 80 LOOP
     INSERT INTO hmis_pharmacy_dispensing (centre_id,patient_id,encounter_id,prescription_data,status,total_amount,dispensed_at,created_at)
-    VALUES (rec.centre_id,rec.patient_id,rec.id,'[{"drug":"Paracetamol 500mg","qty":20,"rate":2}]','dispensed',100+(random()*900)::numeric(10,2),rec.created_at,rec.created_at);
+    VALUES (rec.centre_id,rec.patient_id,rec.id,('[{"drug":"Paracetamol 500mg","qty":20,"rate":2}]')::jsonb,'dispensed',100+(random()*900)::numeric(10,2),rec.created_at,rec.created_at);
   END LOOP;
 END $$;
 
