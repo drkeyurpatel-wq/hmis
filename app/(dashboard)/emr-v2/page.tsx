@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useCallback, useEffect, Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { useEMR } from '@/lib/emr/use-emr';
 import { useAuthStore } from '@/lib/store/auth';
 import { createClient } from '@/lib/supabase/client';
@@ -41,6 +41,7 @@ const STEPS: { key: Step; label: string; short: string }[] = [
 
 function EMRInner() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const preselectedPatient = searchParams.get('patient');
   const emr = useEMR();
   const { staff } = useAuthStore();
@@ -146,9 +147,15 @@ function EMRInner() {
 
       {/* Patient Search Modal */}
       {showSearch && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-start justify-center pt-20" onClick={() => patient.id && setShowSearch(false)}>
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-start justify-center pt-20" onClick={() => { if (patient.id) setShowSearch(false); else router.back(); }}>
           <div className="bg-white rounded-xl w-[500px] p-5 shadow-2xl" onClick={e => e.stopPropagation()}>
-            <h3 className="font-bold text-sm mb-3">Search Patient</h3>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-bold text-sm">Search Patient</h3>
+              <button onClick={() => { if (patient.id) setShowSearch(false); else router.back(); }}
+                className="text-xs text-gray-500 hover:text-gray-800 flex items-center gap-1 px-2 py-1 rounded-lg hover:bg-gray-100 transition-colors">
+                ← {patient.id ? 'Close' : 'Back'}
+              </button>
+            </div>
             <input type="text" value={searchQ} onChange={e => { setSearchQ(e.target.value); emr.searchPatient(e.target.value); }}
               className="w-full px-4 py-3 border rounded-xl text-sm" placeholder="Type UHID, name, or phone..." autoFocus />
             {emr.searchResults.length > 0 && (
