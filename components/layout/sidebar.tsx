@@ -65,6 +65,7 @@ const NAV: NavGroup[] = [
     { href: '/biomedical', label: 'Biomedical', icon: Wrench, module: null },
     { href: '/housekeeping', label: 'Housekeeping', icon: SprayCan, module: null },
     { href: '/bed-turnover', label: 'Bed Turnover', icon: BedDouble, module: 'ipd' },
+    { href: '/duty-roster', label: 'Duty Roster', icon: ClipboardList, module: 'settings' },
     { href: '/linen', label: 'Linen', icon: Shirt, module: null },
     { href: '/infection-control', label: 'Infection Control', icon: Shield, module: null },
     { href: '/visitors', label: 'Visitors', icon: Users, module: null },
