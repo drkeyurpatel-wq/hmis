@@ -26,7 +26,7 @@ export default function OPDConsultationFlow({ visit, onDone, onFlash }: Props) {
   const [vf, setVf] = useState({ heart_rate: '', systolic_bp: '', diastolic_bp: '', temperature: '', spo2: '', respiratory_rate: '', weight: '', height: '' });
 
   // Consult
-  const [cf, setCf] = useState({ chief_complaint: visit.chief_complaint || '', examination: '', assessment: '', plan: '', diagnosis_icd: '', follow_up_days: '' });
+  const [cf, setCf] = useState({ chief_complaint: (visit.chiefComplaint || visit.chief_complaint) || '', examination: '', assessment: '', plan: '', diagnosis_icd: '', follow_up_days: '' });
 
   // Rx
   const [rxLines, setRxLines] = useState<{ drug: string; dose: string; route: string; frequency: string; duration: string; instructions: string }[]>([]);
@@ -45,19 +45,19 @@ export default function OPDConsultationFlow({ visit, onDone, onFlash }: Props) {
   const saveVitals = useCallback(async () => {
     if (!sb() || !staff) return;
     setSaving(true);
-    const record: any = { patient_id: visit.patient_id, recorded_by: staff.id, recorded_at: new Date().toISOString() };
+    const record: any = { patient_id: (visit.patient?.id || visit.patient_id), recorded_by: staff.id, recorded_at: new Date().toISOString() };
     Object.entries(vf).forEach(([k, v]) => { if (v) record[k] = parseFloat(v); });
     await sb()!.from('hmis_vitals').insert(record);
     setSaving(false);
     setStep('consult');
-  }, [vf, visit.patient_id, staff]);
+  }, [vf, (visit.patient?.id || visit.patient_id), staff]);
 
   const saveConsult = useCallback(async () => {
     if (!sb() || !staff) return;
     setSaving(true);
     // Save EMR encounter
     await sb()!.from('hmis_emr_encounters').insert({
-      patient_id: visit.patient_id, doctor_id: staff.id, centre_id: activeCentreId,
+      patient_id: (visit.patient?.id || visit.patient_id), doctor_id: staff.id, centre_id: activeCentreId,
       encounter_type: 'opd', chief_complaint: cf.chief_complaint, examination: cf.examination,
       assessment: cf.assessment, plan: cf.plan, encounter_date: new Date().toISOString().split('T')[0],
       opd_visit_id: visit.id,
@@ -79,7 +79,7 @@ export default function OPDConsultationFlow({ visit, onDone, onFlash }: Props) {
     setSaving(true);
     if (rxLines.length > 0) {
       await sb()!.from('hmis_prescriptions').insert(rxLines.map(rx => ({
-        patient_id: visit.patient_id, prescribed_by: staff.id, centre_id: activeCentreId,
+        patient_id: (visit.patient?.id || visit.patient_id), prescribed_by: staff.id, centre_id: activeCentreId,
         drug_name: rx.drug, dose: rx.dose, route: rx.route, frequency: rx.frequency,
         duration: rx.duration, instructions: rx.instructions, status: 'active',
         prescribed_date: new Date().toISOString().split('T')[0],
@@ -87,7 +87,7 @@ export default function OPDConsultationFlow({ visit, onDone, onFlash }: Props) {
     }
     setSaving(false);
     setStep('charges');
-  }, [rxLines, visit.patient_id, staff, activeCentreId]);
+  }, [rxLines, (visit.patient?.id || visit.patient_id), staff, activeCentreId]);
 
   const completeVisit = useCallback(async () => {
     if (!sb() || !staff) return;
@@ -98,7 +98,7 @@ export default function OPDConsultationFlow({ visit, onDone, onFlash }: Props) {
       const total = validCharges.reduce((s, c) => s + c.amount, 0);
       const { data: billNum } = await sb()!.rpc('hmis_next_sequence', { p_centre_id: activeCentreId, p_type: 'bill' });
       const { data: bill } = await sb()!.from('hmis_bills').insert({
-        centre_id: activeCentreId, patient_id: visit.patient_id, bill_number: billNum || `B-${Date.now()}`,
+        centre_id: activeCentreId, patient_id: (visit.patient?.id || visit.patient_id), bill_number: billNum || `B-${Date.now()}`,
         bill_type: 'opd', payor_type: 'self', gross_amount: total, net_amount: total, balance_amount: total,
         status: 'final', bill_date: new Date().toISOString().split('T')[0], created_by: staff.id,
       }).select('id').single();
