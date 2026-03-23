@@ -6,6 +6,8 @@ import { RoleGuard, TableSkeleton } from '@/components/ui/shared';
 import { useAuthStore } from '@/lib/store/auth';
 import { sb } from '@/lib/supabase/browser';
 import { Plus, Search, X, BedDouble, Users, Clock, Activity } from 'lucide-react';
+import AdmissionWizard from '@/components/ipd/admission-wizard';
+import DischargeTATTracker from '@/components/ipd/discharge-tat-tracker';
 import Link from 'next/link';
 
 function IPDPageInner() {
@@ -129,7 +131,7 @@ function IPDPageInner() {
 
       {/* Filters */}
       <div className="flex items-center gap-2 flex-wrap">
-        <div className="flex gap-1">{[['active','Active'],['discharge_initiated','Disch Init'],['discharged','Discharged'],['all','All']].map(([k,l]) =>
+        <div className="flex gap-1">{[['active','Active'],['discharge_initiated','Disch Init'],['discharged','Discharged'],['tat','Discharge TAT'],['all','All']].map(([k,l]) =>
           <button key={k} onClick={() => setStatusFilter(k)} className={`px-3 py-1.5 text-[10px] font-medium rounded-xl ${statusFilter === k ? 'bg-teal-600 text-white shadow-sm' : 'bg-white text-gray-500 border border-gray-100'}`}>{l}</button>
         )}</div>
         <select value={wardFilter} onChange={e => setWardFilter(e.target.value)} className="px-2.5 py-1.5 text-[10px] border rounded-xl"><option value="all">All Wards</option>{wards.map(w => <option key={w} value={w}>{w}</option>)}</select>
@@ -138,7 +140,9 @@ function IPDPageInner() {
       </div>
 
       {/* Table */}
-      {loading ? <TableSkeleton rows={6} cols={5} /> :
+      {statusFilter === 'tat' ? (
+        <DischargeTATTracker centreId={centreId} dateFrom={new Date(Date.now() - 30 * 86400000).toISOString().split('T')[0]} dateTo={new Date().toISOString().split('T')[0]} />
+      ) : loading ? <TableSkeleton rows={6} cols={5} /> :
       filtered.length === 0 ? <div className="text-center py-12 bg-white rounded-2xl border text-gray-400">No admissions</div> :
       <div className="bg-white rounded-2xl border overflow-hidden">
         <table className="w-full text-xs"><thead><tr><th>IPD #</th><th>Patient</th><th>Doctor</th><th>Dept</th><th>Type</th><th>Payor</th><th>Admitted</th><th>LOS</th><th>Status</th><th>Actions</th></tr></thead>
@@ -165,35 +169,11 @@ function IPDPageInner() {
 
       {/* Admission Modal */}
       {showAdmit && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => setShowAdmit(false)}>
-          <div className="bg-white rounded-2xl w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto space-y-3" onClick={e => e.stopPropagation()}>
-            <div className="flex justify-between"><h2 className="text-lg font-bold">New Admission</h2><button onClick={() => setShowAdmit(false)}><X size={18} className="text-gray-400" /></button></div>
-            {selPatient ? (
-              <div className="flex items-center gap-3 bg-teal-50 rounded-xl p-3 border border-teal-200">
-                <div><div className="font-bold text-sm">{selPatient.first_name} {selPatient.last_name}</div><div className="text-[10px] text-gray-500">{selPatient.uhid} · {selPatient.age_years}/{selPatient.gender?.charAt(0)} · {selPatient.phone_primary}</div></div>
-                <button onClick={() => { setSelPatient(null); setSearchQ(''); setForm(f => ({ ...f, patientId: '' })); }} className="ml-auto text-xs text-red-500">Change</button>
-              </div>
-            ) : (
-              <div className="relative"><label className="text-[10px] text-gray-500 uppercase font-semibold">Patient *</label>
-                <input value={searchQ} onChange={e => setSearchQ(e.target.value)} className="w-full mt-1 px-3 py-2.5 border rounded-xl text-sm" placeholder="Search..." />
-                {searchResults.length > 0 && <div className="absolute z-10 mt-1 w-full bg-white border rounded-xl shadow-xl max-h-40 overflow-y-auto">{searchResults.map(p => <button key={p.id} onClick={() => { setSelPatient(p); setForm(f => ({...f, patientId: p.id})); setSearchQ(''); setSearchResults([]); }} className="w-full text-left px-3 py-2.5 hover:bg-teal-50 border-b text-xs">{p.first_name} {p.last_name} — {p.uhid}</button>)}</div>}
-              </div>
-            )}
-            <div className="grid grid-cols-2 gap-3">
-              <div><label className="text-[10px] text-gray-500 uppercase font-semibold">Admitting Doctor *</label><select value={form.admittingDoctorId} onChange={e => setForm(f => ({...f, admittingDoctorId: e.target.value}))} className="w-full mt-1 px-3 py-2 border rounded-xl text-sm"><option value="">Select</option>{doctors.map(d => <option key={d.id} value={d.id}>{d.full_name}</option>)}</select></div>
-              <div><label className="text-[10px] text-gray-500 uppercase font-semibold">Primary Doctor *</label><select value={form.primaryDoctorId} onChange={e => setForm(f => ({...f, primaryDoctorId: e.target.value}))} className="w-full mt-1 px-3 py-2 border rounded-xl text-sm"><option value="">Select</option>{doctors.map(d => <option key={d.id} value={d.id}>{d.full_name}</option>)}</select></div>
-              <div><label className="text-[10px] text-gray-500 uppercase font-semibold">Department *</label><select value={form.departmentId} onChange={e => setForm(f => ({...f, departmentId: e.target.value}))} className="w-full mt-1 px-3 py-2 border rounded-xl text-sm"><option value="">Select</option>{departments.map((d: any) => <option key={d.id} value={d.id}>{d.name}</option>)}</select></div>
-              <div><label className="text-[10px] text-gray-500 uppercase font-semibold">Type</label><div className="flex gap-1 mt-1">{['elective','emergency','daycare','transfer'].map(t => <button key={t} onClick={() => setForm(f => ({...f, admissionType: t}))} className={`flex-1 py-2 rounded-lg text-[10px] font-semibold capitalize ${form.admissionType === t ? (t === 'emergency' ? 'bg-red-600 text-white' : 'bg-teal-600 text-white') : 'bg-gray-100 text-gray-500'}`}>{t}</button>)}</div></div>
-              <div><label className="text-[10px] text-gray-500 uppercase font-semibold">Payor</label><select value={form.payorType} onChange={e => setForm(f => ({...f, payorType: e.target.value}))} className="w-full mt-1 px-3 py-2 border rounded-xl text-sm">{['self','insurance','corporate','govt_pmjay','govt_cghs','govt_esi'].map(p => <option key={p} value={p}>{p.replace(/_/g,' ')}</option>)}</select></div>
-              <div><label className="text-[10px] text-gray-500 uppercase font-semibold">Expected Discharge</label><input type="date" value={form.expectedDischarge} onChange={e => setForm(f => ({...f, expectedDischarge: e.target.value}))} className="w-full mt-1 px-3 py-2 border rounded-xl text-sm" /></div>
-            </div>
-            {form.payorType === 'insurance' && <div className="grid grid-cols-2 gap-3 bg-blue-50/50 rounded-xl p-3"><div><label className="text-[10px] text-gray-500 uppercase font-semibold">Insurer</label><input value={form.insurerName} onChange={e => setForm(f => ({...f, insurerName: e.target.value}))} className="w-full mt-1 px-3 py-2 border rounded-xl text-sm" /></div><div><label className="text-[10px] text-gray-500 uppercase font-semibold">Policy#</label><input value={form.policyNumber} onChange={e => setForm(f => ({...f, policyNumber: e.target.value}))} className="w-full mt-1 px-3 py-2 border rounded-xl text-sm" /></div></div>}
-            <div><div className="flex items-center justify-between"><label className="text-[10px] text-gray-500 uppercase font-semibold">Bed</label><select value={roomTypeFilter} onChange={e => setRoomTypeFilter(e.target.value)} className="px-2 py-1 text-[9px] border rounded-lg"><option value="all">All Types</option>{['general','semi_private','private','icu','nicu','hdu'].map(t => <option key={t} value={t}>{t.replace('_',' ')}</option>)}</select></div>
-              <select value={form.bedId} onChange={e => setForm(f => ({...f, bedId: e.target.value}))} className="w-full mt-1 px-3 py-2 border rounded-xl text-sm"><option value="">Assign later</option>{Object.entries(bedGroups).map(([g, gb]) => gb.length > 0 && <optgroup key={g} label={`${g} (${gb.length})`}>{gb.map((b: any) => <option key={b.id} value={b.id}>{b.bed_number} — {b.room?.name||''}</option>)}</optgroup>)}</select>
-              <p className="text-[9px] text-gray-400 mt-0.5">{availBeds} beds available</p></div>
-            <div><label className="text-[10px] text-gray-500 uppercase font-semibold">Provisional Diagnosis</label><input value={form.provisionalDiagnosis} onChange={e => setForm(f => ({...f, provisionalDiagnosis: e.target.value}))} className="w-full mt-1 px-3 py-2 border rounded-xl text-sm" placeholder="e.g., Acute MI" /></div>
-            <button onClick={handleAdmit} disabled={!form.patientId||!form.admittingDoctorId||!form.primaryDoctorId||!form.departmentId} className="w-full py-2.5 bg-teal-600 text-white text-sm rounded-xl font-semibold disabled:opacity-40">Admit Patient</button>
-          </div>
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-start justify-center pt-8 overflow-y-auto">
+          <AdmissionWizard
+            onDone={(admId) => { setShowAdmit(false); loadAdmissions('active'); if (admId) flash('Patient admitted successfully'); }}
+            onFlash={flash}
+          />
         </div>
       )}
     </div>

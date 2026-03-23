@@ -5,6 +5,7 @@ import { RoleGuard } from '@/components/ui/shared';
 import { useAuthStore } from '@/lib/store/auth';
 import { sb } from '@/lib/supabase/browser';
 import { Plus, Search, X, ChevronRight, Stethoscope, UserPlus } from 'lucide-react';
+import OPDConsultationFlow from '@/components/opd/opd-consultation-flow';
 
 const STATUS_FLOW = ['waiting', 'checked_in', 'with_doctor', 'completed'];
 const SC: Record<string, { label: string; badge: string; dot: string }> = {
@@ -25,6 +26,7 @@ function OPDInner() {
 
   const [view, setView] = useState<ViewMode>('queue');
   const [showNew, setShowNew] = useState(false);
+  const [consultVisit, setConsultVisit] = useState<any>(null);
   const [toast, setToast] = useState('');
   const flash = (m: string) => { setToast(m); setTimeout(() => setToast(''), 3000); };
   const [filter, setFilter] = useState('active');
@@ -158,14 +160,14 @@ function OPDInner() {
                 <div className="flex items-center gap-2 mb-2 px-1"><span className={`w-2 h-2 rounded-full ${sc.dot}`} /><span className="text-xs font-bold text-gray-700">{sc.label}</span><span className="text-[10px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded-full">{items.length}</span></div>
                 <div className="space-y-2 min-h-[300px]">
                   {items.map(v => (
-                    <div key={v.id} className="bg-white rounded-xl border p-3 hover:shadow-md hover:-translate-y-0.5 transition-all group">
+                    <div key={v.id} onClick={() => v.status !== 'completed' && v.status !== 'cancelled' && v.status !== 'no_show' ? setConsultVisit(v) : null} className={`bg-white rounded-xl border p-3 hover:shadow-md hover:-translate-y-0.5 transition-all group ${v.status !== 'completed' && v.status !== 'cancelled' ? 'cursor-pointer' : ''}`}>
                       <div className="flex items-center justify-between mb-1"><span className="text-xs font-bold text-teal-600">T{v.tokenNumber}</span><span className="text-[9px] text-gray-400">{waitTime(v)}</span></div>
                       <div className="text-sm font-semibold text-gray-800 truncate">{v.patient?.name}</div>
                       <div className="text-[10px] text-gray-400">{v.patient?.uhid} · {v.patient?.age}/{v.patient?.gender?.charAt(0)}</div>
                       {v.chiefComplaint && <div className="text-[10px] text-gray-500 mt-1 truncate">{v.chiefComplaint}</div>}
                       <div className="text-[10px] text-teal-600 font-medium mt-1">Dr. {v.doctor?.name?.split(' ').pop()}</div>
                       {status !== 'completed' && (
-                        <button onClick={() => moveNext(v)} className="mt-2 w-full flex items-center justify-center gap-1 px-2 py-1.5 bg-teal-50 text-teal-700 text-[10px] font-semibold rounded-lg hover:bg-teal-100 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button onClick={(e: any) => { e.stopPropagation(); moveNext(v); }} className="mt-2 w-full flex items-center justify-center gap-1 px-2 py-1.5 bg-teal-50 text-teal-700 text-[10px] font-semibold rounded-lg hover:bg-teal-100 opacity-0 group-hover:opacity-100 transition-opacity">
                           {SC[STATUS_FLOW[STATUS_FLOW.indexOf(status) + 1]]?.label} <ChevronRight size={10} />
                         </button>
                       )}
@@ -252,6 +254,17 @@ function OPDInner() {
             <div><label className="text-[10px] font-semibold text-gray-500 uppercase">Chief Complaint</label><textarea className="w-full mt-1 px-3 py-2 border rounded-xl text-sm h-16 resize-none" value={complaint} onChange={e => setComplaint(e.target.value)} placeholder="e.g., Chest pain since 2 days" /></div>
             <button onClick={handleCreate} disabled={!selPat || !selDoctor || creating} className="w-full py-3 bg-teal-600 text-white text-sm rounded-xl font-semibold disabled:opacity-40 hover:bg-teal-700">{creating ? 'Creating...' : 'Register & Generate Token'}</button>
           </div>
+        </div>
+      )}
+
+      {/* CONSULTATION FLOW OVERLAY */}
+      {consultVisit && (
+        <div className="fixed inset-0 z-50 bg-black/40 flex items-start justify-center pt-8 overflow-y-auto">
+          <OPDConsultationFlow
+            visit={consultVisit}
+            onDone={() => { setConsultVisit(null); }}
+            onFlash={flash}
+          />
         </div>
       )}
     </div>
