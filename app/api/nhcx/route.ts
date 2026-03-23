@@ -4,6 +4,7 @@
 // Incoming: Callbacks from NHCX (on_check, on_submit, payment notice)
 
 import { NextRequest, NextResponse } from 'next/server';
+import { requireAuthOrApiKey } from '@/lib/api/auth-guard';
 
 import { buildCoverageEligibilityRequestBundle, buildClaimBundle, parseClaimResponse, parseCoverageEligibilityResponse } from '@/lib/nhcx/fhir-bundles';
 import { checkCoverageEligibility, submitPreAuth, submitClaim, submitPredetermination, processCallback, mapHMISClaimToNHCX } from '@/lib/nhcx/nhcx-client';
@@ -39,6 +40,9 @@ function getNHCXConfig(): NHCXConfig {
 // POST — Outgoing requests + incoming callbacks
 // ============================================================
 export async function POST(req: NextRequest) {
+  const { error: authError } = await requireAuthOrApiKey(req);
+  if (authError) return authError;
+
   try {
     const body = await req.json();
     const action = body.action;
@@ -218,7 +222,10 @@ async function handleCallback(action: string, body: any) {
 // ============================================================
 // GET — Health check + NHCX config status
 // ============================================================
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const { error: authError } = await requireAuthOrApiKey(req);
+  if (authError) return authError;
+
   const config = getNHCXConfig();
   return NextResponse.json({
     status: 'ok',

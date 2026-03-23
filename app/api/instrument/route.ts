@@ -3,6 +3,7 @@
 // Middleware agent sends parsed results here → auto-populates LIMS
 
 import { NextRequest, NextResponse } from 'next/server';
+import { requireApiKey } from '@/lib/api/auth-guard';
 import { createClient } from '@supabase/supabase-js';
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
@@ -14,7 +15,10 @@ function getAdminClient() {
 }
 
 // GET — health check + instrument status
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const { error: authError } = requireApiKey(request);
+  if (authError) return authError;
+
   return NextResponse.json({
     status: 'ok',
     service: 'LIMS Instrument Interface',
@@ -29,6 +33,9 @@ export async function GET() {
 
 // POST — receive results from middleware
 export async function POST(request: NextRequest) {
+  const { error: authError } = requireApiKey(request);
+  if (authError) return authError;
+
   try {
     const sb = getAdminClient();
     if (!sb) return NextResponse.json({ error: 'Supabase not configured. Set SUPABASE_SERVICE_ROLE_KEY.' }, { status: 500 });

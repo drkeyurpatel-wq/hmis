@@ -3,6 +3,7 @@
 // Requires: service_role or admin staff JWT
 
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { requireAdmin } from '@/lib/api/auth-guard';
 import { NextResponse, type NextRequest } from 'next/server';
 
 function getSupabase(): SupabaseClient {
@@ -99,6 +100,9 @@ const STANDARD_ROLES = [
 ];
 
 export async function POST(request: NextRequest) {
+  const { error: authError } = await requireAdmin(request);
+  if (authError) return authError;
+
   try {
     const body: OnboardingRequest = await request.json();
 
@@ -218,7 +222,7 @@ export async function POST(request: NextRequest) {
 }
 
 // GET /api/onboarding — list all centres with provisioning status
-export async function GET() {
+export async function GET(req: NextRequest) {
   const { data: centres } = await getSupabase().from('hmis_centres')
     .select('id, name, short_code, city, state, entity_type, is_active, beds_licensed, beds_operational, created_at')
     .order('name');

@@ -146,9 +146,8 @@ function buildEmailHTML(centreName: string, dateStr: string, d: any) {
 export async function GET(request: NextRequest) {
   // Verify cron secret (Vercel sets this header)
   const authHeader = request.headers.get('authorization');
-  if (CRON_SECRET && authHeader !== `Bearer ${CRON_SECRET}`) {
-    // Allow without secret in dev mode
-    if (process.env.NODE_ENV === 'production') {
+  if (process.env.NODE_ENV === 'production') {
+    if (!CRON_SECRET || authHeader !== `Bearer ${CRON_SECRET}`) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
   }

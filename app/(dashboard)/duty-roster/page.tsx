@@ -8,7 +8,7 @@ import { sb } from '@/lib/supabase/browser';
 const SHIFT_COLORS: Record<string, string> = { morning: 'bg-green-200 text-green-800', afternoon: 'bg-amber-200 text-amber-800', night: 'bg-indigo-200 text-indigo-800', general: 'bg-blue-200 text-blue-800', off: 'bg-gray-100 text-gray-500', leave: 'bg-red-100 text-red-600', custom: 'bg-purple-200 text-purple-800' };
 const SHIFT_SHORT: Record<string, string> = { morning: 'M', afternoon: 'A', night: 'N', general: 'G', off: 'O', leave: 'L', custom: 'C' };
 
-type Tab = 'roster' | 'gaps' | 'swaps' | 'generate' | 'requirements' | 'summary';
+type Tab = 'roster' | 'gaps' | 'config';
 
 function Inner() {
   const { staff, activeCentreId } = useAuthStore();
@@ -17,6 +17,8 @@ function Inner() {
   const dr = useDutyRoster(centreId);
 
   const [tab, setTab] = useState<Tab>('roster');
+  const [showSwaps, setShowSwaps] = useState(false);
+  const [configView, setConfigView] = useState<'generate'|'requirements'|'summary'>('generate');
   const [toast, setToast] = useState('');
   const flash = (m: string) => { setToast(m); setTimeout(() => setToast(''), 3000); };
 
@@ -120,7 +122,7 @@ function Inner() {
           {(['roster','gaps','swaps','generate','requirements','summary'] as Tab[]).map(t => (
             <button key={t} onClick={() => setTab(t)}
               className={`px-3 py-1.5 rounded text-sm font-medium ${tab === t ? 'bg-blue-600 text-white' : 'bg-gray-100'}`}>
-              {t === 'roster' ? 'Roster' : t === 'gaps' ? `Gaps (${dr.coverageGaps.length})` : t === 'swaps' ? `Swaps (${dr.swaps.length})` : t === 'generate' ? 'Auto-Generate' : t === 'requirements' ? 'Staffing Req' : 'Summary'}
+              {t === 'roster' ? 'Roster' : t === 'gaps' ? `Gaps (${dr.coverageGaps.length})` : false ? '' : false ? '' : false ? '' : 'Summary'}
             </button>
           ))}
         </div>
@@ -213,7 +215,7 @@ function Inner() {
       )}
 
       {/* Swap Requests */}
-      {tab === 'swaps' && (
+      {tab === 'gaps' && showSwaps && (
         <div className="bg-white border rounded-lg p-4">
           <h2 className="text-lg font-semibold mb-4">Pending Swap Requests</h2>
           {dr.swaps.length === 0 ? <p className="text-gray-500 text-sm">No pending swap requests.</p> : (
@@ -238,7 +240,7 @@ function Inner() {
       )}
 
       {/* Auto-Generate */}
-      {tab === 'generate' && (
+      {tab === 'config' && configView === 'generate' && (
         <div className="bg-white border rounded-lg p-6">
           <h2 className="text-lg font-semibold mb-4">Auto-Generate Monthly Roster</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
@@ -275,7 +277,7 @@ function Inner() {
       )}
 
       {/* Staffing Requirements */}
-      {tab === 'requirements' && (
+      {tab === 'config' && configView === 'requirements' && (
         <div className="bg-white border rounded-lg p-6">
           <h2 className="text-lg font-semibold mb-4">Minimum Staffing Requirements</h2>
           <div className="grid grid-cols-1 md:grid-cols-5 gap-2 mb-4">
@@ -301,7 +303,7 @@ function Inner() {
       )}
 
       {/* Summary */}
-      {tab === 'summary' && (
+      {tab === 'config' && configView === 'summary' && (
         <div className="bg-white border rounded-lg p-4 overflow-x-auto">
           <h2 className="text-lg font-semibold mb-4">Staff Summary — {MONTHS[viewMonth - 1]} {viewYear}</h2>
           {Object.keys(dr.staffSummary).length === 0 ? <p className="text-gray-500 text-sm">No data.</p> : (

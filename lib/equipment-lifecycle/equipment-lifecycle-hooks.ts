@@ -100,6 +100,19 @@ export function useEquipmentLifecycle(centreId: string | null) {
     // Set equipment status to out_of_order
     if (!error) {
       await sb()!.from('hmis_equipment').update({ status: 'maintenance' }).eq('id', input.equipment_id);
+
+      // BRIDGE: Flag affected OT bookings + notify management
+      const { data: eqInfo } = await sb()!.from('hmis_equipment')
+        .select('name, location').eq('id', input.equipment_id).single();
+      if (eqInfo && centreId) {
+        import('@/lib/bridge/module-events').then(({ onEquipmentBreakdown }) =>
+          onEquipmentBreakdown({
+            centreId, equipmentId: input.equipment_id,
+            equipmentName: eqInfo.name, location: eqInfo.location || '',
+            severity: input.severity, staffId: input.reported_by,
+          }).catch(() => {})
+        );
+      }
     }
     return data;
   }, [centreId]);

@@ -1,7 +1,11 @@
 // app/api/ai/structure-note/route.ts
 import { NextResponse } from 'next/server';
+import { requireAuth } from '@/lib/api/auth-guard';
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
+  const { error: authError } = await requireAuth(req);
+  if (authError) return authError;
+
   const { transcript, patient } = await req.json();
   if (!transcript) return NextResponse.json({ error: 'No transcript' }, { status: 400 });
 

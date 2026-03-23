@@ -284,6 +284,15 @@ RULES:
     // Free the bed
     if (admission?.bed_id) {
       await sb()!.from('hmis_beds').update({ status: 'housekeeping', current_admission_id: null }).eq('id', admission.bed_id);
+
+      // BRIDGE: Auto-trigger bed turnover workflow
+      import('@/lib/bridge/module-events').then(({ onDischargeConfirmed }) =>
+        onDischargeConfirmed({
+          centreId: admission?.centre_id || '', admissionId,
+          bedId: admission.bed_id, roomId: admission.room_id,
+          wardId: admission.ward_id, staffId,
+        }).catch(() => {})
+      );
     }
     // Discontinue all active meds
     await sb()!.from('hmis_ipd_medication_orders').update({ status: 'completed', end_date: new Date().toISOString().split('T')[0] }).eq('admission_id', admissionId).eq('status', 'active');

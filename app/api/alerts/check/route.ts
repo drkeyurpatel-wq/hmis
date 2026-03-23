@@ -3,6 +3,7 @@
 // Can be called by Vercel Cron or manually from admin
 
 import { NextRequest, NextResponse } from 'next/server';
+import { requireAuth } from '@/lib/api/auth-guard';
 import { createClient } from '@supabase/supabase-js';
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
@@ -118,6 +119,9 @@ async function persistAlerts(sb: any, alerts: any[]): Promise<number> {
 }
 
 export async function GET(request: NextRequest) {
+  const { error: authError } = await requireAuth(request);
+  if (authError) return authError;
+
   const sb = adminSb();
   if (!sb) return NextResponse.json({ error: 'Supabase not configured' }, { status: 500 });
 

@@ -44,20 +44,24 @@ function AppointmentsInner() {
   }, [centreId]);
 
   // Booking form
-  const [bookDept, setBookDept] = useState('');
-  const [bookDoctor, setBookDoctor] = useState('');
-  const [bookDate, setBookDate] = useState(new Date().toISOString().split('T')[0]);
-  const [bookType, setBookType] = useState('new');
-  const [bookPriority, setBookPriority] = useState('normal');
-  const [bookReason, setBookReason] = useState('');
-  const [bookSource, setBookSource] = useState('counter');
+  // Booking form — single state object (was 14 individual useStates)
+  const [bf, setBf] = useState({ dept: '', doctor: '', date: new Date().toISOString().split('T')[0], type: 'new', priority: 'normal', reason: '', source: 'counter', slot: '', isWalkIn: false });
   const [slots, setSlots] = useState<TimeSlot[]>([]);
-  const [selectedSlot, setSelectedSlot] = useState('');
   const [patientSearch, setPatientSearch] = useState('');
   const [patientResults, setPatientResults] = useState<any[]>([]);
   const [selectedPatient, setSelectedPatient] = useState<any>(null);
   const [booking, setBooking] = useState(false);
-  const [isWalkIn, setIsWalkIn] = useState(false);
+  // Aliases for backward compat (avoid rewriting all JSX refs)
+  const bookDept = bf.dept, bookDoctor = bf.doctor, bookDate = bf.date, bookType = bf.type, bookPriority = bf.priority, bookReason = bf.reason, bookSource = bf.source, selectedSlot = bf.slot, isWalkIn = bf.isWalkIn;
+  const setBookDept = (v: string) => setBf(p => ({ ...p, dept: v }));
+  const setBookDoctor = (v: string) => setBf(p => ({ ...p, doctor: v }));
+  const setBookDate = (v: string) => setBf(p => ({ ...p, date: v }));
+  const setBookType = (v: string) => setBf(p => ({ ...p, type: v }));
+  const setBookPriority = (v: string) => setBf(p => ({ ...p, priority: v }));
+  const setBookReason = (v: string) => setBf(p => ({ ...p, reason: v }));
+  const setBookSource = (v: string) => setBf(p => ({ ...p, source: v }));
+  const setSelectedSlot = (v: string) => setBf(p => ({ ...p, slot: v }));
+  const setIsWalkIn = (v: boolean) => setBf(p => ({ ...p, isWalkIn: v }));
 
   // Cancel/reschedule modal
   const [actionAppt, setActionAppt] = useState<Appointment | null>(null);

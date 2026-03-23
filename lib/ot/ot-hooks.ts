@@ -112,6 +112,21 @@ export function useOTSchedule(centreId: string | null) {
     const { data: result, error } = await sb()!.from('hmis_ot_bookings').insert(data).select().single();
     if (error) return { success: false, error: error.message };
 
+    // BRIDGE: Auto-create surgical planning case
+    if (result && data.admission_id) {
+      const { data: adm } = await sb()!.from('hmis_admissions').select('centre_id, patient_id').eq('id', data.admission_id).single();
+      if (adm) {
+        import('@/lib/bridge/module-events').then(({ onOTBookingCreated }) =>
+          onOTBookingCreated({
+            centreId: adm.centre_id, otBookingId: result.id, admissionId: data.admission_id,
+            patientId: adm.patient_id, surgeonId: data.surgeon_id,
+            scheduledDate: data.scheduled_date, procedureName: data.procedure_name,
+            staffId: data.surgeon_id || '',
+          }).catch(() => {})
+        );
+      }
+    }
+
     loadBookings(data.scheduled_date);
     return { success: true, booking: result };
   }, [loadBookings]);
@@ -122,6 +137,25 @@ export function useOTSchedule(centreId: string | null) {
     if (status === 'in_progress' && !extra?.actual_start) update.actual_start = new Date().toISOString();
     if (status === 'completed' && !extra?.actual_end) update.actual_end = new Date().toISOString();
     await sb()!.from('hmis_ot_bookings').update(update).eq('id', id);
+
+    // BRIDGE: OT completed → auto-post charges + mark planning done
+    if (status === 'completed') {
+      const { data: bk } = await sb()!.from('hmis_ot_bookings')
+        .select('admission_id, procedure_name, surgeon_charges, anaesthetist_charges, total_ot_charges, admission:hmis_admissions!inner(centre_id, patient_id)')
+        .eq('id', id).single();
+      if (bk) {
+        const adm = bk.admission as any;
+        import('@/lib/bridge/module-events').then(({ onOTCompleted }) =>
+          onOTCompleted({
+            centreId: adm.centre_id, otBookingId: id, admissionId: bk.admission_id,
+            patientId: adm.patient_id, procedureName: bk.procedure_name,
+            staffId: extra?.staffId || '', surgeonCharges: bk.surgeon_charges || 0,
+            anaesthetistCharges: bk.anaesthetist_charges || 0, otCharges: bk.total_ot_charges || 0,
+          }).catch(() => {})
+        );
+      }
+    }
+
     loadBookings();
   }, [loadBookings]);
 

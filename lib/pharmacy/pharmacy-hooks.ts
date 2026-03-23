@@ -263,6 +263,19 @@ export function useDispensingQueue(centreId: string | null) {
         if (ptInfo?.phone_primary) notifyPharmacyReady(centreId, ptInfo.phone_primary, `${ptInfo.first_name} ${ptInfo.last_name}`);
       }
       auditCreate(centreId, staffId, 'pharmacy_dispense', dispensingId, `Dispensed ${dispensedItems.length} items — ₹${computedTotal}`);
+
+      // BRIDGE: Auto-update MAR for IPD patients
+      if (disp.data.encounter_id) {
+        for (const item of dispensedItems) {
+          import('@/lib/bridge/module-events').then(({ onPharmacyDispensed }) =>
+            onPharmacyDispensed({
+              centreId, patientId: disp.data!.patient_id, admissionId: disp.data!.encounter_id,
+              drugName: item.drugName, dose: item.dose || '', route: item.route || 'oral',
+              frequency: item.frequency || '', dispensingId, staffId,
+            }).catch(() => {})
+          );
+        }
+      }
     }
 
     load();

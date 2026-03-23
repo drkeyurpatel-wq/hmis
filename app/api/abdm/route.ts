@@ -1,6 +1,7 @@
 // app/api/abdm/route.ts
 // ABDM Integration API — ABHA creation, verification, linking, HIE-CM callbacks
 import { NextRequest, NextResponse } from 'next/server';
+import { requireAuthOrApiKey } from '@/lib/api/auth-guard';
 
 let _supabase: any = null;
 function getSupabase() {
@@ -27,6 +28,9 @@ function getABDMConfig() {
 // POST — ABHA operations + HIE-CM callbacks
 // ============================================================
 export async function POST(req: NextRequest) {
+  const { error: authError } = await requireAuthOrApiKey(req);
+  if (authError) return authError;
+
   try {
     const body = await req.json();
     const { action } = body;
@@ -191,7 +195,10 @@ export async function POST(req: NextRequest) {
 // ============================================================
 // GET — ABDM config status
 // ============================================================
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const { error: authError } = await requireAuthOrApiKey(req);
+  if (authError) return authError;
+
   const config = getABDMConfig();
   return NextResponse.json({
     status: 'ok',

@@ -172,6 +172,19 @@ export function useDigitalConsent(centreId: string | null) {
       obtained_by: staffId,
     }).eq('id', consentId);
     await logAudit(consentId, 'obtained', staffId, 'Consent finalized and obtained');
+
+    // BRIDGE: Update surgical planning checklist
+    const { data: c } = await sb()!.from('hmis_consents')
+      .select('centre_id, admission_id, ot_booking_id, consent_type')
+      .eq('id', consentId).single();
+    if (c) {
+      import('@/lib/bridge/module-events').then(({ onConsentFinalized }) =>
+        onConsentFinalized({
+          centreId: c.centre_id || '', admissionId: c.admission_id,
+          otBookingId: c.ot_booking_id, consentType: c.consent_type,
+        }).catch(() => {})
+      );
+    }
   }, []);
 
   // Withdraw consent

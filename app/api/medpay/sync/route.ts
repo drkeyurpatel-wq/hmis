@@ -5,6 +5,7 @@ export const dynamic = "force-dynamic";
 // MedPay's existing eCW flow is UNTOUCHED — this is an additional data source
 
 import { NextRequest, NextResponse } from 'next/server';
+import { requireAdmin } from '@/lib/api/auth-guard';
 import { createClient } from '@supabase/supabase-js';
 
 const HMIS_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -43,6 +44,9 @@ function fmtDate(d: string): string {
 
 // ── GET: list unsynced bills ──
 export async function GET(req: NextRequest) {
+  const { error: authError } = await requireAdmin(req);
+  if (authError) return authError;
+
   const { searchParams } = new URL(req.url);
   const centreId = searchParams.get('centre_id');
   const month = searchParams.get('month');
@@ -75,6 +79,9 @@ export async function GET(req: NextRequest) {
 
 // ── POST: sync bills → MedPay ──
 export async function POST(req: NextRequest) {
+  const { error: authError } = await requireAdmin(req);
+  if (authError) return authError;
+
   try {
     const { bill_ids, centre_id, month, staff_id, sync_all } = await req.json();
     if (!MEDPAY_KEY) return NextResponse.json({ error: 'MEDPAY_SERVICE_ROLE_KEY not set' }, { status: 500 });

@@ -4,6 +4,7 @@
 // All queries are read-only
 
 import { NextRequest, NextResponse } from 'next/server';
+import { requireAuthOrApiKey } from '@/lib/api/auth-guard';
 
 function getVPMSClient() {
   const url = process.env.VPMS_SUPABASE_URL;
@@ -14,6 +15,9 @@ function getVPMSClient() {
 }
 
 export async function GET(req: NextRequest) {
+  const { error: authError } = await requireAuthOrApiKey(req);
+  if (authError) return authError;
+
   const vpms = getVPMSClient();
   if (!vpms) {
     return NextResponse.json({

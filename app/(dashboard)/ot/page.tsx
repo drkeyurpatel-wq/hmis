@@ -7,7 +7,7 @@ import { sb } from '@/lib/supabase/browser';
 import Link from 'next/link';
 
 const fmt = (n: number) => n.toLocaleString('en-IN', { maximumFractionDigits: 0 });
-type Tab = 'board'|'list'|'new_booking'|'utilization'|'rooms'|'implants'|'safety';
+type Tab = 'board'|'new_booking'|'utilization'|'admin';
 
 const PROCEDURES = [
   'Appendectomy','Cholecystectomy (Lap)','Cholecystectomy (Robotic SSI Mantra)','Hernia Repair',
@@ -74,8 +74,8 @@ function OTInner() {
   const timeSlots = ['07:00','08:00','09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00','18:00','19:00','20:00'];
 
   const tabs: [Tab,string,string][] = [
-    ['board','Schedule Board','📅'],['list','Case List','📋'],['new_booking','Book Surgery','➕'],
-    ['utilization','Utilization','📊'],['rooms','OT Rooms','🏥'],['implants','Implants','🔩'],['safety','Safety Checklists','✅'],
+    ['board','Schedule','📅'],['new_booking','Book Surgery','➕'],
+    ['utilization','Utilization','📊'],['admin','Admin','⚙️'],
   ];
 
   return (
@@ -194,7 +194,7 @@ function OTInner() {
       </div>}
 
       {/* ===== CASE LIST ===== */}
-      {tab === 'list' && <div className="bg-white rounded-xl border overflow-hidden">
+      {tab === 'board' && viewMode === 'list' && <div className="bg-white rounded-xl border overflow-hidden">
         <table className="w-full text-xs"><thead><tr className="bg-gray-50 border-b">
           <th className="p-2 text-left">Time</th><th className="p-2 text-left">Patient</th><th className="p-2 text-left">Procedure</th>
           <th className="p-2">OT</th><th className="p-2">Surgeon</th><th className="p-2">Anaes</th><th className="p-2">Type</th><th className="p-2">Status</th><th className="p-2">Duration</th>
@@ -303,7 +303,7 @@ function OTInner() {
       </div>}
 
       {/* ===== OT ROOMS ===== */}
-      {tab === 'rooms' && <div className="space-y-3">
+      {tab === 'admin' && adminView === 'rooms' && <div className="space-y-3">
         <h2 className="font-semibold text-sm">OT Rooms — {schedule.rooms.length} rooms</h2>
         <div className="grid grid-cols-3 gap-3">{schedule.rooms.map(r => {
           const roomCases = schedule.byRoom.get(r.id) || [];
@@ -329,12 +329,12 @@ function OTInner() {
       </div>}
 
       {/* ===== IMPLANTS / SAFETY — Framework ===== */}
-      {tab === 'implants' && <div className="bg-white rounded-xl border p-4">
+      {tab === 'admin' && adminView === 'implants' && <div className="bg-white rounded-xl border p-4">
         <h2 className="font-bold text-sm mb-3">Implant & Consumable Tracking</h2>
         <p className="text-xs text-gray-500 mb-3">Implants are tracked per surgery in each OT booking detail page. Select a booking above to manage implants.</p>
         <div className="text-xs text-gray-400">Fields tracked: manufacturer, catalogue #, lot #, serial #, size, quantity, cost, MRP. Each implant is linked to the patient record for medicolegal traceability.</div>
       </div>}
-      {tab === 'safety' && <div className="bg-white rounded-xl border p-4">
+      {tab === 'admin' && adminView === 'safety' && <div className="bg-white rounded-xl border p-4">
         <h2 className="font-bold text-sm mb-3">WHO Surgical Safety Checklist</h2>
         <p className="text-xs text-gray-500 mb-3">The WHO checklist runs in 3 phases per surgery — available in each OT booking detail page.</p>
         <div className="grid grid-cols-3 gap-3 text-xs">

@@ -4,6 +4,7 @@ export const dynamic = "force-dynamic";
 // POST: Create/update mapping
 
 import { NextRequest, NextResponse } from 'next/server';
+import { requireAdmin } from '@/lib/api/auth-guard';
 import { createClient } from '@supabase/supabase-js';
 import { getMedPayDoctors, lookupMedPayDoctor } from '@/lib/integrations/medpay-client';
 
@@ -12,7 +13,10 @@ const HMIS_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 function hmis() { return createClient(HMIS_URL, HMIS_KEY); }
 
 // GET: list HMIS doctors + their MedPay mapping
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const { error: authError } = await requireAdmin(req);
+  if (authError) return authError;
+
   const db = hmis();
 
   const { data: hmisStaff } = await db.from('hmis_staff')
@@ -51,6 +55,9 @@ export async function GET() {
 
 // POST: create/update mapping
 export async function POST(req: NextRequest) {
+  const { error: authError } = await requireAdmin(req);
+  if (authError) return authError;
+
   const { hmis_staff_id, medpay_doctor_id, auto_map } = await req.json();
   const db = hmis();
 

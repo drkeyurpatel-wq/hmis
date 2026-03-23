@@ -407,6 +407,23 @@ export function useRadiologyWorklist(centreId: string | null) {
 
     const { error } = await sb()!.from('hmis_radiology_orders').update(update).eq('id', orderId);
     if (error) return { success: false, error: error.message };
+
+    // BRIDGE: Notify ordering doctor when report is verified
+    if (status === 'verified') {
+      const { data: ord } = await sb()!.from('hmis_radiology_orders')
+        .select('centre_id, patient_id, test_name, ordered_by')
+        .eq('id', orderId).single();
+      if (ord) {
+        import('@/lib/bridge/module-events').then(({ onRadiologyReportVerified }) =>
+          onRadiologyReportVerified({
+            centreId: ord.centre_id, patientId: ord.patient_id,
+            radiologyOrderId: orderId, testName: ord.test_name,
+            orderedBy: ord.ordered_by,
+          }).catch(() => {})
+        );
+      }
+    }
+
     load();
     return { success: true };
   }, [load]);

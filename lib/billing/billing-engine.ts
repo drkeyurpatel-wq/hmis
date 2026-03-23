@@ -269,6 +269,21 @@ export async function createBill(params: {
     });
   }
 
+  // BRIDGE: Auto-create insurance claim for insured IPD patients
+  if (params.billType === 'ipd' && params.payorType !== 'self' && params.encounterId) {
+    const { data: adm } = await sb()!.from('hmis_admissions')
+      .select('patient_insurance_id').eq('id', params.encounterId).single();
+    if (adm?.patient_insurance_id) {
+      import('@/lib/bridge/module-events').then(({ onFinalBillCreatedForInsured }) =>
+        onFinalBillCreatedForInsured({
+          centreId, admissionId: params.encounterId!, billId: bill.id,
+          patientInsuranceId: adm.patient_insurance_id,
+          netAmount: summary.net, staffId,
+        }).catch(() => {})
+      );
+    }
+  }
+
   return { success: true, billId: bill.id, billNumber };
 }
 

@@ -75,7 +75,16 @@ export function useIPD(centreId: string | null) {
     if (data.bedId && !error) {
       await sb()!.from('hmis_beds').update({ status: 'occupied', current_admission_id: admission?.id }).eq('id', data.bedId);
     }
-    if (!error) loadAdmissions('active');
+    if (!error && admission) {
+      // BRIDGE: Auto-create default diet order
+      import('@/lib/bridge/module-events').then(({ onAdmissionCreated }) =>
+        onAdmissionCreated({
+          centreId: centreId!, admissionId: admission.id,
+          patientId: data.patientId, staffId: data.admittingDoctorId,
+        }).catch(() => {})
+      );
+      loadAdmissions('active');
+    }
     return { admission, error };
   }, [centreId, loadAdmissions]);
 
@@ -90,7 +99,17 @@ export function useIPD(centreId: string | null) {
       discharge_type: dischargeType, final_diagnosis: finalDiagnosis || null,
     }).eq('id', admissionId);
     // Free the bed
-    if (admInfo?.bed_id) await sb()!.from('hmis_beds').update({ status: 'available', current_admission_id: null }).eq('id', admInfo.bed_id);
+    if (admInfo?.bed_id) {
+      await sb()!.from('hmis_beds').update({ status: 'available', current_admission_id: null }).eq('id', admInfo.bed_id);
+
+      // BRIDGE: Auto-trigger bed turnover
+      import('@/lib/bridge/module-events').then(({ onDischargeConfirmed }) =>
+        onDischargeConfirmed({
+          centreId: centreId || '', admissionId,
+          bedId: admInfo.bed_id, staffId: '',
+        }).catch(() => {})
+      );
+    }
     // WhatsApp: discharge alert
     try {
       const pt = (admInfo as any)?.patient;

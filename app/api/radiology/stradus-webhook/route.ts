@@ -11,6 +11,7 @@
 //   X-Stradus-Event: report.finalized | report.amended | report.addendum
 
 import { NextRequest, NextResponse } from 'next/server';
+import { requireApiKey } from '@/lib/api/auth-guard';
 import { createClient } from '@supabase/supabase-js';
 import { parseHl7OruMessage, parseJsonReport, verifyWebhookSignature, type StradusReport } from '@/lib/radiology/stradus-client';
 
@@ -22,6 +23,9 @@ function getSupabase() {
 }
 
 export async function POST(request: NextRequest) {
+  const { error: authError } = requireApiKey(request);
+  if (authError) return authError;
+
   const sb = getSupabase();
   if (!sb) return NextResponse.json({ error: 'Database not configured' }, { status: 500 });
 
@@ -231,7 +235,10 @@ export async function POST(request: NextRequest) {
 }
 
 // GET — health check and webhook info
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const { error: authError } = requireApiKey(req);
+  if (authError) return authError;
+
   return NextResponse.json({
     service: 'HMIS Radiology Webhook',
     accepts: ['application/json', 'application/hl7-v2', 'text/plain'],

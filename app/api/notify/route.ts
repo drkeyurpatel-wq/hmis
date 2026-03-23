@@ -3,6 +3,7 @@
 // Checks hmis_notification_preferences to see if the event is enabled for the centre
 
 import { NextRequest, NextResponse } from 'next/server';
+import { requireAuth } from '@/lib/api/auth-guard';
 import { createClient } from '@supabase/supabase-js';
 import {
   sendAppointmentReminder,
@@ -24,6 +25,9 @@ type EventType = 'appointment_reminder' | 'lab_ready' | 'pharmacy_ready' | 'disc
 const VALID_TYPES: EventType[] = ['appointment_reminder', 'lab_ready', 'pharmacy_ready', 'discharge_summary'];
 
 export async function POST(request: NextRequest) {
+  const { error: authError } = await requireAuth(request);
+  if (authError) return authError;
+
   try {
     const body = await request.json();
     const { type, phone, data, centre_id } = body as {

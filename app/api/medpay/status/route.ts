@@ -2,7 +2,8 @@ export const dynamic = "force-dynamic";
 // app/api/medpay/status/route.ts
 // GET: MedPay integration status — connection test, sync stats
 
-import { NextResponse } from 'next/server';
+import { NextResponse, NextRequest } from 'next/server';
+import { requireAdmin } from '@/lib/api/auth-guard';
 import { createClient } from '@supabase/supabase-js';
 
 const HMIS_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -10,7 +11,10 @@ const HMIS_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 const MEDPAY_URL = process.env.MEDPAY_SUPABASE_URL || 'https://kffuqxylyhpwecojnuou.supabase.co';
 const MEDPAY_KEY = process.env.MEDPAY_SERVICE_ROLE_KEY || '';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const { error: authError } = await requireAdmin(request);
+  if (authError) return authError;
+
   const db = createClient(HMIS_URL, HMIS_KEY);
 
   // HMIS stats

@@ -22,26 +22,22 @@ import { useTariffs, useEstimates } from '@/lib/billing/billing-hooks';
 const fmt = (n: number) => Math.round(n).toLocaleString('en-IN');
 const INR = (n: number) => n >= 100000 ? `₹${(n / 100000).toFixed(1)}L` : `₹${fmt(n)}`;
 
-type Tab = 'dashboard' | 'new_bill' | 'bills' | 'ipd' | 'cashless' | 'estimates' | 'ar' | 'advances' | 'refunds' | 'credit_notes';
+type Tab = 'bills' | 'ipd' | 'insurance' | 'collections';
 
 const TABS: { key: Tab; label: string; icon: any }[] = [
-  { key: 'dashboard', label: 'Dashboard', icon: TrendingUp },
-  { key: 'new_bill', label: 'New Bill', icon: Plus },
   { key: 'bills', label: 'Bills', icon: FileText },
-  { key: 'ipd', label: 'IPD', icon: CreditCard },
-  { key: 'cashless', label: 'Insurance', icon: Shield },
-  { key: 'estimates', label: 'Estimates', icon: Receipt },
-  { key: 'ar', label: 'Outstanding', icon: Clock },
-  { key: 'advances', label: 'Advances', icon: IndianRupee },
-  { key: 'refunds', label: 'Refunds', icon: ArrowDownLeft },
-  { key: 'credit_notes', label: 'Credit Notes', icon: FileText },
+  { key: 'ipd', label: 'IPD Billing', icon: CreditCard },
+  { key: 'insurance', label: 'Insurance', icon: Shield },
+  { key: 'collections', label: 'Collections', icon: IndianRupee },
 ];
 
 function BillingInner() {
   const { staff, activeCentreId } = useAuthStore();
   const centreId = activeCentreId || '';
   const staffId = staff?.id || '';
-  const [tab, setTab] = useState<Tab>('dashboard');
+  const [tab, setTab] = useState<Tab>('bills');
+  const [showNewBill, setShowNewBill] = useState(false);
+  const [collectionsView, setCollectionsView] = useState<'estimates'|'ar'|'advances'|'refunds'|'credit_notes'>('ar');
   const [toast, setToast] = useState('');
   const flash = (m: string) => { setToast(m); setTimeout(() => setToast(''), 3000); };
 
@@ -158,7 +154,7 @@ function BillingInner() {
           <h1 className="text-xl font-bold tracking-tight">Billing & Revenue</h1>
           <p className="text-xs text-gray-400 mt-0.5">{staff?.full_name} · {new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</p>
         </div>
-        <button onClick={() => setTab('new_bill')}
+        <button onClick={() => setShowNewBill(true)}
           className="flex items-center gap-2 px-4 py-2.5 bg-teal-600 text-white text-sm rounded-xl font-semibold hover:bg-teal-700 transition-colors shadow-sm shadow-teal-200/50">
           <Plus size={16} /> New Bill
         </button>
@@ -186,7 +182,7 @@ function BillingInner() {
       <div className="flex gap-1 overflow-x-auto pb-0.5 scrollbar-thin">
         {TABS.map(({ key, label, icon: Icon }) => (
           <button key={key}
-            onClick={() => { setTab(key); if (key === 'bills') loadBills(); if (key === 'advances') loadAdvances(); }}
+            onClick={() => { setTab(key); if (key === 'bills') loadBills(); if (key === 'collections') loadAdvances(); }}
             className={`flex items-center gap-1.5 px-3.5 py-2 text-xs font-medium rounded-xl whitespace-nowrap transition-all duration-150 ${
               tab === key
                 ? 'bg-teal-600 text-white shadow-sm shadow-teal-200/40'
@@ -203,10 +199,10 @@ function BillingInner() {
 
       {/* ═══ TAB CONTENT ═══ */}
 
-      {tab === 'dashboard' && <RevenueDashboard centreId={centreId} />}
+      {tab === 'bills' && !selectedBillId && false /* dashboard moved to bills header */ && <RevenueDashboard centreId={centreId} />}
 
-      {tab === 'new_bill' && <ServiceBillingEngine centreId={centreId} staffId={staffId} mode="general"
-        onDone={() => { loadBills(); setTab('bills'); }} onFlash={flash} />}
+      {tab === 'bills' && showNewBill && <ServiceBillingEngine centreId={centreId} staffId={staffId} mode="general"
+        onDone={() => { loadBills(); setTab('bills'); setShowNewBill(false); }} onFlash={flash} />}
 
       {/* Bills */}
       {tab === 'bills' && (
@@ -282,23 +278,23 @@ function BillingInner() {
       )}
 
       {tab === 'ipd' && <IPDBillingTab centreId={centreId} staffId={staffId} bills={bills}
-        onSelectBill={(id) => { setSelectedBillId(id); setTab('bills'); }} onReload={loadBills} onFlash={flash} />}
+        onSelectBill={(id) => { setSelectedBillId(id); setTab('bills'); setShowNewBill(false); }} onReload={loadBills} onFlash={flash} />}
 
-      {tab === 'cashless' && <InsuranceCashless claims={cashless.claims} loading={cashless.loading}
+      {tab === 'insurance' && <InsuranceCashless claims={cashless.claims} loading={cashless.loading}
         stats={cashless.stats} centreId={centreId} staffId={staffId}
         onInitPreAuth={cashless.submitPreAuth}
         onUpdateStatus={async (claimId: string, status: string, data?: any) => { await cashless.updateClaim(claimId, { status, ...data }); }}
         onLoad={cashless.loadClaims} onFlash={flash} />}
 
-      {tab === 'estimates' && <EstimateGenerator estimates={estimates.estimates} centreId={centreId} staffId={staffId}
+      {tab === 'collections' && collectionsView === 'estimates' && <EstimateGenerator estimates={estimates.estimates} centreId={centreId} staffId={staffId}
         tariffs={tariffs} onCreate={estimates.create} onFlash={flash} />}
 
-      {tab === 'ar' && <ARManagement entries={ar.entries} loading={ar.loading} aging={ar.stats}
+      {tab === 'collections' && collectionsView === 'ar' && <ARManagement entries={ar.entries} loading={ar.loading} aging={ar.stats}
         totalOutstanding={ar.entries.reduce((s: number, e: any) => s + parseFloat(e.balance_amount || 0), 0)}
         staffId={staffId} onAddFollowup={ar.addFollowup} onWriteOff={ar.writeOff} onLoad={ar.load} onFlash={flash} />}
 
       {/* Advances */}
-      {tab === 'advances' && (
+      {tab === 'collections' && collectionsView === 'advances' && (
         <div className="space-y-4">
           {/* Collect form */}
           <div className="bg-white rounded-2xl border border-gray-100 p-5">
@@ -380,8 +376,8 @@ function BillingInner() {
         </div>
       )}
 
-      {tab === 'refunds' && <RefundManager centreId={centreId} onFlash={flash} />}
-      {tab === 'credit_notes' && <CreditNoteManager centreId={centreId} onFlash={flash} />}
+      {tab === 'collections' && collectionsView === 'refunds' && <RefundManager centreId={centreId} onFlash={flash} />}
+      {tab === 'collections' && collectionsView === 'credit_notes' && <CreditNoteManager centreId={centreId} onFlash={flash} />}
     </div>
   );
 }

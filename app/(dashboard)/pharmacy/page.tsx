@@ -9,7 +9,7 @@ import { sb } from '@/lib/supabase/browser';
 const fmt = (n: number) => n.toLocaleString('en-IN', { maximumFractionDigits: 0 });
 const fmtL = (n: number) => n >= 100000 ? `${(n/100000).toFixed(2)}L` : `${fmt(n)}`;
 
-type Tab = 'dashboard'|'dispensing'|'drug_master'|'stock'|'batch'|'expiry'|'po'|'grn'|'transfers'|'controlled'|'returns';
+type Tab = 'dispensing'|'inventory'|'drug_master'|'controlled'|'more';
 
 function PharmacyInner() {
   const { staff, activeCentreId } = useAuthStore();
@@ -24,7 +24,7 @@ function PharmacyInner() {
   const transfers = useStockTransfers(centreId);
   const controlled = useControlledSubstances(centreId);
 
-  const [tab, setTab] = useState<Tab>('dashboard');
+  const [tab, setTab] = useState<Tab>('dispensing');
   const [toast, setToast] = useState('');
   const flash = (m: string) => { setToast(m); setTimeout(() => setToast(''), 2500); };
   const [centres, setCentres] = useState<any[]>([]);
@@ -60,10 +60,8 @@ function PharmacyInner() {
   const [dispLoading, setDispLoading] = useState(false);
 
   const tabs: [Tab,string,string][] = [
-    ['dashboard','Dashboard','📊'],['dispensing','Dispensing','💊'],['drug_master','Drug Master','📋'],
-    ['stock','Stock','📦'],['batch','Batch Tracker','🔢'],['expiry','Expiry Alert','⏰'],
-    ['po','Purchase Orders','📝'],['grn','GRN','📥'],['transfers','Transfers','🔄'],
-    ['controlled','Controlled Drugs','🔒'],['returns','Returns','↩️'],
+    ['dispensing','Dispensing','💊'],['inventory','Inventory','📦'],['drug_master','Drug Master','📋'],
+    ['controlled','Controlled','🔒'],['more','Transfers & Returns','🔄'],
   ];
 
   const daysToExpiry = (d: string) => Math.ceil((new Date(d).getTime() - Date.now()) / 86400000);
@@ -82,7 +80,7 @@ function PharmacyInner() {
       </div>
 
       {/* ===== DASHBOARD ===== */}
-      {tab === 'dashboard' && <div className="space-y-4">
+      {tab === 'dispensing' && /* stats */ <div className="space-y-4">
         <div className="grid grid-cols-6 gap-3">
           {[['Dispensed Today',dashboard.todayDispensed,'text-blue-700','bg-blue-50'],
             ['Revenue Today',`₹${fmtL(dashboard.todayRevenue)}`,'text-green-700','bg-green-50'],
@@ -260,7 +258,7 @@ function PharmacyInner() {
       </div>}
 
       {/* ===== STOCK OVERVIEW ===== */}
-      {tab === 'stock' && <div className="space-y-3">
+      {tab === 'inventory' && <div className="space-y-3">
         <div className="flex justify-between items-center">
           <div className="flex gap-2">
             <button onClick={() => stock.load()} className="px-3 py-1.5 rounded-lg text-xs border bg-white">All Stock</button>
@@ -310,7 +308,7 @@ function PharmacyInner() {
       </div>}
 
       {/* ===== BATCH TRACKER ===== */}
-      {tab === 'batch' && <div className="space-y-3">
+      {tab === 'inventory' && /* batch */ <div className="space-y-3">
         <h2 className="text-sm font-semibold">Batch-wise Stock</h2>
         <div className="bg-white rounded-xl border overflow-hidden"><table className="w-full text-xs"><thead><tr className="bg-gray-50 border-b">
           <th className="p-2 text-left">Drug</th><th className="p-2">Batch #</th><th className="p-2">Expiry</th><th className="p-2 text-right">Qty Avail</th><th className="p-2 text-right">Dispensed</th><th className="p-2 text-right">Cost</th><th className="p-2 text-right">MRP</th><th className="p-2">Supplier</th>
@@ -328,7 +326,7 @@ function PharmacyInner() {
       </div>}
 
       {/* ===== EXPIRY MANAGEMENT ===== */}
-      {tab === 'expiry' && <div className="space-y-3">
+      {tab === 'inventory' && /* expiry */ <div className="space-y-3">
         <div className="grid grid-cols-3 gap-3">
           <div className="bg-red-50 rounded-xl border border-red-200 p-4 text-center"><div className="text-[10px] text-red-600">Already Expired</div><div className="text-2xl font-bold text-red-700">{stock.expired.length}</div></div>
           <div className="bg-orange-50 rounded-xl border border-orange-200 p-4 text-center"><div className="text-[10px] text-orange-600">Expiring in 90 days</div><div className="text-2xl font-bold text-orange-700">{stock.expiringSoon.length}</div></div>
@@ -347,7 +345,7 @@ function PharmacyInner() {
       </div>}
 
       {/* ===== PO / GRN / TRANSFERS / CONTROLLED / RETURNS — Framework ===== */}
-      {tab === 'po' && <div className="bg-white rounded-xl border p-4">
+      {tab === 'more' && /* po */ <div className="bg-white rounded-xl border p-4">
         <div className="flex items-center justify-between mb-3">
           <h2 className="font-bold text-sm">Purchase Orders</h2>
           <a href="/vpms" className="px-3 py-1.5 bg-teal-600 text-white text-xs rounded-lg">Open VPMS →</a>
@@ -363,13 +361,13 @@ function PharmacyInner() {
         </div>
       </div>}
 
-      {tab === 'grn' && <div className="bg-white rounded-xl border p-4">
+      {tab === 'more' && /* grn */ <div className="bg-white rounded-xl border p-4">
         <h2 className="font-bold text-sm mb-3">Goods Receipt Note</h2>
         <div className="text-xs text-gray-500 mb-3">GRN verification happens in the Stock tab when adding new stock entries. Each stock entry serves as a GRN with batch number, expiry, supplier, and quantity tracking.</div>
-        <div className="text-center py-8"><button onClick={() => setTab('stock')} className="px-4 py-2 bg-teal-600 text-white text-sm rounded-lg">Go to Stock Management →</button></div>
+        <div className="text-center py-8"><button onClick={() => setTab('inventory')} className="px-4 py-2 bg-teal-600 text-white text-sm rounded-lg">Go to Stock Management →</button></div>
       </div>}
 
-      {tab === 'transfers' && <div className="space-y-4">
+      {tab === 'more' && /* transfers */ <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="font-bold text-sm">Inter-Centre Stock Transfer</h2>
         </div>
@@ -481,7 +479,7 @@ function PharmacyInner() {
         </div>}
       </div>}
 
-      {tab === 'returns' && <div className="space-y-4">
+      {tab === 'more' && /* returns */ <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="font-bold text-sm">Returns & Write-offs</h2>
           <div className="flex gap-2 text-[10px]">

@@ -32,6 +32,7 @@ export function useNursingStation(centreId: string | null, wardFilter?: string) 
   const [patients, setPatients] = useState<NursingPatient[]>([]);
   const [tasks, setTasks] = useState<NursingTask[]>([]);
   const [wards, setWards] = useState<any[]>([]);
+  const [onDutyStaff, setOnDutyStaff] = useState<{ staffId: string; fullName: string; staffType: string; shiftType: string }[]>([]);
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
@@ -144,6 +145,16 @@ export function useNursingStation(centreId: string | null, wardFilter?: string) 
     taskList.sort((a, b) => (priorityOrder[a.status] || 9) - (priorityOrder[b.status] || 9));
     setTasks(taskList);
 
+    // BRIDGE: Load on-duty staff from duty roster for current ward
+    if (wardFilter && centreId) {
+      loadOnDutyForWard(centreId, wardFilter).then(setOnDutyStaff).catch(() => {});
+    } else if (centreId && wardData && wardData.length > 0) {
+      // Load for all wards, merge
+      Promise.all(wardData.map(w => loadOnDutyForWard(centreId!, w.id)))
+        .then(results => setOnDutyStaff(results.flat()))
+        .catch(() => {});
+    }
+
     setLoading(false);
   }, [centreId, wardFilter]);
 
@@ -171,7 +182,15 @@ export function useNursingStation(centreId: string | null, wardFilter?: string) 
     dueNowTasks: tasks.filter(t => t.status === 'due_now').length,
   }), [patients, tasks]);
 
-  return { patients, tasks, wards, loading, stats, load };
+  return { patients, tasks, wards, onDutyStaff, loading, stats, load };
+}
+
+// Load on-duty staff from duty roster for a ward
+async function loadOnDutyForWard(centreId: string, wardId: string): Promise<{ staffId: string; fullName: string; staffType: string; shiftType: string }[]> {
+  try {
+    const { getOnDutyStaff } = await import('@/lib/bridge/module-events');
+    return getOnDutyStaff(centreId, wardId);
+  } catch { return []; }
 }
 
 // ============================================================

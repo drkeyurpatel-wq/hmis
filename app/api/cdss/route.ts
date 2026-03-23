@@ -3,12 +3,16 @@
 // Set ANTHROPIC_API_KEY in Vercel environment variables
 
 import { NextRequest, NextResponse } from 'next/server';
+import { requireAuth } from '@/lib/api/auth-guard';
 
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY || '';
 const MODEL = 'claude-sonnet-4-20250514';
 
 // GET — health check / debug
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const { error: authError } = await requireAuth(request);
+  if (authError) return authError;
+
   return NextResponse.json({
     status: 'ok',
     keyConfigured: !!ANTHROPIC_API_KEY,
@@ -142,6 +146,9 @@ Be concise. Max 5 suggestions. Prioritize actionable items. Indian clinical cont
 // ============================================================
 
 export async function POST(request: NextRequest) {
+  const { error: authError } = await requireAuth(request);
+  if (authError) return authError;
+
   try {
     const body = await request.json();
     const { type, data } = body;

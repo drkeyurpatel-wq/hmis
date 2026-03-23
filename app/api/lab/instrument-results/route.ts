@@ -1,6 +1,7 @@
 // app/api/lab/instrument-results/route.ts
 // Inbound API: Mindray BC-5000 (or any HL7/ASTM instrument) sends results → HMIS stores
 import { NextRequest, NextResponse } from 'next/server';
+import { requireApiKey } from '@/lib/api/auth-guard';
 import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -104,6 +105,9 @@ function parseJSON(body: any): { patientId: string; sampleId: string; results: a
 }
 
 export async function POST(req: NextRequest) {
+  const { error: authError } = requireApiKey(req);
+  if (authError) return authError;
+
   const db = getDb();
 
   try {
@@ -202,7 +206,10 @@ export async function POST(req: NextRequest) {
 }
 
 // GET — health check
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const { error: authError } = requireApiKey(req);
+  if (authError) return authError;
+
   return NextResponse.json({
     status: 'ready', endpoint: '/api/lab/instrument-results',
     accepts: ['HL7 v2.3.1 ORU^R01', 'ASTM/LIS2-A2', 'JSON'],

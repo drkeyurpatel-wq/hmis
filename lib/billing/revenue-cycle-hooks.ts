@@ -43,6 +43,23 @@ export function useCashlessWorkflow(centreId: string | null) {
     if (update.preAuthNumber) upd.pre_auth_number = update.preAuthNumber;
     if (update.remarks) upd.remarks = update.remarks;
     await sb()!.from('hmis_pre_auth_requests').update(upd).eq('id', id);
+
+    // BRIDGE: Pre-auth approved → auto-check surgical planning checklist
+    if (update.status === 'approved') {
+      const { data: pa } = await sb()!.from('hmis_pre_auth_requests')
+        .select('admission_id, approved_amount, admission:hmis_admissions!inner(centre_id)')
+        .eq('id', id).single();
+      if (pa) {
+        const adm = pa.admission as any;
+        import('@/lib/bridge/module-events').then(({ onPreAuthStatusChanged }) =>
+          onPreAuthStatusChanged({
+            centreId: adm?.centre_id || '', admissionId: pa.admission_id,
+            status: 'approved', approvedAmount: pa.approved_amount,
+          }).catch(() => {})
+        );
+      }
+    }
+
     loadPreAuths();
   }, [loadPreAuths]);
 

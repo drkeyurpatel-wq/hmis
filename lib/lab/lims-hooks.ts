@@ -263,12 +263,29 @@ export function useResultEntry(orderId: string | null) {
     }
     // Create critical alerts
     const criticals = resultEntries.filter(e => e.isCritical);
-    for (const c of criticals) {
-      await Promise.resolve(sb()!.from('hmis_lab_critical_alerts').insert({
-        lab_order_id: orderId, result_id: results.find((r: any) => r.parameter_name === c.parameterName)?.id || orderId,
-        parameter_name: c.parameterName, result_value: c.value,
-        critical_type: parseFloat(c.value) < 0 ? 'low' : 'high', status: 'pending',
-      })).catch(() => {}); // ignore duplicates
+    if (criticals.length > 0) {
+      // Lookup order context for bridge
+      const { data: labOrd } = await sb()!.from('hmis_lab_orders')
+        .select('centre_id, patient_id, admission_id').eq('id', orderId).single();
+
+      for (const c of criticals) {
+        await Promise.resolve(sb()!.from('hmis_lab_critical_alerts').insert({
+          lab_order_id: orderId, result_id: results.find((r: any) => r.parameter_name === c.parameterName)?.id || orderId,
+          parameter_name: c.parameterName, result_value: c.value,
+          critical_type: parseFloat(c.value) < 0 ? 'low' : 'high', status: 'pending',
+        })).catch(() => {}); // ignore duplicates
+
+        // BRIDGE: Push to nursing station + doctor alerts
+        if (labOrd) {
+          import('@/lib/bridge/module-events').then(({ onLabCriticalResult }) =>
+            onLabCriticalResult({
+              centreId: labOrd.centre_id, patientId: labOrd.patient_id,
+              admissionId: labOrd.admission_id, parameterName: c.parameterName,
+              resultValue: c.value, labOrderId: orderId!,
+            }).catch(() => {})
+          );
+        }
+      }
     }
     load();
   }, [orderId, results, parameters, load]);
@@ -285,6 +302,20 @@ export function useResultEntry(orderId: string | null) {
       verified_at: new Date().toISOString(), verified_by: staffId, tat_met: tatMet,
     }).eq('id', orderId);
     auditSign('', staffId, 'lab_result', orderId, `Lab results verified for order ${orderId}`);
+
+    // BRIDGE: Update surgical planning if this patient has an active planning case
+    const { data: labOrd } = await sb()!.from('hmis_lab_orders')
+      .select('centre_id, patient_id, admission_id')
+      .eq('id', orderId).single();
+    if (labOrd) {
+      import('@/lib/bridge/module-events').then(({ onLabResultVerified }) =>
+        onLabResultVerified({
+          centreId: labOrd.centre_id, patientId: labOrd.patient_id,
+          admissionId: labOrd.admission_id, labOrderId: orderId,
+        }).catch(() => {})
+      );
+    }
+
     // Notify patient
     const { data: orderInfo } = await sb()!.from('hmis_lab_orders')
       .select('test:hmis_lab_test_master(test_name), patient:hmis_patients!inner(phone_primary, first_name, last_name)')

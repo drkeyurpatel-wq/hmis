@@ -187,6 +187,14 @@ export function useCssd(centreId: string | null) {
     });
     if (!error) {
       await sb()!.from('hmis_cssd_instrument_sets').update({ status: 'in_use', location: data.issued_to_location }).eq('id', data.set_id);
+
+      // BRIDGE: Auto-check CSSD booking in surgical planning
+      if (data.surgery_name) {
+        import('@/lib/bridge/module-events').then(({ onCSSDIssued }) =>
+          onCSSDIssued({ centreId: centreId!, otBookingId: data.ot_booking_id, surgeryName: data.surgery_name }).catch(() => {})
+        );
+      }
+
       load();
     }
     return { success: !error, error: error?.message };
