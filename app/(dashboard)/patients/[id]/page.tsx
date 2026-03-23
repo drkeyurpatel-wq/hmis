@@ -71,7 +71,7 @@ function Patient360Inner() {
   const news2Color = p.news2Risk === 'high' ? 'bg-red-600' : p.news2Risk === 'medium' ? 'bg-orange-500' : p.news2Risk === 'low-medium' ? 'bg-yellow-500' : 'bg-green-600';
 
   return (
-    <div className="max-w-[1600px] mx-auto">
+    <div className="w-full lg:max-w-[1600px] mx-auto">
       {toast && <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-emerald-600 text-white px-4 py-2 rounded-xl shadow-lg text-sm">{toast}</div>}
 
       {/* HEADER */}
@@ -108,7 +108,7 @@ function Patient360Inner() {
         </div>
 
         {p.isAdmitted && p.admission && (
-          <div className={`flex items-center gap-6 px-4 py-2 text-xs ${p.isICU ? 'bg-red-50' : 'bg-teal-50'}`}>
+          <div className={`flex flex-wrap items-center gap-3 sm:gap-6 px-4 py-2 text-xs ${p.isICU ? 'bg-red-50' : 'bg-teal-50'}`}>
             <div className="flex items-center gap-1.5">
               <BedDouble size={13} className={p.isICU ? 'text-red-600' : 'text-teal-600'} />
               <span className="font-semibold">{(p.bed as any)?.bed_number || '—'}</span>
@@ -125,7 +125,7 @@ function Patient360Inner() {
 
       {/* QUICK ACTIONS */}
       {p.isAdmitted && (
-        <div className="flex gap-2 mb-3">
+        <div className="flex gap-2 mb-3 overflow-x-auto pb-1">
           {[
             { label: 'Record Vitals', icon: Heart, color: 'bg-rose-50 text-rose-700 border-rose-200', action: () => setShowVitals(!showVitals) },
             { label: 'Quick Note', icon: FileText, color: 'bg-blue-50 text-blue-700 border-blue-200', action: () => setShowNote(!showNote) },
@@ -145,7 +145,7 @@ function Patient360Inner() {
       {showVitals && (
         <div className="bg-white rounded-xl border shadow-sm mb-3 p-4">
           <div className="flex items-center justify-between mb-3"><h3 className="font-semibold text-sm">Record Vitals</h3><button onClick={() => setShowVitals(false)} className="text-gray-400 text-xs">Close</button></div>
-          <div className="grid grid-cols-6 gap-3">
+          <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
             {([['heart_rate','HR (bpm)','72'],['systolic_bp','SBP','120'],['diastolic_bp','DBP','80'],['temperature','Temp (°C)','37.0'],['spo2','SpO₂ (%)','98'],['respiratory_rate','RR (/min)','16']] as const).map(([key,label,ph]) => (
               <div key={key}><label className="text-[10px] text-gray-500 block mb-1">{label}</label>
               <input type="number" step="0.1" placeholder={ph} value={(vf as any)[key]} onChange={(e: any) => setVf(prev => ({...prev,[key]:e.target.value}))} className="w-full px-2 py-1.5 border rounded-lg text-sm text-center" /></div>
@@ -164,13 +164,13 @@ function Patient360Inner() {
 
       {/* MAIN CONTENT — 3-column for admitted, simple for OPD */}
       {p.isAdmitted ? (
-        <div className="grid grid-cols-12 gap-3">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-3">
           {/* LEFT: Vitals + Context */}
-          <div className="col-span-3 space-y-3">
+          <div className="lg:col-span-3 space-y-3">
             <div className="bg-white rounded-xl border p-3">
               <div className="flex items-center justify-between mb-2"><h3 className="text-xs font-semibold text-gray-700 flex items-center gap-1"><Activity size={12} /> Vitals</h3>{p.latestVitals && <span className="text-[10px] text-gray-400">{ago(p.latestVitals.recorded_at)}</span>}</div>
               {p.latestVitals ? (
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-3 sm:grid-cols-2 gap-2">
                   {([
                     {l:'HR',v:p.latestVitals.heart_rate,u:'bpm',icon:Heart,c:'text-rose-600'},
                     {l:'BP',v:p.latestVitals.systolic_bp?`${p.latestVitals.systolic_bp}/${p.latestVitals.diastolic_bp||'?'}`:null,u:'mmHg',icon:TrendingUp,c:'text-blue-600'},
@@ -214,7 +214,7 @@ function Patient360Inner() {
           </div>
 
           {/* CENTER: Meds + Orders + Notes */}
-          <div className="col-span-6 space-y-3">
+          <div className="lg:col-span-6 space-y-3">
             <div className="bg-white rounded-xl border p-3">
               <div className="flex items-center justify-between mb-2"><h3 className="text-xs font-semibold text-gray-700 flex items-center gap-1"><Pill size={12} /> Active Medications ({p.activeMeds.length})</h3>
               {p.medsNextDue.length > 0 && <span className="text-[10px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">{p.medsNextDue.length} due</span>}</div>
@@ -257,7 +257,7 @@ function Patient360Inner() {
           </div>
 
           {/* RIGHT: Results + Billing */}
-          <div className="col-span-3 space-y-3">
+          <div className="lg:col-span-3 space-y-3">
             <div className="bg-white rounded-xl border p-3">
               <h3 className="text-xs font-semibold text-gray-700 mb-2 flex items-center gap-1"><FlaskConical size={12} /> Lab Results (48h)</h3>
               {p.recentLabResults.length > 0 ? <div className="space-y-2">{p.recentLabResults.slice(0,6).map((lab: any) => (
@@ -296,7 +296,7 @@ function Patient360Inner() {
         </div>
       ) : (
         /* NON-ADMITTED: History view */
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div className="bg-white rounded-xl border p-4"><h3 className="font-semibold text-sm mb-3">Recent Visits</h3>
             {p.recentNotes.length > 0 ? p.recentNotes.map((n: any) => (
               <div key={n.id} className="border-b last:border-0 py-2">

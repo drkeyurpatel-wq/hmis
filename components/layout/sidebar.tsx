@@ -29,6 +29,7 @@ const NAV: NavGroup[] = [
     { href: '/emr-v2', label: 'EMR', icon: Stethoscope, module: 'emr', moduleKey: 'emr' },
     { href: '/ipd', label: 'IPD & Beds', icon: BedDouble, module: 'ipd', moduleKey: 'ipd' },
     { href: '/nursing-station', label: 'Nursing', icon: Heart, module: 'ipd', moduleKey: 'nursing' },
+    { href: '/ward-board', label: 'Ward Board', icon: BedDouble, module: 'ipd', moduleKey: 'nursing' },
     { href: '/emergency', label: 'Emergency', icon: Siren, module: 'ipd', moduleKey: 'emergency' },
     { href: '/ot', label: 'OT & Surgery', icon: Scissors, module: 'ot', moduleKey: 'ot' },
     { href: '/cathlab', label: 'Cath Lab', icon: Heart, module: 'ot', moduleKey: 'cathlab' },
