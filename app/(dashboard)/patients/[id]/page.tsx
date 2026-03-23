@@ -1,331 +1,323 @@
 'use client';
-import React, { useState, useEffect, useCallback } from 'react';
-import { useParams } from 'next/navigation';
-import { sb } from '@/lib/supabase/browser';
+import React, { useState, useCallback } from 'react';
+import { useParams, useRouter } from 'next/navigation';
 import { useAuthStore } from '@/lib/store/auth';
-import Link from 'next/link';
-import PatientImagingPanel from '@/components/radiology/patient-imaging-panel';
-import PatientLabHistory from '@/components/lab/patient-lab-history';
-import { usePatientDocuments, useEmergencyContacts, usePatientInsurance } from '@/lib/appointments/appointment-hooks';
-import { exportPatientData } from '@/lib/utils/data-export';
-import { PatientTimeline } from '@/components/patient/patient-timeline';
+import { usePatient360 } from '@/lib/patient/patient-360-hooks';
+import { sb } from '@/lib/supabase/browser';
+import {
+  Heart, Thermometer, Wind, Droplets, Activity, Clock, Pill, FlaskConical,
+  ScanLine, FileText, AlertTriangle, BedDouble, User, Phone, Calendar,
+  ChevronRight, RefreshCw, Stethoscope, ClipboardList, IndianRupee,
+  Scissors, UtensilsCrossed, ArrowLeft, Shield, Plus, TrendingUp,
+} from 'lucide-react';
+import { RoleGuard } from '@/components/ui/shared';
 
+const fmt = (n: number) => Math.round(n).toLocaleString('en-IN');
+const INR = (n: number) => n >= 100000 ? `₹${(n / 100000).toFixed(1)}L` : `₹${fmt(n)}`;
+const ago = (d: string) => {
+  const mins = Math.floor((Date.now() - new Date(d).getTime()) / 60000);
+  if (mins < 1) return 'just now';
+  if (mins < 60) return `${mins}m ago`;
+  if (mins < 1440) return `${Math.floor(mins / 60)}h ago`;
+  return `${Math.floor(mins / 1440)}d ago`;
+};
 
-export default function PatientDetailPage() {
+function Patient360Inner() {
   const { id } = useParams();
+  const router = useRouter();
   const patientId = id as string;
   const { staff, activeCentreId } = useAuthStore();
-  const [patient, setPatient] = useState<any>(null);
-  const [allergies, setAllergies] = useState<any[]>([]);
-  const [encounters, setEncounters] = useState<any[]>([]);
-  const [visits, setVisits] = useState<any[]>([]);
-  const [bills, setBills] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [editing, setEditing] = useState(false);
-  const [editForm, setEditForm] = useState<any>({});
-  const [activeTab, setActiveTab] = useState('overview');
+  const p = usePatient360(patientId, activeCentreId);
   const [toast, setToast] = useState('');
-  const docs = usePatientDocuments(patientId);
-  const emergencyContacts = useEmergencyContacts(patientId);
-  const insurance = usePatientInsurance(patientId);
-  const [docFile, setDocFile] = useState<File | null>(null);
-  const [docType, setDocType] = useState('other');
-  const [ecForm, setEcForm] = useState({ name: '', relationship: '', phone: '' });
+  const flash = (m: string) => { setToast(m); setTimeout(() => setToast(''), 3000); };
 
-  const flash = (msg: string) => { setToast(msg); setTimeout(() => setToast(''), 2500); };
+  // Quick vitals
+  const [showVitals, setShowVitals] = useState(false);
+  const [vf, setVf] = useState({ heart_rate: '', systolic_bp: '', diastolic_bp: '', temperature: '', spo2: '', respiratory_rate: '' });
+  const saveVitals = useCallback(async () => {
+    if (!sb() || !staff) return;
+    const record: any = { patient_id: patientId, recorded_by: staff.id, recorded_at: new Date().toISOString() };
+    if (vf.heart_rate) record.heart_rate = parseFloat(vf.heart_rate);
+    if (vf.systolic_bp) record.systolic_bp = parseFloat(vf.systolic_bp);
+    if (vf.diastolic_bp) record.diastolic_bp = parseFloat(vf.diastolic_bp);
+    if (vf.temperature) record.temperature = parseFloat(vf.temperature);
+    if (vf.spo2) record.spo2 = parseFloat(vf.spo2);
+    if (vf.respiratory_rate) record.respiratory_rate = parseFloat(vf.respiratory_rate);
+    if (p.admission) record.admission_id = p.admission.id;
+    const { error } = await sb()!.from('hmis_vitals').insert(record);
+    if (!error) { flash('Vitals recorded'); setShowVitals(false); setVf({ heart_rate: '', systolic_bp: '', diastolic_bp: '', temperature: '', spo2: '', respiratory_rate: '' }); p.reload(); }
+    else flash('Error: ' + error.message);
+  }, [patientId, staff, vf, p]);
 
-  // Load all patient data
-  useEffect(() => {
-    if (!patientId || !sb()) return;
-    async function load() {
-      const { data: pt } = await sb()!.from('hmis_patients').select('*').eq('id', patientId).single();
-      if (pt) { setPatient(pt); setEditForm(pt); }
+  // Quick note
+  const [showNote, setShowNote] = useState(false);
+  const [noteText, setNoteText] = useState('');
+  const saveNote = useCallback(async () => {
+    if (!sb() || !staff || !noteText.trim()) return;
+    const { error } = await sb()!.from('hmis_emr_encounters').insert({
+      patient_id: patientId, doctor_id: staff.id, centre_id: activeCentreId,
+      encounter_type: 'note', chief_complaint: noteText.trim().substring(0, 100),
+      assessment: noteText.trim(), encounter_date: new Date().toISOString().split('T')[0],
+    });
+    if (!error) { flash('Note saved'); setShowNote(false); setNoteText(''); p.reload(); }
+    else flash('Error: ' + error.message);
+  }, [patientId, staff, noteText, activeCentreId, p]);
 
-      const { data: alg } = await sb()!.from('hmis_patient_allergies').select('*').eq('patient_id', patientId);
-      setAllergies(alg || []);
+  if (p.loading) return <div className="flex items-center justify-center py-20"><RefreshCw className="animate-spin text-gray-400" size={24} /><span className="ml-2 text-gray-400">Loading patient...</span></div>;
+  if (!p.patient) return <div className="text-center py-20 text-gray-400">Patient not found</div>;
 
-      const { data: enc } = await sb()!.from('hmis_emr_encounters')
-        .select('id, encounter_date, encounter_type, status, primary_diagnosis_code, primary_diagnosis_label, prescription_count, investigation_count, doctor:hmis_staff(full_name)')
-        .eq('patient_id', patientId).order('encounter_date', { ascending: false }).limit(50);
-      setEncounters(enc || []);
-
-      const { data: vis } = await sb()!.from('hmis_opd_visits')
-        .select('id, visit_number, token_number, status, check_in_time, doctor:hmis_staff(full_name)')
-        .eq('patient_id', patientId).order('created_at', { ascending: false }).limit(20);
-      setVisits(vis || []);
-
-      const { data: bl } = await sb()!.from('hmis_bills')
-        .select('id, bill_number, bill_type, net_amount, paid_amount, balance_amount, status, bill_date')
-        .eq('patient_id', patientId).order('bill_date', { ascending: false }).limit(20);
-      setBills(bl || []);
-
-      setLoading(false);
-    }
-    load();
-  }, [patientId]);
-
-  const saveEdit = async () => {
-    if (!sb() || !patientId) return;
-    const { error } = await sb()!.from('hmis_patients').update({
-      first_name: editForm.first_name, last_name: editForm.last_name, middle_name: editForm.middle_name,
-      date_of_birth: editForm.date_of_birth, gender: editForm.gender, blood_group: editForm.blood_group,
-      phone_primary: editForm.phone_primary, phone_secondary: editForm.phone_secondary, email: editForm.email,
-      address_line1: editForm.address_line1, city: editForm.city, state: editForm.state, pincode: editForm.pincode,
-      marital_status: editForm.marital_status, occupation: editForm.occupation,
-    }).eq('id', patientId);
-    if (!error) {
-      setPatient(editForm); setEditing(false); flash('Patient updated');
-    } else flash('Error: ' + error.message);
-  };
-
-  if (loading) return <div className="text-center py-12 text-gray-400">Loading patient...</div>;
-  if (!patient) return <div className="text-center py-12 text-gray-400">Patient not found</div>;
-
-  const age = patient.date_of_birth ? Math.floor((Date.now() - new Date(patient.date_of_birth).getTime()) / (365.25 * 24 * 60 * 60 * 1000)) : patient.age_years || '--';
-  const fullName = [patient.first_name, patient.middle_name, patient.last_name].filter(Boolean).join(' ');
-  const totalBilled = bills.reduce((s: number, b: any) => s + (b.net_amount || 0), 0);
-  const totalPaid = bills.reduce((s: number, b: any) => s + (b.paid_amount || 0), 0);
-  const totalDue = bills.reduce((s: number, b: any) => s + (b.balance_amount || 0), 0);
+  const pt = p.patient;
+  const age = pt.date_of_birth ? Math.floor((Date.now() - new Date(pt.date_of_birth).getTime()) / 31557600000) : null;
+  const news2Color = p.news2Risk === 'high' ? 'bg-red-600' : p.news2Risk === 'medium' ? 'bg-orange-500' : p.news2Risk === 'low-medium' ? 'bg-yellow-500' : 'bg-green-600';
 
   return (
-    <div className="max-w-5xl mx-auto">
+    <div className="max-w-[1600px] mx-auto">
       {toast && <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-emerald-600 text-white px-4 py-2 rounded-xl shadow-lg text-sm">{toast}</div>}
 
-      {/* Header */}
-      <div className="bg-white rounded-xl border p-5 mb-6">
-        <div className="flex items-start justify-between">
-          <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center text-teal-700 font-bold text-xl">{patient.first_name?.charAt(0)}{patient.last_name?.charAt(0)}</div>
+      {/* HEADER */}
+      <div className="bg-white rounded-xl border shadow-sm mb-3 overflow-hidden">
+        <div className="flex items-center justify-between px-4 py-3 border-b">
+          <div className="flex items-center gap-3">
+            <button onClick={() => router.back()} className="p-1 hover:bg-gray-100 rounded-lg"><ArrowLeft size={18} className="text-gray-400" /></button>
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">{fullName}</h1>
-              <div className="flex items-center gap-3 mt-1 text-sm text-gray-500">
-                <span className="font-mono bg-gray-100 px-2 py-0.5 rounded">{patient.uhid}</span>
-                <span>{age} yrs / {patient.gender?.toUpperCase()}</span>
-                {patient.blood_group && <span className="bg-red-50 text-red-700 px-2 py-0.5 rounded text-xs">{patient.blood_group}</span>}
-                <span>{patient.phone_primary}</span>
+              <div className="flex items-center gap-2">
+                <h1 className="text-lg font-bold text-gray-900">{pt.first_name} {pt.last_name || ''}</h1>
+                <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full font-mono">{pt.uhid}</span>
+                {age && <span className="text-xs text-gray-500">{age}y/{pt.gender === 'male' ? 'M' : pt.gender === 'female' ? 'F' : 'O'}</span>}
+                {pt.blood_group && <span className="text-xs font-bold text-red-600">{pt.blood_group}</span>}
               </div>
-              {allergies.length > 0 && <div className="flex items-center gap-1.5 mt-2">{allergies.map((a: any, i: number) =>
-                <span key={i} className="bg-red-100 text-red-800 px-2 py-0.5 rounded text-xs">{a.allergen} ({a.severity})</span>
-              )}</div>}
+              {pt.phone_primary && <div className="flex items-center gap-1 text-xs text-gray-400"><Phone size={10} /> {pt.phone_primary}</div>}
             </div>
           </div>
-          <div className="flex gap-2">
-            <button onClick={() => setEditing(!editing)} className="px-4 py-2 bg-gray-100 text-sm rounded-lg hover:bg-gray-200">{editing ? 'Cancel' : 'Edit'}</button>
-            <Link href={`/emr-v2?patient=${patientId}`} className="px-4 py-2 bg-teal-600 text-white text-sm rounded-lg hover:bg-teal-700">New Encounter</Link>
+          <div className="flex items-center gap-2">
+            {p.allergies.length > 0 && (
+              <div className="flex items-center gap-1 bg-red-50 border border-red-200 text-red-700 text-xs px-2 py-1 rounded-lg">
+                <AlertTriangle size={12} /> {p.allergies.map((a: any) => a.allergen).join(', ')}
+              </div>
+            )}
+            {p.criticalAlerts.length > 0 && (
+              <div className="flex items-center gap-1 bg-red-600 text-white text-xs px-2 py-1 rounded-lg animate-pulse">
+                <AlertTriangle size={12} /> {p.criticalAlerts.length} Critical
+              </div>
+            )}
+            {p.news2Score !== null && p.news2Score >= 5 && (
+              <div className={`${news2Color} text-white text-xs px-2 py-1 rounded-lg`}>NEWS2: {p.news2Score}</div>
+            )}
+            <button onClick={p.reload} className="p-1.5 hover:bg-gray-100 rounded-lg"><RefreshCw size={14} className="text-gray-400" /></button>
           </div>
         </div>
 
-        {/* Quick stats */}
-        <div className="grid grid-cols-5 gap-3 mt-4">
-          <div className="bg-gray-50 rounded-lg p-3"><div className="text-xs text-gray-500">Visits</div><div className="font-bold text-lg">{visits.length}</div></div>
-          <div className="bg-gray-50 rounded-lg p-3"><div className="text-xs text-gray-500">Encounters</div><div className="font-bold text-lg">{encounters.length}</div></div>
-          <div className="bg-gray-50 rounded-lg p-3"><div className="text-xs text-gray-500">Total billed</div><div className="font-bold text-lg">Rs.{totalBilled.toLocaleString('en-IN')}</div></div>
-          <div className="bg-gray-50 rounded-lg p-3"><div className="text-xs text-gray-500">Paid</div><div className="font-bold text-lg text-green-600">Rs.{totalPaid.toLocaleString('en-IN')}</div></div>
-          <div className="bg-gray-50 rounded-lg p-3"><div className="text-xs text-gray-500">Due</div><div className="font-bold text-lg text-red-600">Rs.{totalDue.toLocaleString('en-IN')}</div></div>
-        </div>
+        {p.isAdmitted && p.admission && (
+          <div className={`flex items-center gap-6 px-4 py-2 text-xs ${p.isICU ? 'bg-red-50' : 'bg-teal-50'}`}>
+            <div className="flex items-center gap-1.5">
+              <BedDouble size={13} className={p.isICU ? 'text-red-600' : 'text-teal-600'} />
+              <span className="font-semibold">{(p.bed as any)?.bed_number || '—'}</span>
+              <span className="text-gray-500">{(p.ward as any)?.name || ''}</span>
+            </div>
+            <div className="text-gray-500">IPD: <span className="font-mono font-semibold text-gray-700">{p.admission.ipd_number}</span></div>
+            <div className="text-gray-500">Dr. <span className="font-semibold text-gray-700">{(p.primaryDoctor as any)?.full_name || '—'}</span></div>
+            <div className="text-gray-500">Day <span className="font-bold text-gray-700">{p.daysAdmitted}</span></div>
+            <div className="text-gray-500 uppercase font-semibold">{p.billingSummary.payorType}</div>
+            {p.isICU && <span className="bg-red-600 text-white text-[10px] px-2 py-0.5 rounded-full font-bold">ICU</span>}
+          </div>
+        )}
       </div>
 
-      {/* Tabs */}
-      <div className="flex gap-1 mb-4 border-b">{[['overview','Overview'],['timeline','Timeline'],['imaging','Imaging'],['lab','Lab Results'],['documents','Documents'],['insurance','Insurance'],['emergency','Emergency Contacts'],['encounters','Encounters'],['billing','Billing'],['edit','Edit Details']].map(([k,l]) =>
-        <button key={k} onClick={() => { setActiveTab(k); if (k === 'edit') setEditing(true); }}
-          className={`px-4 py-2 text-sm font-medium rounded-xl ${activeTab === k ? 'bg-teal-600 text-white shadow-sm' : 'bg-white text-gray-500 border border-gray-100 hover:bg-gray-50'}`}>{l}</button>
-      )}</div>
-
-      {/* Tab content */}
-      {activeTab === 'overview' && (
-        <div className="grid grid-cols-2 gap-6">
-          {/* Recent encounters */}
-          <div className="bg-white rounded-xl border p-5">
-            <h2 className="font-semibold text-sm mb-3">Recent encounters</h2>
-            {encounters.length === 0 ? <p className="text-sm text-gray-400 text-center py-4">No encounters</p> :
-            <div className="space-y-2">{encounters.slice(0, 8).map((e: any) => (
-              <div key={e.id} className="flex items-center justify-between py-2 border-b last:border-0">
-                <div><div className="text-sm font-medium">{e.encounter_date}</div>
-                  <div className="text-xs text-gray-400">{e.primary_diagnosis_code} {e.primary_diagnosis_label} | {e.doctor?.full_name}</div></div>
-                <div className="text-right"><span className={`px-2 py-0.5 rounded-full text-xs ${e.status === 'signed' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>{e.status}</span>
-                  <div className="text-xs text-gray-400 mt-0.5">{e.prescription_count} meds, {e.investigation_count} labs</div></div>
-              </div>
-            ))}</div>}
-          </div>
-
-          {/* Demographics */}
-          <div className="bg-white rounded-xl border p-5">
-            <h2 className="font-semibold text-sm mb-3">Demographics</h2>
-            <div className="space-y-2 text-sm">
-              {[['DOB', patient.date_of_birth || '--'], ['Gender', patient.gender], ['Blood group', patient.blood_group || '--'],
-                ['Phone', patient.phone_primary], ['Alt phone', patient.phone_secondary || '--'], ['Email', patient.email || '--'],
-                ['Address', [patient.address_line1, patient.city, patient.state, patient.pincode].filter(Boolean).join(', ') || '--'],
-                ['Marital status', patient.marital_status || '--'], ['Occupation', patient.occupation || '--'],
-                ['ID type', patient.id_type || '--'], ['ID number', patient.id_number || '--'],
-                ['Registered', new Date(patient.created_at).toLocaleDateString('en-IN')],
-              ].map(([label, val]) => (
-                <div key={label as string} className="flex justify-between py-1 border-b last:border-0">
-                  <span className="text-gray-500">{label}</span><span className="font-medium text-right max-w-[60%] truncate">{val}</span>
-                </div>
-              ))}
-            </div>
-          </div>
+      {/* QUICK ACTIONS */}
+      {p.isAdmitted && (
+        <div className="flex gap-2 mb-3">
+          {[
+            { label: 'Record Vitals', icon: Heart, color: 'bg-rose-50 text-rose-700 border-rose-200', action: () => setShowVitals(!showVitals) },
+            { label: 'Quick Note', icon: FileText, color: 'bg-blue-50 text-blue-700 border-blue-200', action: () => setShowNote(!showNote) },
+            { label: 'Order Lab', icon: FlaskConical, color: 'bg-purple-50 text-purple-700 border-purple-200', action: () => router.push('/lab') },
+            { label: 'Order Imaging', icon: ScanLine, color: 'bg-indigo-50 text-indigo-700 border-indigo-200', action: () => router.push('/radiology') },
+            { label: 'Prescribe', icon: Pill, color: 'bg-green-50 text-green-700 border-green-200', action: () => router.push('/emr-v2') },
+            { label: 'Billing', icon: IndianRupee, color: 'bg-amber-50 text-amber-700 border-amber-200', action: () => router.push('/billing') },
+          ].map((a) => (
+            <button key={a.label} onClick={a.action} className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border text-xs font-medium hover:shadow-sm transition-all ${a.color}`}>
+              <a.icon size={13} /> {a.label}
+            </button>
+          ))}
         </div>
       )}
 
-      {activeTab === 'timeline' && (
-        <div className="bg-white rounded-2xl border border-gray-100 p-5">
-          <h3 className="text-sm font-bold text-gray-800 mb-4">Patient Journey</h3>
-          <PatientTimeline patientId={patientId} />
-        </div>
-      )}
-
-      {activeTab === 'imaging' && (
-        <PatientImagingPanel patientId={patientId} />
-      )}
-
-      {activeTab === 'lab' && (
-        <PatientLabHistory patientId={patientId} />
-      )}
-
-      {/* DOCUMENTS */}
-      {activeTab === 'documents' && (
-        <div className="space-y-4">
-          <div className="bg-white rounded-xl border p-4">
-            <h3 className="text-sm font-bold mb-3">Upload Document</h3>
-            <div className="flex gap-3">
-              <select value={docType} onChange={e => setDocType(e.target.value)} className="px-3 py-2 border rounded-lg text-xs">
-                {['aadhaar','pan','voter_id','passport','driving_license','insurance_card','tpa_card','cghs_card','referral_letter','old_records','consent_form','discharge_summary','lab_report','prescription','photo','other'].map(t =>
-                  <option key={t} value={t}>{t.replace(/_/g, ' ')}</option>
-                )}
-              </select>
-              <input type="file" onChange={e => setDocFile(e.target.files?.[0] || null)} className="flex-1 text-xs" accept="image/*,.pdf,.doc,.docx" />
-              <button onClick={async () => { if (docFile) { const r = await docs.upload(docFile, docType, staff?.id || ''); if (r.success) { flash('Document uploaded'); setDocFile(null); } else flash(r.error || 'Upload failed'); }}}
-                disabled={!docFile} className="px-4 py-2 bg-teal-600 text-white text-xs rounded-lg disabled:opacity-40">Upload</button>
-            </div>
-          </div>
-          {docs.documents.length === 0 ? <div className="text-center py-8 bg-white rounded-xl border text-gray-400 text-sm">No documents uploaded</div> :
-          <div className="bg-white rounded-xl border overflow-hidden">
-            <table className="w-full text-xs"><thead><tr className="bg-gray-50 border-b">
-              <th className="p-2 text-left">Type</th><th className="p-2 text-left">Name</th><th className="p-2">Date</th><th className="p-2">Verified</th><th className="p-2"></th>
-            </tr></thead><tbody>{docs.documents.map((d: any) => (
-              <tr key={d.id} className="border-b"><td className="p-2 capitalize">{d.document_type?.replace(/_/g, ' ')}</td>
-                <td className="p-2">{d.document_name}</td>
-                <td className="p-2 text-center text-gray-400">{new Date(d.created_at).toLocaleDateString('en-IN')}</td>
-                <td className="p-2 text-center">{d.verified ? <span className="text-green-600">✓</span> : <span className="text-gray-300">—</span>}</td>
-                <td className="p-2"><a href={d.file_url} target="_blank" rel="noopener noreferrer" className="text-teal-600 text-[10px]">View</a></td></tr>
-            ))}</tbody></table>
-          </div>}
-        </div>
-      )}
-
-      {/* INSURANCE */}
-      {activeTab === 'insurance' && (
-        <div className="space-y-4">
-          {insurance.policies.length === 0 ? <div className="text-center py-8 bg-white rounded-xl border text-gray-400 text-sm">No insurance policies linked</div> :
-          <div className="space-y-2">{insurance.policies.map((p: any) => (
-            <div key={p.id} className="bg-white rounded-xl border p-4">
-              <div className="flex justify-between"><div className="font-bold text-sm">{p.insurance_company}</div>
-                <span className={`text-[9px] px-1.5 py-0.5 rounded ${p.valid_to && new Date(p.valid_to) > new Date() ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>{p.valid_to && new Date(p.valid_to) > new Date() ? 'Active' : 'Expired'}</span></div>
-              <div className="grid grid-cols-3 gap-2 text-xs mt-2 text-gray-600">
-                <div><b>Policy:</b> {p.policy_number}</div><div><b>TPA:</b> {p.tpa_name || '—'}</div><div><b>Card:</b> {p.card_number || '—'}</div>
-                <div><b>Valid:</b> {p.valid_from} to {p.valid_to}</div><div><b>Sum Insured:</b> ₹{parseFloat(p.sum_insured || 0).toLocaleString('en-IN')}</div><div><b>Relation:</b> {p.relation_to_primary}</div>
-              </div>
-            </div>
-          ))}</div>}
-        </div>
-      )}
-
-      {/* EMERGENCY CONTACTS */}
-      {activeTab === 'emergency' && (
-        <div className="space-y-4">
-          <div className="bg-white rounded-xl border p-4">
-            <h3 className="text-sm font-bold mb-3">Add Emergency Contact</h3>
-            <div className="flex gap-3">
-              <input type="text" value={ecForm.name} onChange={e => setEcForm(f => ({ ...f, name: e.target.value }))} className="flex-1 px-3 py-2 border rounded-lg text-xs" placeholder="Name" />
-              <select value={ecForm.relationship} onChange={e => setEcForm(f => ({ ...f, relationship: e.target.value }))} className="px-3 py-2 border rounded-lg text-xs">
-                <option value="">Relationship</option>
-                {['spouse','parent','sibling','child','friend','other'].map(r => <option key={r} value={r}>{r}</option>)}
-              </select>
-              <input type="text" value={ecForm.phone} onChange={e => setEcForm(f => ({ ...f, phone: e.target.value }))} className="w-36 px-3 py-2 border rounded-lg text-xs" placeholder="Phone" />
-              <button onClick={async () => { if (ecForm.name && ecForm.phone) { await emergencyContacts.add(ecForm.name, ecForm.relationship, ecForm.phone); setEcForm({ name: '', relationship: '', phone: '' }); flash('Contact added'); }}}
-                disabled={!ecForm.name || !ecForm.phone} className="px-4 py-2 bg-teal-600 text-white text-xs rounded-lg disabled:opacity-40">Add</button>
-            </div>
-          </div>
-          {emergencyContacts.contacts.length === 0 ? <div className="text-center py-8 bg-white rounded-xl border text-gray-400 text-sm">No emergency contacts</div> :
-          <div className="bg-white rounded-xl border overflow-hidden">
-            <table className="w-full text-xs"><thead><tr className="bg-gray-50 border-b">
-              <th className="p-2 text-left">Name</th><th className="p-2">Relationship</th><th className="p-2">Phone</th><th className="p-2">Primary</th><th className="p-2"></th>
-            </tr></thead><tbody>{emergencyContacts.contacts.map((c: any) => (
-              <tr key={c.id} className="border-b"><td className="p-2 font-medium">{c.name}</td>
-                <td className="p-2 text-center capitalize">{c.relationship}</td><td className="p-2 text-center">{c.phone}</td>
-                <td className="p-2 text-center">{c.is_primary ? <span className="text-green-600 font-bold">✓</span> : '—'}</td>
-                <td className="p-2"><button onClick={() => emergencyContacts.remove(c.id)} className="text-red-500 text-[10px]">Remove</button></td></tr>
-            ))}</tbody></table>
-          </div>}
-        </div>
-      )}
-
-      {activeTab === 'encounters' && (
-        <div className="bg-white rounded-xl border overflow-hidden">
-          <table className="w-full text-sm"><thead><tr className="bg-gray-50 border-b">
-            <th className="text-left p-3 font-medium text-gray-500">Date</th><th className="text-left p-3 font-medium text-gray-500">Type</th>
-            <th className="text-left p-3 font-medium text-gray-500">Diagnosis</th><th className="text-left p-3 font-medium text-gray-500">Doctor</th>
-            <th className="text-left p-3 font-medium text-gray-500">Meds</th><th className="text-left p-3 font-medium text-gray-500">Status</th>
-          </tr></thead><tbody>{encounters.map((e: any) => (
-            <tr key={e.id} className="border-b hover:bg-gray-50">
-              <td className="p-3">{e.encounter_date}</td><td className="p-3 text-xs">{e.encounter_type}</td>
-              <td className="p-3"><span className="font-mono text-xs text-teal-600">{e.primary_diagnosis_code}</span> {e.primary_diagnosis_label || '—'}</td>
-              <td className="p-3 text-xs">{e.doctor?.full_name}</td>
-              <td className="p-3 text-xs">{e.prescription_count} meds, {e.investigation_count} labs</td>
-              <td className="p-3"><span className={`px-2 py-0.5 rounded-full text-xs ${e.status === 'signed' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>{e.status}</span></td>
-            </tr>
-          ))}</tbody></table>
-        </div>
-      )}
-
-      {activeTab === 'billing' && (
-        <div className="bg-white rounded-xl border overflow-hidden">
-          <table className="w-full text-sm"><thead><tr className="bg-gray-50 border-b">
-            <th className="text-left p-3 font-medium text-gray-500">Bill #</th><th className="text-left p-3 font-medium text-gray-500">Date</th>
-            <th className="text-left p-3 font-medium text-gray-500">Type</th><th className="text-right p-3 font-medium text-gray-500">Amount</th>
-            <th className="text-right p-3 font-medium text-gray-500">Paid</th><th className="text-right p-3 font-medium text-gray-500">Due</th>
-            <th className="text-left p-3 font-medium text-gray-500">Status</th>
-          </tr></thead><tbody>{bills.map((b: any) => (
-            <tr key={b.id} className="border-b hover:bg-gray-50">
-              <td className="p-3 font-mono text-xs text-teal-600">{b.bill_number}</td><td className="p-3">{b.bill_date}</td>
-              <td className="p-3 text-xs">{b.bill_type.toUpperCase()}</td>
-              <td className="p-3 text-right font-medium">Rs.{(b.net_amount || 0).toLocaleString('en-IN')}</td>
-              <td className="p-3 text-right text-green-600">Rs.{(b.paid_amount || 0).toLocaleString('en-IN')}</td>
-              <td className="p-3 text-right text-red-600">{b.balance_amount > 0 ? 'Rs.' + b.balance_amount.toLocaleString('en-IN') : '—'}</td>
-              <td className="p-3"><span className={`px-2 py-0.5 rounded-full text-xs ${b.status === 'paid' ? 'bg-green-100 text-green-700' : b.balance_amount > 0 ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-600'}`}>{b.status}</span></td>
-            </tr>
-          ))}</tbody></table>
-        </div>
-      )}
-
-      {(activeTab === 'edit' || editing) && (
-        <div className="bg-white rounded-xl border p-5">
-          <h2 className="font-semibold mb-4">Edit patient details</h2>
-          <div className="grid grid-cols-2 gap-4">
-            {[['first_name','First name *'],['middle_name','Middle name'],['last_name','Last name *'],['date_of_birth','Date of birth'],
-              ['phone_primary','Phone *'],['phone_secondary','Alt phone'],['email','Email'],
-              ['address_line1','Address'],['city','City'],['state','State'],['pincode','Pincode'],
-              ['occupation','Occupation'],
-            ].map(([k,l]) => (
-              <div key={k}><label className="text-xs text-gray-500 mb-1 block">{l}</label>
-                <input type={k === 'date_of_birth' ? 'date' : k === 'email' ? 'email' : 'text'} value={editForm[k] || ''} onChange={e => setEditForm((p: any) => ({ ...p, [k]: e.target.value }))}
-                  className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500" /></div>
+      {/* INLINE VITALS FORM */}
+      {showVitals && (
+        <div className="bg-white rounded-xl border shadow-sm mb-3 p-4">
+          <div className="flex items-center justify-between mb-3"><h3 className="font-semibold text-sm">Record Vitals</h3><button onClick={() => setShowVitals(false)} className="text-gray-400 text-xs">Close</button></div>
+          <div className="grid grid-cols-6 gap-3">
+            {([['heart_rate','HR (bpm)','72'],['systolic_bp','SBP','120'],['diastolic_bp','DBP','80'],['temperature','Temp (°C)','37.0'],['spo2','SpO₂ (%)','98'],['respiratory_rate','RR (/min)','16']] as const).map(([key,label,ph]) => (
+              <div key={key}><label className="text-[10px] text-gray-500 block mb-1">{label}</label>
+              <input type="number" step="0.1" placeholder={ph} value={(vf as any)[key]} onChange={(e: any) => setVf(prev => ({...prev,[key]:e.target.value}))} className="w-full px-2 py-1.5 border rounded-lg text-sm text-center" /></div>
             ))}
-            <div><label className="text-xs text-gray-500 mb-1 block">Gender</label>
-              <select value={editForm.gender || ''} onChange={e => setEditForm((p: any) => ({ ...p, gender: e.target.value }))} className="w-full px-3 py-2 border rounded-lg text-sm">
-                <option value="">Select</option><option value="male">Male</option><option value="female">Female</option><option value="other">Other</option></select></div>
-            <div><label className="text-xs text-gray-500 mb-1 block">Blood group</label>
-              <select value={editForm.blood_group || ''} onChange={e => setEditForm((p: any) => ({ ...p, blood_group: e.target.value }))} className="w-full px-3 py-2 border rounded-lg text-sm">
-                <option value="">Select</option>{['A+','A-','B+','B-','AB+','AB-','O+','O-'].map(bg => <option key={bg}>{bg}</option>)}</select></div>
-            <div><label className="text-xs text-gray-500 mb-1 block">Marital status</label>
-              <select value={editForm.marital_status || ''} onChange={e => setEditForm((p: any) => ({ ...p, marital_status: e.target.value }))} className="w-full px-3 py-2 border rounded-lg text-sm">
-                <option value="">Select</option>{['Single','Married','Divorced','Widowed'].map(ms => <option key={ms}>{ms}</option>)}</select></div>
           </div>
-          <div className="flex gap-2 mt-6"><button onClick={saveEdit} className="px-6 py-2 bg-teal-600 text-white rounded-lg text-sm font-medium hover:bg-teal-700">Save changes</button>
-            <button onClick={() => { setEditing(false); setActiveTab('overview'); setEditForm(patient); }} className="px-6 py-2 bg-gray-100 text-gray-600 rounded-lg text-sm">Cancel</button></div>
+          <button onClick={saveVitals} className="mt-3 px-4 py-2 bg-teal-600 text-white text-sm rounded-lg">Save Vitals</button>
+        </div>
+      )}
+      {showNote && (
+        <div className="bg-white rounded-xl border shadow-sm mb-3 p-4">
+          <div className="flex items-center justify-between mb-2"><h3 className="font-semibold text-sm">Quick Note</h3><button onClick={() => setShowNote(false)} className="text-gray-400 text-xs">Close</button></div>
+          <textarea value={noteText} onChange={(e: any) => setNoteText(e.target.value)} className="w-full px-3 py-2 border rounded-lg text-sm h-20 resize-none" placeholder="Assessment, plan, progress note..." autoFocus />
+          <button onClick={saveNote} className="mt-2 px-4 py-2 bg-blue-600 text-white text-sm rounded-lg">Save Note</button>
+        </div>
+      )}
+
+      {/* MAIN CONTENT — 3-column for admitted, simple for OPD */}
+      {p.isAdmitted ? (
+        <div className="grid grid-cols-12 gap-3">
+          {/* LEFT: Vitals + Context */}
+          <div className="col-span-3 space-y-3">
+            <div className="bg-white rounded-xl border p-3">
+              <div className="flex items-center justify-between mb-2"><h3 className="text-xs font-semibold text-gray-700 flex items-center gap-1"><Activity size={12} /> Vitals</h3>{p.latestVitals && <span className="text-[10px] text-gray-400">{ago(p.latestVitals.recorded_at)}</span>}</div>
+              {p.latestVitals ? (
+                <div className="grid grid-cols-2 gap-2">
+                  {([
+                    {l:'HR',v:p.latestVitals.heart_rate,u:'bpm',icon:Heart,c:'text-rose-600'},
+                    {l:'BP',v:p.latestVitals.systolic_bp?`${p.latestVitals.systolic_bp}/${p.latestVitals.diastolic_bp||'?'}`:null,u:'mmHg',icon:TrendingUp,c:'text-blue-600'},
+                    {l:'SpO₂',v:p.latestVitals.spo2,u:'%',icon:Droplets,c:'text-cyan-600'},
+                    {l:'Temp',v:p.latestVitals.temperature?Number(p.latestVitals.temperature).toFixed(1):null,u:'°C',icon:Thermometer,c:'text-orange-600'},
+                    {l:'RR',v:p.latestVitals.respiratory_rate,u:'/min',icon:Wind,c:'text-green-600'},
+                    {l:'NEWS2',v:p.news2Score,u:'',icon:Shield,c:p.news2Risk==='high'?'text-red-600':p.news2Risk==='medium'?'text-orange-600':'text-green-600'},
+                  ] as const).map((v) => (
+                    <div key={v.l} className="bg-gray-50 rounded-lg p-2">
+                      <div className="flex items-center gap-1 text-[10px] text-gray-500"><v.icon size={10} className={v.c} /> {v.l}</div>
+                      <div className={`text-lg font-bold ${v.v != null ? v.c : 'text-gray-300'}`}>{v.v ?? '—'}<span className="text-[10px] font-normal text-gray-400 ml-0.5">{v.u}</span></div>
+                    </div>
+                  ))}
+                </div>
+              ) : <div className="text-center py-4 text-gray-400 text-xs">No vitals recorded</div>}
+              {p.vitalsTrend.length > 2 && (
+                <div className="mt-2 border-t pt-2"><div className="text-[10px] text-gray-400 mb-1">HR trend</div>
+                <div className="flex items-end gap-0.5 h-8">{p.vitalsTrend.map((v: any, i: number) => {
+                  const hr = v.heart_rate || 0; const h = Math.max(4, Math.min(32, ((hr-50)/80)*32));
+                  return <div key={i} className={`${hr>100||hr<60?'bg-red-400':'bg-teal-400'} rounded-sm flex-1`} style={{height:`${h}px`}} title={`${hr}`} />;
+                })}</div></div>
+              )}
+            </div>
+            {p.allergies.length > 0 && (
+              <div className="bg-red-50 rounded-xl border border-red-200 p-3">
+                <h3 className="text-xs font-semibold text-red-700 flex items-center gap-1 mb-1"><AlertTriangle size={12} /> Allergies</h3>
+                {p.allergies.map((a: any) => <div key={a.id} className="text-xs text-red-700"><span className="font-semibold">{a.allergen}</span>{a.reaction && ` — ${a.reaction}`}</div>)}
+              </div>
+            )}
+            {p.dietOrder && (
+              <div className="bg-white rounded-xl border p-3"><h3 className="text-xs font-semibold text-gray-700 flex items-center gap-1 mb-1"><UtensilsCrossed size={12} /> Diet</h3>
+              <div className="text-sm font-medium">{p.dietOrder.diet_type?.replace(/_/g,' ')}</div>
+              {p.dietOrder.special_instructions && <div className="text-xs text-gray-500 mt-1">{p.dietOrder.special_instructions}</div>}</div>
+            )}
+            {p.surgicalPlan && (
+              <div className="bg-white rounded-xl border p-3"><h3 className="text-xs font-semibold text-gray-700 flex items-center gap-1 mb-1"><Scissors size={12} /> Surgery</h3>
+              <div className="text-sm font-medium">{p.surgicalPlan.procedure_name}</div>
+              <div className="text-xs text-gray-500">Ready: {p.surgicalPlan.readiness_pct || 0}%</div>
+              {p.otBookings.length > 0 && <div className="text-xs text-teal-600 mt-1">{p.otBookings[0].scheduled_date} {p.otBookings[0].scheduled_start}</div>}</div>
+            )}
+          </div>
+
+          {/* CENTER: Meds + Orders + Notes */}
+          <div className="col-span-6 space-y-3">
+            <div className="bg-white rounded-xl border p-3">
+              <div className="flex items-center justify-between mb-2"><h3 className="text-xs font-semibold text-gray-700 flex items-center gap-1"><Pill size={12} /> Active Medications ({p.activeMeds.length})</h3>
+              {p.medsNextDue.length > 0 && <span className="text-[10px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">{p.medsNextDue.length} due</span>}</div>
+              {p.activeMeds.length > 0 ? <div className="space-y-1.5">{p.activeMeds.slice(0,8).map((m: any) => {
+                const isDue = p.medsNextDue.some((md: any) => md.medication_order_id === m.id);
+                return <div key={m.id} className={`flex items-center justify-between py-1.5 px-2 rounded-lg text-xs ${isDue?'bg-amber-50 border border-amber-200':'bg-gray-50'}`}>
+                  <div><span className="font-semibold">{m.drug_name}</span><span className="text-gray-500 ml-1">{m.dose} {m.route} {m.frequency}</span></div>
+                  <div className="flex items-center gap-2">{isDue && <span className="text-amber-600 font-semibold">DUE</span>}{m.is_stat && <span className="bg-red-100 text-red-600 px-1 py-0.5 rounded text-[10px] font-bold">STAT</span>}</div>
+                </div>;
+              })}{p.activeMeds.length > 8 && <div className="text-[10px] text-gray-400 text-center">+{p.activeMeds.length-8} more</div>}</div>
+              : <div className="text-xs text-gray-400 text-center py-3">No active medications</div>}
+            </div>
+
+            {(p.pendingLabOrders.length > 0 || p.pendingRadOrders.length > 0) && (
+              <div className="bg-white rounded-xl border p-3">
+                <h3 className="text-xs font-semibold text-gray-700 mb-2 flex items-center gap-1"><ClipboardList size={12} /> Pending Orders</h3>
+                <div className="space-y-1">{p.pendingLabOrders.map((o: any) => (
+                  <div key={o.id} className="flex items-center justify-between py-1.5 px-2 bg-purple-50 rounded-lg text-xs">
+                    <div className="flex items-center gap-1.5"><FlaskConical size={11} className="text-purple-500" /><span className="font-medium">{o.test_name||(o.test as any)?.test_name}</span></div>
+                    <span className="px-1.5 py-0.5 rounded text-[10px] bg-gray-100 text-gray-500">{o.status?.replace('_',' ')}</span></div>
+                ))}{p.pendingRadOrders.map((o: any) => (
+                  <div key={o.id} className="flex items-center justify-between py-1.5 px-2 bg-indigo-50 rounded-lg text-xs">
+                    <div className="flex items-center gap-1.5"><ScanLine size={11} className="text-indigo-500" /><span className="font-medium">{o.test_name}</span><span className="text-[10px] text-gray-400">{o.modality}</span></div>
+                    <span className="px-1.5 py-0.5 rounded text-[10px] bg-gray-100 text-gray-500">{o.status?.replace('_',' ')}</span></div>
+                ))}</div>
+              </div>
+            )}
+
+            <div className="bg-white rounded-xl border p-3">
+              <h3 className="text-xs font-semibold text-gray-700 mb-2 flex items-center gap-1"><Stethoscope size={12} /> Notes (24h)</h3>
+              {p.recentNotes.length > 0 ? <div className="space-y-2">{p.recentNotes.map((n: any) => (
+                <div key={n.id} className="bg-gray-50 rounded-lg p-2.5">
+                  <div className="flex items-center justify-between mb-1"><span className="text-xs font-semibold text-gray-700">{(n.doctor as any)?.full_name || 'Unknown'}</span><span className="text-[10px] text-gray-400">{ago(n.created_at)}</span></div>
+                  {n.chief_complaint && <div className="text-xs text-gray-600 mb-1">CC: {n.chief_complaint}</div>}
+                  {n.assessment && <div className="text-xs text-gray-600">{n.assessment.substring(0,200)}</div>}
+                  {n.plan && <div className="text-xs text-teal-700 mt-1">Plan: {n.plan.substring(0,150)}</div>}
+                </div>
+              ))}</div> : <div className="text-xs text-gray-400 text-center py-3">No notes in 24h</div>}
+            </div>
+          </div>
+
+          {/* RIGHT: Results + Billing */}
+          <div className="col-span-3 space-y-3">
+            <div className="bg-white rounded-xl border p-3">
+              <h3 className="text-xs font-semibold text-gray-700 mb-2 flex items-center gap-1"><FlaskConical size={12} /> Lab Results (48h)</h3>
+              {p.recentLabResults.length > 0 ? <div className="space-y-2">{p.recentLabResults.slice(0,6).map((lab: any) => (
+                <div key={lab.id} className="bg-gray-50 rounded-lg p-2">
+                  <div className="flex items-center justify-between"><span className="text-xs font-semibold">{lab.test_name}</span><span className="text-[10px] text-gray-400">{ago(lab.ordered_at)}</span></div>
+                  {(lab.results as any)?.slice(0,4).map((r: any, i: number) => (
+                    <div key={i} className={`flex justify-between text-[11px] mt-0.5 ${r.is_critical?'text-red-600 font-bold':r.is_abnormal?'text-orange-600':'text-gray-600'}`}>
+                      <span>{r.parameter_name}</span><span>{r.result_value} {r.unit}{r.is_critical?' ⚠️':r.is_abnormal?' ↑':''}</span></div>
+                  ))}
+                </div>
+              ))}</div> : <div className="text-xs text-gray-400 text-center py-3">No results in 48h</div>}
+            </div>
+
+            {p.recentRadReports.length > 0 && (
+              <div className="bg-white rounded-xl border p-3">
+                <h3 className="text-xs font-semibold text-gray-700 mb-2 flex items-center gap-1"><ScanLine size={12} /> Radiology</h3>
+                {p.recentRadReports.slice(0,3).map((r: any) => (
+                  <div key={r.id} className="bg-gray-50 rounded-lg p-2 mb-1.5">
+                    <div className="text-xs font-semibold">{(r.order as any)?.test_name}</div>
+                    {r.impression && <div className="text-[11px] text-gray-600 mt-0.5">{r.impression.substring(0,120)}</div>}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="bg-white rounded-xl border p-3">
+              <h3 className="text-xs font-semibold text-gray-700 mb-2 flex items-center gap-1"><IndianRupee size={12} /> Billing</h3>
+              <div className="space-y-1.5">
+                <div className="flex justify-between text-xs"><span className="text-gray-500">Charged</span><span className="font-mono font-semibold">{INR(p.billingSummary.totalCharged)}</span></div>
+                <div className="flex justify-between text-xs"><span className="text-gray-500">Paid</span><span className="font-mono text-green-600">{INR(p.billingSummary.totalPaid)}</span></div>
+                <div className="flex justify-between text-xs border-t pt-1.5"><span className="font-semibold text-gray-500">Balance</span><span className={`font-mono font-bold ${p.billingSummary.balance>0?'text-red-600':'text-green-600'}`}>{INR(p.billingSummary.balance)}</span></div>
+                {p.billingSummary.advanceBalance > 0 && <div className="flex justify-between text-xs"><span className="text-gray-500">Advance</span><span className="font-mono text-blue-600">{INR(p.billingSummary.advanceBalance)}</span></div>}
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : (
+        /* NON-ADMITTED: History view */
+        <div className="grid grid-cols-3 gap-3">
+          <div className="bg-white rounded-xl border p-4"><h3 className="font-semibold text-sm mb-3">Recent Visits</h3>
+            {p.recentNotes.length > 0 ? p.recentNotes.map((n: any) => (
+              <div key={n.id} className="border-b last:border-0 py-2">
+                <div className="flex justify-between text-xs"><span className="font-medium">{n.encounter_type}</span><span className="text-gray-400">{ago(n.created_at)}</span></div>
+                {n.chief_complaint && <div className="text-xs text-gray-600">{n.chief_complaint}</div>}</div>
+            )) : <div className="text-xs text-gray-400 text-center py-4">No recent visits</div>}</div>
+          <div className="bg-white rounded-xl border p-4"><h3 className="font-semibold text-sm mb-3">Lab History</h3>
+            {p.recentLabResults.length > 0 ? p.recentLabResults.slice(0,5).map((lab: any) => (
+              <div key={lab.id} className="border-b last:border-0 py-2">
+                <div className="flex justify-between text-xs"><span className="font-medium">{lab.test_name}</span><span className="text-gray-400">{ago(lab.ordered_at)}</span></div></div>
+            )) : <div className="text-xs text-gray-400 text-center py-4">No recent labs</div>}</div>
+          <div className="bg-white rounded-xl border p-4"><h3 className="font-semibold text-sm mb-3">Billing</h3>
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm"><span className="text-gray-500">Billed</span><span className="font-bold">{INR(p.billingSummary.totalCharged)}</span></div>
+              <div className="flex justify-between text-sm"><span className="text-gray-500">Paid</span><span className="text-green-600">{INR(p.billingSummary.totalPaid)}</span></div>
+              <div className="flex justify-between text-sm border-t pt-2"><span>Balance</span><span className={`font-bold ${p.billingSummary.balance>0?'text-red-600':'text-green-600'}`}>{INR(p.billingSummary.balance)}</span></div>
+            </div></div>
         </div>
       )}
     </div>
   );
 }
+
+export default function PatientDetailPage() { return <RoleGuard><Patient360Inner /></RoleGuard>; }
