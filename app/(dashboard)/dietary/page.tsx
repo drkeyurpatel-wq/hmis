@@ -71,7 +71,7 @@ function DietaryInner() {
       sodium_restriction_mg: of.sodium_restriction_mg ? parseInt(of.sodium_restriction_mg) : null,
       meal_plan: of.meal_plan,
     }, staffId);
-    if (res.success) { flash('Diet order created'); setShowNewOrder(false); setSelAdm(null); }
+    if (res.success) { flash('Diet order created'); setShowNewOrder(false); setSelAdm(null); } else { flash(res.error || 'Operation failed'); }
   };
 
   const handleServe = async () => {
@@ -82,7 +82,7 @@ function DietaryInner() {
       consumed: sf.consumed, oral_intake_pct: parseInt(sf.oral_intake_pct) || 100,
       fluid_intake_ml: sf.fluid_intake_ml ? parseInt(sf.fluid_intake_ml) : null,
     }, staffId);
-    if (res.success) { flash(`${activeMeal.replace('_', ' ')} served to ${showServe.patient_name}`); setShowServe(null); }
+    if (res.success) { flash(`${activeMeal.replace('_', ' ')} served to ${showServe.patient_name}`); setShowServe(null); } else { flash(res.error || 'Operation failed'); }
   };
 
   // Served meals set for current meal

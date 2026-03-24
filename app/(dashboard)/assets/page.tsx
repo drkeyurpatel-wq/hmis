@@ -39,7 +39,7 @@ function AssetInner() {
       purchase_date: form.purchase_date || null,
       warranty_expiry: form.warranty_expiry || null,
     });
-    if (res.success) { flash('Asset registered'); setShowNew(false); }
+    if (res.success) { flash('Asset registered'); setShowNew(false); } else { flash(res.error || 'Operation failed'); }
   };
 
   const catData = useMemo(() => Object.entries(ast.stats.byCategory).map(([k, v]: any) => ({ name: k.replace(/_/g, ' '), count: v.count, value: v.value, fill: CAT_COLORS[k] || '#94a3b8' })).sort((a, b) => b.value - a.value), [ast.stats]);

@@ -51,7 +51,7 @@ function TeleInner() {
       scheduled_at: schedForm.scheduled_at, chief_complaint: schedForm.chief_complaint,
       consultation_fee: schedForm.consultation_fee ? parseFloat(schedForm.consultation_fee) : null,
     });
-    if (res.success) { flash('Teleconsult scheduled'); setShowSchedule(false); setSelPat(null); }
+    if (res.success) { flash('Teleconsult scheduled'); setShowSchedule(false); setSelPat(null); } else { flash(res.error || 'Operation failed'); }
   };
 
   const joinCall = (consult: any) => {

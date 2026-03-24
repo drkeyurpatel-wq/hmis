@@ -41,7 +41,7 @@ function VisitorInner() {
   const handleIssue = async () => {
     if (!form.visitor_name || !selPat) return;
     const res = await vis.issuePass({ ...form, patient_id: selPat.id }, staffId);
-    if (res.success) { flash('Visitor pass issued'); setShowNew(false); setSelPat(null); setForm({ visitor_name: '', visitor_phone: '', relation: 'relative', id_proof_type: 'aadhar', id_proof_number: '', pass_type: 'regular', ward: '', bed: '' }); }
+    if (res.success) { flash('Visitor pass issued'); setShowNew(false); setSelPat(null); setForm({ visitor_name: '', visitor_phone: '', relation: 'relative', id_proof_type: 'aadhar', id_proof_number: '', pass_type: 'regular', ward: '', bed: '' }); } else { flash(res.error || 'Operation failed'); }
   };
 
   const activePasses = useMemo(() => vis.passes.filter(p => ['active', 'checked_in'].includes(p.status)), [vis.passes]);

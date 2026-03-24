@@ -47,26 +47,26 @@ function CssdInner() {
   const handleCreateSet = async () => {
     if (!sf.set_name) return;
     const res = await cssd.createSet({ set_name: sf.set_name, set_code: sf.set_code || `SET-${Date.now().toString(36).toUpperCase()}`, department: sf.department, category: sf.category, total_instruments: parseInt(sf.total_instruments) || 0, max_cycles: parseInt(sf.max_cycles) || 500, pack_type: sf.pack_type, sterility_expiry_hours: parseInt(sf.sterility_expiry_hours) || 72, barcode: sf.barcode });
-    if (res.success) { flash('Set created'); setShowNewSet(false); }
+    if (res.success) { flash('Set created'); setShowNewSet(false); } else { flash(res.error || 'Operation failed'); }
   };
 
   const handleStartCycle = async () => {
     if (cf.selectedSets.length === 0) return;
     const loadItems = cf.selectedSets.map(id => { const s = cssd.sets.find(x => x.id === id); return { set_id: id, set_name: s?.set_name || '', set_code: s?.set_code || '' }; });
     const res = await cssd.startCycle({ autoclave_number: cf.autoclave_number, cycle_type: cf.cycle_type, temperature: parseFloat(cf.temperature), pressure: parseFloat(cf.pressure), duration_minutes: parseInt(cf.duration_minutes) || 20, exposure_time_min: parseInt(cf.exposure_time_min) || 4, dry_time_min: parseInt(cf.dry_time_min) || 10, bowie_dick_result: cf.bowie_dick_result, load_items: loadItems }, staffId);
-    if (res.success) { flash('Cycle started'); setShowNewCycle(false); setCf(c => ({ ...c, selectedSets: [] })); }
+    if (res.success) { flash('Cycle started'); setShowNewCycle(false); setCf(c => ({ ...c, selectedSets: [] })); } else { flash(res.error || 'Operation failed'); }
   };
 
   const handleIssue = async () => {
     if (!showIssue || !isf.issued_to_location) return;
     const res = await cssd.issueSet({ set_id: showIssue.id, issued_to: isf.issued_to, issued_to_location: isf.issued_to_location, surgery_name: isf.surgery_name, staffId });
-    if (res.success) { flash(`${showIssue.set_name} issued to ${isf.issued_to_location}`); setShowIssue(null); }
+    if (res.success) { flash(`${showIssue.set_name} issued to ${isf.issued_to_location}`); setShowIssue(null); } else { flash(res.error || 'Operation failed'); }
   };
 
   const handleReturn = async () => {
     if (!showReturn) return;
     const res = await cssd.returnSet(showReturn.id, showReturn.set_id, staffId, { condition: rf.condition, missing_items: rf.missing_items ? rf.missing_items.split(',').map(s => s.trim()).filter(Boolean) : [], instrument_count_verified: rf.instrument_count_verified, sharps_count_match: rf.sharps_count_match, contamination_level: rf.contamination_level, return_wash_done: rf.return_wash_done });
-    if (res.success) { flash('Set returned'); setShowReturn(null); }
+    if (res.success) { flash('Set returned'); setShowReturn(null); } else { flash(res.error || 'Operation failed'); }
   };
 
   const filteredSets = useMemo(() => {

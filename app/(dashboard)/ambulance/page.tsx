@@ -31,7 +31,7 @@ function AmbulanceInner() {
   const handleCreate = async () => {
     if (!form.pickup_location || !form.patient_name) return;
     const res = await amb.createRequest(form, staffId);
-    if (res.success) { flash('Transport request created'); setShowNew(false); setForm({ request_type: 'emergency_pickup', priority: 'urgent', patient_name: '', patient_phone: '', patient_condition: 'stable', pickup_location: '', pickup_landmark: '', drop_location: 'Hospital (default)', drop_landmark: '' }); }
+    if (res.success) { flash('Transport request created'); setShowNew(false); setForm({ request_type: 'emergency_pickup', priority: 'urgent', patient_name: '', patient_phone: '', patient_condition: 'stable', pickup_location: '', pickup_landmark: '', drop_location: 'Hospital (default)', drop_landmark: '' }); } else { flash(res.error || 'Operation failed'); }
   };
 
   const activeRequests = amb.requests.filter(r => !['completed', 'cancelled'].includes(r.status));

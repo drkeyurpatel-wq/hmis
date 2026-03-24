@@ -75,7 +75,7 @@ function PhysioInner() {
       pain_score_before: ssf.pain_score_before ? parseInt(ssf.pain_score_before) : null,
       duration_minutes: parseInt(ssf.duration_minutes) || 30, modalities: ssf.modalities,
     });
-    if (res.success) { flash('Session created'); setShowNewSession(false); setSelPat(null); }
+    if (res.success) { flash('Session created'); setShowNewSession(false); setSelPat(null); } else { flash(res.error || 'Operation failed'); }
   };
 
   const handleCreatePlan = async () => {
@@ -93,7 +93,7 @@ function PhysioInner() {
       return_to_sport_phase: pf.return_to_sport_phase || null,
       precautions: pf.precautions ? pf.precautions.split(',').map(s => s.trim()) : [],
     });
-    if (res.success) { flash('Plan created'); setShowNewPlan(false); setSelPat(null); }
+    if (res.success) { flash('Plan created'); setShowNewPlan(false); setSelPat(null); } else { flash(res.error || 'Operation failed'); }
   };
 
   const saveSessionField = async (field: string, value: any) => {

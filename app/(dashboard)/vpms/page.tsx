@@ -64,7 +64,7 @@ function VPMSInner() {
   const handleCreateVendor = async () => {
     if (!vendorForm.name) return;
     const res = await vendors.create({ ...vendorForm, credit_days: parseInt(String(vendorForm.credit_days)) || 30 });
-    if (res.success) { flash('Vendor added'); setShowNewVendor(false); setVendorForm({ name: '', contact_person: '', phone: '', email: '', category: 'consumables', gst_number: '', address_line1: '', city: '', state: '', pincode: '', credit_days: 30 }); }
+    if (res.success) { flash('Vendor added'); setShowNewVendor(false); setVendorForm({ name: '', contact_person: '', phone: '', email: '', category: 'consumables', gst_number: '', address_line1: '', city: '', state: '', pincode: '', credit_days: 30 }); } else { flash(res.error || 'Operation failed'); }
   };
 
   const TABS: { key: Tab; label: string; count: number }[] = [

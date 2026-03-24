@@ -29,7 +29,7 @@ function GrievanceInner() {
   const handleCreate = async () => {
     if (!form.complainant_name || !form.description) return;
     const res = await grv.create(form);
-    if (res.success) { flash('Grievance registered'); setShowNew(false); setForm({ complainant_name: '', complainant_phone: '', complainant_relation: 'self', complaint_type: 'facility', department: '', description: '', severity: 'minor', source: 'in_person' }); }
+    if (res.success) { flash('Grievance registered'); setShowNew(false); setForm({ complainant_name: '', complainant_phone: '', complainant_relation: 'self', complaint_type: 'facility', department: '', description: '', severity: 'minor', source: 'in_person' }); } else { flash(res.error || 'Operation failed'); }
   };
 
   const tatDisplay = (g: any) => {

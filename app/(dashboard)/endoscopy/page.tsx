@@ -63,7 +63,7 @@ function EndoInner() {
       endoscopist_id: sf.endoscopist_id, scheduled_time: sf.scheduled_time + ':00',
       is_emergency: sf.is_emergency, asa_class: sf.asa_class,
     });
-    if (res.success) { flash('Scheduled'); setShowNew(false); setSelPat(null); }
+    if (res.success) { flash('Scheduled'); setShowNew(false); setSelPat(null); } else { flash(res.error || 'Operation failed'); }
   };
 
   const saveField = async (field: string, value: any) => {
@@ -220,6 +220,7 @@ function EndoInner() {
               if (!df.scope_id) return;
               const res = await decon.addLog({ scope_id: df.scope_id, scope_type: df.scope_type, decontamination_method: df.decontamination_method, leak_test: df.leak_test, disinfectant_used: df.disinfectant_used, detergent_used: df.detergent_used, performed_by: staffId, start_time: new Date().toISOString(), status: 'completed' });
               if (res.success) flash('Logged');
+              else flash(res.error || 'Operation failed');
             }} className="w-full py-1.5 bg-teal-600 text-white text-xs rounded font-medium">Log</button></div>
           </div>
         </div>

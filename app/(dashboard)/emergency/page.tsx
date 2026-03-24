@@ -50,7 +50,7 @@ function ERInner() {
       is_mlc: form.is_mlc, mlc_number: form.mlc_number || null, police_station: form.police_station || null,
       gcs_score: gcs, vitals: form.vitals,
     }, staffId);
-    if (res.success) { flash('ER visit registered'); setShowNew(false); setSelPat(null); setForm({ arrival_mode: 'walk_in', triage_category: 'yellow', chief_complaint: '', is_trauma: false, is_mlc: false, trauma_type: '', mlc_number: '', police_station: '', vitals: { bp: '', hr: '', rr: '', spo2: '', temp: '', gcs: '' } }); }
+    if (res.success) { flash('ER visit registered'); setShowNew(false); setSelPat(null); setForm({ arrival_mode: 'walk_in', triage_category: 'yellow', chief_complaint: '', is_trauma: false, is_mlc: false, trauma_type: '', mlc_number: '', police_station: '', vitals: { bp: '', hr: '', rr: '', spo2: '', temp: '', gcs: '' } }); } else { flash(res.error || 'Operation failed'); }
   };
 
   return (

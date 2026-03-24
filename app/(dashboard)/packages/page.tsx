@@ -52,7 +52,7 @@ function PkgInner() {
       notes: f.notes, gross_amount: parseFloat(f.package_rate), net_amount: parseFloat(f.package_rate),
       name: f.package_name,
     }, staff?.id || '');
-    if (res.success) { flash('Package created'); setShowNew(false); }
+    if (res.success) { flash('Package created'); setShowNew(false); } else { flash(res.error || 'Operation failed'); }
   };
 
   const filtered = useMemo(() => {

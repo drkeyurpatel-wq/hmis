@@ -28,7 +28,7 @@ function DocsInner() {
       ...form, tags: form.tags ? form.tags.split(',').map(s => s.trim()) : [],
       effective_date: form.effective_date || null, review_date: form.review_date || null,
     }, staffId);
-    if (res.success) { flash('Document created'); setShowNew(false); setForm({ doc_type: 'sop', department: '', title: '', content_html: '', effective_date: '', review_date: '', is_nabh_required: false, nabh_standard: '', tags: '' }); }
+    if (res.success) { flash('Document created'); setShowNew(false); setForm({ doc_type: 'sop', department: '', title: '', content_html: '', effective_date: '', review_date: '', is_nabh_required: false, nabh_standard: '', tags: '' }); } else { flash(res.error || 'Operation failed'); }
   };
 
   const today = new Date().toISOString().split('T')[0];

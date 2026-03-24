@@ -71,7 +71,7 @@ function CathLabInner() {
       is_emergency: sf.is_emergency, scheduled_time: sf.scheduled_time + ':00',
       priority: sf.is_emergency ? 'emergency' : 'elective',
     });
-    if (res.success) { flash('Scheduled'); setShowNew(false); setSelPat(null); }
+    if (res.success) { flash('Scheduled'); setShowNew(false); setSelPat(null); } else { flash(res.error || 'Operation failed'); }
   };
 
   // Save procedure field
@@ -197,6 +197,7 @@ function CathLabInner() {
             <div className="flex items-end"><button onClick={async () => {
               const res = await inv.addItem({ ...invForm, cost_price: parseFloat(invForm.cost_price) || 0, mrp: parseFloat(invForm.mrp) || 0 });
               if (res.success) flash('Added to stock');
+              else flash(res.error || 'Operation failed');
             }} className="w-full py-1.5 bg-teal-600 text-white text-xs rounded font-medium">Add</button></div>
           </div>
         </div>
