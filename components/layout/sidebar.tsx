@@ -13,7 +13,7 @@ import {
   Smartphone, ShieldCheck, Wrench, SprayCan, Shirt, Cross,
   Mic, ClipboardList, UtensilsCrossed, Dumbbell, AlertTriangle,
   Package, HandshakeIcon, Eye, UserPlus, Siren, MessageSquare, SlidersHorizontal,
-  MoreHorizontal,
+  MoreHorizontal, Star,
 } from 'lucide-react';
 
 interface NavItem { href: string; label: string; icon: any; moduleKey?: string }
@@ -48,6 +48,7 @@ const ROLE_NAV: Record<string, NavItem[]> = {
     { href: '/ipd', label: 'IPD', icon: BedDouble, moduleKey: 'ipd' },
     { href: '/pharmacy', label: 'Pharmacy', icon: Pill, moduleKey: 'pharmacy' },
     { href: '/emergency', label: 'Emergency', icon: Siren, moduleKey: 'emergency' },
+    { href: '/px-nursing', label: 'Patient Requests', icon: Star, moduleKey: 'px_nursing' },
   ],
   receptionist: [
     { href: '/', label: 'My Tasks', icon: LayoutDashboard },
@@ -86,6 +87,7 @@ const ROLE_NAV: Record<string, NavItem[]> = {
     { href: '/ward-board', label: 'Ward Board', icon: BedDouble, moduleKey: 'nursing' },
     { href: '/billing', label: 'Billing', icon: CreditCard, moduleKey: 'billing' },
     { href: '/lab', label: 'Lab', icon: FlaskConical, moduleKey: 'lab' },
+    { href: '/px-coordinator', label: 'Patient Experience', icon: Star, moduleKey: 'px_coordinator' },
   ],
 };
 
@@ -134,6 +136,12 @@ const MORE_NAV: { label: string; items: NavItem[] }[] = [
     { href: '/visitors', label: 'Visitors', icon: Users, moduleKey: 'visitors' },
     { href: '/mortuary', label: 'Mortuary', icon: Cross, moduleKey: 'mortuary' },
     { href: '/quality', label: 'Quality', icon: Shield, moduleKey: 'quality' },
+  ]},
+  { label: 'PATIENT EXPERIENCE', items: [
+    { href: '/px-coordinator', label: 'PX Dashboard', icon: Star, moduleKey: 'px_coordinator' },
+    { href: '/px-nursing', label: 'PX Nursing', icon: Heart, moduleKey: 'px_nursing' },
+    { href: '/px-kitchen', label: 'PX Kitchen', icon: UtensilsCrossed, moduleKey: 'px_kitchen' },
+    { href: '/px-feedback', label: 'PX Feedback', icon: MessageSquare, moduleKey: 'px_feedback' },
   ]},
   { label: 'ADMIN', items: [
     { href: '/reports', label: 'Reports', icon: BarChart3 },
