@@ -11,6 +11,8 @@ import VitalsPanel from '@/components/emr-v2/vitals-panel';
 import { SmartComplaintBuilder, generateComplaintText, type ActiveComplaint } from '@/components/emr/smart-complaint-builder';
 import { SmartExamBuilder, type ExamFindings, generateExamText } from '@/components/emr/smart-exam-builder';
 import DiagnosisBuilder from '@/components/emr-v2/diagnosis-builder';
+import SmartText, { type DetectedConcept } from '@/components/emr-v2/smart-text';
+import { MEDICATIONS } from '@/lib/cdss/medications';
 import PrescriptionBuilder from '@/components/emr-v2/prescription-builder';
 import InvestigationPanel from '@/components/emr-v2/investigation-panel';
 import AICopilot from '@/components/emr-v2/ai-copilot';
@@ -62,6 +64,7 @@ function EMRInner() {
   const [prescriptions, setPrescriptions] = useState<RxEntry[]>([]);
   const [investigations, setInvestigations] = useState<InvestigationEntry[]>([]);
   const [advice, setAdvice] = useState('');
+  const [clinicalNotes, setClinicalNotes] = useState('');
   const [followUpDate, setFollowUpDate] = useState('');
   const [referral, setReferral] = useState({ department: '', doctor: '', reason: '', urgency: 'routine' });
 
@@ -112,6 +115,7 @@ function EMRInner() {
       prescriptions: prescriptions.map(p => ({ ...p })),
       investigations: investigations.map(i => ({ ...i })),
       advice, followUpDate, referral: referral.department ? referral : undefined,
+      clinicalNotes: clinicalNotes || undefined,
     };
 
     const result = await emr.saveEncounter(encounterData as any);
@@ -220,7 +224,7 @@ function EMRInner() {
         setPatient({ id: '', name: '', age: '--', gender: '--', uhid: 'H1-00000', phone: '', allergies: [], bloodGroup: '' });
         setVitals({ systolic: '', diastolic: '', heartRate: '', spo2: '', temperature: '', weight: '', height: '', respiratoryRate: '', isAlert: true, onO2: false });
         setComplaints([]); setExamFindings({}); setDiagnoses([]); setPrescriptions([]); setInvestigations([]);
-        setAdvice(''); setFollowUpDate('');
+        setAdvice(''); setClinicalNotes(''); setFollowUpDate('');
         setStep('vitals'); setShowSearch(true);
 
         // Navigate back to OPD queue if came from there
@@ -325,7 +329,49 @@ function EMRInner() {
           {step === 'vitals' && <VitalsPanel vitals={vitals} onChange={setVitals} />}
           {step === 'complaints' && <SmartComplaintBuilder complaints={complaints} setComplaints={setComplaints} />}
           {step === 'exam' && <SmartExamBuilder findings={examFindings} setFindings={setExamFindings} />}
-          {step === 'diagnosis' && <DiagnosisBuilder diagnoses={diagnoses} onChange={setDiagnoses} />}
+          {step === 'diagnosis' && (
+            <div className="space-y-3">
+              <DiagnosisBuilder diagnoses={diagnoses} onChange={setDiagnoses} />
+              <SmartText
+                label="Clinical Notes — auto-detects diagnoses, medications & complaints"
+                value={clinicalNotes}
+                onChange={setClinicalNotes}
+                placeholder="Type freely: 'Known case of diabetes on Ecosprin and Met XL, presenting with chest pain and fever...' — concepts auto-detected from your CDSS"
+                rows={4}
+                showAutofill={true}
+                onDiagnosisSelect={(dx) => {
+                  // Add to diagnoses if not already present
+                  if (!diagnoses.some(d => d.code === dx.code)) {
+                    setDiagnoses(prev => [...prev, {
+                      code: dx.code,
+                      name: dx.label,
+                      type: prev.length === 0 ? 'primary' : 'secondary',
+                      notes: '',
+                    }]);
+                  }
+                }}
+                onMedicationSelect={(med) => {
+                  // Add to prescriptions if not already present
+                  if (!prescriptions.some(p => p.drug === med.brand || p.generic === med.label.split(' (')[0])) {
+                    const fullMed = MEDICATIONS.find((m) => m.id === med.code);
+                    if (fullMed) {
+                      setPrescriptions(prev => [...prev, {
+                        drug: fullMed.brand,
+                        generic: fullMed.generic,
+                        dose: fullMed.defaultDose,
+                        route: fullMed.defaultRoute,
+                        frequency: fullMed.defaultFrequency,
+                        duration: fullMed.defaultDuration,
+                        instructions: fullMed.defaultInstructions,
+                        isSOS: false,
+                        category: fullMed.category,
+                      }]);
+                    }
+                  }
+                }}
+              />
+            </div>
+          )}
           {step === 'rx' && <PrescriptionBuilder prescriptions={prescriptions} onChange={setPrescriptions} allergies={patient.allergies} patientId={patient.id} staffId={staffId} centreId={centreId} onFlash={flash} />}
           {step === 'investigations' && <InvestigationPanel investigations={investigations} onChange={setInvestigations} />}
 
