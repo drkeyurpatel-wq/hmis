@@ -13,81 +13,147 @@ import {
   Smartphone, ShieldCheck, Wrench, SprayCan, Shirt, Cross,
   Mic, ClipboardList, UtensilsCrossed, Dumbbell, AlertTriangle,
   Package, HandshakeIcon, Eye, UserPlus, Siren, MessageSquare, SlidersHorizontal,
+  MoreHorizontal,
 } from 'lucide-react';
 
-interface NavItem { href: string; label: string; icon: any; module: string | null; moduleKey?: string; badge?: string }
-interface NavGroup { key: string; label: string; items: NavItem[] }
+interface NavItem { href: string; label: string; icon: any; moduleKey?: string }
 
-const NAV: NavGroup[] = [
-  { key: 'core', label: '', items: [
-    { href: '/', label: 'Dashboard', icon: LayoutDashboard, module: null },
-    { href: '/command-centre', label: 'Command Centre', icon: Activity, module: null },
+// ===================================================================
+// ROLE-BASED PRIMARY NAV — what each role sees by default (5-8 items)
+// These are workflows, not modules
+// ===================================================================
+const ROLE_NAV: Record<string, NavItem[]> = {
+  doctor: [
+    { href: '/', label: 'My Tasks', icon: LayoutDashboard },
+    { href: '/opd', label: 'OPD Queue', icon: Calendar, moduleKey: 'opd' },
+    { href: '/ward-board', label: 'Ward Board', icon: BedDouble, moduleKey: 'nursing' },
+    { href: '/ipd', label: 'My Patients (IPD)', icon: Heart, moduleKey: 'ipd' },
+    { href: '/lab', label: 'Lab Results', icon: FlaskConical, moduleKey: 'lab' },
+    { href: '/radiology', label: 'Imaging', icon: ScanLine, moduleKey: 'radiology' },
+    { href: '/ot', label: 'OT Schedule', icon: Scissors, moduleKey: 'ot' },
+  ],
+  consultant: [
+    { href: '/', label: 'My Tasks', icon: LayoutDashboard },
+    { href: '/opd', label: 'OPD Queue', icon: Calendar, moduleKey: 'opd' },
+    { href: '/ward-board', label: 'Ward Board', icon: BedDouble, moduleKey: 'nursing' },
+    { href: '/ipd', label: 'My Patients (IPD)', icon: Heart, moduleKey: 'ipd' },
+    { href: '/lab', label: 'Lab Results', icon: FlaskConical, moduleKey: 'lab' },
+    { href: '/radiology', label: 'Imaging', icon: ScanLine, moduleKey: 'radiology' },
+    { href: '/ot', label: 'OT Schedule', icon: Scissors, moduleKey: 'ot' },
+  ],
+  nurse: [
+    { href: '/', label: 'My Tasks', icon: LayoutDashboard },
+    { href: '/ward-board', label: 'Ward Board', icon: BedDouble, moduleKey: 'nursing' },
+    { href: '/nursing-station', label: 'Nursing Station', icon: Heart, moduleKey: 'nursing' },
+    { href: '/ipd', label: 'IPD', icon: BedDouble, moduleKey: 'ipd' },
+    { href: '/pharmacy', label: 'Pharmacy', icon: Pill, moduleKey: 'pharmacy' },
+    { href: '/emergency', label: 'Emergency', icon: Siren, moduleKey: 'emergency' },
+  ],
+  receptionist: [
+    { href: '/', label: 'My Tasks', icon: LayoutDashboard },
+    { href: '/patients', label: 'Patients', icon: Users },
+    { href: '/opd', label: 'OPD & Appointments', icon: Calendar, moduleKey: 'opd' },
+    { href: '/billing', label: 'Billing', icon: CreditCard, moduleKey: 'billing' },
+    { href: '/ipd', label: 'Admissions', icon: BedDouble, moduleKey: 'ipd' },
+    { href: '/insurance', label: 'Insurance', icon: Shield, moduleKey: 'billing' },
+  ],
+  pharmacist: [
+    { href: '/', label: 'My Tasks', icon: LayoutDashboard },
+    { href: '/pharmacy', label: 'Dispensing', icon: Pill, moduleKey: 'pharmacy' },
+    { href: '/vpms', label: 'Procurement', icon: Truck, moduleKey: 'procurement' },
+    { href: '/patients', label: 'Patients', icon: Users },
+  ],
+  lab_tech: [
+    { href: '/', label: 'My Tasks', icon: LayoutDashboard },
+    { href: '/lab', label: 'Lab Worklist', icon: FlaskConical, moduleKey: 'lab' },
+    { href: '/patients', label: 'Patients', icon: Users },
+    { href: '/blood-bank', label: 'Blood Bank', icon: Droplets, moduleKey: 'blood_bank' },
+  ],
+  accountant: [
+    { href: '/', label: 'Dashboard', icon: LayoutDashboard },
+    { href: '/billing', label: 'Billing', icon: CreditCard, moduleKey: 'billing' },
+    { href: '/pnl', label: 'P&L', icon: BarChart3, moduleKey: 'billing' },
+    { href: '/insurance', label: 'Insurance', icon: Shield, moduleKey: 'billing' },
+    { href: '/reports', label: 'Reports', icon: BarChart3 },
+    { href: '/revenue-leakage', label: 'Revenue Leakage', icon: AlertTriangle, moduleKey: 'revenue_leakage' },
+  ],
+  admin: [
+    { href: '/', label: 'Dashboard', icon: LayoutDashboard },
+    { href: '/command-centre', label: 'Command Centre', icon: Activity },
+    { href: '/patients', label: 'Patients', icon: Users },
+    { href: '/opd', label: 'OPD', icon: Calendar, moduleKey: 'opd' },
+    { href: '/ipd', label: 'IPD', icon: BedDouble, moduleKey: 'ipd' },
+    { href: '/ward-board', label: 'Ward Board', icon: BedDouble, moduleKey: 'nursing' },
+    { href: '/billing', label: 'Billing', icon: CreditCard, moduleKey: 'billing' },
+    { href: '/lab', label: 'Lab', icon: FlaskConical, moduleKey: 'lab' },
+  ],
+};
+
+// ===================================================================
+// EVERYTHING ELSE — accessible via "More" (collapsed by default)
+// ===================================================================
+const MORE_NAV: { label: string; items: NavItem[] }[] = [
+  { label: 'CLINICAL', items: [
+    { href: '/patients', label: 'Patients', icon: Users },
+    { href: '/opd', label: 'OPD & Appointments', icon: Calendar, moduleKey: 'opd' },
+    { href: '/emr-v2', label: 'EMR', icon: Stethoscope, moduleKey: 'emr' },
+    { href: '/ipd', label: 'IPD & Beds', icon: BedDouble, moduleKey: 'ipd' },
+    { href: '/nursing-station', label: 'Nursing Station', icon: Heart, moduleKey: 'nursing' },
+    { href: '/ward-board', label: 'Ward Board', icon: BedDouble, moduleKey: 'nursing' },
+    { href: '/emergency', label: 'Emergency', icon: Siren, moduleKey: 'emergency' },
+    { href: '/ot', label: 'OT & Surgery', icon: Scissors, moduleKey: 'ot' },
+    { href: '/cathlab', label: 'Cath Lab', icon: Heart, moduleKey: 'cathlab' },
+    { href: '/endoscopy', label: 'Endoscopy', icon: Eye, moduleKey: 'endoscopy' },
+    { href: '/dialysis', label: 'Dialysis', icon: Droplets, moduleKey: 'dialysis' },
+    { href: '/physiotherapy', label: 'Physiotherapy', icon: Dumbbell, moduleKey: 'physiotherapy' },
+    { href: '/dietary', label: 'Dietary', icon: UtensilsCrossed, moduleKey: 'dietary' },
+    { href: '/referrals', label: 'Referrals', icon: UserPlus, moduleKey: 'referrals' },
   ]},
-  { key: 'clinical', label: 'CLINICAL', items: [
-    { href: '/patients', label: 'Patients', icon: Users, module: 'patients' },
-    { href: '/opd', label: 'OPD & Appointments', icon: Calendar, module: 'opd', moduleKey: 'opd' },
-    { href: '/emr-v2', label: 'EMR', icon: Stethoscope, module: 'emr', moduleKey: 'emr' },
-    { href: '/ipd', label: 'IPD & Beds', icon: BedDouble, module: 'ipd', moduleKey: 'ipd' },
-    { href: '/nursing-station', label: 'Nursing', icon: Heart, module: 'ipd', moduleKey: 'nursing' },
-    { href: '/ward-board', label: 'Ward Board', icon: BedDouble, module: 'ipd', moduleKey: 'nursing' },
-    { href: '/emergency', label: 'Emergency', icon: Siren, module: 'ipd', moduleKey: 'emergency' },
-    { href: '/ot', label: 'OT & Surgery', icon: Scissors, module: 'ot', moduleKey: 'ot' },
-    { href: '/cathlab', label: 'Cath Lab', icon: Heart, module: 'ot', moduleKey: 'cathlab' },
-    { href: '/endoscopy', label: 'Endoscopy', icon: Eye, module: 'ot', moduleKey: 'endoscopy' },
-    { href: '/dialysis', label: 'Dialysis', icon: Droplets, module: 'ipd', moduleKey: 'dialysis' },
-    { href: '/physiotherapy', label: 'Physiotherapy', icon: Dumbbell, module: 'ipd', moduleKey: 'physiotherapy' },
-    { href: '/dietary', label: 'Dietary', icon: UtensilsCrossed, module: 'ipd', moduleKey: 'dietary' },
-    { href: '/cssd', label: 'CSSD', icon: Shield, module: 'ot', moduleKey: 'cssd' },
-    { href: '/referrals', label: 'Referrals', icon: UserPlus, module: 'opd', moduleKey: 'referrals' },
+  { label: 'DIAGNOSTICS', items: [
+    { href: '/lab', label: 'Laboratory', icon: FlaskConical, moduleKey: 'lab' },
+    { href: '/radiology', label: 'Radiology', icon: ScanLine, moduleKey: 'radiology' },
+    { href: '/blood-bank', label: 'Blood Bank', icon: Droplets, moduleKey: 'blood_bank' },
+    { href: '/pharmacy', label: 'Pharmacy', icon: Pill, moduleKey: 'pharmacy' },
   ]},
-  { key: 'diagnostics', label: 'DIAGNOSTICS', items: [
-    { href: '/lab', label: 'Laboratory', icon: FlaskConical, module: 'lab', moduleKey: 'lab' },
-    { href: '/radiology', label: 'Radiology', icon: ScanLine, module: 'radiology', moduleKey: 'radiology' },
-    { href: '/blood-bank', label: 'Blood Bank', icon: Droplets, module: 'lab', moduleKey: 'blood_bank' },
-    { href: '/pharmacy', label: 'Pharmacy', icon: Pill, module: 'pharmacy', moduleKey: 'pharmacy' },
+  { label: 'REVENUE', items: [
+    { href: '/billing', label: 'Billing', icon: CreditCard, moduleKey: 'billing' },
+    { href: '/pnl', label: 'P&L', icon: BarChart3, moduleKey: 'billing' },
+    { href: '/insurance', label: 'Insurance', icon: Shield, moduleKey: 'billing' },
+    { href: '/revenue-leakage', label: 'Revenue Leakage', icon: AlertTriangle, moduleKey: 'revenue_leakage' },
   ]},
-  { key: 'revenue', label: 'REVENUE', items: [
-    { href: '/billing', label: 'Billing', icon: CreditCard, module: 'billing', moduleKey: 'billing' },
-    { href: '/pnl', label: 'P&L', icon: BarChart3, module: 'billing', moduleKey: 'billing' },
-    { href: '/revenue-leakage', label: 'Revenue Leakage', icon: AlertTriangle, module: 'billing', moduleKey: 'revenue_leakage' },
+  { label: 'OPERATIONS', items: [
+    { href: '/vpms', label: 'Procurement', icon: Truck, moduleKey: 'procurement' },
+    { href: '/biomedical', label: 'Equipment', icon: Wrench, moduleKey: 'biomedical' },
+    { href: '/housekeeping', label: 'Housekeeping', icon: SprayCan, moduleKey: 'housekeeping' },
+    { href: '/cssd', label: 'CSSD', icon: Shield, moduleKey: 'cssd' },
+    { href: '/duty-roster', label: 'Duty Roster', icon: ClipboardList, moduleKey: 'duty_roster' },
+    { href: '/linen', label: 'Linen', icon: Shirt, moduleKey: 'linen' },
+    { href: '/infection-control', label: 'Infection Control', icon: Shield, moduleKey: 'infection_control' },
+    { href: '/crm', label: 'CRM', icon: MessageSquare, moduleKey: 'crm' },
+    { href: '/homecare', label: 'Homecare', icon: Home, moduleKey: 'homecare' },
+    { href: '/visitors', label: 'Visitors', icon: Users, moduleKey: 'visitors' },
+    { href: '/mortuary', label: 'Mortuary', icon: Cross, moduleKey: 'mortuary' },
+    { href: '/quality', label: 'Quality', icon: Shield, moduleKey: 'quality' },
   ]},
-  { key: 'operations', label: 'OPERATIONS', items: [
-    { href: '/vpms', label: 'Procurement', icon: Truck, module: null, moduleKey: 'procurement' },
-    { href: '/homecare', label: 'Homecare', icon: Home, module: 'homecare', moduleKey: 'homecare' },
-    { href: '/crm', label: 'CRM', icon: MessageSquare, module: null, moduleKey: 'crm' },
-    { href: '/biomedical', label: 'Equipment & Biomedical', icon: Wrench, module: null, moduleKey: 'biomedical' },
-    { href: '/housekeeping', label: 'Housekeeping', icon: SprayCan, module: null, moduleKey: 'housekeeping' },
-    { href: '/duty-roster', label: 'Duty Roster', icon: ClipboardList, module: 'settings', moduleKey: 'duty_roster' },
-    { href: '/linen', label: 'Linen', icon: Shirt, module: null, moduleKey: 'linen' },
-    { href: '/infection-control', label: 'Infection Control', icon: Shield, module: null, moduleKey: 'infection_control' },
-    { href: '/visitors', label: 'Visitors', icon: Users, module: null, moduleKey: 'visitors' },
-    { href: '/mortuary', label: 'Mortuary', icon: Cross, module: null, moduleKey: 'mortuary' },
-    { href: '/quality', label: 'Quality', icon: Shield, module: 'mis', moduleKey: 'quality' },
-  ]},
-  { key: 'admin', label: 'ADMIN', items: [
-    { href: '/reports', label: 'Reports', icon: BarChart3, module: 'mis' },
-    { href: '/telemedicine', label: 'Telemedicine', icon: Smartphone, module: null, moduleKey: 'telemedicine' },
-    { href: '/staff', label: 'Staff', icon: Users, module: 'settings' },
-    { href: '/settings/modules', label: 'Module Config', icon: SlidersHorizontal, module: 'settings' },
-    { href: '/settings', label: 'Settings', icon: Settings, module: null },
+  { label: 'ADMIN', items: [
+    { href: '/reports', label: 'Reports', icon: BarChart3 },
+    { href: '/staff', label: 'Staff', icon: Users },
+    { href: '/settings/modules', label: 'Module Config', icon: SlidersHorizontal },
+    { href: '/settings', label: 'Settings', icon: Settings },
   ]},
 ];
 
 export function Sidebar({ mobileOpen, onMobileClose }: { mobileOpen?: boolean; onMobileClose?: () => void }) {
   const pathname = usePathname();
-  const { staff, centres, activeCentreId, setActiveCentre, setEnabledModules, isModuleEnabled, hasPermission } = useAuthStore();
+  const { staff, centres, activeCentreId, setActiveCentre, setEnabledModules, isModuleEnabled } = useAuthStore();
   const [centreOpen, setCentreOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
-  const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
+  const [moreOpen, setMoreOpen] = useState(false);
+  const [moreGroup, setMoreGroup] = useState<string | null>(null);
 
-  const activeCentre = centres.find(c => c.centre_id === activeCentreId);
-  const staffType = staff?.staff_type || '';
+  const activeCentre = centres.find((c: any) => c.centre_id === activeCentreId);
+  const staffType = staff?.staff_type || 'admin';
 
-  const toggleGroup = useCallback((key: string) => {
-    setCollapsedGroups(prev => ({ ...prev, [key]: !prev[key] }));
-  }, []);
-
-  // Reload enabled modules when centre changes
   const switchCentre = useCallback(async (centreId: string) => {
     setActiveCentre(centreId);
     setCentreOpen(false);
@@ -102,31 +168,19 @@ export function Sidebar({ mobileOpen, onMobileClose }: { mobileOpen?: boolean; o
   }, [setActiveCentre, setEnabledModules]);
 
   const canSee = (item: NavItem) => {
-    // Module toggle check — if moduleKey is set, it must be enabled for this centre
     if (item.moduleKey && !isModuleEnabled(item.moduleKey)) return false;
-    if (!item.module) return true;
-    if (staffType === 'admin') return true;
-    if (hasPermission(item.module, 'view')) return true;
-    const fb: Record<string, string[]> = {
-      patients: ['doctor','nurse','admin','receptionist','support'],
-      opd: ['doctor','nurse','admin','receptionist'],
-      emr: ['doctor','nurse'],
-      billing: ['admin','receptionist','accountant'],
-      pharmacy: ['pharmacist','admin','doctor'],
-      lab: ['lab_tech','admin','doctor','nurse'],
-      ipd: ['doctor','nurse','admin'],
-      ot: ['doctor','nurse','admin'],
-      radiology: ['technician','admin','doctor'],
-      mis: ['admin','doctor','accountant'],
-      settings: ['admin'],
-      homecare: ['admin','nurse','doctor'],
-    };
-    return (fb[item.module] || []).includes(staffType);
+    return true;
   };
 
   const isActive = (href: string) => href === '/' ? pathname === '/' : pathname.startsWith(href);
   const w = collapsed ? 'w-[68px]' : 'w-[240px]';
   const initials = staff?.full_name?.split(' ').map((n: string) => n[0]).join('').slice(0, 2) || '??';
+
+  // Get primary nav for this role
+  const primaryItems = (ROLE_NAV[staffType] || ROLE_NAV.admin).filter(canSee);
+
+  // For "More" — deduplicate items already in primary
+  const primaryHrefs = new Set(primaryItems.map(i => i.href));
 
   return (
     <>
@@ -145,7 +199,7 @@ export function Sidebar({ mobileOpen, onMobileClose }: { mobileOpen?: boolean; o
             </div>
             {!collapsed && (
               <div className="min-w-0">
-                <p className="font-display font-bold text-sm text-gray-900 leading-none">Hospital</p>
+                <p className="font-display font-bold text-sm text-gray-900 leading-none">Health1</p>
                 <p className="text-[9px] text-teal-600 font-semibold uppercase tracking-[0.15em] mt-0.5">HMIS</p>
               </div>
             )}
@@ -164,13 +218,13 @@ export function Sidebar({ mobileOpen, onMobileClose }: { mobileOpen?: boolean; o
                 <Building2 size={12} className="text-teal-700" />
               </div>
               <span className="text-xs font-medium text-gray-700 truncate flex-1">
-                {activeCentre?.centre?.name?.replace('Hospital ', '').replace('Hospital', '').replace('Super Speciality', 'SS').trim() || 'Select centre'}
+                {(activeCentre as any)?.centre?.name?.replace('Health1 ', '').replace('Hospital ', '').replace('Super Speciality', 'SS').trim() || 'Select centre'}
               </span>
               <ChevronDown size={12} className={cn('text-gray-400 transition-transform shrink-0', centreOpen && 'rotate-180')} />
             </button>
-            {centreOpen && centres.length > 1 && (
+            {centreOpen && centres.length > 0 && (
               <div className="absolute left-3 right-3 mt-1 bg-white border border-gray-200 rounded-lg shadow-xl z-50 overflow-hidden">
-                {centres.map(c => (
+                {centres.map((c: any) => (
                   <button key={c.centre_id} onClick={() => switchCentre(c.centre_id)}
                     className={cn('w-full text-left px-3 py-2 text-xs hover:bg-teal-50 border-b last:border-0 transition-colors',
                       c.centre_id === activeCentreId ? 'bg-teal-50 text-teal-700 font-semibold' : 'text-gray-600')}>
@@ -182,55 +236,84 @@ export function Sidebar({ mobileOpen, onMobileClose }: { mobileOpen?: boolean; o
           </div>
         )}
 
-        {/* Navigation */}
-        <nav className="flex-1 overflow-y-auto px-2 py-2 space-y-1 scrollbar-thin">
-          {NAV.map(group => {
-            const visible = group.items.filter(canSee);
-            if (visible.length === 0) return null;
-            const isCollapsed = collapsedGroups[group.key];
-            const hasActiveChild = visible.some(i => isActive(i.href));
+        {/* PRIMARY NAV — role-based, always visible */}
+        <nav className="flex-1 overflow-y-auto px-2 py-2 scrollbar-thin">
+          <div className="space-y-0.5">
+            {primaryItems.map(item => {
+              const active = isActive(item.href);
+              const Icon = item.icon;
+              return (
+                <Link key={item.href} href={item.href} onClick={onMobileClose}
+                  className={cn(
+                    'flex items-center gap-2.5 px-2.5 py-[8px] rounded-lg text-[13px] font-medium transition-all duration-150 relative group',
+                    collapsed && 'justify-center px-0',
+                    active ? 'bg-teal-50 text-teal-700' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-800',
+                  )}
+                  title={collapsed ? item.label : undefined}>
+                  {active && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-4 bg-teal-600 rounded-r-full" />}
+                  <Icon size={collapsed ? 18 : 16} className={cn('shrink-0', active ? 'text-teal-600' : 'text-gray-400 group-hover:text-gray-600')} />
+                  {!collapsed && <span className="truncate">{item.label}</span>}
+                </Link>
+              );
+            })}
+          </div>
 
-            return (
-              <div key={group.key}>
-                {/* Group header */}
-                {group.label && !collapsed && (
-                  <button onClick={() => toggleGroup(group.key)}
-                    className="w-full flex items-center justify-between px-2.5 pt-3 pb-1 group">
-                    <span className="text-[9px] font-bold tracking-[0.12em] text-gray-400 uppercase">{group.label}</span>
-                    <ChevronRight size={10} className={cn('text-gray-300 transition-transform', !isCollapsed && 'rotate-90')} />
-                  </button>
-                )}
+          {/* DIVIDER */}
+          {!collapsed && <div className="border-t border-gray-100 my-3" />}
 
-                {/* Items */}
-                {(!isCollapsed || collapsed) && (
-                  <div className="space-y-0.5">
-                    {visible.map(item => {
-                      const active = isActive(item.href);
-                      const Icon = item.icon;
-                      return (
-                        <Link key={item.href} href={item.href} onClick={onMobileClose}
-                          className={cn(
-                            'flex items-center gap-2.5 px-2.5 py-[7px] rounded-lg text-[13px] font-medium transition-all duration-150 relative group',
-                            collapsed && 'justify-center px-0',
-                            active
-                              ? 'bg-teal-50 text-teal-700'
-                              : 'text-gray-500 hover:bg-gray-50 hover:text-gray-800',
-                          )}
-                          title={collapsed ? item.label : undefined}>
-                          {active && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-4 bg-teal-600 rounded-r-full" />}
-                          <Icon size={collapsed ? 18 : 16} className={cn('shrink-0', active ? 'text-teal-600' : 'text-gray-400 group-hover:text-gray-600')} />
-                          {!collapsed && <span className="truncate">{item.label}</span>}
-                          {!collapsed && item.badge && (
-                            <span className="ml-auto text-[9px] font-bold bg-red-100 text-red-700 px-1.5 py-0.5 rounded-full">{item.badge}</span>
-                          )}
-                        </Link>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            );
-          })}
+          {/* MORE — everything else, collapsed by default */}
+          {!collapsed && (
+            <div>
+              <button onClick={() => setMoreOpen(!moreOpen)}
+                className="w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-[13px] font-medium text-gray-400 hover:bg-gray-50 hover:text-gray-600 transition-all">
+                <div className="flex items-center gap-2.5">
+                  <MoreHorizontal size={16} />
+                  <span>More</span>
+                </div>
+                <ChevronRight size={12} className={cn('transition-transform', moreOpen && 'rotate-90')} />
+              </button>
+
+              {moreOpen && (
+                <div className="mt-1 space-y-1">
+                  {MORE_NAV.map(group => {
+                    const visible = group.items.filter(i => canSee(i) && !primaryHrefs.has(i.href));
+                    if (visible.length === 0) return null;
+                    const isGroupOpen = moreGroup === group.label;
+                    const hasActiveChild = visible.some(i => isActive(i.href));
+
+                    return (
+                      <div key={group.label}>
+                        <button onClick={() => setMoreGroup(isGroupOpen ? null : group.label)}
+                          className={cn('w-full flex items-center justify-between px-2.5 py-1.5 text-[10px] font-bold tracking-wide text-gray-400 uppercase hover:text-gray-600',
+                            hasActiveChild && 'text-teal-600')}>
+                          <span>{group.label}</span>
+                          <ChevronRight size={9} className={cn('transition-transform', isGroupOpen && 'rotate-90')} />
+                        </button>
+                        {isGroupOpen && (
+                          <div className="space-y-0.5 ml-1">
+                            {visible.map(item => {
+                              const active = isActive(item.href);
+                              const Icon = item.icon;
+                              return (
+                                <Link key={item.href} href={item.href} onClick={onMobileClose}
+                                  className={cn(
+                                    'flex items-center gap-2 px-2.5 py-[6px] rounded-lg text-[12px] font-medium transition-all',
+                                    active ? 'bg-teal-50 text-teal-700' : 'text-gray-400 hover:bg-gray-50 hover:text-gray-700',
+                                  )}>
+                                  <Icon size={14} className={active ? 'text-teal-600' : 'text-gray-300'} />
+                                  <span className="truncate">{item.label}</span>
+                                </Link>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
         </nav>
 
         {/* User */}
@@ -253,7 +336,7 @@ export function Sidebar({ mobileOpen, onMobileClose }: { mobileOpen?: boolean; o
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-xs font-semibold text-gray-800 truncate">{staff?.full_name || 'Loading...'}</p>
-                <p className="text-[10px] text-gray-400 truncate">{staff?.designation || staff?.staff_type}</p>
+                <p className="text-[10px] text-gray-400 truncate capitalize">{staff?.staff_type || ''}</p>
               </div>
               <button onClick={async () => {
                 if (!confirm('Sign out of HMIS?')) return;

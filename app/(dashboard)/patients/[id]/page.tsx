@@ -63,6 +63,16 @@ function Patient360Inner() {
     else flash('Error: ' + error.message);
   }, [patientId, staff, noteText, activeCentreId, p]);
 
+  // Administer medication (mark MAR as given)
+  const giveMed = useCallback(async (marId: string, medName: string) => {
+    if (!sb() || !staff) return;
+    const { error } = await sb()!.from('hmis_mar').update({
+      status: 'given', administered_by: staff.id, administered_at: new Date().toISOString(),
+    }).eq('id', marId);
+    if (!error) { flash(`${medName} — given ✓`); p.reload(); }
+    else flash('Error: ' + error.message);
+  }, [staff, p]);
+
   if (p.loading) return <div className="flex items-center justify-center py-20"><RefreshCw className="animate-spin text-gray-400" size={24} /><span className="ml-2 text-gray-400">Loading patient...</span></div>;
   if (!p.patient) return <div className="text-center py-20 text-gray-400">Patient not found</div>;
 
@@ -129,9 +139,9 @@ function Patient360Inner() {
           {[
             { label: 'Record Vitals', icon: Heart, color: 'bg-rose-50 text-rose-700 border-rose-200', action: () => setShowVitals(!showVitals) },
             { label: 'Quick Note', icon: FileText, color: 'bg-blue-50 text-blue-700 border-blue-200', action: () => setShowNote(!showNote) },
+            { label: 'Open EMR', icon: Stethoscope, color: 'bg-emerald-50 text-emerald-700 border-emerald-200', action: () => router.push(`/emr-v2?patient=${patientId}`) },
             { label: 'Order Lab', icon: FlaskConical, color: 'bg-purple-50 text-purple-700 border-purple-200', action: () => router.push('/lab') },
             { label: 'Order Imaging', icon: ScanLine, color: 'bg-indigo-50 text-indigo-700 border-indigo-200', action: () => router.push('/radiology') },
-            { label: 'Prescribe', icon: Pill, color: 'bg-green-50 text-green-700 border-green-200', action: () => router.push('/emr-v2') },
             { label: 'Billing', icon: IndianRupee, color: 'bg-amber-50 text-amber-700 border-amber-200', action: () => router.push('/billing') },
           ].map((a) => (
             <button key={a.label} onClick={a.action} className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border text-xs font-medium hover:shadow-sm transition-all ${a.color}`}>
@@ -219,10 +229,15 @@ function Patient360Inner() {
               <div className="flex items-center justify-between mb-2"><h3 className="text-xs font-semibold text-gray-700 flex items-center gap-1"><Pill size={12} /> Active Medications ({p.activeMeds.length})</h3>
               {p.medsNextDue.length > 0 && <span className="text-[10px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">{p.medsNextDue.length} due</span>}</div>
               {p.activeMeds.length > 0 ? <div className="space-y-1.5">{p.activeMeds.slice(0,8).map((m: any) => {
-                const isDue = p.medsNextDue.some((md: any) => md.medication_order_id === m.id);
+                const dueMAR = p.medsNextDue.find((md: any) => md.medication_order_id === m.id);
+                const isDue = !!dueMAR;
                 return <div key={m.id} className={`flex items-center justify-between py-1.5 px-2 rounded-lg text-xs ${isDue?'bg-amber-50 border border-amber-200':'bg-gray-50'}`}>
                   <div><span className="font-semibold">{m.drug_name}</span><span className="text-gray-500 ml-1">{m.dose} {m.route} {m.frequency}</span></div>
-                  <div className="flex items-center gap-2">{isDue && <span className="text-amber-600 font-semibold">DUE</span>}{m.is_stat && <span className="bg-red-100 text-red-600 px-1 py-0.5 rounded text-[10px] font-bold">STAT</span>}</div>
+                  <div className="flex items-center gap-2">
+                    {isDue && <button onClick={() => giveMed(dueMAR.id, m.drug_name)} className="px-2 py-0.5 bg-green-600 text-white rounded text-[10px] font-bold hover:bg-green-700">Give ✓</button>}
+                    {isDue && !dueMAR && <span className="text-amber-600 font-semibold">DUE</span>}
+                    {m.is_stat && <span className="bg-red-100 text-red-600 px-1 py-0.5 rounded text-[10px] font-bold">STAT</span>}
+                  </div>
                 </div>;
               })}{p.activeMeds.length > 8 && <div className="text-[10px] text-gray-400 text-center">+{p.activeMeds.length-8} more</div>}</div>
               : <div className="text-xs text-gray-400 text-center py-3">No active medications</div>}
