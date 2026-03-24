@@ -113,16 +113,16 @@ export function usePatient360(patientId: string | null, centreId: string | null)
           .order('scheduled_time', { ascending: true }).limit(20),
         // Pending lab orders
         sb()!.from('hmis_lab_orders')
-          .select('id, test_name, status, priority, ordered_at, test:hmis_lab_test_master(test_name, test_code)')
+          .select('id, test_name, status, priority, created_at, test:hmis_lab_test_master(test_name, test_code)')
           .eq('patient_id', patientId).eq('centre_id', centreId)
           .in('status', ['ordered', 'sample_collected', 'processing'])
-          .order('ordered_at', { ascending: false }),
+          .order('created_at', { ascending: false }),
         // Pending radiology orders
         sb()!.from('hmis_radiology_orders')
-          .select('id, test_name, modality, status, priority, ordered_at')
+          .select('id, test_name, modality, status, priority, created_at')
           .eq('patient_id', patientId).eq('centre_id', centreId)
           .in('status', ['ordered', 'scheduled', 'in_progress'])
-          .order('ordered_at', { ascending: false }),
+          .order('created_at', { ascending: false }),
         // Active CPOE orders
         sb()!.from('hmis_orders').select('*')
           .eq('patient_id', patientId).eq('status', 'active')
@@ -156,11 +156,11 @@ export function usePatient360(patientId: string | null, centreId: string | null)
     // 4. Results + notes + alerts (parallel, for all patients)
     const [labResultsRes, criticalRes, radReportsRes, notesRes] = await Promise.all([
       sb()!.from('hmis_lab_orders')
-        .select('id, test_name, status, ordered_at, results:hmis_lab_results(parameter_name, result_value, unit, is_abnormal, is_critical, ref_range_min, ref_range_max)')
+        .select('id, test_name, status, created_at, results:hmis_lab_results(parameter_name, result_value, unit, is_abnormal, is_critical, ref_range_min, ref_range_max)')
         .eq('patient_id', patientId).eq('centre_id', centreId)
         .in('status', ['reported', 'verified'])
-        .gte('ordered_at', h48ago)
-        .order('ordered_at', { ascending: false }).limit(20),
+        .gte('created_at', h48ago)
+        .order('created_at', { ascending: false }).limit(20),
       sb()!.from('hmis_lab_critical_alerts').select('*')
         .eq('patient_id', patientId).eq('status', 'pending')
         .order('created_at', { ascending: false }),

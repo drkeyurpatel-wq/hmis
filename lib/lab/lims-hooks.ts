@@ -53,8 +53,8 @@ export function useLabWorklist(centreId: string | null) {
     setLoading(true);
     const dt = dateFilter || new Date().toISOString().split('T')[0];
     let query = sb()!.from('hmis_lab_orders')
-      .select(`id, priority, status, clinical_info, created_at, tat_deadline, tat_met, reported_at,
-        test:hmis_lab_test_master!inner(test_code, test_name, category),
+      .select(`id, priority, status, clinical_info, created_at, tat_deadline, tat_met, reported_at, test_name,
+        test:hmis_lab_test_master(test_code, test_name, category),
         patient:hmis_patients!inner(id, uhid, first_name, last_name, age_years, gender),
         doctor:hmis_staff!hmis_lab_orders_ordered_by_fkey(full_name),
         sample:hmis_lab_samples(barcode, status)`)
@@ -65,7 +65,7 @@ export function useLabWorklist(centreId: string | null) {
 
     const { data } = await query;
     const mapped: LabOrder[] = (data || []).map((o: any) => ({
-      id: o.id, testCode: o.test?.test_code, testName: o.test?.test_name, category: o.test?.category,
+      id: o.id, testCode: o.test?.test_code || '', testName: o.test?.test_name || o.test_name || 'Unknown Test', category: o.test?.category || '',
       patientName: o.patient.first_name + ' ' + (o.patient.last_name || ''),
       patientUhid: o.patient.uhid, patientId: o.patient.id,
       patientAge: o.patient.age_years, patientGender: o.patient.gender,
