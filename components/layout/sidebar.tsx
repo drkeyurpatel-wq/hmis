@@ -93,13 +93,14 @@ const ROLE_NAV: Record<string, NavItem[]> = {
 
 // ===================================================================
 // EVERYTHING ELSE — accessible via "More" (collapsed by default)
+// Consolidated from 6 groups → 4 for cleaner navigation
 // ===================================================================
 const MORE_NAV: { label: string; items: NavItem[] }[] = [
   { label: 'CLINICAL', items: [
     { href: '/patients', label: 'Patients', icon: Users },
-    { href: '/opd', label: 'OPD & Appointments', icon: Calendar, moduleKey: 'opd' },
+    { href: '/opd', label: 'OPD', icon: Calendar, moduleKey: 'opd' },
     { href: '/emr-v2', label: 'EMR', icon: Stethoscope, moduleKey: 'emr' },
-    { href: '/ipd', label: 'IPD & Beds', icon: BedDouble, moduleKey: 'ipd' },
+    { href: '/ipd', label: 'IPD', icon: BedDouble, moduleKey: 'ipd' },
     { href: '/nursing-station', label: 'Nursing Station', icon: Heart, moduleKey: 'nursing' },
     { href: '/ward-board', label: 'Ward Board', icon: BedDouble, moduleKey: 'nursing' },
     { href: '/emergency', label: 'Emergency', icon: Siren, moduleKey: 'emergency' },
@@ -110,20 +111,24 @@ const MORE_NAV: { label: string; items: NavItem[] }[] = [
     { href: '/physiotherapy', label: 'Physiotherapy', icon: Dumbbell, moduleKey: 'physiotherapy' },
     { href: '/dietary', label: 'Dietary', icon: UtensilsCrossed, moduleKey: 'dietary' },
     { href: '/referrals', label: 'Referrals', icon: UserPlus, moduleKey: 'referrals' },
+    { href: '/px-coordinator', label: 'Patient Experience', icon: Star, moduleKey: 'px_coordinator' },
+    { href: '/px-nursing', label: 'PX Nursing', icon: Star, moduleKey: 'px_nursing' },
+    { href: '/px-kitchen', label: 'PX Kitchen', icon: UtensilsCrossed, moduleKey: 'px_kitchen' },
+    { href: '/px-feedback', label: 'PX Feedback', icon: MessageSquare, moduleKey: 'px_feedback' },
   ]},
-  { label: 'DIAGNOSTICS', items: [
+  { label: 'DIAGNOSTICS & PHARMACY', items: [
     { href: '/lab', label: 'Laboratory', icon: FlaskConical, moduleKey: 'lab' },
     { href: '/radiology', label: 'Radiology', icon: ScanLine, moduleKey: 'radiology' },
     { href: '/blood-bank', label: 'Blood Bank', icon: Droplets, moduleKey: 'blood_bank' },
     { href: '/pharmacy', label: 'Pharmacy', icon: Pill, moduleKey: 'pharmacy' },
   ]},
-  { label: 'REVENUE', items: [
+  { label: 'REVENUE & BILLING', items: [
     { href: '/billing', label: 'Billing', icon: CreditCard, moduleKey: 'billing' },
     { href: '/pnl', label: 'P&L', icon: BarChart3, moduleKey: 'billing' },
     { href: '/insurance', label: 'Insurance', icon: Shield, moduleKey: 'billing' },
     { href: '/revenue-leakage', label: 'Revenue Leakage', icon: AlertTriangle, moduleKey: 'revenue_leakage' },
   ]},
-  { label: 'OPERATIONS', items: [
+  { label: 'OPERATIONS & ADMIN', items: [
     { href: '/vpms', label: 'Procurement', icon: Truck, moduleKey: 'procurement' },
     { href: '/biomedical', label: 'Equipment', icon: Wrench, moduleKey: 'biomedical' },
     { href: '/housekeeping', label: 'Housekeeping', icon: SprayCan, moduleKey: 'housekeeping' },
@@ -136,14 +141,6 @@ const MORE_NAV: { label: string; items: NavItem[] }[] = [
     { href: '/visitors', label: 'Visitors', icon: Users, moduleKey: 'visitors' },
     { href: '/mortuary', label: 'Mortuary', icon: Cross, moduleKey: 'mortuary' },
     { href: '/quality', label: 'Quality', icon: Shield, moduleKey: 'quality' },
-  ]},
-  { label: 'PATIENT EXPERIENCE', items: [
-    { href: '/px-coordinator', label: 'PX Dashboard', icon: Star, moduleKey: 'px_coordinator' },
-    { href: '/px-nursing', label: 'PX Nursing', icon: Heart, moduleKey: 'px_nursing' },
-    { href: '/px-kitchen', label: 'PX Kitchen', icon: UtensilsCrossed, moduleKey: 'px_kitchen' },
-    { href: '/px-feedback', label: 'PX Feedback', icon: MessageSquare, moduleKey: 'px_feedback' },
-  ]},
-  { label: 'ADMIN', items: [
     { href: '/reports', label: 'Reports', icon: BarChart3 },
     { href: '/staff', label: 'Staff', icon: Users },
     { href: '/settings/modules', label: 'Module Config', icon: SlidersHorizontal },
@@ -181,7 +178,7 @@ export function Sidebar({ mobileOpen, onMobileClose }: { mobileOpen?: boolean; o
   };
 
   const isActive = (href: string) => href === '/' ? pathname === '/' : pathname.startsWith(href);
-  const w = collapsed ? 'w-[68px]' : 'w-[240px]';
+  const w = collapsed ? 'w-[68px]' : 'w-[256px]';
   const initials = staff?.full_name?.split(' ').map((n: string) => n[0]).join('').slice(0, 2) || '??';
 
   // Get primary nav for this role
@@ -283,7 +280,7 @@ export function Sidebar({ mobileOpen, onMobileClose }: { mobileOpen?: boolean; o
               </button>
 
               {moreOpen && (
-                <div className="mt-1 space-y-1">
+                <div className="mt-1.5 space-y-2">
                   {MORE_NAV.map(group => {
                     const visible = group.items.filter(i => canSee(i) && !primaryHrefs.has(i.href));
                     if (visible.length === 0) return null;
@@ -293,20 +290,20 @@ export function Sidebar({ mobileOpen, onMobileClose }: { mobileOpen?: boolean; o
                     return (
                       <div key={group.label}>
                         <button onClick={() => setMoreGroup(isGroupOpen ? null : group.label)}
-                          className={cn('w-full flex items-center justify-between px-2.5 py-1.5 text-[10px] font-bold tracking-wide text-gray-400 uppercase hover:text-gray-600',
+                          className={cn('w-full flex items-center justify-between px-2.5 py-2 text-[11px] font-semibold tracking-wider text-gray-400 uppercase hover:text-gray-600 rounded-md hover:bg-gray-50 transition-colors',
                             hasActiveChild && 'text-teal-600')}>
                           <span>{group.label}</span>
-                          <ChevronRight size={9} className={cn('transition-transform', isGroupOpen && 'rotate-90')} />
+                          <ChevronRight size={10} className={cn('transition-transform', isGroupOpen && 'rotate-90')} />
                         </button>
                         {isGroupOpen && (
-                          <div className="space-y-0.5 ml-1">
+                          <div className="space-y-0.5 ml-2 mt-0.5 border-l border-gray-100 pl-2">
                             {visible.map(item => {
                               const active = isActive(item.href);
                               const Icon = item.icon;
                               return (
                                 <Link key={item.href} href={item.href} onClick={onMobileClose}
                                   className={cn(
-                                    'flex items-center gap-2 px-2.5 py-[6px] rounded-lg text-[12px] font-medium transition-all',
+                                    'flex items-center gap-2.5 px-2 py-[7px] rounded-lg text-[12px] font-medium transition-all',
                                     active ? 'bg-teal-50 text-teal-700' : 'text-gray-400 hover:bg-gray-50 hover:text-gray-700',
                                   )}>
                                   <Icon size={14} className={active ? 'text-teal-600' : 'text-gray-300'} />
