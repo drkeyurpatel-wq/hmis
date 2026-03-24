@@ -16,11 +16,11 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
-    title: 'H1 HMIS',
+    title: 'Health1 HMIS',
   },
   icons: {
-    icon: '/icon-192.png',
-    apple: '/icon-192.png',
+    icon: '/images/health1-192.png',
+    apple: '/apple-touch-icon.png',
   },
 };
 

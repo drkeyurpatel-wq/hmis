@@ -191,7 +191,7 @@ export default function HospitalPulsePage() {
       {/* ═══ TOP BAR ═══ */}
       <div className="relative h-12 flex items-center justify-between px-5 border-b border-white/5 bg-black/20 backdrop-blur-sm z-10">
         <div className="flex items-center gap-3">
-          <div className="w-7 h-7 rounded-lg bg-teal-500 flex items-center justify-center"><span className="text-[10px] font-black">H1</span></div>
+          <img src="/images/health1-logo.svg" alt="Health1" className="h-7 w-auto" />
           <span className="text-sm font-bold tracking-wide">HOSPITAL PULSE</span>
           <div className="flex items-center gap-1.5 ml-3">
             <span className="relative flex h-2 w-2"><span className="animate-ping absolute h-full w-full rounded-full bg-teal-400 opacity-75" /><span className="relative h-2 w-2 rounded-full bg-teal-500" /></span>

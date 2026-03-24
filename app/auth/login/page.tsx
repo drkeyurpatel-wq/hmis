@@ -53,10 +53,8 @@ export default function LoginPage() {
       <div className="w-full max-w-sm">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="w-14 h-14 rounded-2xl bg-brand-teal flex items-center justify-center mx-auto mb-4">
-            <span className="text-white font-bold text-xl">H1</span>
-          </div>
-          <h1 className="font-display font-bold text-xl text-gray-900">HMIS</h1>
+          <img src="/images/health1-logo.svg" alt="Health1" className="h-16 mx-auto mb-4" />
+          <h1 className="font-display font-bold text-xl text-gray-900">Hospital Management System</h1>
           <p className="text-sm text-gray-500 mt-1">Sign in to continue</p>
         </div>
 

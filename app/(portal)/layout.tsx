@@ -10,7 +10,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
         <div className="max-w-lg mx-auto px-4 h-14 flex items-center justify-between">
           <Link href="/portal" className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg bg-teal-600 flex items-center justify-center">
-              <span className="text-white font-black text-xs">H1</span>
+              <img src="/images/health1-logo.svg" alt="Health1" className="h-6 w-auto" />
             </div>
             <div>
               <p className="font-bold text-sm text-gray-900 leading-none">Hospital</p>

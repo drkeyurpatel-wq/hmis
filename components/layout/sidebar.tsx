@@ -194,14 +194,15 @@ export function Sidebar({ mobileOpen, onMobileClose }: { mobileOpen?: boolean; o
         {/* Logo */}
         <div className="h-14 flex items-center justify-between px-4 border-b border-gray-100 shrink-0">
           <Link href="/" className="flex items-center gap-2.5 min-w-0">
-            <div className="w-8 h-8 rounded-lg bg-teal-600 flex items-center justify-center shrink-0">
-              <span className="text-white font-black text-xs tracking-tight">H1</span>
-            </div>
-            {!collapsed && (
-              <div className="min-w-0">
-                <p className="font-display font-bold text-sm text-gray-900 leading-none">Health1</p>
-                <p className="text-[9px] text-teal-600 font-semibold uppercase tracking-[0.15em] mt-0.5">HMIS</p>
+            {collapsed ? (
+              <div className="w-8 h-8 rounded-lg bg-teal-600 flex items-center justify-center shrink-0">
+                <span className="text-white font-black text-xs">H1</span>
               </div>
+            ) : (
+              <img src="/images/health1-logo.svg" alt="Health1" className="h-10 w-auto shrink-0" />
+            )}
+            {!collapsed && (
+              <div className="min-w-0" />
             )}
           </Link>
           <button onClick={() => setCollapsed(!collapsed)} className="hidden md:flex text-gray-400 hover:text-gray-600 transition-colors p-1 rounded">
