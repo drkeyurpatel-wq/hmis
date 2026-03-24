@@ -132,7 +132,7 @@ export function useSubmitFoodOrder(token: string) {
     setSubmitting(true); setError(null);
     try {
       const { data, error: rpcError } = await supabase.rpc('px_create_food_order', {
-        p_token: token, p_items: JSON.stringify(items), p_total_amount: totalAmount,
+        p_token: token, p_items: items, p_total_amount: totalAmount,
       });
       if (rpcError) throw rpcError;
       return data;

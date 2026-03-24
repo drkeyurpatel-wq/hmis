@@ -36,7 +36,7 @@ export async function middleware(request: NextRequest) {
     !request.nextUrl.pathname.startsWith('/api') &&
     !request.nextUrl.pathname.startsWith('/portal') &&
     !request.nextUrl.pathname.startsWith('/offline') &&
-    !request.nextUrl.pathname.startsWith('/px') &&
+    !request.nextUrl.pathname.startsWith('/px/') &&
     request.nextUrl.pathname !== '/sw.js' &&
     request.nextUrl.pathname !== '/manifest.json'
   ) {
