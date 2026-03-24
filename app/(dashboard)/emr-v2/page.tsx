@@ -41,6 +41,7 @@ function EMRInner() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const preselectedPatient = searchParams.get('patient');
+  const opdVisitId = searchParams.get('visit');
   const emr = useEMR();
   const { staff, activeCentreId } = useAuthStore();
   const staffId = staff?.id || '';
@@ -75,6 +76,13 @@ function EMRInner() {
   useEffect(() => {
     if (preselectedPatient) selectPatientById(preselectedPatient);
   }, [preselectedPatient]);
+
+  // Auto-mark OPD visit as "with_doctor" when EMR opens from queue
+  useEffect(() => {
+    if (opdVisitId && sb()) {
+      sb()!.from('hmis_opd_visits').update({ status: 'with_doctor', consultation_start: new Date().toISOString() }).eq('id', opdVisitId).in('status', ['waiting', 'checked_in']);
+    }
+  }, [opdVisitId]);
 
   const selectPatientById = async (id: string) => {
     if (!sb()) return;
@@ -200,12 +208,25 @@ function EMRInner() {
 
       flash(sign ? 'Encounter signed & saved' : (result.offline ? 'Saved offline — will sync' : 'Encounter saved'));
       if (sign) {
+        // Auto-complete OPD visit if opened from queue
+        if (opdVisitId && sb()) {
+          await sb()!.from('hmis_opd_visits').update({
+            status: 'completed',
+            consultation_end: new Date().toISOString(),
+          }).eq('id', opdVisitId);
+        }
+
         // Reset for next patient
         setPatient({ id: '', name: '', age: '--', gender: '--', uhid: 'H1-00000', phone: '', allergies: [], bloodGroup: '' });
         setVitals({ systolic: '', diastolic: '', heartRate: '', spo2: '', temperature: '', weight: '', height: '', respiratoryRate: '', isAlert: true, onO2: false });
         setComplaints([]); setExamFindings({}); setDiagnoses([]); setPrescriptions([]); setInvestigations([]);
         setAdvice(''); setFollowUpDate('');
         setStep('vitals'); setShowSearch(true);
+
+        // Navigate back to OPD queue if came from there
+        if (opdVisitId) {
+          router.push('/opd');
+        }
       }
     } else { flash('Save failed — try again'); }
     setSaving(false);

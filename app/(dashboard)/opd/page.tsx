@@ -5,7 +5,7 @@ import { RoleGuard } from '@/components/ui/shared';
 import { useAuthStore } from '@/lib/store/auth';
 import { sb } from '@/lib/supabase/browser';
 import { Plus, Search, X, ChevronRight, Stethoscope, UserPlus } from 'lucide-react';
-import OPDConsultationFlow from '@/components/opd/opd-consultation-flow';
+import { useRouter } from 'next/navigation';
 
 const STATUS_FLOW = ['waiting', 'checked_in', 'with_doctor', 'completed'];
 const SC: Record<string, { label: string; badge: string; dot: string }> = {
@@ -21,12 +21,12 @@ type ViewMode = 'queue' | 'doctor' | 'list';
 function OPDInner() {
   const { staff, activeCentreId } = useAuthStore();
   const centreId = activeCentreId || '';
+  const router = useRouter();
   const { visits, loading, stats, createVisit, updateStatus } = useOPDQueue(centreId);
   const doctors = useDoctors(centreId);
 
   const [view, setView] = useState<ViewMode>('queue');
   const [showNew, setShowNew] = useState(false);
-  const [consultVisit, setConsultVisit] = useState<any>(null);
   const [toast, setToast] = useState('');
   const flash = (m: string) => { setToast(m); setTimeout(() => setToast(''), 3000); };
   const [filter, setFilter] = useState('active');
@@ -160,7 +160,7 @@ function OPDInner() {
                 <div className="flex items-center gap-2 mb-2 px-1"><span className={`w-2 h-2 rounded-full ${sc.dot}`} /><span className="text-xs font-bold text-gray-700">{sc.label}</span><span className="text-[10px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded-full">{items.length}</span></div>
                 <div className="space-y-2 min-h-[300px]">
                   {items.map(v => (
-                    <div key={v.id} onClick={() => v.status !== 'completed' && v.status !== 'cancelled' && v.status !== 'no_show' ? setConsultVisit(v) : null} className={`bg-white rounded-xl border p-3 hover:shadow-md hover:-translate-y-0.5 transition-all group ${v.status !== 'completed' && v.status !== 'cancelled' ? 'cursor-pointer' : ''}`}>
+                    <div key={v.id} onClick={() => v.status !== 'completed' && v.status !== 'cancelled' && v.status !== 'no_show' ? router.push(`/emr-v2?patient=${v.patient?.id}&visit=${v.id}`) : null} className={`bg-white rounded-xl border p-3 hover:shadow-md hover:-translate-y-0.5 transition-all group ${v.status !== 'completed' && v.status !== 'cancelled' ? 'cursor-pointer' : ''}`}>
                       <div className="flex items-center justify-between mb-1"><span className="text-xs font-bold text-teal-600">T{v.tokenNumber}</span><span className="text-[9px] text-gray-400">{waitTime(v)}</span></div>
                       <div className="text-sm font-semibold text-gray-800 truncate">{v.patient?.name}</div>
                       <div className="text-[10px] text-gray-400">{v.patient?.uhid} · {v.patient?.age}/{v.patient?.gender?.charAt(0)}</div>
@@ -217,7 +217,7 @@ function OPDInner() {
           <table className="w-full text-xs"><thead><tr><th>Token</th><th>Patient</th><th>Complaint</th><th>Doctor</th><th>Wait</th><th>Status</th><th>Action</th></tr></thead>
             <tbody>{filtered.map(v => {
               const sc = SC[v.status] || SC.waiting;
-              return (<tr key={v.id} className="hover:bg-gray-50 cursor-pointer" onClick={() => v.status !== 'completed' && v.status !== 'cancelled' && v.status !== 'no_show' ? setConsultVisit(v) : null}><td className="text-sm font-bold text-teal-600">T{v.tokenNumber}</td><td><div className="font-semibold">{v.patient?.name}</div><div className="text-[10px] text-gray-400">{v.patient?.uhid} · {v.patient?.age}/{v.patient?.gender?.charAt(0)}</div></td><td className="text-[11px] text-gray-600 max-w-[200px] truncate">{v.chiefComplaint || '—'}</td><td className="text-[11px]">{v.doctor?.name?.split(' ').pop()}</td><td className="text-[11px] text-gray-500">{waitTime(v)}</td><td><span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${sc.badge}`}>{sc.label}</span></td><td onClick={(e: any) => e.stopPropagation()}>{v.status !== 'completed' && v.status !== 'cancelled' ? <div className="flex items-center gap-1"><button onClick={() => setConsultVisit(v)} className="px-2 py-1 bg-teal-600 text-white text-[10px] rounded-lg font-semibold">Consult</button><select value={v.status} onChange={e => updateStatus(v.id, e.target.value)} className="text-[10px] border rounded-lg px-1 py-1">{STATUS_FLOW.map(s => <option key={s} value={s}>{SC[s].label}</option>)}<option value="no_show">No Show</option><option value="cancelled">Cancel</option></select></div> : '—'}</td></tr>);
+              return (<tr key={v.id} className="hover:bg-gray-50 cursor-pointer" onClick={() => v.status !== 'completed' && v.status !== 'cancelled' && v.status !== 'no_show' ? router.push(`/emr-v2?patient=${v.patient?.id}&visit=${v.id}`) : null}><td className="text-sm font-bold text-teal-600">T{v.tokenNumber}</td><td><div className="font-semibold">{v.patient?.name}</div><div className="text-[10px] text-gray-400">{v.patient?.uhid} · {v.patient?.age}/{v.patient?.gender?.charAt(0)}</div></td><td className="text-[11px] text-gray-600 max-w-[200px] truncate">{v.chiefComplaint || '—'}</td><td className="text-[11px]">{v.doctor?.name?.split(' ').pop()}</td><td className="text-[11px] text-gray-500">{waitTime(v)}</td><td><span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${sc.badge}`}>{sc.label}</span></td><td onClick={(e: any) => e.stopPropagation()}>{v.status !== 'completed' && v.status !== 'cancelled' ? <div className="flex items-center gap-1"><button onClick={() => router.push(`/emr-v2?patient=${v.patient?.id}&visit=${v.id}`)} className="px-2 py-1 bg-teal-600 text-white text-[10px] rounded-lg font-semibold">Consult</button><select value={v.status} onChange={e => updateStatus(v.id, e.target.value)} className="text-[10px] border rounded-lg px-1 py-1">{STATUS_FLOW.map(s => <option key={s} value={s}>{SC[s].label}</option>)}<option value="no_show">No Show</option><option value="cancelled">Cancel</option></select></div> : '—'}</td></tr>);
             })}{filtered.length === 0 && <tr><td colSpan={7} className="text-center py-12 text-gray-400">No visits</td></tr>}</tbody></table>
         </div>
       )}
@@ -254,17 +254,6 @@ function OPDInner() {
             <div><label className="text-[10px] font-semibold text-gray-500 uppercase">Chief Complaint</label><textarea className="w-full mt-1 px-3 py-2 border rounded-xl text-sm h-16 resize-none" value={complaint} onChange={e => setComplaint(e.target.value)} placeholder="e.g., Chest pain since 2 days" /></div>
             <button onClick={handleCreate} disabled={!selPat || !selDoctor || creating} className="w-full py-3 bg-teal-600 text-white text-sm rounded-xl font-semibold disabled:opacity-40 hover:bg-teal-700">{creating ? 'Creating...' : 'Register & Generate Token'}</button>
           </div>
-        </div>
-      )}
-
-      {/* CONSULTATION FLOW OVERLAY */}
-      {consultVisit && (
-        <div className="fixed inset-0 z-50 bg-black/40 flex items-start justify-center pt-8 overflow-y-auto">
-          <OPDConsultationFlow
-            visit={consultVisit}
-            onDone={() => { setConsultVisit(null); }}
-            onFlash={flash}
-          />
         </div>
       )}
     </div>
