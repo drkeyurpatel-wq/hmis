@@ -11,6 +11,7 @@ import {
   Scissors, UtensilsCrossed, ArrowLeft, Shield, Plus, TrendingUp,
 } from 'lucide-react';
 import { RoleGuard } from '@/components/ui/shared';
+import { PatientJourneyTimeline } from '@/components/patient/journey-timeline';
 
 const fmt = (n: number) => Math.round(n).toLocaleString('en-IN');
 const INR = (n: number) => n >= 100000 ? `₹${(n / 100000).toFixed(1)}L` : `₹${fmt(n)}`;
@@ -331,6 +332,11 @@ function Patient360Inner() {
             </div></div>
         </div>
       )}
+
+      {/* Journey Timeline */}
+      <div className="mt-4 bg-white rounded-xl border p-4">
+        <PatientJourneyTimeline patientId={patientId} admissionId={p.admission?.id} />
+      </div>
     </div>
   );
 }

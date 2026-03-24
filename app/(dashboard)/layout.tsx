@@ -10,6 +10,7 @@ import { createClient } from '@/lib/supabase/client';
 import { useKeyboardShortcuts, ShortcutHelpModal } from '@/components/ui/keyboard-shortcuts';
 import { registerServiceWorker } from '@/lib/offline/sync-manager';
 import { CommandPalette } from '@/components/ui/command-palette';
+import { SafetyTicker } from '@/components/layout/safety-ticker';
 
 export default function DashboardLayout({
   children,
@@ -99,6 +100,7 @@ export default function DashboardLayout({
           className="transition-all duration-200 min-h-screen md:ml-[256px]"
         >
           <GlobalHeader />
+          <SafetyTicker />
           <div className="px-4 sm:px-6 py-4 sm:py-6 max-w-full overflow-x-hidden">
             <ErrorBoundary>{children}</ErrorBoundary>
           </div>

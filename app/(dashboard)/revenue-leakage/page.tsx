@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { RoleGuard } from '@/components/ui/shared';
 import { useAuthStore } from '@/lib/store/auth';
-import { useLeakageScanner, LEAK_TYPES, type Leak } from '@/lib/revenue-leakage/leakage-hooks';
+import { useLeakageScanner, useLeakageActions, LEAK_TYPES, type Leak } from '@/lib/revenue-leakage/leakage-hooks';
 
 const fmt = (n: number) => Math.round(n).toLocaleString('en-IN');
 const INR = (n: number) => n >= 100000 ? `₹${(n / 100000).toFixed(1)}L` : `₹${fmt(n)}`;
@@ -10,10 +10,15 @@ const SEV_COLORS: Record<string, string> = { critical: 'bg-red-600 text-white', 
 const SEV_ROW: Record<string, string> = { critical: 'bg-red-50/50 border-l-4 border-l-red-500', high: 'bg-red-50/20', medium: '', low: '' };
 
 function LeakageInner() {
-  const { activeCentreId } = useAuthStore();
-  const scanner = useLeakageScanner(activeCentreId || '');
+  const { staff, activeCentreId } = useAuthStore();
+  const centreId = activeCentreId || '';
+  const staffId = staff?.id || '';
+  const scanner = useLeakageScanner(centreId);
+  const actions = useLeakageActions(centreId);
   const [typeFilter, setTypeFilter] = useState('all');
   const [sevFilter, setSevFilter] = useState('all');
+  const [toast, setToast] = useState('');
+  const flash = (m: string) => { setToast(m); setTimeout(() => setToast(''), 3000); };
 
   useEffect(() => { scanner.scan(); }, []);
 
@@ -83,13 +88,17 @@ function LeakageInner() {
         </div>
       </div>
 
+      {toast && <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-teal-600 text-white px-5 py-2.5 rounded-xl shadow-lg text-sm font-medium">{toast}</div>}
+
       {/* Leaks table */}
       <div className="bg-white rounded-xl border overflow-hidden">
         <table className="w-full text-xs"><thead><tr className="bg-gray-50 border-b">
           <th className="p-2">Severity</th><th className="p-2">Type</th><th className="p-2 text-left">Patient</th>
-          <th className="p-2 text-left">Issue</th><th className="p-2 text-right">Amount</th><th className="p-2">Age</th>
+          <th className="p-2 text-left">Issue</th><th className="p-2 text-right">Amount</th><th className="p-2">Age</th><th className="p-2">Action</th>
         </tr></thead><tbody>{filtered.map(l => {
           const cfg = LEAK_TYPES[l.type as keyof typeof LEAK_TYPES];
+          const canPost = ['missing_room_charge', 'unbilled_lab', 'unbilled_pharmacy', 'unbilled_charge'].includes(l.type);
+          const isPosting = actions.posting === (l.admission_id || l.id);
           return (
             <tr key={l.id} className={`border-b ${SEV_ROW[l.severity]}`}>
               <td className="p-2 text-center"><span className={`text-[8px] px-1.5 py-0.5 rounded font-medium capitalize ${SEV_COLORS[l.severity]}`}>{l.severity}</span></td>
@@ -98,9 +107,22 @@ function LeakageInner() {
               <td className="p-2 text-gray-600 max-w-[350px]">{l.description}</td>
               <td className="p-2 text-right font-bold text-red-600">{l.amount > 0 ? `₹${fmt(l.amount)}` : '—'}</td>
               <td className="p-2 text-center"><span className={l.days_old > 7 ? 'text-red-600 font-bold' : 'text-gray-500'}>{l.days_old}d</span></td>
+              <td className="p-2 text-center">{canPost ? (
+                <button disabled={isPosting} onClick={async () => {
+                  let res;
+                  if (l.type === 'missing_room_charge' && l.admission_id) { res = await actions.postRoomCharge(l.admission_id, staffId); }
+                  else if (l.type === 'unbilled_lab') { res = await actions.postLabCharge(l.id.replace('lab-', ''), staffId); }
+                  else if (l.type === 'unbilled_pharmacy') { res = await actions.postPharmacyCharge(l.id.replace('rx-', ''), staffId); }
+                  else if (l.type === 'unbilled_charge') { res = await actions.markBilled(l.id); }
+                  if (res?.success) { flash(`Charge posted${res.amount ? ` ₹${Math.round(res.amount)}` : ''}`); scanner.scan(); }
+                  else flash(res?.error || 'Failed to post charge');
+                }} className="px-2 py-1 bg-blue-600 text-white text-[9px] font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50">
+                  {isPosting ? '...' : 'Post Charge'}
+                </button>
+              ) : <span className="text-[9px] text-gray-400">Manual</span>}</td>
             </tr>
           );
-        })}{filtered.length === 0 && <tr><td colSpan={6} className="text-center py-12 text-green-600 font-medium">{scanner.loading ? 'Scanning...' : 'No leakage detected — all services billed'}</td></tr>}</tbody></table>
+        })}{filtered.length === 0 && <tr><td colSpan={7} className="text-center py-12 text-green-600 font-medium">{scanner.loading ? 'Scanning...' : 'No leakage detected — all services billed'}</td></tr>}</tbody></table>
       </div>
     </div>
   );

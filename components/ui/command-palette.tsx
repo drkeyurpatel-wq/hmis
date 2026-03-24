@@ -79,27 +79,91 @@ export function CommandPalette() {
 
   useEffect(() => { if (open) setTimeout(() => inputRef.current?.focus(), 50); }, [open]);
 
-  // Search patients + bills from DB
+  // Search patients + bills + beds + admissions + labs from DB
   useEffect(() => {
     if (query.length < 2 || !sb()) { setPatients([]); setBills([]); return; }
+    const q = query.toLowerCase();
     const t = setTimeout(async () => {
-      const [patRes, billRes] = await Promise.all([
+      // Smart intent detection
+      const intents: CommandItem[] = [];
+      if (q.includes('icu') && (q.includes('free') || q.includes('available') || q.includes('bed'))) {
+        intents.push({ id: 'intent-icu-beds', label: 'ICU — Available Beds', description: 'View free ICU beds on Ward Board', icon: BedDouble, category: 'action', href: '/ward-board' });
+      }
+      if (q.includes('discharge') && (q.includes('today') || q.includes('pending'))) {
+        intents.push({ id: 'intent-disch', label: 'Pending Discharges', description: 'Patients with discharge initiated', icon: BedDouble, category: 'action', href: '/ipd' });
+      }
+      if (q.startsWith('admit ') || q.startsWith('new admission')) {
+        intents.push({ id: 'intent-admit', label: 'New IPD Admission', description: 'Start admission wizard', icon: Plus, category: 'action', href: '/ipd' });
+      }
+      if (q.startsWith('new ') && (q.includes('opd') || q.includes('visit') || q.includes('token'))) {
+        intents.push({ id: 'intent-opd', label: 'Create OPD Visit', description: 'Register walk-in or appointment', icon: Plus, category: 'action', href: '/opd' });
+      }
+      if (q.startsWith('new patient') || q.startsWith('register')) {
+        intents.push({ id: 'intent-reg', label: 'Register New Patient', description: 'Create UHID', icon: Plus, category: 'action', href: '/patients/register' });
+      }
+      if (q.includes('schedule') && (q.includes('dr') || q.includes('doctor'))) {
+        intents.push({ id: 'intent-sched', label: 'Doctor Schedules', description: 'View/edit OPD schedules', icon: Calendar, category: 'action', href: '/appointments' });
+      }
+      if (q.includes('bill') && q.includes('new')) {
+        intents.push({ id: 'intent-bill', label: 'Create New Bill', description: 'Start billing', icon: CreditCard, category: 'action', href: '/billing' });
+      }
+      if (q.includes('revenue') || q.includes('leakage') || q.includes('unbilled')) {
+        intents.push({ id: 'intent-leak', label: 'Revenue Leakage Scanner', description: 'Find unbilled charges', icon: AlertTriangle, category: 'action', href: '/revenue-leakage' });
+      }
+
+      // Parallel DB searches
+      const searchToken = query.trim();
+      const [patRes, billRes, admRes, labRes] = await Promise.all([
         sb()!.from('hmis_patients').select('id, uhid, first_name, last_name, age_years, gender, phone_primary')
-          .or(`uhid.ilike.%${query}%,first_name.ilike.%${query}%,last_name.ilike.%${query}%,phone_primary.ilike.%${query}%`)
+          .or(`uhid.ilike.%${searchToken}%,first_name.ilike.%${searchToken}%,last_name.ilike.%${searchToken}%,phone_primary.ilike.%${searchToken}%`)
           .eq('is_active', true).limit(5),
         sb()!.from('hmis_bills').select('id, bill_number, net_amount, patient:hmis_patients!inner(first_name, last_name)')
-          .or(`bill_number.ilike.%${query}%`).limit(3),
+          .or(`bill_number.ilike.%${searchToken}%`).limit(3),
+        sb()!.from('hmis_admissions').select('id, ipd_number, status, patient:hmis_patients!inner(id, first_name, last_name, uhid)')
+          .or(`ipd_number.ilike.%${searchToken}%`)
+          .in('status', ['active', 'discharge_initiated']).limit(3),
+        // Search lab orders by patient name
+        sb()!.from('hmis_lab_orders').select('id, test_name, status, patient:hmis_patients!inner(id, first_name, last_name)')
+          .eq('status', 'completed')
+          .gte('created_at', new Date(Date.now() - 7 * 86400000).toISOString())
+          .limit(3),
       ]);
-      setPatients((patRes.data || []).map((p: any) => ({
+
+      const patItems = (patRes.data || []).map((p: any) => ({
         id: `pat-${p.id}`, label: `${p.first_name} ${p.last_name}`,
         description: `${p.uhid} · ${p.age_years || '?'}/${p.gender?.charAt(0) || '?'} · ${p.phone_primary || ''}`,
         icon: Users, category: 'patient' as const, href: `/patients/${p.id}`,
-      })));
-      setBills((billRes.data || []).map((b: any) => ({
+      }));
+
+      const billItems = (billRes.data || []).map((b: any) => ({
         id: `bill-${b.id}`, label: `Bill ${b.bill_number}`,
         description: `${b.patient?.first_name} ${b.patient?.last_name} · ₹${Math.round(b.net_amount).toLocaleString('en-IN')}`,
         icon: CreditCard, category: 'bill' as const, href: `/billing`,
-      })));
+      }));
+
+      // Lab results — only show if patient name matches query
+      const labItems: CommandItem[] = [];
+      for (const lab of labRes.data || []) {
+        const pt = lab.patient as any;
+        const name = `${pt?.first_name || ''} ${pt?.last_name || ''}`.toLowerCase();
+        if (name.includes(q) || lab.test_name.toLowerCase().includes(q)) {
+          labItems.push({
+            id: `lab-${lab.id}`, label: `${pt?.first_name} ${pt?.last_name} — ${lab.test_name}`,
+            description: `${lab.status} · Last 7 days`,
+            icon: FlaskConical, category: 'patient' as const, href: `/patients/${pt?.id}`,
+          });
+        }
+      }
+
+      // Admission results
+      const admItems = (admRes.data || []).map((a: any) => ({
+        id: `adm-${a.id}`, label: `IPD ${a.ipd_number} — ${a.patient?.first_name} ${a.patient?.last_name}`,
+        description: `Status: ${a.status.replace('_', ' ')}`,
+        icon: BedDouble, category: 'patient' as const, href: `/ipd/${a.id}`,
+      }));
+
+      setPatients([...intents, ...patItems, ...admItems, ...labItems.slice(0, 3)]);
+      setBills(billItems);
     }, 200);
     return () => clearTimeout(t);
   }, [query]);

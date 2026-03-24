@@ -154,3 +154,106 @@ export function useLeakageScanner(centreId: string | null) {
 
   return { leaks, loading, lastScanned, stats, scan };
 }
+
+// ============================================================
+// Revenue Recovery Actions — one-click charge posting
+// ============================================================
+
+export function useLeakageActions(centreId: string | null) {
+  const [posting, setPosting] = useState<string | null>(null);
+
+  const postRoomCharge = useCallback(async (admissionId: string, staffId: string) => {
+    if (!sb() || !centreId) return { success: false, error: 'No connection' };
+    setPosting(admissionId);
+    try {
+      // Lookup bed rate from admission
+      const { data: adm } = await sb()!.from('hmis_admissions')
+        .select('bed_id, patient_id, bed:hmis_beds!inner(bed_type, daily_rate)')
+        .eq('id', admissionId).single();
+
+      if (!adm?.bed) return { success: false, error: 'Bed not found' };
+      const rate = (adm.bed as any).daily_rate || 1500; // Default rate if not set
+      const today = new Date().toISOString().split('T')[0];
+
+      await sb()!.from('hmis_charge_log').insert({
+        centre_id: centreId, patient_id: adm.patient_id, admission_id: admissionId,
+        category: 'room', service_name: `Bed Charge (${(adm.bed as any).bed_type || 'General'})`,
+        quantity: 1, unit_rate: rate, amount: rate,
+        service_date: today, status: 'posted', posted_by: staffId,
+        source: 'leakage_recovery', source_ref_type: 'auto_charge',
+      });
+
+      return { success: true };
+    } catch (err: any) {
+      return { success: false, error: err.message };
+    } finally { setPosting(null); }
+  }, [centreId]);
+
+  const postLabCharge = useCallback(async (labOrderId: string, staffId: string) => {
+    if (!sb() || !centreId) return { success: false, error: 'No connection' };
+    setPosting(labOrderId);
+    try {
+      const { data: lab } = await sb()!.from('hmis_lab_orders')
+        .select('id, test_name, patient_id, admission_id').eq('id', labOrderId).single();
+      if (!lab) return { success: false, error: 'Lab order not found' };
+
+      // Lookup tariff
+      const { data: tariff } = await sb()!.from('hmis_tariff_master')
+        .select('rate_self').ilike('service_name', `%${lab.test_name}%`).eq('centre_id', centreId).limit(1).maybeSingle();
+      const rate = tariff?.rate_self || 500;
+
+      await sb()!.from('hmis_charge_log').insert({
+        centre_id: centreId, patient_id: lab.patient_id, admission_id: lab.admission_id,
+        category: 'lab', service_name: lab.test_name,
+        quantity: 1, unit_rate: rate, amount: rate,
+        service_date: new Date().toISOString().split('T')[0], status: 'posted', posted_by: staffId,
+        source: 'leakage_recovery', source_ref_id: labOrderId, source_ref_type: 'lab_order',
+      });
+
+      // Mark as billed
+      await sb()!.from('hmis_lab_orders').update({ billing_done: true }).eq('id', labOrderId);
+
+      return { success: true, amount: rate };
+    } catch (err: any) {
+      return { success: false, error: err.message };
+    } finally { setPosting(null); }
+  }, [centreId]);
+
+  const postPharmacyCharge = useCallback(async (dispensingId: string, staffId: string) => {
+    if (!sb() || !centreId) return { success: false, error: 'No connection' };
+    setPosting(dispensingId);
+    try {
+      const { data: disp } = await sb()!.from('hmis_pharmacy_dispensing')
+        .select('id, patient_id, prescription_data, encounter_id').eq('id', dispensingId).single();
+      if (!disp) return { success: false, error: 'Dispensing record not found' };
+
+      const items = disp.prescription_data || [];
+      const totalAmount = items.reduce((s: number, i: any) => s + (parseFloat(i.price || 0) * (i.qty || 1)), 0) || 200;
+
+      await sb()!.from('hmis_charge_log').insert({
+        centre_id: centreId, patient_id: disp.patient_id,
+        category: 'pharmacy', service_name: `Pharmacy (${items.length} items)`,
+        quantity: 1, unit_rate: totalAmount, amount: totalAmount,
+        service_date: new Date().toISOString().split('T')[0], status: 'posted', posted_by: staffId,
+        source: 'leakage_recovery', source_ref_id: dispensingId, source_ref_type: 'pharmacy_dispense',
+      });
+
+      await sb()!.from('hmis_pharmacy_dispensing').update({ billing_done: true }).eq('id', dispensingId);
+
+      return { success: true, amount: totalAmount };
+    } catch (err: any) {
+      return { success: false, error: err.message };
+    } finally { setPosting(null); }
+  }, [centreId]);
+
+  const markBilled = useCallback(async (chargeLogId: string, billId?: string) => {
+    if (!sb()) return { success: false };
+    const sourceId = chargeLogId.replace(/^ch-/, '');
+    await sb()!.from('hmis_charge_log').update({
+      bill_id: billId || 'manual', status: 'billed',
+    }).eq('id', sourceId);
+    return { success: true };
+  }, []);
+
+  return { posting, postRoomCharge, postLabCharge, postPharmacyCharge, markBilled };
+}
