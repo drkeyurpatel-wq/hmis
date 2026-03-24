@@ -14,8 +14,8 @@ export default function NurseCallPage() {
   const router = useRouter();
   const token = params.token as string;
   const { context } = usePxToken(token);
-  const { submit, submitting, error, cooldown } = useNurseCall(context);
-  const { activeCalls } = useMyNurseCalls(context?.token_id);
+  const { submit, submitting, error, cooldown } = useNurseCall(token);
+  const { activeCalls } = useMyNurseCalls(token);
 
   const [selectedReason, setSelectedReason] = useState<string | null>(null);
   const [priority, setPriority] = useState<NurseCallPriority>('routine');

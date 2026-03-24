@@ -167,7 +167,7 @@ export default function HospitalPulsePage() {
   };
 
   if (!data) return (
-    <div className="fixed inset-0 bg-[#060912] flex items-center justify-center md:ml-[240px]">
+    <div className="fixed inset-0 bg-[#060912] flex items-center justify-center md:ml-[256px]">
       <div className="text-center">
         <div className="relative w-24 h-24 mx-auto mb-6">
           <div className="absolute inset-0 rounded-full border-2 border-teal-500/20" />
@@ -184,7 +184,7 @@ export default function HospitalPulsePage() {
   const time = now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
 
   return (
-    <div className="fixed inset-0 bg-[#060912] text-white overflow-hidden md:ml-[240px]" style={{ fontFamily: "'DM Sans', system-ui" }}>
+    <div className="fixed inset-0 bg-[#060912] text-white overflow-hidden md:ml-[256px]" style={{ fontFamily: "'DM Sans', system-ui" }}>
       {/* Subtle grid background */}
       <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, white 1px, transparent 0)', backgroundSize: '40px 40px' }} />
 

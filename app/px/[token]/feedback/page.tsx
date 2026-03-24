@@ -33,7 +33,7 @@ export default function FeedbackPage() {
   const router = useRouter();
   const token = params.token as string;
   const { context } = usePxToken(token);
-  const { submit, submitting, error } = useSubmitFeedback(context);
+  const { submit, submitting, error } = useSubmitFeedback(token);
 
   const [overallRating, setOverallRating] = useState(0);
   const [categoryRatings, setCategoryRatings] = useState<Record<string, number>>({});

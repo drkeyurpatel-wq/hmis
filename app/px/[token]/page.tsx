@@ -102,9 +102,9 @@ export default function PxHomePage() {
   const params = useParams();
   const router = useRouter();
   const token = params.token as string;
-  const { context, loading, error } = usePxToken(token);
-  const { activeOrders } = useMyOrders(context?.token_id);
-  const { activeCalls } = useMyNurseCalls(context?.token_id);
+  const { context, loading, error, token: pxToken } = usePxToken(token);
+  const { activeOrders } = useMyOrders(token);
+  const { activeCalls } = useMyNurseCalls(token);
 
   if (loading) return <LoadingScreen />;
   if (error || !context) return <ErrorScreen message={error || 'Unknown error'} />;

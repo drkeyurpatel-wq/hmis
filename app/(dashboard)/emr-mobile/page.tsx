@@ -203,7 +203,7 @@ function MobileEMRInner() {
       </>}
 
       {/* Bottom Tab Bar */}
-      {patient && <div className="fixed bottom-0 left-0 right-0 bg-white border-t z-30 md:ml-[240px]">
+      {patient && <div className="fixed bottom-0 left-0 right-0 bg-white border-t z-30 md:ml-[256px]">
         <div className="max-w-lg mx-auto flex">
           {([['vitals', 'Vitals', '🩺'], ['notes', 'Notes', '📝'], ['orders', 'Orders', '📋'], ['meds', 'Meds', '💊'], ['history', 'History', '📁']] as [MobileTab, string, string][]).map(([k, l, icon]) => (
             <button key={k} onClick={() => setTab(k)} className={`flex-1 py-3 flex flex-col items-center gap-0.5 ${tab === k ? 'text-teal-600' : 'text-gray-400'}`}>

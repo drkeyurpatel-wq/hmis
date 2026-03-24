@@ -103,8 +103,8 @@ export default function FoodPage() {
   const { context } = usePxToken(token);
   const { menu, categories, loading: menuLoading } = useFoodMenu(context?.centre_id);
   const { items: cartItems, addItem, updateQty, clearCart, totalAmount, itemCount } = useFoodCart();
-  const { submit, submitting, error: submitError } = useSubmitFoodOrder(context);
-  const { activeOrders } = useMyOrders(context?.token_id);
+  const { submit, submitting, error: submitError } = useSubmitFoodOrder(token);
+  const { activeOrders } = useMyOrders(token);
 
   const [activeCategory, setActiveCategory] = useState<string>('all');
   const [dietaryFilter, setDietaryFilter] = useState<string | null>(null);

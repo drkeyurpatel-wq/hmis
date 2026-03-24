@@ -24,8 +24,8 @@ export default function ComplaintPage() {
   const router = useRouter();
   const token = params.token as string;
   const { context } = usePxToken(token);
-  const { submit, submitting, error } = useSubmitComplaint(context);
-  const { complaints } = useMyComplaints(context?.token_id);
+  const { submit, submitting, error } = useSubmitComplaint(token);
+  const { complaints } = useMyComplaints(token);
 
   const [category, setCategory] = useState<ComplaintCategory | null>(null);
   const [description, setDescription] = useState('');

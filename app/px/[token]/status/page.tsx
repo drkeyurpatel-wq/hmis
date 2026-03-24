@@ -34,9 +34,9 @@ export default function StatusPage() {
   const router = useRouter();
   const token = params.token as string;
   const { context } = usePxToken(token);
-  const { orders, loading: ordersLoading } = useMyOrders(context?.token_id);
-  const { calls, loading: callsLoading } = useMyNurseCalls(context?.token_id);
-  const { complaints, loading: complaintsLoading } = useMyComplaints(context?.token_id);
+  const { orders, loading: ordersLoading } = useMyOrders(token);
+  const { calls, loading: callsLoading } = useMyNurseCalls(token);
+  const { complaints, loading: complaintsLoading } = useMyComplaints(token);
 
   const loading = ordersLoading || callsLoading || complaintsLoading;
   const isEmpty = orders.length === 0 && calls.length === 0 && complaints.length === 0;
