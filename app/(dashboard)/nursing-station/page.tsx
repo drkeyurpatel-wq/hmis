@@ -165,7 +165,7 @@ function NursingStationInner() {
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
                   <span className="bg-blue-100 text-blue-800 px-2 py-0.5 rounded-lg text-[10px] font-bold">{p.bedNumber}</span>
-                  <span className="font-bold text-sm">{p.patientName}</span>
+                  <span className="font-bold text-sm">{p.patientId ? <Link href={`/patients/${p.patientId}`} className="hover:text-teal-600 hover:underline">{p.patientName}</Link> : p.patientName}</span>
                   <span className="text-[10px] font-mono text-gray-400">{p.uhid}</span>
                 </div>
                 <div className="flex items-center gap-1">

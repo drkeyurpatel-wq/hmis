@@ -1,4 +1,5 @@
 'use client';
+import Link from 'next/link';
 import React, { useState, useEffect, useCallback } from 'react';
 import { RoleGuard, TableSkeleton, StatusBadge, printLabReport } from '@/components/ui/shared';
 import { exportToCSV } from '@/lib/utils/data-export';
@@ -83,7 +84,7 @@ function LabPageInner() {
           <th className="p-2.5 font-medium text-gray-500">Actions</th>
         </tr></thead><tbody>{orders.map(o => (
           <tr key={o.id} className={`border-b hover:bg-gray-50 ${o.priority === 'stat' ? 'bg-red-50/30' : ''}`}>
-            <td className="p-2.5"><div className="font-medium">{o.patientName}</div><div className="text-[10px] text-gray-400">{o.patientUhid} | {o.patientAge}/{o.patientGender?.charAt(0).toUpperCase()}</div></td>
+            <td className="p-2.5"><div className="font-medium">{o.patientId ? <Link href={`/patients/${o.patientId}`} className="hover:text-teal-600 hover:underline">{o.patientName}</Link> : o.patientName}</div><div className="text-[10px] text-gray-400">{o.patientUhid} | {o.patientAge}/{o.patientGender?.charAt(0).toUpperCase()}</div></td>
             <td className="p-2.5"><div className="font-medium">{o.testName}</div><div className="text-[10px] text-gray-400">{o.testCode} | {o.category}</div></td>
             <td className="p-2.5 text-center"><span className={`px-1.5 py-0.5 rounded text-[10px] ${priorityColor(o.priority)}`}>{o.priority.toUpperCase()}</span></td>
             <td className="p-2.5 font-mono text-[10px]">{o.sampleBarcode || <span className="text-gray-300">—</span>}</td>
@@ -121,7 +122,7 @@ function LabPageInner() {
           <div key={o.id} className={`bg-white rounded-lg border p-3 ${o.priority === 'stat' ? 'border-red-300 bg-red-50/30' : ''}`}>
             <div className="flex items-center justify-between">
               <div>
-                <div className="font-medium text-sm">{o.patientName} <span className="text-gray-400 text-xs">({o.patientUhid})</span></div>
+                <div className="font-medium text-sm">{o.patientId ? <Link href={`/patients/${o.patientId}`} className="hover:text-teal-600 hover:underline">{o.patientName}</Link> : o.patientName} <span className="text-gray-400 text-xs">({o.patientUhid})</span></div>
                 <div className="text-xs text-gray-500">{o.testName} ({o.testCode}) | Dr. {o.orderedBy}</div>
                 {o.clinicalInfo && <div className="text-[10px] text-blue-600 mt-0.5">Clinical: {o.clinicalInfo}</div>}
               </div>
@@ -162,7 +163,7 @@ function LabPageInner() {
             <th className="text-left p-2">Patient</th><th className="text-left p-2">Test</th><th className="p-2">Barcode</th><th className="p-2">Priority</th><th className="p-2">Status</th>
           </tr></thead><tbody>{collected.map(o => (
             <tr key={o.id} className="border-b hover:bg-gray-50">
-              <td className="p-2">{o.patientName} <span className="text-gray-400">({o.patientUhid})</span></td>
+              <td className="p-2">{o.patientId ? <Link href={`/patients/${o.patientId}`} className="hover:text-teal-600 hover:underline">{o.patientName}</Link> : o.patientName} <span className="text-gray-400">({o.patientUhid})</span></td>
               <td className="p-2">{o.testName}</td>
               <td className="p-2 text-center font-mono text-blue-600">{o.sampleBarcode || '—'}</td>
               <td className="p-2 text-center"><span className={`px-1.5 py-0.5 rounded text-[10px] ${priorityColor(o.priority)}`}>{o.priority}</span></td>
@@ -319,7 +320,7 @@ function LabPageInner() {
               <h3 className="font-semibold text-sm text-red-800 mb-2">Currently Breaching TAT ({stats.tatBreached})</h3>
               {orders.filter(o => o.tatDeadline && new Date(o.tatDeadline) < new Date() && o.status !== 'completed').map(o => (
                 <div key={o.id} className="flex items-center justify-between py-1.5 border-b border-red-100 last:border-0 text-xs">
-                  <span>{o.patientName} — {o.testName}</span>
+                  <span>{o.patientId ? <Link href={`/patients/${o.patientId}`} className="hover:text-teal-600 hover:underline">{o.patientName}</Link> : o.patientName} — {o.testName}</span>
                   <span className="text-red-600">Overdue by {Math.round((Date.now() - new Date(o.tatDeadline!).getTime()) / 60000)} min</span>
                 </div>
               ))}
@@ -373,7 +374,7 @@ function ResultEntryPanel({ order, staffId, onFlash, onDone, onSelectOrder, orde
         orders.map(o => (
           <button key={o.id} onClick={() => onSelectOrder(o)}
             className={`w-full text-left p-2 rounded-lg border text-xs ${order?.id === o.id ? 'border-blue-500 bg-blue-50' : 'hover:bg-gray-50'}`}>
-            <div className="font-medium">{o.patientName}</div>
+            <div className="font-medium">{o.patientId ? <Link href={`/patients/${o.patientId}`} className="hover:text-teal-600 hover:underline">{o.patientName}</Link> : o.patientName}</div>
             <div className="text-[10px] text-gray-400">{o.testName} | {o.sampleBarcode || '—'}</div>
           </button>
         ))}
@@ -461,7 +462,7 @@ function VerifyPanel({ order, staffId, onFlash, onDone, onSelectOrder, orders }:
         orders.map(o => (
           <button key={o.id} onClick={() => onSelectOrder(o)}
             className={`w-full text-left p-2 rounded-lg border text-xs ${order?.id === o.id ? 'border-green-500 bg-green-50' : 'hover:bg-gray-50'}`}>
-            <div className="font-medium">{o.patientName}</div>
+            <div className="font-medium">{o.patientId ? <Link href={`/patients/${o.patientId}`} className="hover:text-teal-600 hover:underline">{o.patientName}</Link> : o.patientName}</div>
             <div className="text-[10px] text-gray-400">{o.testName}</div>
           </button>
         ))}

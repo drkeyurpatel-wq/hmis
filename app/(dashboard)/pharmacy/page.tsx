@@ -1,4 +1,5 @@
 'use client';
+import Link from 'next/link';
 import React, { useState, useEffect, useMemo } from 'react';
 import { RoleGuard } from '@/components/ui/shared';
 import { useAuthStore } from '@/lib/store/auth';
@@ -119,7 +120,7 @@ function PharmacyInner() {
         <div className="space-y-2">{dispensing.queue.map(rx => (
           <div key={rx.id} className="bg-white rounded-xl border p-4 hover:border-blue-300 cursor-pointer" onClick={() => setSelectedRx(rx)}>
             <div className="flex justify-between">
-              <div><span className="font-semibold text-sm">{rx.patient?.first_name} {rx.patient?.last_name}</span><span className="text-xs text-gray-400 ml-2">{rx.patient?.uhid}</span></div>
+              <div><span className="font-semibold text-sm"><Link href={`/patients/${rx.patient_id || rx.patient?.id}`} className='hover:text-teal-600 hover:underline'>{rx.patient?.first_name} {rx.patient?.last_name}</Link></span><span className="text-xs text-gray-400 ml-2">{rx.patient?.uhid}</span></div>
               <div className="flex items-center gap-2">
                 <span className={`px-2 py-0.5 rounded text-[10px] ${rx.status==='pending'?'bg-yellow-100 text-yellow-700':rx.status==='dispensed'?'bg-green-100 text-green-700':'bg-blue-100 text-blue-700'}`}>{rx.status}</span>
                 <span className="text-xs text-gray-400">{new Date(rx.created_at).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})}</span>

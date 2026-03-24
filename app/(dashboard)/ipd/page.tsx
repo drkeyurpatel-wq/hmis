@@ -149,7 +149,7 @@ function IPDPageInner() {
           <tbody>{filtered.map(a => (
             <tr key={a.id}>
               <td><Link href={`/ipd/${a.id}`} className="font-mono text-teal-600 hover:underline text-[11px] font-bold">{a.ipdNumber}</Link></td>
-              <td><div className="font-semibold">{a.patientName}</div><div className="text-[10px] text-gray-400">{a.patientUhid}</div></td>
+              <td><div className="font-semibold"><Link href={`/patients/${a.patientId}`} className="hover:text-teal-600 hover:underline">{a.patientName}</Link></div><div className="text-[10px] text-gray-400">{a.patientUhid}</div></td>
               <td className="text-[11px]">{a.primaryDoctor}</td>
               <td className="text-[11px]">{a.department}</td>
               <td><span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${typeBadge(a.admissionType)} uppercase text-[8px]`}>{a.admissionType}</span></td>

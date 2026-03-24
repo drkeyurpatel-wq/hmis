@@ -1,3 +1,4 @@
+import Link from 'next/link';
 'use client';
 import React, { useState } from 'react';
 import { useCommandCentre, type CentreData, type Alert } from '@/lib/command-centre/hooks';

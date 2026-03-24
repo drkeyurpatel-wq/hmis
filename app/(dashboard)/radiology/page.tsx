@@ -1,3 +1,4 @@
+import Link from 'next/link';
 // app/(dashboard)/radiology/page.tsx
 // Complete Radiology Information System — Stradus PACS integration
 'use client';
