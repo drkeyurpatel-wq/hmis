@@ -159,7 +159,7 @@ function IPDPageInner() {
               <td><span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${stBadge(a.status)}`}>{a.status.replace('_',' ')}</span></td>
               <td><div className="flex gap-1">
                 <Link href={`/ipd/${a.id}`} className="px-2 py-1 bg-teal-50 text-teal-700 text-[10px] rounded-lg font-medium hover:bg-teal-100">View</Link>
-                {a.status === 'active' && <button onClick={() => { initiateDischarge(a.id); flash('Discharge initiated'); }} className="px-2 py-1 bg-amber-50 text-amber-700 text-[10px] rounded-lg font-medium">Init Disch</button>}
+                {a.status === 'active' && <button onClick={async () => { const ok = await initiateDischarge(a.id); if (ok) { flash('Discharge initiated — patient moved to Discharge Init tab'); setStatusFilter('discharge_initiated'); } else { flash('Failed to initiate discharge. Please try again.'); } }} className="px-2 py-1 bg-amber-50 text-amber-700 text-[10px] rounded-lg font-medium">Init Disch</button>}
                 {a.status === 'discharge_initiated' && <Link href={`/ipd/${a.id}?tab=discharge`} className="px-2 py-1 bg-emerald-600 text-white text-[10px] rounded-lg font-semibold">Discharge</Link>}
               </div></td>
             </tr>

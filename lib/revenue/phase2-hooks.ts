@@ -120,11 +120,12 @@ export function useIPD(centreId: string | null) {
     loadAdmissions('active');
   }, [loadAdmissions]);
 
-  const initiateDischarge = useCallback(async (admissionId: string) => {
-    if (!sb()) return;
-    await sb()!.from('hmis_admissions').update({ status: 'discharge_initiated' }).eq('id', admissionId);
-    loadAdmissions('active');
-  }, [loadAdmissions]);
+  const initiateDischarge = useCallback(async (admissionId: string): Promise<boolean> => {
+    if (!sb()) return false;
+    const { error } = await sb()!.from('hmis_admissions').update({ status: 'discharge_initiated' }).eq('id', admissionId);
+    if (error) { console.error('Discharge init failed:', error.message); return false; }
+    return true;
+  }, []);
 
   return { admissions, beds, loading, loadAdmissions, loadBeds, admitPatient, dischargePatient, initiateDischarge };
 }
