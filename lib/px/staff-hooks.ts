@@ -4,7 +4,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { createClient } from '@/lib/supabase/client';
 import type {
   FoodOrder,
   FoodOrderStatus,
@@ -17,7 +17,7 @@ import type {
   FoodMenuItem,
 } from './types';
 
-const supabase = createClientComponentClient();
+const supabase = createClient();
 
 // ============================================================
 // Shared: Get current staff info

@@ -4,7 +4,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { createClient } from '@/lib/supabase/client';
 import type {
   PxTokenContext,
   FoodMenuItem,
@@ -17,7 +17,7 @@ import type {
   NurseCallPriority,
 } from './types';
 
-const supabase = createClientComponentClient();
+const supabase = createClient();
 
 // ============================================================
 // Token Validation
