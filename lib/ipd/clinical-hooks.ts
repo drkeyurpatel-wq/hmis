@@ -209,7 +209,22 @@ export function useMAR(admissionId: string | null) {
       dose_given: doseGiven, site, notes,
     }).eq('id', marId);
     load();
-  }, [load]);
+    // BRIDGE: resolve overdue med alerts for this patient
+    if (admissionId) {
+      const { data: marRow } = await sb()!.from('hmis_mar')
+        .select('medication_order:hmis_ipd_medication_orders!inner(drug_name, admission:hmis_admissions!inner(patient_id, centre_id))')
+        .eq('id', marId).single();
+      const adm = (marRow?.medication_order as any)?.admission;
+      if (adm) {
+        import('@/lib/bridge/clinical-event-bridge').then(({ onMedicationAdministered }) => {
+          onMedicationAdministered({
+            centreId: adm.centre_id, patientId: adm.patient_id, admissionId: admissionId!,
+            marId, drugName: (marRow?.medication_order as any)?.drug_name || '', staffId,
+          }).catch(() => {});
+        });
+      }
+    }
+  }, [load, admissionId]);
 
   const holdDose = useCallback(async (marId: string, reason: string) => {
     if (!sb()) return;

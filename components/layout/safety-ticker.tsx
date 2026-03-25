@@ -19,28 +19,40 @@ const TYPE_CONFIG: Record<string, { emoji: string; label: string; bg: string; te
   vital_abnormal: { emoji: '💓', label: 'Vitals Alert', bg: 'bg-orange-900/70', text: 'text-orange-200', pulse: true },
 };
 
-function TickerItemRow({ item }: { item: TickerItem }) {
+function TickerItemRow({ item, onAcknowledge }: { item: TickerItem; onAcknowledge?: (id: string) => void }) {
   const config = TYPE_CONFIG[item.type] || { emoji: '⚡', label: item.type, bg: 'bg-gray-800', text: 'text-gray-200' };
   return (
-    <Link href={item.action} className="flex items-center gap-3 px-3 py-2 hover:bg-white/5 rounded-lg transition-colors">
-      <span className="text-sm">{config.emoji}</span>
-      <div className="flex-1 min-w-0">
-        <span className="text-xs font-semibold text-white">{item.patientName}</span>
-        {item.bedLabel && <span className="text-[10px] text-gray-400 ml-1.5">Bed {item.bedLabel}</span>}
-        <div className="text-[10px] text-gray-400 truncate">{item.title} — {item.detail}</div>
-      </div>
-      <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
+    <div className="flex items-center gap-3 px-3 py-2 hover:bg-white/5 rounded-lg transition-colors">
+      <Link href={item.action} className="flex items-center gap-3 flex-1 min-w-0">
+        <span className="text-sm">{config.emoji}</span>
+        <div className="flex-1 min-w-0">
+          <span className="text-xs font-semibold text-white">{item.patientName}</span>
+          {item.bedLabel && <span className="text-[10px] text-gray-400 ml-1.5">Bed {item.bedLabel}</span>}
+          <div className="text-[10px] text-gray-400 truncate">{item.title} — {item.detail}</div>
+        </div>
+      </Link>
+      <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded shrink-0 ${
         item.severity === 'critical' ? 'bg-red-600 text-white' : item.severity === 'high' ? 'bg-amber-600 text-white' : 'bg-gray-600 text-gray-200'
       }`}>{item.severity.toUpperCase()}</span>
-    </Link>
+      {onAcknowledge && item.id.startsWith('alert-') && (
+        <button onClick={() => onAcknowledge(item.id.replace('alert-', ''))}
+          className="text-[9px] px-2 py-1 bg-white/10 hover:bg-white/20 text-white rounded shrink-0 transition-colors">Ack</button>
+      )}
+    </div>
   );
 }
 
 export function SafetyTicker() {
   const { staff, activeCentreId } = useAuthStore();
-  const { items, counts, loading } = useSafetyTicker(activeCentreId || null, staff?.staff_type || null);
+  const { items, counts, loading, refresh } = useSafetyTicker(activeCentreId || null, staff?.staff_type || null);
   const [expanded, setExpanded] = useState(false);
   const [dismissed, setDismissed] = useState(false);
+
+  const handleAcknowledge = async (alertId: string) => {
+    const { acknowledgeAlert } = await import('@/lib/bridge/clinical-event-bridge');
+    await acknowledgeAlert(alertId, staff?.id || '');
+    refresh();
+  };
 
   // Don't show if no items or dismissed or loading
   if (dismissed || loading || counts.total === 0) return null;
@@ -102,7 +114,7 @@ export function SafetyTicker() {
       {expanded && (
         <div className="border-t border-white/10 max-h-[300px] overflow-y-auto">
           <div className="px-3 py-2 space-y-0.5">
-            {items.slice(0, 20).map(item => <TickerItemRow key={item.id} item={item} />)}
+            {items.slice(0, 20).map(item => <TickerItemRow key={item.id} item={item} onAcknowledge={handleAcknowledge} />)}
           </div>
         </div>
       )}

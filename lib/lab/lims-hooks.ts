@@ -314,6 +314,20 @@ export function useResultEntry(orderId: string | null) {
           admissionId: labOrd.admission_id, labOrderId: orderId,
         }).catch(() => {})
       );
+
+      // BRIDGE: create critical alert if any results are critical
+      const criticalResults = results.filter(r => r.is_critical);
+      if (criticalResults.length > 0) {
+        const { data: testInfo } = await sb()!.from('hmis_lab_orders').select('test_name').eq('id', orderId).single();
+        import('@/lib/bridge/clinical-event-bridge').then(({ onLabResultCritical }) =>
+          onLabResultCritical({
+            centreId: labOrd.centre_id, patientId: labOrd.patient_id,
+            admissionId: labOrd.admission_id || undefined, labOrderId: orderId,
+            testName: testInfo?.test_name || 'Lab test',
+            criticalParams: criticalResults.map(r => ({ name: r.parameter_name, value: r.result_value })),
+          }).catch(() => {})
+        );
+      }
     }
 
     // Notify patient

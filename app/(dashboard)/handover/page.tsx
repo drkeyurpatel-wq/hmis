@@ -5,7 +5,7 @@
 
 import React, { useState } from 'react';
 import { useAuthStore } from '@/lib/store/auth';
-import { useShiftHandover, SHIFTS, type HandoverReport, type HandoverSection } from '@/lib/handover/shift-handover-hooks';
+import { useShiftHandover, useHandoverHistory, SHIFTS, type HandoverReport, type HandoverSection } from '@/lib/handover/shift-handover-hooks';
 import { RoleGuard, openPrintWindow } from '@/components/ui/shared';
 
 const SEV_STYLES: Record<string, { bg: string; border: string; title: string }> = {
@@ -96,8 +96,12 @@ function HandoverInner() {
   const { staff } = useAuthStore();
   const centreId = useAuthStore(s => s.activeCentreId);
   const handover = useShiftHandover(centreId || null);
+  const history = useHandoverHistory(centreId || null);
   const [selectedShift, setSelectedShift] = useState('night');
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+
+  // Load history on mount
+  React.useEffect(() => { history.load(7); }, []);
 
   return (
     <div className="max-w-4xl mx-auto">
@@ -150,12 +154,49 @@ function HandoverInner() {
       )}
 
       {!handover.report && !handover.loading && (
-        <div className="bg-gray-50 rounded-xl p-12 text-center">
+        <div className="bg-gray-50 rounded-xl p-12 text-center mb-6">
           <div className="text-4xl mb-3">📋</div>
           <h3 className="text-sm font-semibold text-gray-700 mb-1">No handover report yet</h3>
           <p className="text-xs text-gray-400">Select shift and click Generate to create a structured handover document.</p>
         </div>
       )}
+
+      {/* Past Handovers — incoming shift can view and acknowledge */}
+      <div className="mt-6">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-sm font-bold text-gray-700">Past Handovers (7 days)</h2>
+          <button onClick={() => history.load(7)} className="text-xs text-teal-600 hover:underline">{history.loading ? 'Loading...' : '↻ Refresh'}</button>
+        </div>
+        {history.history.length === 0 && !history.loading && (
+          <div className="text-xs text-gray-400 text-center py-6 bg-white rounded-xl border">No past handovers found</div>
+        )}
+        <div className="space-y-2">
+          {history.history.map((h: any) => {
+            const s = SHIFTS[h.shift_type];
+            return (
+              <div key={h.id} className="bg-white rounded-xl border p-4 flex items-center gap-4">
+                <div className="text-2xl">{h.shift_type === 'morning' ? '🌅' : h.shift_type === 'evening' ? '🌇' : '🌙'}</div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-semibold">{s?.label || h.shift_type} — {new Date(h.shift_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</div>
+                  <div className="text-[10px] text-gray-500">
+                    By {h.generated_by_name || 'Staff'} · {h.stats?.criticalPatients || 0} critical · {h.stats?.newAdmissions || 0} new · {h.stats?.pendingActions || 0} pending
+                  </div>
+                </div>
+                {h.acknowledged_at ? (
+                  <span className="text-[10px] text-green-600 font-medium px-2 py-1 bg-green-50 rounded-lg">
+                    ✓ Acknowledged by {h.acknowledged_by_name || 'Staff'}
+                  </span>
+                ) : (
+                  <button onClick={() => history.acknowledge(h.id, staff?.id || '', staff?.full_name || 'Staff')}
+                    className="px-3 py-1.5 bg-teal-600 text-white text-xs font-medium rounded-lg hover:bg-teal-700">
+                    Acknowledge
+                  </button>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
 }

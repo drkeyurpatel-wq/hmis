@@ -46,7 +46,17 @@ function Patient360Inner() {
     if (vf.respiratory_rate) record.respiratory_rate = parseFloat(vf.respiratory_rate);
     if (p.admission) record.admission_id = p.admission.id;
     const { error } = await sb()!.from('hmis_vitals').insert(record);
-    if (!error) { flash('Vitals recorded'); setShowVitals(false); setVf({ heart_rate: '', systolic_bp: '', diastolic_bp: '', temperature: '', spo2: '', respiratory_rate: '' }); p.reload(); }
+    if (!error) {
+      flash('Vitals recorded'); setShowVitals(false); setVf({ heart_rate: '', systolic_bp: '', diastolic_bp: '', temperature: '', spo2: '', respiratory_rate: '' }); p.reload();
+      // BRIDGE: fire alert engine
+      import('@/lib/bridge/clinical-event-bridge').then(({ onVitalsSaved }) => {
+        onVitalsSaved({
+          centreId: activeCentreId || '', patientId, admissionId: p.admission?.id,
+          vitals: { temperature: record.temperature, pulse: record.heart_rate, bp_systolic: record.systolic_bp, bp_diastolic: record.diastolic_bp, resp_rate: record.respiratory_rate, spo2: record.spo2 },
+          staffId: staff.id,
+        }).catch(() => {});
+      });
+    }
     else flash('Error: ' + error.message);
   }, [patientId, staff, vf, p]);
 

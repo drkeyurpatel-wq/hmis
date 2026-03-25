@@ -45,7 +45,7 @@ function NursingStationInner() {
   const station = useNursingStation(centreId, wardFilter || undefined);
 
   // Per-patient hooks (activate when patient selected)
-  const vitals = useNursingVitals(selectedPt?.patientId || null, selectedPt?.admissionId || null);
+  const vitals = useNursingVitals(selectedPt?.patientId || null, selectedPt?.admissionId || null, centreId || undefined);
   const mar = useMAR(selectedPt?.admissionId || null);
   const meds = useMedicationOrders(selectedPt?.admissionId || null);
   const ioChart = useIOChart(selectedPt?.admissionId || null);

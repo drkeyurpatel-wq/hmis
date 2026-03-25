@@ -207,7 +207,7 @@ export interface VitalRecord {
   recorder?: { full_name: string };
 }
 
-export function useNursingVitals(patientId: string | null, admissionId: string | null) {
+export function useNursingVitals(patientId: string | null, admissionId: string | null, centreId?: string) {
   const [history, setHistory] = useState<VitalRecord[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -240,7 +240,22 @@ export function useNursingVitals(patientId: string | null, admissionId: string |
       gcs_score: vitals.gcsScore ?? null, pain_score: vitals.painScore ?? null,
       blood_sugar: vitals.bloodSugar ?? null, urine_output: vitals.urineOutput ?? null,
     }).select().single();
-    if (!error) load();
+    if (!error && data) {
+      load();
+      // BRIDGE: fire alert engine after vitals save
+      import('@/lib/bridge/clinical-event-bridge').then(({ onVitalsSaved }) => {
+        onVitalsSaved({
+          centreId: centreId || '', patientId: patientId!, admissionId: admissionId!,
+          vitals: {
+            temperature: vitals.temperature, pulse: vitals.heartRate,
+            bp_systolic: vitals.bpSystolic, bp_diastolic: vitals.bpDiastolic,
+            resp_rate: vitals.respiratoryRate, spo2: vitals.spo2,
+          },
+          staffId,
+        }).catch(() => {});
+      });
+    }
+    if (!error && !data) load();
     return { data, error };
   }, [patientId, admissionId, load]);
 
