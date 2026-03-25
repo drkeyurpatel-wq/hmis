@@ -89,6 +89,20 @@ function EMRInner() {
     const { data: pt } = await sb()!.from('hmis_patients').select('id, uhid, first_name, last_name, age_years, gender, phone_primary, blood_group').eq('id', id).single();
     if (!pt) return;
     const { data: allergies } = await sb()!.from('hmis_patient_allergies').select('allergen').eq('patient_id', id);
+
+    // CRITICAL: Reset ALL clinical form state before loading new patient
+    // Without this, data from Patient A bleeds into Patient B
+    setVitals({ systolic: '', diastolic: '', heartRate: '', spo2: '', temperature: '', weight: '', height: '', respiratoryRate: '', isAlert: true, onO2: false });
+    setComplaints([]);
+    setExamFindings({});
+    setDiagnoses([]);
+    setPrescriptions([]);
+    setInvestigations([]);
+    setAdvice('');
+    setFollowUpDate('');
+    setReferral({ department: '', doctor: '', reason: '', urgency: 'routine' });
+    setStep('vitals'); // Reset to first step
+
     setPatient({
       id: pt.id, name: `${pt.first_name} ${pt.last_name || ''}`.trim(), age: pt.age_years?.toString() || '--',
       gender: pt.gender || '--', uhid: pt.uhid, phone: pt.phone_primary || '',

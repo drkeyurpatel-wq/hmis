@@ -99,13 +99,14 @@ export function useEMR(): EMRState {
   // Select patient — try online first, fallback to cache
   const selectPatient = useCallback(async (id: string) => {
     setSelectedPatientId(id);
+    setActiveEncounterId(null); // CRITICAL: reset so we don't overwrite previous patient's encounter
     if (!isOnline()) {
       const cached = await getCachedPatient(id);
       if (cached && setPatientState) {
         setPatientState(cached);
       }
     }
-  }, [setPatientState]);
+  }, [setPatientState, setActiveEncounterId]);
 
   // Load encounter — try online, fallback to cache
   const loadEncounter = useCallback(async (id: string): Promise<EncounterData | null> => {

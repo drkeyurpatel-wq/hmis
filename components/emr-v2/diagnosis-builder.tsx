@@ -14,7 +14,9 @@ export default function DiagnosisBuilder({ diagnoses, onChange }: Props) {
 
   const add = (dx: any) => {
     const type = diagnoses.length === 0 ? 'primary' : 'secondary';
-    onChange([...diagnoses, { code: dx.code || '', name: typeof dx === 'string' ? dx : dx.name || dx, type, notes: '' }]);
+    const name = typeof dx === 'string' ? dx : (dx.label || dx.name || dx.code || String(dx));
+    if (diagnoses.some(d => d.code === dx.code && dx.code)) return; // dedup by code
+    onChange([...diagnoses, { code: dx.code || '', name, type, notes: '' }]);
     setSearch('');
   };
 
@@ -35,7 +37,7 @@ export default function DiagnosisBuilder({ diagnoses, onChange }: Props) {
         {results.length > 0 && <div className="absolute top-full left-0 right-0 mt-1 bg-white border rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto">
           {results.map((dx: any, i: number) => (
             <button key={i} onClick={() => add(dx)} className="w-full text-left px-3 py-2 text-xs hover:bg-blue-50 border-b">
-              <span className="font-mono text-blue-600 mr-2">{dx.code}</span><span>{dx.name}</span>
+              <span className="font-mono text-blue-600 mr-2">{dx.code}</span><span>{dx.label || dx.name}</span>
             </button>
           ))}
         </div>}
