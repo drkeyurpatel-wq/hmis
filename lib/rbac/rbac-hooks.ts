@@ -86,32 +86,41 @@ export function useStaffManagement(centreId: string | null) {
 
   useEffect(() => { load(); }, [load]);
 
-  // Create single user
+  // Create single user — uses server API route for auth user creation
   const createUser = useCallback(async (data: {
-    employeeCode: string; fullName: string; email: string; password: string;
+    employeeCode: string; fullName: string; username: string; email?: string; password: string;
     phone: string; staffType: string; designation: string;
     roleName: string; departmentId?: string;
     specialisation?: string; medicalRegNo?: string;
   }): Promise<{ success: boolean; error?: string }> => {
-    if (!centreId || !sb()) return { success: false, error: 'Not ready' };
-    const { data: result, error } = await sb()!.rpc('create_staff_user', {
-      p_employee_code: data.employeeCode,
-      p_full_name: data.fullName,
-      p_email: data.email,
-      p_password: data.password,
-      p_phone: data.phone,
-      p_staff_type: data.staffType,
-      p_designation: data.designation,
-      p_centre_id: centreId,
-      p_role_name: data.roleName,
-      p_department_id: data.departmentId || null,
-      p_specialisation: data.specialisation || null,
-      p_medical_reg_no: data.medicalRegNo || null,
-    });
-    if (error) return { success: false, error: error.message };
-    if (result && !result.success) return { success: false, error: result.error };
-    load();
-    return { success: true };
+    if (!centreId) return { success: false, error: 'Not ready' };
+    try {
+      const res = await fetch('/api/staff/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username: data.username || data.employeeCode,
+          password: data.password,
+          fullName: data.fullName,
+          employeeCode: data.employeeCode,
+          phone: data.phone,
+          staffType: data.staffType,
+          designation: data.designation,
+          centreId,
+          roleName: data.roleName,
+          departmentId: data.departmentId || null,
+          specialisation: data.specialisation || null,
+          medicalRegNo: data.medicalRegNo || null,
+          email: data.email || null,
+        }),
+      });
+      const result = await res.json();
+      if (!result.success) return { success: false, error: result.error };
+      load();
+      return { success: true };
+    } catch (err: any) {
+      return { success: false, error: err.message };
+    }
   }, [centreId, load]);
 
   // Bulk create from array
