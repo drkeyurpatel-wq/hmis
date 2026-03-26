@@ -1,58 +1,122 @@
-// components/ui/error-boundary.tsx
 'use client';
 
-import React, { Component, type ReactNode } from 'react';
+import React from 'react';
+import { AlertTriangle, RefreshCw, ChevronDown, ChevronUp } from 'lucide-react';
 
-interface Props { children: ReactNode; module?: string; }
-interface State { hasError: boolean; error: Error | null; }
+interface ErrorBoundaryProps {
+  children: React.ReactNode;
+  fallback?: React.ReactNode;
+}
 
-export class ErrorBoundary extends Component<Props, State> {
-  constructor(props: Props) {
+interface ErrorBoundaryState {
+  hasError: boolean;
+  error: Error | null;
+  showDetails: boolean;
+}
+
+/**
+ * ErrorBoundary — Catches React errors at page level.
+ * 
+ * Sidebar and header remain functional. Only the content area shows the error.
+ * Wrap each page's content area (or use in dashboard layout.tsx to wrap all pages).
+ * 
+ * Usage:
+ *   <ErrorBoundary>
+ *     <PageContent />
+ *   </ErrorBoundary>
+ */
+export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  constructor(props: ErrorBoundaryProps) {
     super(props);
-    this.state = { hasError: false, error: null };
+    this.state = { hasError: false, error: null, showDetails: false };
   }
 
-  static getDerivedStateFromError(error: Error): State {
+  static getDerivedStateFromError(error: Error): Partial<ErrorBoundaryState> {
     return { hasError: true, error };
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error(`[${this.props.module || 'HMIS'}] Error:`, error, errorInfo);
+    // Log to console (future: send to error tracking service)
+    console.error('[Health1 HMIS] Page error caught by ErrorBoundary:', error, errorInfo);
   }
+
+  handleRetry = () => {
+    this.setState({ hasError: false, error: null, showDetails: false });
+  };
+
+  toggleDetails = () => {
+    this.setState((prev) => ({ showDetails: !prev.showDetails }));
+  };
 
   render() {
     if (this.state.hasError) {
+      if (this.props.fallback) return this.props.fallback;
+
       return (
-        <div className="flex items-center justify-center min-h-[400px]">
-          <div className="text-center max-w-md">
-            <div className="w-16 h-16 mx-auto mb-4 bg-red-50 rounded-full flex items-center justify-center">
-              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#dc2626" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-            </div>
-            <h2 className="text-lg font-semibold text-gray-900 mb-2">Something went wrong</h2>
-            <p className="text-sm text-gray-500 mb-4">
-              {this.props.module ? `The ${this.props.module} module encountered an error.` : 'An unexpected error occurred.'}
-            </p>
-            <div className="bg-red-50 rounded-lg p-3 mb-4 text-left">
-              <p className="text-xs text-red-700 font-mono break-all">{this.state.error?.message}</p>
-            </div>
-            <div className="flex gap-2 justify-center">
-              <button
-                onClick={() => { this.setState({ hasError: false, error: null }); }}
-                className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700"
-              >
-                Try again
-              </button>
-              <button
-                onClick={() => { window.location.reload(); }}
-                className="px-4 py-2 bg-gray-100 text-gray-600 text-sm rounded-lg hover:bg-gray-200"
-              >
-                Reload page
-              </button>
-            </div>
+        <div className="flex flex-col items-center justify-center py-16 px-h1-md text-center">
+          <div className="rounded-full bg-h1-red-light p-4 mb-h1-md">
+            <AlertTriangle className="w-12 h-12 text-h1-red" aria-hidden="true" />
           </div>
+
+          <h3 className="text-lg font-semibold text-h1-text mb-h1-xs">
+            Something went wrong
+          </h3>
+
+          <p className="text-h1-body text-h1-text-secondary max-w-md mb-h1-lg">
+            An unexpected error occurred while loading this page.
+            Your other navigation options still work — try going back or refreshing.
+          </p>
+
+          <div className="flex gap-3 mb-h1-md">
+            <button
+              onClick={this.handleRetry}
+              className="
+                inline-flex items-center gap-2 px-4 py-2 rounded-h1
+                bg-h1-navy text-white font-medium text-h1-body
+                hover:bg-h1-navy/90 transition-colors duration-h1-normal
+                cursor-pointer
+              "
+            >
+              <RefreshCw className="w-4 h-4" />
+              Try Again
+            </button>
+          </div>
+
+          {/* Collapsible error details for debugging */}
+          {this.state.error && (
+            <div className="w-full max-w-lg">
+              <button
+                onClick={this.toggleDetails}
+                className="
+                  inline-flex items-center gap-1 text-h1-small text-h1-text-muted
+                  hover:text-h1-text-secondary transition-colors cursor-pointer
+                "
+              >
+                {this.state.showDetails ? (
+                  <ChevronUp className="w-3 h-3" />
+                ) : (
+                  <ChevronDown className="w-3 h-3" />
+                )}
+                {this.state.showDetails ? 'Hide' : 'Show'} error details
+              </button>
+
+              {this.state.showDetails && (
+                <pre className="mt-2 p-3 bg-gray-50 border border-h1-border rounded-h1-sm text-left text-h1-small text-h1-red overflow-x-auto">
+                  {this.state.error.message}
+                  {this.state.error.stack && (
+                    <>
+                      {'\n\n'}
+                      {this.state.error.stack}
+                    </>
+                  )}
+                </pre>
+              )}
+            </div>
+          )}
         </div>
       );
     }
+
     return this.props.children;
   }
 }
