@@ -223,7 +223,7 @@ export default function ServiceBillingEngine({
     setItems(chargeItems);
   };
 
-  const cls = 'px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500';
+  const cls = 'px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:border-h1-teal focus:ring-1 focus:ring-h1-teal';
 
   // ---- DONE ----
   if (step === 'done' && billCreated) {
@@ -231,11 +231,11 @@ export default function ServiceBillingEngine({
       <div className="max-w-md mx-auto text-center py-8">
         <div className="text-5xl mb-4">✅</div>
         <h2 className="text-lg font-bold">Bill Created</h2>
-        <div className="text-2xl font-mono bg-blue-50 text-blue-700 px-4 py-3 rounded-xl mt-3 font-bold">{billCreated.number}</div>
+        <div className="text-2xl font-mono bg-h1-teal-light text-h1-teal px-4 py-3 rounded-xl mt-3 font-bold">{billCreated.number}</div>
         <div className="mt-2 text-sm text-gray-500">{patientName} — {INR(summary.net)}</div>
         <div className="flex gap-3 mt-6 justify-center">
           <button onClick={() => window.print()} className="px-4 py-2 bg-gray-100 text-sm rounded-lg flex items-center gap-1"><Printer size={14} /> Print</button>
-          <button onClick={() => { setItems([]); setPayments([]); setBillCreated(null); setStep('items'); }} className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg">New Bill</button>
+          <button onClick={() => { setItems([]); setPayments([]); setBillCreated(null); setStep('items'); }} className="px-4 py-2 bg-h1-navy text-white text-sm rounded-lg">New Bill</button>
         </div>
       </div>
     );
@@ -263,7 +263,7 @@ export default function ServiceBillingEngine({
                     <div className="absolute z-20 mt-1 w-full bg-white border rounded-lg shadow-lg max-h-48 overflow-y-auto">
                       {patientResults.map(p => (
                         <button key={p.id} onClick={() => { setPatientId(p.id); setPatientName(`${p.first_name} ${p.last_name} (${p.uhid})`); setPatientSearch(''); setPatientResults([]); }}
-                          className="w-full text-left px-3 py-2 hover:bg-blue-50 text-xs border-b last:border-0">
+                          className="w-full text-left px-3 py-2 hover:bg-h1-teal-light text-xs border-b last:border-0">
                           <span className="font-medium">{p.first_name} {p.last_name}</span>
                           <span className="ml-2 text-gray-400">{p.uhid}</span>
                           <span className="ml-2 text-gray-400">{p.phone_primary}</span>
@@ -293,10 +293,10 @@ export default function ServiceBillingEngine({
 
       {/* ===== STEP TOGGLE ===== */}
       <div className="flex gap-1">
-        <button onClick={() => setStep('items')} className={`flex-1 py-2 text-xs font-medium rounded-lg ${step === 'items' ? 'bg-blue-600 text-white' : 'bg-gray-100'}`}>
+        <button onClick={() => setStep('items')} className={`flex-1 py-2 text-xs font-medium rounded-lg ${step === 'items' ? 'bg-h1-navy text-white' : 'bg-gray-100'}`}>
           1. Services ({items.length})
         </button>
-        <button onClick={() => setStep('payment')} className={`flex-1 py-2 text-xs font-medium rounded-lg ${step === 'payment' ? 'bg-blue-600 text-white' : 'bg-gray-100'}`}>
+        <button onClick={() => setStep('payment')} className={`flex-1 py-2 text-xs font-medium rounded-lg ${step === 'payment' ? 'bg-h1-navy text-white' : 'bg-gray-100'}`}>
           2. Payment ({INR(summary.paid)} / {INR(summary.net)})
         </button>
       </div>
@@ -308,7 +308,7 @@ export default function ServiceBillingEngine({
           <div className="flex gap-2 mb-3">
             <div className="relative flex-1">
               <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-              <input className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-500"
+              <input className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-h1-teal"
                 value={tariffQ} onChange={e => setTariffQ(e.target.value)} placeholder={payorType === 'pmjay' ? "Search PMJAY packages — knee replacement, CABG, cataract..." : "Search services — CBC, ECG, X-Ray, Bed Charges..."} />
             </div>
             <select className="px-2 py-2 border rounded-lg text-xs" value={catFilter} onChange={e => setCatFilter(e.target.value)}>
@@ -329,7 +329,7 @@ export default function ServiceBillingEngine({
                 const costP = t.cost_price || 0;
                 const mgn = rate > 0 && costP > 0 ? Math.round(((rate - costP) / rate) * 100) : null;
                 return (
-                <button key={t.id} onClick={() => addItem(t)} className="w-full text-left px-3 py-2 hover:bg-blue-50 flex items-center justify-between border-b last:border-0 text-xs">
+                <button key={t.id} onClick={() => addItem(t)} className="w-full text-left px-3 py-2 hover:bg-h1-teal-light flex items-center justify-between border-b last:border-0 text-xs">
                   <div>
                     <span className="font-medium">{t.service_name}</span>
                     <span className="ml-2 text-gray-400">{t.category.replace(/_/g, ' ')}</span>
@@ -337,8 +337,8 @@ export default function ServiceBillingEngine({
                   <div className="flex items-center gap-3">
                     {costP > 0 && <span className="text-[9px] text-gray-400">Cost {INR(costP)}</span>}
                     <span className="font-bold text-green-700">{INR(rate)}</span>
-                    {mgn !== null && <span className={`text-[9px] font-bold ${mgn >= 30 ? 'text-green-600' : mgn >= 0 ? 'text-amber-600' : 'text-red-600'}`}>{mgn}%</span>}
-                    <Plus size={14} className="text-blue-500" />
+                    {mgn !== null && <span className={`text-[9px] font-bold ${mgn >= 30 ? 'text-green-600' : mgn >= 0 ? 'text-h1-yellow' : 'text-red-600'}`}>{mgn}%</span>}
+                    <Plus size={14} className="text-h1-teal" />
                   </div>
                 </button>
                 );
@@ -359,7 +359,7 @@ export default function ServiceBillingEngine({
                       <div className="flex gap-1 mt-0.5">
                         <span className="text-[8px] bg-orange-100 text-orange-700 px-1 py-0.5 rounded">{p.procedure_code}</span>
                         <span className="text-[8px] bg-gray-100 px-1 py-0.5 rounded">{p.specialty?.split(',')[0]}</span>
-                        {p.is_day_care && <span className="text-[8px] bg-blue-100 text-blue-700 px-1 py-0.5 rounded">Day Care</span>}
+                        {p.is_day_care && <span className="text-[8px] bg-h1-teal-light text-h1-teal px-1 py-0.5 rounded">Day Care</span>}
                         {p.auto_approved && <span className="text-[8px] bg-green-100 text-green-700 px-1 py-0.5 rounded">Auto-Approved</span>}
                         {p.alos > 0 && <span className="text-[8px] bg-gray-100 px-1 py-0.5 rounded">ALOS {p.alos}d</span>}
                       </div>
@@ -367,7 +367,7 @@ export default function ServiceBillingEngine({
                     <div className="text-right ml-3 flex-shrink-0">
                       <div className="font-bold text-orange-700">{INR(p.effective_rate)}</div>
                       <div className="text-[8px] text-gray-400">Base {INR(p.base_rate)} + 10%</div>
-                      {p.implant_cost > 0 && <div className="text-[8px] text-purple-600">+Implant {INR(p.implant_cost)}</div>}
+                      {p.implant_cost > 0 && <div className="text-[8px] text-h1-navy">+Implant {INR(p.implant_cost)}</div>}
                     </div>
                   </button>
                 ))}
@@ -395,7 +395,7 @@ export default function ServiceBillingEngine({
                 </thead>
                 <tbody>
                   {items.map(item => (
-                    <tr key={item.id} className="border-b hover:bg-blue-50/30">
+                    <tr key={item.id} className="border-b hover:bg-h1-teal-light/30">
                       <td className="p-2">
                         <input className="w-full text-xs border-0 outline-none bg-transparent font-medium" value={item.description}
                           onChange={e => updateItem(item.id, 'description', e.target.value)} />
@@ -416,7 +416,7 @@ export default function ServiceBillingEngine({
                       <td className="p-2 text-right">
                         {item.unit_cost > 0 ? (
                           <div>
-                            <span className={`font-bold text-[10px] ${item.margin_pct >= 30 ? 'text-green-700' : item.margin_pct >= 0 ? 'text-amber-600' : 'text-red-600'}`}>
+                            <span className={`font-bold text-[10px] ${item.margin_pct >= 30 ? 'text-green-700' : item.margin_pct >= 0 ? 'text-h1-yellow' : 'text-red-600'}`}>
                               {item.margin_pct}%
                             </span>
                             <div className="text-[8px] text-gray-400">{INR(item.margin)}</div>
@@ -447,7 +447,7 @@ export default function ServiceBillingEngine({
                 {summary.totalCost > 0 && (
                   <div className="border-t border-gray-200 pt-1 mt-1">
                     <div className="text-[10px] text-gray-400">Cost: {INR(summary.totalCost)}</div>
-                    <div className={`text-xs font-bold ${summary.marginPct >= 30 ? 'text-green-700' : summary.marginPct >= 0 ? 'text-amber-600' : 'text-red-600'}`}>
+                    <div className={`text-xs font-bold ${summary.marginPct >= 30 ? 'text-green-700' : summary.marginPct >= 0 ? 'text-h1-yellow' : 'text-red-600'}`}>
                       Margin: {INR(summary.margin)} ({summary.marginPct}%)
                     </div>
                   </div>
@@ -458,7 +458,7 @@ export default function ServiceBillingEngine({
         </div>
 
         <button onClick={() => setStep('payment')} disabled={items.length === 0}
-          className="w-full py-3 bg-blue-600 text-white text-sm rounded-xl font-bold disabled:opacity-40">
+          className="w-full py-3 bg-h1-navy text-white text-sm rounded-xl font-bold disabled:opacity-40">
           Proceed to Payment ({INR(summary.net)}) →
         </button>
       </>}
@@ -470,7 +470,7 @@ export default function ServiceBillingEngine({
           <div className="grid grid-cols-4 gap-2">
             <div className="bg-gray-50 rounded-lg p-3 text-center"><div className="text-[9px] text-gray-500">Gross</div><div className="text-lg font-bold">{INR(summary.gross)}</div></div>
             <div className="bg-red-50 rounded-lg p-3 text-center"><div className="text-[9px] text-gray-500">Discount</div><div className="text-lg font-bold text-red-700">-{INR(summary.totalDiscount)}</div></div>
-            <div className="bg-blue-50 rounded-lg p-3 text-center"><div className="text-[9px] text-gray-500">Net Payable</div><div className="text-lg font-bold text-blue-700">{INR(summary.net)}</div></div>
+            <div className="bg-h1-teal-light rounded-lg p-3 text-center"><div className="text-[9px] text-gray-500">Net Payable</div><div className="text-lg font-bold text-h1-teal">{INR(summary.net)}</div></div>
             <div className={`rounded-lg p-3 text-center ${summary.balance > 0 ? 'bg-orange-50' : 'bg-green-50'}`}><div className="text-[9px] text-gray-500">Balance</div><div className={`text-lg font-bold ${summary.balance > 0 ? 'text-orange-700' : 'text-green-700'}`}>{INR(summary.balance)}</div></div>
           </div>
 
@@ -496,7 +496,7 @@ export default function ServiceBillingEngine({
               <input className={cls + ' w-full mt-1'} value={payRef} onChange={e => setPayRef(e.target.value)} placeholder="UPI Ref / Cheque #" />
             </div>
             <button onClick={addPayment} className="px-3 py-2 bg-green-600 text-white text-xs rounded-lg font-medium">Add</button>
-            <button onClick={payFull} className="px-3 py-2 bg-blue-100 text-blue-700 text-xs rounded-lg">Pay Full</button>
+            <button onClick={payFull} className="px-3 py-2 bg-h1-teal-light text-h1-teal text-xs rounded-lg">Pay Full</button>
           </div>
 
           {/* Payment list */}

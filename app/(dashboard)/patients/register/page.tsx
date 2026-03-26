@@ -10,7 +10,7 @@ const STATES = ['Gujarat', 'Rajasthan', 'Maharashtra', 'Delhi', 'Karnataka', 'Ta
 const SCHEMES = ['Self Pay', 'Private Insurance', 'PMJAY', 'CGHS', 'ECHS', 'ESI'];
 const RELIGIONS = ['Hindu', 'Muslim', 'Christian', 'Sikh', 'Buddhist', 'Jain', 'Other'];
 
-const CI = 'w-full px-3 py-2.5 rounded-lg border border-gray-300 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-teal-500 bg-white';
+const CI = 'w-full px-3 py-2.5 rounded-lg border border-gray-300 text-sm outline-none focus:border-h1-teal focus:ring-1 focus:ring-h1-teal bg-white';
 const CL = 'block text-xs font-semibold text-gray-600 mb-1';
 const CC = 'bg-white rounded-2xl border border-gray-200 shadow-sm p-6';
 
@@ -104,11 +104,11 @@ export default function PatientRegistrationPage() {
         <div className={CC}>
           <div className="text-5xl mb-4">✅</div>
           <h2 className="text-lg font-bold">Patient Registered</h2>
-          <div className="mt-3 text-xl font-mono bg-blue-50 text-teal-700 px-4 py-3 rounded-xl font-bold">{done}</div>
+          <div className="mt-3 text-xl font-mono bg-h1-teal-light text-h1-navy px-4 py-3 rounded-xl font-bold">{done}</div>
           <p className="mt-2 text-sm text-gray-500">{firstName} {lastName} — {phone}</p>
           <div className="flex gap-3 mt-6 justify-center">
             <a href="/patients" className="px-4 py-2 bg-gray-100 text-sm rounded-lg">← Patient List</a>
-            <button onClick={() => window.location.reload()} className="px-4 py-2 bg-teal-600 text-white text-sm rounded-lg">Register Another</button>
+            <button onClick={() => window.location.reload()} className="px-4 py-2 bg-h1-navy text-white text-sm rounded-lg">Register Another</button>
           </div>
         </div>
       </div>
@@ -129,7 +129,7 @@ export default function PatientRegistrationPage() {
 
       <div className="flex gap-1 mb-6">
         {ST.map((s, i) => (
-          <button key={i} onClick={() => setStep(i + 1)} className={`flex-1 py-2 text-xs font-medium rounded-lg ${step === i + 1 ? 'bg-teal-600 text-white' : i + 1 < step ? 'bg-blue-100 text-teal-700' : 'bg-gray-100 text-gray-500'}`}>{s}</button>
+          <button key={i} onClick={() => setStep(i + 1)} className={`flex-1 py-2 text-xs font-medium rounded-lg ${step === i + 1 ? 'bg-h1-navy text-white' : i + 1 < step ? 'bg-h1-teal-light text-h1-navy' : 'bg-gray-100 text-gray-500'}`}>{s}</button>
         ))}
       </div>
 
@@ -205,8 +205,8 @@ export default function PatientRegistrationPage() {
           <h3 className="text-sm font-bold text-gray-700 mt-4">Medical History</h3>
           <div><label className={CL}>Known Allergies</label><input className={CI} value={allergies} onChange={e => setAllergies(e.target.value)} /></div>
           <div><label className={CL}>Past Medical History</label><textarea className={CI} rows={3} value={medHistory} onChange={e => setMedHistory(e.target.value)} /></div>
-          <div className="bg-blue-50 rounded-lg p-4 mt-4">
-            <h3 className="text-xs font-bold text-teal-700 mb-2">Summary</h3>
+          <div className="bg-h1-teal-light rounded-h1 p-4 mt-4">
+            <h3 className="text-xs font-bold text-h1-navy mb-2">Summary</h3>
             <div className="grid grid-cols-2 gap-1 text-xs">
               <div><b>Name:</b> {firstName} {middleName} {lastName}</div>
               <div><b>Gender:</b> {gender} {age ? `| Age: ${age}` : ''}</div>
@@ -220,9 +220,9 @@ export default function PatientRegistrationPage() {
           <button onClick={() => setStep(Math.max(1, step - 1))} disabled={step === 1} className="px-4 py-2.5 bg-gray-100 text-sm rounded-lg disabled:opacity-30">← Previous</button>
           <span className="text-xs text-gray-400">Step {step} of 4</span>
           {step < 4 ? (
-            <button onClick={() => setStep(step + 1)} className="px-6 py-2.5 bg-teal-600 text-white text-sm rounded-lg font-medium">Next →</button>
+            <button onClick={() => setStep(step + 1)} className="px-6 py-2.5 bg-h1-navy text-white text-sm rounded-lg font-medium">Next →</button>
           ) : (
-            <button onClick={handleSubmit} disabled={saving} className="px-8 py-2.5 bg-emerald-600 text-white text-sm rounded-lg font-bold disabled:opacity-50">{saving ? 'Registering...' : 'Register Patient'}</button>
+            <button onClick={handleSubmit} disabled={saving} className="px-8 py-2.5 bg-h1-success text-white text-sm rounded-lg font-bold disabled:opacity-50">{saving ? 'Registering...' : 'Register Patient'}</button>
           )}
         </div>
       </div>

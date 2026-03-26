@@ -9,12 +9,12 @@ import Link from 'next/link';
 type Tab = 'today' | 'book' | 'calendar' | 'schedules';
 
 const STATUS_COLORS: Record<string, string> = {
-  scheduled: 'bg-blue-100 text-blue-700', booked: 'bg-blue-100 text-blue-700', confirmed: 'bg-blue-100 text-blue-700',
-  checked_in: 'bg-amber-100 text-amber-700', in_consultation: 'bg-purple-100 text-purple-700', in_progress: 'bg-purple-100 text-purple-700',
+  scheduled: 'bg-h1-teal-light text-h1-teal', booked: 'bg-h1-teal-light text-h1-teal', confirmed: 'bg-h1-teal-light text-h1-teal',
+  checked_in: 'bg-h1-yellow-light text-h1-yellow', in_consultation: 'bg-h1-navy-light text-h1-navy', in_progress: 'bg-h1-navy-light text-h1-navy',
   completed: 'bg-green-100 text-green-700', cancelled: 'bg-red-100 text-red-700',
   no_show: 'bg-gray-100 text-gray-700', rescheduled: 'bg-orange-100 text-orange-700',
 };
-const PRIORITY_COLORS: Record<string, string> = { normal: '', urgent: 'bg-red-50/50 border-l-4 border-l-red-400', vip: 'bg-purple-50/50 border-l-4 border-l-purple-400' };
+const PRIORITY_COLORS: Record<string, string> = { normal: '', urgent: 'bg-red-50/50 border-l-4 border-l-red-400', vip: 'bg-h1-navy-light/50 border-l-4 border-l-h1-navy/60' };
 const TYPE_LABELS: Record<string, string> = { new: 'New', followup: 'F/U', review: 'Review', procedure: 'Proc', teleconsult: 'Tele', referral: 'Ref', emergency: 'EM' };
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const fmtTime = (t: string) => { if (!t) return '—'; const [h, m] = t.split(':'); const hr = parseInt(h); return `${hr > 12 ? hr - 12 : hr || 12}:${m} ${hr >= 12 ? 'PM' : 'AM'}`; };
@@ -133,7 +133,7 @@ function AppointmentsInner() {
 
   return (
     <div className="max-w-7xl mx-auto space-y-4">
-      {toast && <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-emerald-600 text-white px-4 py-2 rounded-xl shadow-lg text-sm font-medium">{toast}</div>}
+      {toast && <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-h1-success text-white px-4 py-2 rounded-xl shadow-lg text-sm font-medium">{toast}</div>}
 
       {/* Header */}
       <div className="flex items-center justify-between">
@@ -155,7 +155,7 @@ function AppointmentsInner() {
       {/* Tabs */}
       <div className="flex gap-1">
         {(['today', 'book', 'calendar', 'schedules'] as Tab[]).map(t =>
-          <button key={t} onClick={() => setTab(t)} className={`px-4 py-2 text-xs font-medium rounded-lg transition-colors ${tab === t ? 'bg-teal-600 text-white' : 'bg-white border hover:bg-gray-50'}`}>
+          <button key={t} onClick={() => setTab(t)} className={`px-4 py-2 text-xs font-medium rounded-lg transition-colors ${tab === t ? 'bg-h1-navy text-white' : 'bg-white border hover:bg-gray-50'}`}>
             {t === 'today' ? `Today's Queue (${appts.appointments.length})` : t === 'book' ? 'Book New' : t === 'calendar' ? 'Calendar' : 'Schedules & Leaves'}
           </button>
         )}
@@ -165,9 +165,9 @@ function AppointmentsInner() {
       {tab === 'today' && <div className="grid grid-cols-8 gap-2">
         {[
           { label: 'Total', val: appts.stats.total, bg: 'bg-white' },
-          { label: 'Waiting', val: appts.stats.booked, bg: 'bg-blue-50' },
-          { label: 'Checked In', val: appts.stats.checkedIn, bg: appts.stats.checkedIn > 0 ? 'bg-amber-50' : 'bg-white' },
-          { label: 'In Consult', val: appts.stats.inConsult, bg: 'bg-purple-50' },
+          { label: 'Waiting', val: appts.stats.booked, bg: 'bg-h1-teal-light' },
+          { label: 'Checked In', val: appts.stats.checkedIn, bg: appts.stats.checkedIn > 0 ? 'bg-h1-yellow-light' : 'bg-white' },
+          { label: 'In Consult', val: appts.stats.inConsult, bg: 'bg-h1-navy-light' },
           { label: 'Completed', val: appts.stats.completed, bg: 'bg-green-50' },
           { label: 'Cancelled', val: appts.stats.cancelled, bg: 'bg-red-50' },
           { label: 'No Show', val: appts.stats.noShow, bg: 'bg-gray-50' },
@@ -183,7 +183,7 @@ function AppointmentsInner() {
       {tab === 'today' && (<>
         <div className="flex gap-1 mb-2">
           {['all','scheduled','checked_in','in_consultation','completed','cancelled','no_show'].map(s =>
-            <button key={s} onClick={() => setStatusFilter(s)} className={`px-2 py-1 text-[10px] rounded-lg ${statusFilter === s ? 'bg-teal-100 text-teal-700 font-bold' : 'bg-white border text-gray-500'}`}>
+            <button key={s} onClick={() => setStatusFilter(s)} className={`px-2 py-1 text-[10px] rounded-lg ${statusFilter === s ? 'bg-h1-teal-light text-h1-navy font-bold' : 'bg-white border text-gray-500'}`}>
               {s === 'all' ? 'All' : s.replace('_', ' ')}
             </button>
           )}
@@ -198,26 +198,26 @@ function AppointmentsInner() {
             <th className="p-2">Status</th><th className="p-2 text-center">Actions</th>
           </tr></thead><tbody>{filtered.map(a => (
             <tr key={a.id} className={`border-b hover:bg-gray-50 transition-colors ${PRIORITY_COLORS[a.priority] || ''}`}>
-              <td className="p-2 text-center"><span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-bold">{a.token || '—'}</span></td>
+              <td className="p-2 text-center"><span className="bg-h1-teal-light text-h1-teal px-2 py-1 rounded-full text-xs font-bold">{a.token || '—'}</span></td>
               <td className="p-2">
-                <Link href={`/emr-v2?patient=${a.patientId}`} className="font-medium text-teal-700 hover:underline">{a.patientName}</Link>
+                <Link href={`/emr-v2?patient=${a.patientId}`} className="font-medium text-h1-navy hover:underline">{a.patientName}</Link>
                 <div className="text-[10px] text-gray-400">{a.uhid} · {a.age}y {a.gender?.charAt(0).toUpperCase()} · {a.phone}</div>
               </td>
               <td className="p-2 text-center font-mono">{fmtTime(a.time)}</td>
               <td className="p-2">{a.doctorName}<div className="text-[10px] text-gray-400">{a.departmentName}</div></td>
               <td className="p-2 text-center"><span className="text-[9px] bg-gray-100 px-1.5 py-0.5 rounded">{TYPE_LABELS[a.type] || a.type}</span>
-                {a.priority !== 'normal' && <span className={`ml-1 text-[8px] px-1 py-0.5 rounded ${a.priority === 'urgent' ? 'bg-red-100 text-red-700' : 'bg-purple-100 text-purple-700'}`}>{a.priority.toUpperCase()}</span>}
+                {a.priority !== 'normal' && <span className={`ml-1 text-[8px] px-1 py-0.5 rounded ${a.priority === 'urgent' ? 'bg-red-100 text-red-700' : 'bg-h1-navy-light text-h1-navy'}`}>{a.priority.toUpperCase()}</span>}
               </td>
               <td className="p-2 text-center">
                 {a.waitMinutes !== null && a.status !== 'completed' && a.status !== 'cancelled'
-                  ? <span className={`text-[10px] font-medium ${a.waitMinutes > 30 ? 'text-red-600' : a.waitMinutes > 15 ? 'text-amber-600' : 'text-green-600'}`}>{a.waitMinutes}m</span>
+                  ? <span className={`text-[10px] font-medium ${a.waitMinutes > 30 ? 'text-red-600' : a.waitMinutes > 15 ? 'text-h1-yellow' : 'text-green-600'}`}>{a.waitMinutes}m</span>
                   : <span className="text-[10px] text-gray-300">—</span>}
               </td>
               <td className="p-2 text-center"><span className={`px-1.5 py-0.5 rounded text-[9px] font-medium ${STATUS_COLORS[a.status] || 'bg-gray-100'}`}>{a.status.replace(/_/g, ' ')}</span></td>
               <td className="p-2 text-center">
                 <div className="flex gap-0.5 justify-center flex-wrap">
-                  {a.status === 'scheduled' && <button onClick={() => appts.checkIn(a.id)} className="px-2 py-1 bg-amber-100 text-amber-700 rounded text-[9px] font-medium hover:bg-amber-200">Check In</button>}
-                  {a.status === 'checked_in' && <button onClick={() => appts.startConsultation(a.id)} className="px-2 py-1 bg-purple-100 text-purple-700 rounded text-[9px] font-medium hover:bg-purple-200">Start</button>}
+                  {a.status === 'scheduled' && <button onClick={() => appts.checkIn(a.id)} className="px-2 py-1 bg-h1-yellow-light text-h1-yellow rounded text-[9px] font-medium hover:bg-h1-yellow/30">Check In</button>}
+                  {a.status === 'checked_in' && <button onClick={() => appts.startConsultation(a.id)} className="px-2 py-1 bg-h1-navy-light text-h1-navy rounded text-[9px] font-medium hover:bg-h1-navy-light">Start</button>}
                   {a.status === 'in_consultation' && <button onClick={() => appts.complete(a.id)} className="px-2 py-1 bg-green-100 text-green-700 rounded text-[9px] font-medium hover:bg-green-200">Done</button>}
                   {['scheduled','checked_in'].includes(a.status) && <button onClick={() => { setActionAppt(a); setCancelReason(''); setReschedDate(''); setReschedTime(''); }} className="px-2 py-1 bg-gray-100 rounded text-[9px] hover:bg-gray-200">⋯</button>}
                   {a.status === 'scheduled' && <button onClick={() => appts.markNoShow(a.id)} className="px-1.5 py-1 text-gray-400 rounded text-[9px] hover:text-red-500">NS</button>}
@@ -243,7 +243,7 @@ function AppointmentsInner() {
           <div className="relative">
             <label className="text-xs text-gray-500">Patient *</label>
             {selectedPatient ? (
-              <div className="bg-blue-50 rounded-lg px-3 py-2 text-sm flex justify-between items-center">
+              <div className="bg-h1-teal-light rounded-lg px-3 py-2 text-sm flex justify-between items-center">
                 <div>{selectedPatient.first_name} {selectedPatient.last_name} <span className="text-gray-400 text-[10px]">{selectedPatient.uhid}</span></div>
                 <button onClick={() => { setSelectedPatient(null); setPatientSearch(''); }} className="text-xs text-red-500 hover:text-red-700">×</button>
               </div>
@@ -251,7 +251,7 @@ function AppointmentsInner() {
               <><input type="text" value={patientSearch} onChange={e => setPatientSearch(e.target.value)} className="w-full px-3 py-2 border rounded-lg text-sm" placeholder="UHID, name, or phone..." autoFocus />
               {patientResults.length > 0 && <div className="absolute top-full left-0 right-0 mt-1 bg-white border rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto">{patientResults.map((p: any) => (
                 <button key={p.id} onClick={() => { setSelectedPatient(p); setPatientSearch(''); setPatientResults([]); }}
-                  className="w-full text-left px-3 py-2 text-xs hover:bg-blue-50 border-b">
+                  className="w-full text-left px-3 py-2 text-xs hover:bg-h1-teal-light border-b">
                   <span className="font-medium">{p.first_name} {p.last_name}</span>
                   <span className="text-gray-400 ml-2">{p.uhid} · {p.age_years}y {p.gender?.charAt(0).toUpperCase()} · {p.phone_primary}</span>
                 </button>
@@ -283,7 +283,7 @@ function AppointmentsInner() {
             ) : (
               <div className="flex flex-wrap gap-1.5">{slots.map(s => (
                 <button key={s.time} onClick={() => s.available && setSelectedSlot(s.time)} disabled={!s.available}
-                  className={`px-3 py-2 rounded-lg text-xs border transition-colors ${selectedSlot === s.time ? 'bg-teal-600 text-white border-teal-600' : s.available ? 'bg-white hover:bg-blue-50' : 'bg-gray-100 text-gray-400 line-through cursor-not-allowed'}`}>
+                  className={`px-3 py-2 rounded-lg text-xs border transition-colors ${selectedSlot === s.time ? 'bg-h1-navy text-white border-h1-navy' : s.available ? 'bg-white hover:bg-h1-teal-light' : 'bg-gray-100 text-gray-400 line-through cursor-not-allowed'}`}>
                   {fmtTime(s.time)}
                 </button>
               ))}</div>
@@ -309,7 +309,7 @@ function AppointmentsInner() {
         </div>
 
         <button onClick={handleBook} disabled={booking || !selectedPatient || !bookDoctor || !bookDept || (!isWalkIn && !selectedSlot)}
-          className="px-6 py-2.5 bg-teal-600 text-white text-sm rounded-lg font-medium hover:bg-teal-700 disabled:opacity-40 transition-colors">
+          className="px-6 py-2.5 bg-h1-navy text-white text-sm rounded-lg font-medium hover:bg-h1-navy/90 disabled:opacity-40 transition-colors">
           {booking ? 'Booking...' : isWalkIn ? 'Register Walk-in' : 'Book Appointment'}
         </button>
       </div>}
@@ -324,9 +324,9 @@ function AppointmentsInner() {
             const isToday = ds === new Date().toISOString().split('T')[0];
             return (
               <button key={i} onClick={() => { setDate(ds); setTab('today'); }}
-                className={`p-3 rounded-lg border text-left min-h-[80px] transition-colors ${isToday ? 'border-teal-300 bg-teal-50' : 'hover:bg-gray-50'}`}>
+                className={`p-3 rounded-lg border text-left min-h-[80px] transition-colors ${isToday ? 'border-h1-teal/40 bg-h1-navy-light' : 'hover:bg-gray-50'}`}>
                 <div className="text-[10px] text-gray-500">{DAYS[i]}</div>
-                <div className={`text-sm font-bold ${isToday ? 'text-teal-700' : ''}`}>{d.getDate()}</div>
+                <div className={`text-sm font-bold ${isToday ? 'text-h1-navy' : ''}`}>{d.getDate()}</div>
               </button>
             );
           })}
@@ -374,7 +374,7 @@ function AppointmentsInner() {
             if (!sf.doctorId || !sf.deptId) { flash('Select department and doctor'); return; }
             const r = await scheds.addSchedule({ doctorId: sf.doctorId, departmentId: sf.deptId, dayOfWeek: sf.day, startTime: sf.start, endTime: sf.end, slotDuration: sf.duration, maxPatients: sf.max, room: sf.room, fee: sf.fee });
             if (r.success) flash('Schedule added'); else flash('Error: ' + (r.error || ''));
-          }} className="px-4 py-2 bg-teal-600 text-white text-xs rounded-lg font-medium hover:bg-teal-700 disabled:opacity-40" disabled={!sf.doctorId || !sf.deptId}>Add Schedule</button>
+          }} className="px-4 py-2 bg-h1-navy text-white text-xs rounded-lg font-medium hover:bg-h1-navy/90 disabled:opacity-40" disabled={!sf.doctorId || !sf.deptId}>Add Schedule</button>
         </div>
 
         {/* Schedule list */}
@@ -414,11 +414,11 @@ function AppointmentsInner() {
               if (!leaveDoc || !leaveDate) return;
               const r = await scheds.addLeave(leaveDoc, leaveDate, leaveReason, staffId);
               if (r.success) { flash('Leave marked'); setLeaveDoc(''); setLeaveDate(''); setLeaveReason(''); } else flash('Error: ' + (r.error || ''));
-            }} className="w-full py-1.5 bg-amber-500 text-white text-xs rounded hover:bg-amber-600" disabled={!leaveDoc || !leaveDate}>Mark Leave</button></div>
+            }} className="w-full py-1.5 bg-h1-yellow-light0 text-white text-xs rounded hover:bg-h1-yellow" disabled={!leaveDoc || !leaveDate}>Mark Leave</button></div>
           </div>
           {scheds.leaves.length > 0 && <div className="mt-2 space-y-1">
             {scheds.leaves.map((l:any) => (
-              <div key={l.id} className="flex items-center justify-between bg-amber-50 rounded-lg px-3 py-2 text-xs">
+              <div key={l.id} className="flex items-center justify-between bg-h1-yellow-light rounded-lg px-3 py-2 text-xs">
                 <span><span className="font-medium">{l.doctor?.full_name}</span> — {new Date(l.leave_date).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' })}</span>
                 <span className="text-gray-500">{l.reason || 'No reason'}</span>
               </div>

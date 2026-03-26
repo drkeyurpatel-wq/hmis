@@ -43,7 +43,7 @@ export default function BillDetailView({ billId, centreId, staffId, onFlash, onC
   const net = parseFloat(bill.net_amount || 0);
   const paid = parseFloat(bill.paid_amount || 0);
   const bal = net - paid;
-  const stColor = bill.status === 'paid' ? 'bg-emerald-100 text-emerald-700' : bill.status === 'partially_paid' ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-600';
+  const stColor = bill.status === 'paid' ? 'bg-green-50 text-h1-success' : bill.status === 'partially_paid' ? 'bg-h1-yellow-light text-h1-yellow' : 'bg-gray-100 text-gray-600';
 
   return (
     <div className="space-y-4">
@@ -60,7 +60,7 @@ export default function BillDetailView({ billId, centreId, staffId, onFlash, onC
           </div>
         </div>
         <div className="flex items-center gap-2">
-          {bal > 0 && <button onClick={() => setShowPay(true)} className="flex items-center gap-1.5 px-4 py-2 bg-emerald-600 text-white text-sm rounded-xl font-semibold hover:bg-emerald-700 transition-colors"><Plus size={14} /> Collect Payment</button>}
+          {bal > 0 && <button onClick={() => setShowPay(true)} className="flex items-center gap-1.5 px-4 py-2 bg-h1-success text-white text-sm rounded-xl font-semibold hover:bg-h1-success transition-colors"><Plus size={14} /> Collect Payment</button>}
           <button onClick={() => printBillInvoice(bill, items, payments, bill.patient || {}, { name: 'Hospital', address: 'Shilaj, Ahmedabad', gstin: '24AADCH1234F1Z5' })}
             className="flex items-center gap-1.5 px-3 py-2 bg-white text-gray-600 text-sm rounded-xl border border-gray-200 hover:bg-gray-50 transition-colors"><Printer size={14} /> Print</button>
         </div>
@@ -70,8 +70,8 @@ export default function BillDetailView({ billId, centreId, staffId, onFlash, onC
       <div className="grid grid-cols-5 gap-3">
         {bill.patient && (
           <div className="col-span-2 bg-white rounded-2xl border border-gray-100 p-4 flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-teal-100 flex items-center justify-center shrink-0">
-              <User size={18} className="text-teal-700" />
+            <div className="w-10 h-10 rounded-full bg-h1-teal-light flex items-center justify-center shrink-0">
+              <User size={18} className="text-h1-navy" />
             </div>
             <div>
               <div className="font-bold text-gray-900">{bill.patient.first_name} {bill.patient.last_name}</div>
@@ -85,11 +85,11 @@ export default function BillDetailView({ billId, centreId, staffId, onFlash, onC
         </div>
         <div className="bg-white rounded-2xl border border-gray-100 p-4 text-center">
           <div className="text-[9px] font-semibold text-gray-400 uppercase tracking-wider">Paid</div>
-          <div className="text-xl font-bold text-emerald-700 mt-1">₹{fmt(paid)}</div>
+          <div className="text-xl font-bold text-h1-success mt-1">₹{fmt(paid)}</div>
         </div>
-        <div className={`rounded-2xl border p-4 text-center ${bal > 0 ? 'bg-red-50 border-red-100' : 'bg-emerald-50 border-emerald-100'}`}>
+        <div className={`rounded-2xl border p-4 text-center ${bal > 0 ? 'bg-red-50 border-red-100' : 'bg-green-50 border-green-100'}`}>
           <div className="text-[9px] font-semibold text-gray-400 uppercase tracking-wider">Balance</div>
-          <div className={`text-xl font-bold mt-1 ${bal > 0 ? 'text-red-600' : 'text-emerald-700'}`}>₹{fmt(bal)}</div>
+          <div className={`text-xl font-bold mt-1 ${bal > 0 ? 'text-red-600' : 'text-h1-success'}`}>₹{fmt(bal)}</div>
         </div>
       </div>
 
@@ -111,7 +111,7 @@ export default function BillDetailView({ billId, centreId, staffId, onFlash, onC
             ))}
             <tr className="bg-gray-50/80 font-bold">
               <td colSpan={5} className="text-right">Total</td>
-              <td className="text-right text-teal-700">₹{fmt(net)}</td>
+              <td className="text-right text-h1-navy">₹{fmt(net)}</td>
             </tr>
           </tbody>
         </table>
@@ -121,7 +121,7 @@ export default function BillDetailView({ billId, centreId, staffId, onFlash, onC
       <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
         <div className="px-4 py-3 border-b border-gray-50 flex justify-between items-center">
           <h3 className="text-xs font-bold text-gray-700">Payments ({payments.length})</h3>
-          <span className="text-xs text-emerald-600 font-bold">₹{fmt(paid)} collected</span>
+          <span className="text-xs text-h1-success font-bold">₹{fmt(paid)} collected</span>
         </div>
         <table className="h1-table">
           <thead><tr><th>Date</th><th>Mode</th><th>Receipt</th><th>Reference</th><th className="text-right">Amount</th></tr></thead>
@@ -132,7 +132,7 @@ export default function BillDetailView({ billId, centreId, staffId, onFlash, onC
                 <td><span className="h1-badge h1-badge-gray capitalize">{p.payment_mode?.replace('_', ' ')}</span></td>
                 <td className="font-mono text-[10px] text-gray-500">{p.receipt_number || '—'}</td>
                 <td className="text-gray-500">{p.reference_number || '—'}</td>
-                <td className="text-right font-bold text-emerald-700">₹{fmt(p.amount)}</td>
+                <td className="text-right font-bold text-h1-success">₹{fmt(p.amount)}</td>
               </tr>
             ))}
             {payments.length === 0 && <tr><td colSpan={5} className="text-center py-6 text-gray-400">No payments recorded</td></tr>}
@@ -142,32 +142,32 @@ export default function BillDetailView({ billId, centreId, staffId, onFlash, onC
 
       {/* Payment form */}
       {showPay && (
-        <div className="bg-white rounded-2xl border border-teal-200 p-5 shadow-lg shadow-teal-100/50">
+        <div className="bg-white rounded-2xl border border-h1-teal/30 p-5 shadow-lg shadow-h1-teal-light/50">
           <h3 className="text-sm font-bold text-gray-800 mb-4">Collect Payment — Balance ₹{fmt(bal)}</h3>
           <div className="grid grid-cols-4 gap-3 items-end">
             <div>
               <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Amount *</label>
               <input type="number" value={payAmt} onChange={e => setPayAmt(e.target.value)} placeholder={String(Math.round(bal))}
-                className="w-full mt-1.5 px-3 py-2.5 border border-gray-200 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-400" />
+                className="w-full mt-1.5 px-3 py-2.5 border border-gray-200 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-h1-teal/20 focus:border-h1-teal" />
             </div>
             <div>
               <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Mode</label>
               <div className="flex gap-1 mt-1.5">
                 {(['cash', 'upi', 'card', 'neft', 'cheque'] as const).map(m => (
                   <button key={m} onClick={() => setPayMode(m)}
-                    className={`flex-1 py-2.5 rounded-lg text-[10px] font-semibold transition-colors ${payMode === m ? 'bg-teal-600 text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}>{m.toUpperCase()}</button>
+                    className={`flex-1 py-2.5 rounded-lg text-[10px] font-semibold transition-colors ${payMode === m ? 'bg-h1-navy text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}>{m.toUpperCase()}</button>
                 ))}
               </div>
             </div>
             <div>
               <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Reference</label>
               <input value={payRef} onChange={e => setPayRef(e.target.value)} placeholder="Txn ID / Cheque #"
-                className="w-full mt-1.5 px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-400" />
+                className="w-full mt-1.5 px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-h1-teal/20 focus:border-h1-teal" />
             </div>
             <div className="flex gap-2">
               <button onClick={() => { setPayAmt(String(Math.round(bal))); }} className="px-3 py-2.5 bg-gray-100 text-gray-600 text-xs rounded-xl font-medium hover:bg-gray-200 transition-colors">Full</button>
               <button onClick={handlePay} disabled={paying || !payAmt || parseFloat(payAmt) <= 0}
-                className="flex-1 px-4 py-2.5 bg-emerald-600 text-white text-sm rounded-xl font-semibold disabled:opacity-40 hover:bg-emerald-700 transition-colors">
+                className="flex-1 px-4 py-2.5 bg-h1-success text-white text-sm rounded-xl font-semibold disabled:opacity-40 hover:bg-h1-success transition-colors">
                 {paying ? '...' : `Pay ₹${payAmt || '0'}`}
               </button>
               <button onClick={() => setShowPay(false)} className="px-3 py-2.5 text-gray-400 hover:text-gray-600 text-xs transition-colors">Cancel</button>

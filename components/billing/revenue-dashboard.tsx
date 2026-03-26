@@ -93,7 +93,7 @@ export default function RevenueDashboard({ centreId }: Props) {
       {/* Period */}
       <div className="flex gap-1">
         {(['today', 'week', 'month'] as const).map(p => (
-          <button key={p} onClick={() => setPeriod(p)} className={`px-3 py-1.5 text-[11px] font-semibold rounded-lg transition-colors ${period === p ? 'bg-teal-600 text-white shadow-sm' : 'bg-white text-gray-500 border border-gray-100 hover:bg-gray-50'}`}>
+          <button key={p} onClick={() => setPeriod(p)} className={`px-3 py-1.5 text-[11px] font-semibold rounded-lg transition-colors ${period === p ? 'bg-h1-navy text-white shadow-sm' : 'bg-white text-gray-500 border border-gray-100 hover:bg-gray-50'}`}>
             {p === 'today' ? 'Today' : p === 'week' ? 'Last 7 Days' : 'This Month'}
           </button>
         ))}
@@ -105,11 +105,11 @@ export default function RevenueDashboard({ centreId }: Props) {
         {[
           { label: 'Gross', value: stats.gross, color: 'text-gray-800' },
           { label: 'Discount', value: stats.discount, color: 'text-red-600' },
-          { label: 'Net Revenue', value: stats.net, color: 'text-teal-700' },
-          { label: 'Collected', value: stats.collected, color: 'text-emerald-700' },
+          { label: 'Net Revenue', value: stats.net, color: 'text-h1-navy' },
+          { label: 'Collected', value: stats.collected, color: 'text-h1-success' },
           { label: 'Outstanding', value: stats.outstanding, color: stats.outstanding > 0 ? 'text-red-600' : 'text-gray-400' },
-          { label: 'Advances', value: stats.advTotal, color: 'text-purple-700' },
-          { label: 'Charges', value: stats.chargeTotal, color: 'text-blue-700' },
+          { label: 'Advances', value: stats.advTotal, color: 'text-h1-navy' },
+          { label: 'Charges', value: stats.chargeTotal, color: 'text-h1-teal' },
         ].map(k => (
           <div key={k.label} className="bg-white rounded-xl border border-gray-100 px-3 py-3 text-center">
             <div className="text-[9px] font-semibold text-gray-400 uppercase tracking-wider">{k.label}</div>
@@ -127,7 +127,7 @@ export default function RevenueDashboard({ centreId }: Props) {
               <h3 className="text-sm font-bold text-gray-800">Revenue Trend</h3>
               <p className="text-[10px] text-gray-400">{stats.billCount} bills · {period === 'today' ? 'Today' : period === 'week' ? 'Last 7 days' : 'This month'}</p>
             </div>
-            <span className={`flex items-center gap-1 text-xs font-bold ${pctChange >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
+            <span className={`flex items-center gap-1 text-xs font-bold ${pctChange >= 0 ? 'text-h1-success' : 'text-red-500'}`}>
               {pctChange >= 0 ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
               {pctChange > 0 ? '+' : ''}{pctChange}%
             </span>
@@ -204,9 +204,9 @@ export default function RevenueDashboard({ centreId }: Props) {
                 <div key={mode}>
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-xs font-medium capitalize text-gray-600">{mode.replace('_', ' ')}</span>
-                    <div className="flex items-center gap-2"><span className="text-[10px] text-gray-400">{pctM}%</span><span className="text-xs font-bold text-emerald-700">{INR(amount)}</span></div>
+                    <div className="flex items-center gap-2"><span className="text-[10px] text-gray-400">{pctM}%</span><span className="text-xs font-bold text-h1-success">{INR(amount)}</span></div>
                   </div>
-                  <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden"><div className="h-full bg-teal-500 rounded-full" style={{ width: `${pctM}%` }} /></div>
+                  <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden"><div className="h-full bg-h1-navy-light0 rounded-full" style={{ width: `${pctM}%` }} /></div>
                 </div>
               );
             })}

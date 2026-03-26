@@ -36,8 +36,8 @@ export default function BillDetail({ bill, staffId, centreId, tariffs, onUpdate,
 
   const tariffResults = tariffQ.length >= 2 ? tariffs.search(tariffQ).slice(0, 8) : [];
   const fmt = (n: number | string) => parseFloat(String(n) || '0').toLocaleString('en-IN', { maximumFractionDigits: 0 });
-  const stColor = (s: string) => s === 'paid' ? 'bg-green-100 text-green-700' : s === 'partially_paid' ? 'bg-yellow-100 text-yellow-700' : s === 'final' ? 'bg-blue-100 text-blue-700' : s === 'draft' ? 'bg-gray-100 text-gray-600' : s === 'cancelled' ? 'bg-red-100 text-red-700' : 'bg-gray-100';
-  const catColor = (c: string) => ({ consultation: 'text-blue-600', room_rent: 'text-green-600', ot_charges: 'text-purple-600', professional_fee: 'text-orange-600', procedure: 'text-red-600', consumable: 'text-yellow-700', icu_charges: 'text-pink-600', nursing: 'text-teal-600', miscellaneous: 'text-gray-500' })[c] || 'text-gray-600';
+  const stColor = (s: string) => s === 'paid' ? 'bg-green-100 text-green-700' : s === 'partially_paid' ? 'bg-yellow-100 text-yellow-700' : s === 'final' ? 'bg-h1-teal-light text-h1-teal' : s === 'draft' ? 'bg-gray-100 text-gray-600' : s === 'cancelled' ? 'bg-red-100 text-red-700' : 'bg-gray-100';
+  const catColor = (c: string) => ({ consultation: 'text-h1-teal', room_rent: 'text-green-600', ot_charges: 'text-h1-navy', professional_fee: 'text-orange-600', procedure: 'text-red-600', consumable: 'text-yellow-700', icu_charges: 'text-pink-600', nursing: 'text-h1-teal', miscellaneous: 'text-gray-500' })[c] || 'text-gray-600';
 
   // Category-wise subtotals
   const catTotals = items.items.reduce((acc: Record<string, number>, i: any) => {
@@ -122,23 +122,23 @@ export default function BillDetail({ bill, staffId, centreId, tariffs, onUpdate,
       {/* Header */}
       <div className="border-b p-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center text-blue-700 font-bold text-sm">{pt?.first_name?.charAt(0)}{pt?.last_name?.charAt(0)}</div>
+          <div className="w-10 h-10 rounded-lg bg-h1-teal-light flex items-center justify-center text-h1-teal font-bold text-sm">{pt?.first_name?.charAt(0)}{pt?.last_name?.charAt(0)}</div>
           <div>
             <div className="font-semibold">{pt?.first_name} {pt?.last_name} <span className="text-gray-400 font-normal text-xs">{pt?.uhid}</span></div>
             <div className="flex items-center gap-2 text-xs text-gray-500">
               <span className="font-mono">{bill.bill_number}</span>
               <span className={`px-1.5 py-0.5 rounded text-[10px] ${stColor(bill.status)}`}>{bill.status?.replace('_',' ')}</span>
               <span className="bg-gray-100 px-1.5 py-0.5 rounded text-[10px]">{bill.bill_type?.toUpperCase()}</span>
-              <span className="bg-blue-50 px-1.5 py-0.5 rounded text-[10px] text-blue-700">{bill.payor_type?.replace('govt_','').replace('_',' ').toUpperCase()}</span>
+              <span className="bg-h1-teal-light px-1.5 py-0.5 rounded text-[10px] text-h1-teal">{bill.payor_type?.replace('govt_','').replace('_',' ').toUpperCase()}</span>
               <span>{bill.bill_date}</span>
             </div>
           </div>
         </div>
         <div className="flex gap-1.5">
-          {bill.status === 'draft' && <button onClick={finalize} className="px-3 py-1.5 bg-blue-600 text-white text-xs rounded-lg">Finalize</button>}
+          {bill.status === 'draft' && <button onClick={finalize} className="px-3 py-1.5 bg-h1-navy text-white text-xs rounded-lg">Finalize</button>}
           <button onClick={() => setShowPay(!showPay)} className="px-3 py-1.5 bg-green-600 text-white text-xs rounded-lg">₹ Pay</button>
           <button onClick={() => setShowDisc(!showDisc)} className="px-3 py-1.5 bg-orange-100 text-orange-700 text-xs rounded-lg">% Disc</button>
-          {advances.totalActive > 0 && <button onClick={() => setShowAdv(!showAdv)} className="px-3 py-1.5 bg-purple-100 text-purple-700 text-xs rounded-lg">Adjust Adv ({fmt(advances.totalActive)})</button>}
+          {advances.totalActive > 0 && <button onClick={() => setShowAdv(!showAdv)} className="px-3 py-1.5 bg-h1-navy-light text-h1-navy text-xs rounded-lg">Adjust Adv ({fmt(advances.totalActive)})</button>}
           <button onClick={printBillDoc} className="px-3 py-1.5 bg-gray-100 text-xs rounded-lg">Print</button>
           {bill.status === 'draft' && <button onClick={cancelBill} className="px-3 py-1.5 bg-red-50 text-red-600 text-xs rounded-lg">Cancel</button>}
           <button onClick={onClose} className="px-3 py-1.5 bg-gray-100 text-xs rounded-lg">✕</button>
@@ -149,7 +149,7 @@ export default function BillDetail({ bill, staffId, centreId, tariffs, onUpdate,
       <div className="grid grid-cols-5 gap-px bg-gray-100 border-b">
         <div className="bg-white p-3 text-center"><div className="text-[10px] text-gray-500">Gross</div><div className="font-bold">₹{fmt(bill.gross_amount)}</div></div>
         <div className="bg-white p-3 text-center"><div className="text-[10px] text-orange-600">Discount</div><div className="font-bold text-orange-700">{parseFloat(bill.discount_amount) > 0 ? `₹${fmt(bill.discount_amount)}` : '—'}</div></div>
-        <div className="bg-blue-50 p-3 text-center"><div className="text-[10px] text-blue-600">Net Payable</div><div className="text-lg font-bold text-blue-700">₹{fmt(bill.net_amount)}</div></div>
+        <div className="bg-h1-teal-light p-3 text-center"><div className="text-[10px] text-h1-teal">Net Payable</div><div className="text-lg font-bold text-h1-teal">₹{fmt(bill.net_amount)}</div></div>
         <div className="bg-white p-3 text-center"><div className="text-[10px] text-green-600">Collected</div><div className="font-bold text-green-700">₹{fmt(bill.paid_amount)}</div></div>
         <div className={`p-3 text-center ${parseFloat(bill.balance_amount) > 0 ? 'bg-red-50' : 'bg-green-50'}`}><div className="text-[10px] text-gray-600">Balance</div><div className={`font-bold ${parseFloat(bill.balance_amount) > 0 ? 'text-red-700' : 'text-green-700'}`}>{parseFloat(bill.balance_amount) > 0 ? `₹${fmt(bill.balance_amount)}` : 'PAID ✓'}</div></div>
       </div>
@@ -202,15 +202,15 @@ export default function BillDetail({ bill, staffId, centreId, tariffs, onUpdate,
       </div>}
 
       {/* Advance adjustment */}
-      {showAdv && <div className="border-b p-4 bg-purple-50">
-        <div className="text-xs font-medium text-purple-700 mb-2">Active Advances (₹{fmt(advances.totalActive)})</div>
+      {showAdv && <div className="border-b p-4 bg-h1-navy-light">
+        <div className="text-xs font-medium text-h1-navy mb-2">Active Advances (₹{fmt(advances.totalActive)})</div>
         <div className="flex gap-2 flex-wrap">{advances.advances.filter((a: any) => a.status === 'active').map((a: any) => (
-          <button key={a.id} onClick={() => setAdvId(a.id)} className={`px-3 py-2 rounded-lg border text-xs ${advId === a.id ? 'bg-purple-600 text-white' : 'bg-white'}`}>
+          <button key={a.id} onClick={() => setAdvId(a.id)} className={`px-3 py-2 rounded-lg border text-xs ${advId === a.id ? 'bg-h1-navy text-white' : 'bg-white'}`}>
             {a.receipt_number} — ₹{fmt(a.amount)} ({a.payment_mode})
           </button>
         ))}</div>
         <div className="flex gap-2 mt-2">
-          <button onClick={adjustAdvance} disabled={!advId} className="px-4 py-2 bg-purple-600 text-white text-sm rounded-lg disabled:opacity-40">Adjust Against Bill</button>
+          <button onClick={adjustAdvance} disabled={!advId} className="px-4 py-2 bg-h1-navy text-white text-sm rounded-lg disabled:opacity-40">Adjust Against Bill</button>
           <button onClick={() => setShowAdv(false)} className="px-3 py-1.5 bg-gray-100 text-xs rounded-lg">Cancel</button>
         </div>
       </div>}
@@ -229,9 +229,9 @@ export default function BillDetail({ bill, staffId, centreId, tariffs, onUpdate,
             <div className="flex-1 relative">
               <input type="text" value={tariffQ} onChange={e => setTariffQ(e.target.value)} className="w-full px-3 py-2 border rounded-lg text-sm" placeholder="Search tariff to add item..." />
               {tariffResults.length > 0 && <div className="absolute top-full left-0 right-0 mt-1 bg-white border rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto">{tariffResults.map((t: any) => (
-                <button key={t.id} onClick={() => addTariffItem(t)} className="w-full text-left px-3 py-2 hover:bg-blue-50 border-b last:border-0 flex justify-between text-xs">
+                <button key={t.id} onClick={() => addTariffItem(t)} className="w-full text-left px-3 py-2 hover:bg-h1-teal-light border-b last:border-0 flex justify-between text-xs">
                   <div><div className="font-medium">{t.service_name}</div><div className="text-[10px] text-gray-400">{t.service_code} | <span className={catColor(t.category)}>{t.category.replace('_',' ')}</span></div></div>
-                  <span className="font-bold text-blue-600">₹{fmt(tariffs.getRate(t.id, bill.payor_type))}</span>
+                  <span className="font-bold text-h1-teal">₹{fmt(tariffs.getRate(t.id, bill.payor_type))}</span>
                 </button>
               ))}</div>}
             </div>
@@ -240,7 +240,7 @@ export default function BillDetail({ bill, staffId, centreId, tariffs, onUpdate,
           {showAddItem && <div className="mt-2 grid grid-cols-4 gap-2">
             <input type="text" value={manualItem.description} onChange={e => setManualItem(f => ({...f, description: e.target.value}))} className="col-span-2 px-2 py-1.5 border rounded text-xs" placeholder="Description" />
             <input type="number" value={manualItem.quantity} onChange={e => setManualItem(f => ({...f, quantity: parseInt(e.target.value)||1}))} className="px-2 py-1.5 border rounded text-xs" placeholder="Qty" min="1" />
-            <div className="flex gap-1"><input type="number" value={manualItem.unitRate} onChange={e => setManualItem(f => ({...f, unitRate: parseFloat(e.target.value)||0}))} className="flex-1 px-2 py-1.5 border rounded text-xs" placeholder="Rate" /><button onClick={addManualItem} className="px-2 py-1 bg-blue-600 text-white rounded text-xs">Add</button></div>
+            <div className="flex gap-1"><input type="number" value={manualItem.unitRate} onChange={e => setManualItem(f => ({...f, unitRate: parseFloat(e.target.value)||0}))} className="flex-1 px-2 py-1.5 border rounded text-xs" placeholder="Rate" /><button onClick={addManualItem} className="px-2 py-1 bg-h1-navy text-white rounded text-xs">Add</button></div>
           </div>}
         </div>
 
@@ -276,7 +276,7 @@ export default function BillDetail({ bill, staffId, centreId, tariffs, onUpdate,
               </div>
               <div className="flex items-center gap-2">
                 <span className="font-bold text-green-700 text-sm">₹{fmt(p.amount)}</span>
-                <button onClick={() => printReceipt(p)} className="text-[10px] text-blue-600 hover:text-blue-800">Print</button>
+                <button onClick={() => printReceipt(p)} className="text-[10px] text-h1-teal hover:text-h1-navy">Print</button>
               </div>
             </div>
           ))}</div>

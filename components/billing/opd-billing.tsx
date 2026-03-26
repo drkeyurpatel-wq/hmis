@@ -121,7 +121,7 @@ export default function OPDBilling({ centreId, staffId, patient, doctor, visitId
           <div className="font-bold text-sm">{patient.name} <span className="text-gray-400 font-mono text-[10px]">{patient.uhid}</span></div>
           <div className="text-xs text-gray-500">Dr. {doctor.name} ({doctor.specialisation || (doctor.isSuper ? 'Super Specialist' : 'Specialist')}) | {visitType === 'follow_up' ? 'Follow-up' : 'New Visit'}</div>
         </div>
-        <div className="text-right"><div className="text-xl font-bold text-blue-700">{fmt(net)}</div><div className="text-[10px] text-gray-400">Total payable</div></div>
+        <div className="text-right"><div className="text-xl font-bold text-h1-teal">{fmt(net)}</div><div className="text-[10px] text-gray-400">Total payable</div></div>
       </div>
 
       {/* STEP 1: Charges */}
@@ -145,9 +145,9 @@ export default function OPDBilling({ centreId, staffId, patient, doctor, visitId
             className="w-full px-3 py-2 border rounded-lg text-xs" placeholder="Add service: X-ray, blood test, ECG, dressing..." />
           {searchResults.length > 0 && <div className="absolute top-full left-0 right-0 mt-1 bg-white border rounded-lg shadow-lg z-10 max-h-40 overflow-y-auto">
             {searchResults.map((t: any) => (
-              <button key={t.id} onClick={() => addService(t)} className="w-full text-left px-3 py-2 text-xs hover:bg-blue-50 border-b flex justify-between">
+              <button key={t.id} onClick={() => addService(t)} className="w-full text-left px-3 py-2 text-xs hover:bg-h1-teal-light border-b flex justify-between">
                 <span>{t.service_name} <span className="text-gray-400">({t.category?.replace('_', ' ')})</span></span>
-                <span className="font-bold text-blue-600">{fmt(parseFloat(t.rate_self))}</span>
+                <span className="font-bold text-h1-teal">{fmt(parseFloat(t.rate_self))}</span>
               </button>
             ))}
           </div>}
@@ -165,14 +165,14 @@ export default function OPDBilling({ centreId, staffId, patient, doctor, visitId
         <div className="flex items-center justify-between pt-2 border-t">
           <div className="text-lg font-bold">{fmt(net)}</div>
           <button onClick={() => setStep('payment')} disabled={charges.length === 0}
-            className="px-6 py-2.5 bg-blue-600 text-white text-sm rounded-lg font-medium disabled:opacity-40">Proceed to Payment</button>
+            className="px-6 py-2.5 bg-h1-navy text-white text-sm rounded-lg font-medium disabled:opacity-40">Proceed to Payment</button>
         </div>
       </>}
 
       {/* STEP 2: Payment */}
       {step === 'payment' && <>
         <div className="text-center py-4">
-          <div className="text-3xl font-bold text-blue-700">{fmt(net)}</div>
+          <div className="text-3xl font-bold text-h1-teal">{fmt(net)}</div>
           <div className="text-xs text-gray-500 mt-1">{charges.length} item{charges.length > 1 ? 's' : ''} — {patient.name}</div>
         </div>
         <div>
@@ -180,7 +180,7 @@ export default function OPDBilling({ centreId, staffId, patient, doctor, visitId
           <div className="grid grid-cols-5 gap-1.5">
             {[['upi', 'UPI'], ['cash', 'Cash'], ['card', 'Card'], ['neft', 'NEFT'], ['cheque', 'Cheque']].map(([k, l]) => (
               <button key={k} onClick={() => setPayMode(k)}
-                className={`py-2 text-xs rounded-lg border font-medium ${payMode === k ? 'bg-blue-600 text-white border-blue-600' : 'bg-white'}`}>{l}</button>
+                className={`py-2 text-xs rounded-lg border font-medium ${payMode === k ? 'bg-h1-navy text-white border-h1-navy' : 'bg-white'}`}>{l}</button>
             ))}
           </div>
         </div>
@@ -209,7 +209,7 @@ export default function OPDBilling({ centreId, staffId, patient, doctor, visitId
         </div>
         <div className="flex gap-3 justify-center">
           <button onClick={() => printBillInvoice(bill, charges.map(c => ({ description: c.desc, quantity: 1, unit_rate: c.amount, net_amount: c.amount, service_date: bill.bill_date })), [bill.payment], { first_name: patient.name.split(' ')[0], last_name: patient.name.split(' ').slice(1).join(' '), uhid: patient.uhid, age_years: patient.age, gender: patient.gender, phone_primary: patient.phone }, { name: 'Hospital', address: 'Shilaj, Ahmedabad', gstin: '24AADCH1234F1Z5' })}
-            className="px-4 py-2 bg-blue-600 text-white text-xs rounded-lg">Print Bill</button>
+            className="px-4 py-2 bg-h1-navy text-white text-xs rounded-lg">Print Bill</button>
           <button onClick={() => printPaymentReceipt(bill.payment, bill, { first_name: patient.name.split(' ')[0], last_name: patient.name.split(' ').slice(1).join(' '), uhid: patient.uhid }, { name: 'Hospital', address: 'Shilaj, Ahmedabad' })}
             className="px-4 py-2 bg-green-600 text-white text-xs rounded-lg">Print Receipt</button>
           {onDone && <button onClick={onDone} className="px-4 py-2 bg-gray-200 text-xs rounded-lg">Done — Next Patient</button>}

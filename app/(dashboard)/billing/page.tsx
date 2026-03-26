@@ -134,8 +134,8 @@ function BillingInner() {
 
   const stBadge = (s: string) => {
     const m: Record<string, string> = {
-      paid: 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700', partially_paid: 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-700',
-      final: 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-50 text-blue-700', draft: 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-100 text-gray-600',
+      paid: 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-green-50 text-h1-success', partially_paid: 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-h1-yellow-light text-h1-yellow',
+      final: 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-h1-teal-light text-h1-teal', draft: 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-100 text-gray-600',
       cancelled: 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-red-50 text-red-700',
     };
     return m[s] || 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-100 text-gray-600';
@@ -144,7 +144,7 @@ function BillingInner() {
   return (
     <div className="max-w-[1400px] mx-auto space-y-4">
       {toast && (
-        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-teal-600 text-white px-5 py-2.5 rounded-xl shadow-lg shadow-teal-200/50 text-sm font-medium animate-in fade-in">
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-h1-navy text-white px-5 py-2.5 rounded-xl shadow-lg shadow-h1-teal/20 text-sm font-medium animate-in fade-in">
           {toast}
         </div>
       )}
@@ -156,7 +156,7 @@ function BillingInner() {
           <p className="text-xs text-gray-400 mt-0.5">{staff?.full_name} · {new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</p>
         </div>
         <button onClick={() => setShowNewBill(true)}
-          className="flex items-center gap-2 px-4 py-2.5 bg-teal-600 text-white text-sm rounded-xl font-semibold hover:bg-teal-700 transition-colors shadow-sm shadow-teal-200/50">
+          className="flex items-center gap-2 px-4 py-2.5 bg-h1-navy text-white text-sm rounded-xl font-semibold hover:bg-h1-navy/90 transition-colors shadow-sm shadow-h1-teal/20">
           <Plus size={16} /> New Bill
         </button>
       </div>
@@ -166,10 +166,10 @@ function BillingInner() {
         <div className="grid grid-cols-5 gap-2">
           {[
             { label: 'Billed Today', value: INR(billStats.totalToday), color: 'text-gray-800' },
-            { label: 'Collected', value: INR(billStats.collectedToday), color: 'text-emerald-700' },
+            { label: 'Collected', value: INR(billStats.collectedToday), color: 'text-h1-success' },
             { label: 'Pending', value: INR(billStats.pendingToday), color: billStats.pendingToday > 0 ? 'text-red-600' : 'text-gray-400' },
-            { label: 'Bills Today', value: String(billStats.countToday), color: 'text-blue-700' },
-            { label: 'Unpaid Bills', value: String(billStats.unpaid), color: billStats.unpaid > 0 ? 'text-amber-700' : 'text-gray-400' },
+            { label: 'Bills Today', value: String(billStats.countToday), color: 'text-h1-teal' },
+            { label: 'Unpaid Bills', value: String(billStats.unpaid), color: billStats.unpaid > 0 ? 'text-h1-yellow' : 'text-gray-400' },
           ].map(s => (
             <div key={s.label} className="bg-white rounded-xl border border-gray-100 px-4 py-3">
               <div className="text-[9px] font-semibold text-gray-400 uppercase tracking-wider">{s.label}</div>
@@ -186,7 +186,7 @@ function BillingInner() {
             onClick={() => { setTab(key); if (key === 'bills') loadBills(); if (key === 'collections') loadAdvances(); }}
             className={`flex items-center gap-1.5 px-3.5 py-2 text-xs font-medium rounded-xl whitespace-nowrap transition-all duration-150 ${
               tab === key
-                ? 'bg-teal-600 text-white shadow-sm shadow-teal-200/40'
+                ? 'bg-h1-navy text-white shadow-sm shadow-h1-teal/15'
                 : 'bg-white text-gray-500 border border-gray-100 hover:bg-gray-50 hover:text-gray-700'
             }`}>
             <Icon size={13} />
@@ -218,14 +218,14 @@ function BillingInner() {
                 <div className="relative flex-1 max-w-xs">
                   <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                   <input value={billSearch} onChange={e => setBillSearch(e.target.value)}
-                    className="w-full pl-9 pr-3 py-2 text-xs border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-400 bg-gray-50/50"
+                    className="w-full pl-9 pr-3 py-2 text-xs border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-h1-teal/20 focus:border-h1-teal bg-gray-50/50"
                     placeholder="Search bill #, patient, UHID..." />
                 </div>
                 <div className="flex gap-1">
                   {['all', 'paid', 'partially_paid', 'final', 'draft'].map(f => (
                     <button key={f} onClick={() => setBillFilter(f)}
                       className={`px-2.5 py-1.5 text-[10px] font-medium rounded-lg transition-colors ${
-                        billFilter === f ? 'bg-teal-50 text-teal-700 border border-teal-200' : 'bg-gray-50 text-gray-500 hover:bg-gray-100'
+                        billFilter === f ? 'bg-h1-navy-light text-h1-navy border border-h1-teal/30' : 'bg-gray-50 text-gray-500 hover:bg-gray-100'
                       }`}>{f === 'all' ? 'All' : f.replace('_', ' ')}</button>
                   ))}
                 </div>
@@ -254,9 +254,9 @@ function BillingInner() {
                         </td>
                         <td className="text-gray-500">{b.bill_date ? new Date(b.bill_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }) : '—'}</td>
                         <td><span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-100 text-gray-600">{b.bill_type}</span></td>
-                        <td><span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-50 text-blue-700">{b.payor_type?.replace('_', ' ')}</span></td>
+                        <td><span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-h1-teal-light text-h1-teal">{b.payor_type?.replace('_', ' ')}</span></td>
                         <td className="text-right font-semibold">₹{fmt(b.net_amount)}</td>
-                        <td className="text-right text-emerald-600 font-medium">{parseFloat(b.paid_amount) > 0 ? `₹${fmt(b.paid_amount)}` : '—'}</td>
+                        <td className="text-right text-h1-success font-medium">{parseFloat(b.paid_amount) > 0 ? `₹${fmt(b.paid_amount)}` : '—'}</td>
                         <td className="text-right">
                           {parseFloat(b.balance_amount) > 0
                             ? <span className="font-semibold text-red-600">₹{fmt(b.balance_amount)}</span>
@@ -304,20 +304,20 @@ function BillingInner() {
               <div className="relative col-span-2">
                 <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Patient *</label>
                 {advForm.patientId ? (
-                  <div className="flex items-center gap-2 mt-1.5 px-3 py-2 bg-teal-50 rounded-xl border border-teal-200">
-                    <span className="text-sm font-semibold text-teal-800 flex-1">{advForm.patientName}</span>
+                  <div className="flex items-center gap-2 mt-1.5 px-3 py-2 bg-h1-navy-light rounded-xl border border-h1-teal/30">
+                    <span className="text-sm font-semibold text-h1-navy flex-1">{advForm.patientName}</span>
                     <button onClick={() => setAdvForm(f => ({ ...f, patientId: '', patientName: '', search: '' }))}
-                      className="text-teal-400 hover:text-red-500 text-xs transition-colors">✕</button>
+                      className="text-h1-text-muted hover:text-red-500 text-xs transition-colors">✕</button>
                   </div>
                 ) : (
                   <>
-                    <input className="w-full mt-1.5 px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-400 bg-gray-50/50"
+                    <input className="w-full mt-1.5 px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-h1-teal/20 focus:border-h1-teal bg-gray-50/50"
                       value={advForm.search} onChange={e => setAdvForm(f => ({ ...f, search: e.target.value }))} placeholder="Search patient..." />
                     {advPatResults.length > 0 && (
                       <div className="absolute z-10 mt-1 w-full bg-white border rounded-xl shadow-lg max-h-36 overflow-y-auto">
                         {advPatResults.map(p => (
                           <button key={p.id} onClick={() => { setAdvForm(f => ({ ...f, patientId: p.id, patientName: `${p.first_name} ${p.last_name} (${p.uhid})`, search: '' })); setAdvPatResults([]); }}
-                            className="w-full text-left px-3 py-2.5 text-xs hover:bg-teal-50 border-b border-gray-50 last:border-0 transition-colors">
+                            className="w-full text-left px-3 py-2.5 text-xs hover:bg-h1-navy-light border-b border-gray-50 last:border-0 transition-colors">
                             <span className="font-medium">{p.first_name} {p.last_name}</span> <span className="text-gray-400">· {p.uhid}</span>
                           </button>
                         ))}
@@ -328,7 +328,7 @@ function BillingInner() {
               </div>
               <div>
                 <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Amount *</label>
-                <input type="number" className="w-full mt-1.5 px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-400 bg-gray-50/50"
+                <input type="number" className="w-full mt-1.5 px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-h1-teal/20 focus:border-h1-teal bg-gray-50/50"
                   value={advForm.amount} onChange={e => setAdvForm(f => ({ ...f, amount: e.target.value }))} placeholder="₹" />
               </div>
               <div>
@@ -337,13 +337,13 @@ function BillingInner() {
                   {['cash', 'upi', 'card', 'neft'].map(m => (
                     <button key={m} onClick={() => setAdvForm(f => ({ ...f, mode: m }))}
                       className={`flex-1 py-2 rounded-lg text-[10px] font-semibold transition-colors ${
-                        advForm.mode === m ? 'bg-teal-600 text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                        advForm.mode === m ? 'bg-h1-navy text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
                       }`}>{m.toUpperCase()}</button>
                   ))}
                 </div>
               </div>
               <button onClick={collectAdvance} disabled={!advForm.patientId || !advForm.amount}
-                className="px-4 py-2.5 bg-emerald-600 text-white text-sm rounded-xl font-semibold disabled:opacity-40 hover:bg-emerald-700 transition-colors shadow-sm">
+                className="px-4 py-2.5 bg-h1-success text-white text-sm rounded-xl font-semibold disabled:opacity-40 hover:bg-h1-success transition-colors shadow-sm">
                 Collect
               </button>
             </div>
@@ -366,8 +366,8 @@ function BillingInner() {
                     </td>
                     <td className="text-gray-500">{new Date(a.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}</td>
                     <td><span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-100 text-gray-600 capitalize">{a.payment_mode}</span></td>
-                    <td className="text-right font-bold text-emerald-700">₹{fmt(a.amount)}</td>
-                    <td><span className={a.is_adjusted ? 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-100 text-gray-600' : 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700'}>{a.is_adjusted ? 'Adjusted' : 'Available'}</span></td>
+                    <td className="text-right font-bold text-h1-success">₹{fmt(a.amount)}</td>
+                    <td><span className={a.is_adjusted ? 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-100 text-gray-600' : 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-green-50 text-h1-success'}>{a.is_adjusted ? 'Adjusted' : 'Available'}</span></td>
                   </tr>
                 ))}
                 {advances.length === 0 && <tr><td colSpan={6} className="text-center py-10 text-gray-400">No advances collected</td></tr>}
