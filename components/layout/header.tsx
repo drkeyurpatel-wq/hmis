@@ -77,7 +77,7 @@ export function GlobalHeader() {
             value={searchQ}
             onChange={e => setSearchQ(e.target.value)}
             onFocus={() => results.length > 0 && setShowResults(true)}
-            className="w-full pl-9 pr-16 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-400 bg-gray-50/50 hover:bg-white transition-colors"
+            className="w-full pl-9 pr-16 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-h1-teal/30 focus:border-h1-teal bg-gray-50/50 hover:bg-white transition-colors"
           />
           <kbd className="absolute right-3 top-1/2 -translate-y-1/2 hidden sm:inline-flex items-center px-1.5 py-0.5 bg-gray-100 rounded text-[9px] text-gray-400 font-mono border border-gray-200">⌘K</kbd>
           {showResults && results.length > 0 && (
@@ -87,14 +87,14 @@ export function GlobalHeader() {
                   key={p.id}
                   href={`/patients/${p.id}`}
                   onClick={() => { setShowResults(false); setSearchQ(''); }}
-                  className="flex items-center justify-between px-4 py-3 hover:bg-teal-50/50 border-b border-gray-50 last:border-0 transition-colors"
+                  className="flex items-center justify-between px-4 py-3 hover:bg-h1-navy-light border-b border-gray-50 last:border-0 transition-colors"
                 >
                   <div>
                     <div className="text-sm font-semibold text-gray-800">{p.first_name} {p.last_name}</div>
                     <div className="text-[10px] text-gray-400 mt-0.5">{p.uhid} · {p.age_years}/{p.gender?.charAt(0).toUpperCase()} · {p.phone_primary}</div>
                   </div>
                   <div className="flex gap-1.5">
-                    <Link href={`/emr-v2?patient=${p.id}`} onClick={e => e.stopPropagation()} className="px-2 py-1 bg-teal-50 text-teal-600 text-[10px] font-medium rounded-lg hover:bg-teal-100 transition-colors">EMR</Link>
+                    <Link href={`/emr-v2?patient=${p.id}`} onClick={e => e.stopPropagation()} className="px-2 py-1 bg-h1-teal-light text-h1-teal text-[10px] font-medium rounded-lg hover:bg-h1-teal-light transition-colors">EMR</Link>
                     <Link href={`/patients/${p.id}`} onClick={e => e.stopPropagation()} className="px-2 py-1 bg-gray-50 text-gray-600 text-[10px] font-medium rounded-lg hover:bg-gray-100 transition-colors">Profile</Link>
                   </div>
                 </Link>
@@ -104,7 +104,7 @@ export function GlobalHeader() {
           {searchQ.length >= 2 && results.length === 0 && showResults && (
             <div className="absolute top-full left-0 right-0 mt-1.5 bg-white border rounded-xl shadow-lg p-5 text-center">
               <p className="text-sm text-gray-400">No patients found for "{searchQ}"</p>
-              <Link href="/patients/register" className="text-xs text-teal-600 hover:text-teal-800 mt-2 inline-block font-medium">+ Register new patient</Link>
+              <Link href="/patients/register" className="text-xs text-h1-teal hover:text-h1-navy mt-2 inline-block font-medium">+ Register new patient</Link>
             </div>
           )}
         </div>

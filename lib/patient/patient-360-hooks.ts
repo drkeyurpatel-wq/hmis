@@ -206,7 +206,7 @@ export function usePatient360(patientId: string | null, centreId: string | null)
           onSupplementalO2: vitalsLatest.on_supplemental_o2,
         });
         if (result) { news2Score = result.total; news2Risk = result.risk; }
-      } catch {}
+      } catch (e: any) { console.error("[HMIS Patient360]", e?.message || e); }
     }
 
     setData({

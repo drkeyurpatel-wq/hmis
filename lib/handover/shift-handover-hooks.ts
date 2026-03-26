@@ -89,7 +89,7 @@ export function useShiftHandover(centreId: string | null) {
             patientId: a.patient_id, detail: `${a.title}: ${a.description || ''}` });
           critCount++;
         }
-      } catch { /* Table may not exist yet */ }
+      } catch (e: any) { console.error('[HMIS Handover] Table check:', e?.message || e); }
 
       // Also check critical labs from this shift
       const { data: critLabs } = await sb()!.from('hmis_lab_orders')
