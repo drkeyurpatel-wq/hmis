@@ -64,28 +64,28 @@ export default function PatientLabHistory({ patientId, compact = false, admissio
     return orders;
   }, [orders, filter]);
 
-  if (loading) return <div className="animate-pulse space-y-2">{[1,2,3].map(i => <div key={i} className="h-12 bg-gray-200 rounded-lg" />)}</div>;
+  if (loading) return <div className="animate-pulse space-y-2">{[1,2,3].map(i => <div key={i} className="h-12 bg-h1-navy/10 rounded-h1-sm" />)}</div>;
 
   if (compact) return (
-    <div className="bg-white rounded-xl border p-3">
+    <div className="bg-h1-card rounded-h1 border p-3">
       <div className="flex items-center justify-between mb-2">
-        <h3 className="text-xs font-bold text-gray-700">Lab Results ({stats.total})</h3>
+        <h3 className="text-xs font-bold text-h1-text">Lab Results ({stats.total})</h3>
         <div className="flex gap-1">
-          {stats.critical > 0 && <span className="text-[9px] bg-red-600 text-white px-1.5 py-0.5 rounded">{stats.critical} CRIT</span>}
+          {stats.critical > 0 && <span className="text-[9px] bg-h1-red text-white px-1.5 py-0.5 rounded">{stats.critical} CRIT</span>}
           {stats.abnormal > 0 && <span className="text-[9px] bg-amber-500 text-white px-1.5 py-0.5 rounded">{stats.abnormal} ABN</span>}
-          {stats.pending > 0 && <span className="text-[9px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded">{stats.pending} pending</span>}
+          {stats.pending > 0 && <span className="text-[9px] bg-h1-teal/10 text-h1-teal px-1.5 py-0.5 rounded">{stats.pending} pending</span>}
         </div>
       </div>
       <div className="space-y-1">{filtered.slice(0, 6).map(o => (
-        <div key={o.orderId} className={`flex items-center justify-between px-2 py-1.5 rounded text-xs ${o.results.some(r => r.isCritical) ? 'bg-red-50' : o.results.some(r => r.isAbnormal) ? 'bg-amber-50' : 'bg-gray-50'}`}>
+        <div key={o.orderId} className={`flex items-center justify-between px-2 py-1.5 rounded text-xs ${o.results.some(r => r.isCritical) ? 'bg-h1-red/[0.04]' : o.results.some(r => r.isAbnormal) ? 'bg-amber-50' : 'bg-h1-navy/[0.03]'}`}>
           <span className="font-medium">{o.testName}</span>
           <div className="flex items-center gap-1">
-            <span className={`text-[9px] px-1 py-0.5 rounded ${o.status === 'completed' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>{o.status}</span>
-            <span className="text-[10px] text-gray-400">{new Date(o.orderedDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}</span>
+            <span className={`text-[9px] px-1 py-0.5 rounded ${o.status === 'completed' ? 'bg-h1-success/10 text-h1-success' : 'bg-h1-navy/5 text-h1-text-secondary'}`}>{o.status}</span>
+            <span className="text-[10px] text-h1-text-muted">{new Date(o.orderedDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}</span>
           </div>
         </div>
       ))}</div>
-      {orders.length > 6 && <div className="text-center text-[10px] text-gray-400 mt-1">+ {orders.length - 6} more</div>}
+      {orders.length > 6 && <div className="text-center text-[10px] text-h1-text-muted mt-1">+ {orders.length - 6} more</div>}
     </div>
   );
 
@@ -96,61 +96,61 @@ export default function PatientLabHistory({ patientId, compact = false, admissio
         <div className="flex gap-1">
           {['all', 'abnormal', 'critical'].map(f => (
             <button key={f} onClick={() => setFilter(f as any)}
-              className={`px-2 py-1 text-[10px] rounded border ${filter === f ? 'bg-blue-600 text-white' : 'bg-white'}`}>
+              className={`px-2 py-1 text-[10px] rounded border ${filter === f ? 'bg-blue-600 text-white' : 'bg-h1-card'}`}>
               {f === 'all' ? `All (${stats.total})` : f === 'abnormal' ? `Abnormal (${stats.abnormal})` : `Critical (${stats.critical})`}
             </button>
           ))}
-          <button onClick={load} className="px-2 py-1 text-[10px] bg-gray-100 rounded">Refresh</button>
+          <button onClick={load} className="px-2 py-1 text-[10px] bg-h1-navy/5 rounded">Refresh</button>
         </div>
       </div>
 
       {/* KPIs */}
       <div className="grid grid-cols-5 gap-2">
-        <div className="bg-white rounded-lg border p-2 text-center"><div className="text-[9px] text-gray-500">Total</div><div className="text-lg font-bold">{stats.total}</div></div>
-        <div className="bg-green-50 rounded-lg border p-2 text-center"><div className="text-[9px] text-gray-500">Completed</div><div className="text-lg font-bold text-green-700">{stats.completed}</div></div>
-        <div className="bg-blue-50 rounded-lg border p-2 text-center"><div className="text-[9px] text-gray-500">Pending</div><div className="text-lg font-bold text-blue-700">{stats.pending}</div></div>
-        <div className="bg-amber-50 rounded-lg border p-2 text-center"><div className="text-[9px] text-gray-500">Abnormal</div><div className="text-lg font-bold text-amber-700">{stats.abnormal}</div></div>
-        <div className="bg-red-50 rounded-lg border p-2 text-center"><div className="text-[9px] text-gray-500">Critical</div><div className="text-lg font-bold text-red-700">{stats.critical}</div></div>
+        <div className="bg-h1-card rounded-h1-sm border p-2 text-center"><div className="text-[9px] text-h1-text-secondary">Total</div><div className="text-lg font-bold">{stats.total}</div></div>
+        <div className="bg-h1-success/[0.05] rounded-h1-sm border p-2 text-center"><div className="text-[9px] text-h1-text-secondary">Completed</div><div className="text-lg font-bold text-h1-success">{stats.completed}</div></div>
+        <div className="bg-h1-teal/[0.05] rounded-h1-sm border p-2 text-center"><div className="text-[9px] text-h1-text-secondary">Pending</div><div className="text-lg font-bold text-h1-teal">{stats.pending}</div></div>
+        <div className="bg-amber-50 rounded-h1-sm border p-2 text-center"><div className="text-[9px] text-h1-text-secondary">Abnormal</div><div className="text-lg font-bold text-amber-700">{stats.abnormal}</div></div>
+        <div className="bg-h1-red/[0.04] rounded-h1-sm border p-2 text-center"><div className="text-[9px] text-h1-text-secondary">Critical</div><div className="text-lg font-bold text-h1-red">{stats.critical}</div></div>
       </div>
 
       {/* Orders */}
-      {filtered.length === 0 ? <div className="text-center py-8 bg-white rounded-xl border text-gray-400 text-sm">No lab results found</div> :
+      {filtered.length === 0 ? <div className="text-center py-8 bg-h1-card rounded-h1 border text-h1-text-muted text-sm">No lab results found</div> :
       filtered.map(o => (
-        <div key={o.orderId} className={`bg-white rounded-xl border overflow-hidden ${o.results.some(r => r.isCritical) ? 'border-red-300' : ''}`}>
+        <div key={o.orderId} className={`bg-h1-card rounded-h1 border overflow-hidden ${o.results.some(r => r.isCritical) ? 'border-h1-red/30' : ''}`}>
           <button onClick={() => setExpanded(expanded === o.orderId ? null : o.orderId)}
-            className="w-full text-left px-4 py-3 flex items-center justify-between hover:bg-gray-50">
+            className="w-full text-left px-4 py-3 flex items-center justify-between hover:bg-h1-navy/[0.03]">
             <div className="flex items-center gap-2">
               <span className="font-medium text-sm">{o.testName}</span>
-              {o.testCode && <span className="text-[10px] font-mono text-gray-400">{o.testCode}</span>}
-              {o.results.some(r => r.isCritical) && <span className="text-[9px] bg-red-600 text-white px-1.5 py-0.5 rounded font-bold">CRITICAL</span>}
+              {o.testCode && <span className="text-[10px] font-mono text-h1-text-muted">{o.testCode}</span>}
+              {o.results.some(r => r.isCritical) && <span className="text-[9px] bg-h1-red text-white px-1.5 py-0.5 rounded font-bold">CRITICAL</span>}
               {o.results.some(r => r.isAbnormal) && !o.results.some(r => r.isCritical) && <span className="text-[9px] bg-amber-500 text-white px-1.5 py-0.5 rounded">ABNORMAL</span>}
             </div>
             <div className="flex items-center gap-2">
-              <span className={`text-[9px] px-1.5 py-0.5 rounded ${o.status === 'completed' ? 'bg-green-100 text-green-700' : o.status === 'processing' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-500'}`}>{o.status}</span>
-              <span className="text-xs text-gray-400">{new Date(o.orderedDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
-              <span className="text-gray-300">{expanded === o.orderId ? '▲' : '▼'}</span>
+              <span className={`text-[9px] px-1.5 py-0.5 rounded ${o.status === 'completed' ? 'bg-h1-success/10 text-h1-success' : o.status === 'processing' ? 'bg-h1-teal/10 text-h1-teal' : 'bg-h1-navy/5 text-h1-text-secondary'}`}>{o.status}</span>
+              <span className="text-xs text-h1-text-muted">{new Date(o.orderedDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
+              <span className="text-h1-text-muted">{expanded === o.orderId ? '▲' : '▼'}</span>
             </div>
           </button>
 
           {expanded === o.orderId && o.results.length > 0 && (
-            <table className="w-full text-xs border-t"><thead><tr className="bg-gray-50">
+            <table className="w-full text-xs border-t"><thead><tr className="bg-h1-navy/[0.03]">
               <th className="p-2 text-left font-medium">Parameter</th>
               <th className="p-2 text-center font-medium">Result</th>
               <th className="p-2 text-center font-medium">Unit</th>
               <th className="p-2 text-center font-medium">Ref Range</th>
               <th className="p-2 text-center font-medium">Flag</th>
             </tr></thead><tbody>{o.results.map((r, i) => (
-              <tr key={i} className={`border-b ${r.isCritical ? 'bg-red-50' : r.isAbnormal ? 'bg-amber-50' : ''}`}>
+              <tr key={i} className={`border-b ${r.isCritical ? 'bg-h1-red/[0.04]' : r.isAbnormal ? 'bg-amber-50' : ''}`}>
                 <td className="p-2 font-medium">{r.name}</td>
-                <td className={`p-2 text-center font-bold ${r.isCritical ? 'text-red-700' : r.isAbnormal ? 'text-amber-700' : ''}`}>{r.value}</td>
-                <td className="p-2 text-center text-gray-500">{r.unit}</td>
-                <td className="p-2 text-center text-gray-400">{r.refRange}</td>
-                <td className="p-2 text-center">{r.flag && <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${r.isCritical ? 'bg-red-600 text-white' : 'bg-amber-500 text-white'}`}>{r.flag}</span>}</td>
+                <td className={`p-2 text-center font-bold ${r.isCritical ? 'text-h1-red' : r.isAbnormal ? 'text-amber-700' : ''}`}>{r.value}</td>
+                <td className="p-2 text-center text-h1-text-secondary">{r.unit}</td>
+                <td className="p-2 text-center text-h1-text-muted">{r.refRange}</td>
+                <td className="p-2 text-center">{r.flag && <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${r.isCritical ? 'bg-h1-red text-white' : 'bg-amber-500 text-white'}`}>{r.flag}</span>}</td>
               </tr>
             ))}</tbody></table>
           )}
           {expanded === o.orderId && o.results.length === 0 && (
-            <div className="px-4 py-3 text-xs text-gray-400 border-t">{o.status === 'completed' ? 'No result parameters recorded' : 'Results pending'}</div>
+            <div className="px-4 py-3 text-xs text-h1-text-muted border-t">{o.status === 'completed' ? 'No result parameters recorded' : 'Results pending'}</div>
           )}
         </div>
       ))}

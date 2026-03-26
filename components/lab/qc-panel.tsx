@@ -87,14 +87,14 @@ export default function QCPanel({ centreId, staffId, onFlash }: Props) {
     onFlash('QC lot added');
   };
 
-  const violationColor = (v: string | null) => !v ? '' : v === '1_2s' || v === '7T' ? 'bg-yellow-50 text-yellow-700' : 'bg-red-50 text-red-700';
+  const violationColor = (v: string | null) => !v ? '' : v === '1_2s' || v === '7T' ? 'bg-h1-yellow/[0.05] text-h1-yellow' : 'bg-h1-red/[0.04] text-h1-red';
 
   return (
     <div className="space-y-4">
       {/* Lot selector + Add button */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <select value={selectedLotId || ''} onChange={e => setSelectedLotId(e.target.value || null)} className="px-3 py-2 border rounded-lg text-sm min-w-[300px]">
+          <select value={selectedLotId || ''} onChange={e => setSelectedLotId(e.target.value || null)} className="px-3 py-2 border rounded-h1-sm text-sm min-w-[300px]">
             <option value="">Select QC lot...</option>
             {lots.lots.map(l => (
               <option key={l.id} value={l.id}>
@@ -103,65 +103,65 @@ export default function QCPanel({ centreId, staffId, onFlash }: Props) {
             ))}
           </select>
           {selectedLotId && qcResults.lot && (
-            <div className="text-xs text-gray-500">
+            <div className="text-xs text-h1-text-secondary">
               Mean: {qcResults.lot.target_mean} | SD: {qcResults.lot.target_sd} | Unit: {qcResults.lot.unit || '—'} | Exp: {qcResults.lot.expiry_date}
-              {new Date(qcResults.lot.expiry_date) < new Date() && <span className="text-red-600 font-bold ml-1">EXPIRED</span>}
+              {new Date(qcResults.lot.expiry_date) < new Date() && <span className="text-h1-red font-bold ml-1">EXPIRED</span>}
             </div>
           )}
         </div>
-        <button onClick={() => setShowAddLot(!showAddLot)} className="px-3 py-1.5 bg-blue-600 text-white text-xs rounded-lg">{showAddLot ? 'Cancel' : '+ New Lot'}</button>
+        <button onClick={() => setShowAddLot(!showAddLot)} className="px-3 py-1.5 bg-blue-600 text-white text-xs rounded-h1-sm">{showAddLot ? 'Cancel' : '+ New Lot'}</button>
       </div>
 
       {/* Add lot form */}
       {showAddLot && (
-        <div className="bg-white rounded-xl border p-5 space-y-3">
+        <div className="bg-h1-card rounded-h1 border p-5 space-y-3">
           <h3 className="font-semibold text-sm">Add QC Control Lot</h3>
           <div className="grid grid-cols-3 gap-3">
-            <div><label className="text-xs text-gray-500">Lot number *</label>
-              <input type="text" value={lotForm.lotNumber} onChange={e => setLotForm(f => ({...f, lotNumber: e.target.value}))} className="w-full px-3 py-2 border rounded-lg text-sm" /></div>
-            <div><label className="text-xs text-gray-500">Material name *</label>
-              <input type="text" value={lotForm.materialName} onChange={e => setLotForm(f => ({...f, materialName: e.target.value}))} className="w-full px-3 py-2 border rounded-lg text-sm" placeholder="e.g., Bio-Rad Liquichek" /></div>
-            <div><label className="text-xs text-gray-500">Manufacturer</label>
-              <input type="text" value={lotForm.manufacturer} onChange={e => setLotForm(f => ({...f, manufacturer: e.target.value}))} className="w-full px-3 py-2 border rounded-lg text-sm" /></div>
+            <div><label className="text-xs text-h1-text-secondary">Lot number *</label>
+              <input type="text" value={lotForm.lotNumber} onChange={e => setLotForm(f => ({...f, lotNumber: e.target.value}))} className="w-full px-3 py-2 border rounded-h1-sm text-sm" /></div>
+            <div><label className="text-xs text-h1-text-secondary">Material name *</label>
+              <input type="text" value={lotForm.materialName} onChange={e => setLotForm(f => ({...f, materialName: e.target.value}))} className="w-full px-3 py-2 border rounded-h1-sm text-sm" placeholder="e.g., Bio-Rad Liquichek" /></div>
+            <div><label className="text-xs text-h1-text-secondary">Manufacturer</label>
+              <input type="text" value={lotForm.manufacturer} onChange={e => setLotForm(f => ({...f, manufacturer: e.target.value}))} className="w-full px-3 py-2 border rounded-h1-sm text-sm" /></div>
           </div>
           <div className="grid grid-cols-4 gap-3">
-            <div><label className="text-xs text-gray-500">Test *</label>
-              <select value={lotForm.testId} onChange={e => setLotForm(f => ({...f, testId: e.target.value}))} className="w-full px-3 py-2 border rounded-lg text-sm">
+            <div><label className="text-xs text-h1-text-secondary">Test *</label>
+              <select value={lotForm.testId} onChange={e => setLotForm(f => ({...f, testId: e.target.value}))} className="w-full px-3 py-2 border rounded-h1-sm text-sm">
                 <option value="">Select...</option>
                 {[...new Map(lots.lots.map(l => [l.test?.test_code, l.test])).values()].filter(Boolean).map(t =>
                   <option key={t.test_code} value={t.id}>{t.test_name}</option>
                 )}
               </select></div>
-            <div><label className="text-xs text-gray-500">Level *</label>
-              <select value={lotForm.level} onChange={e => setLotForm(f => ({...f, level: e.target.value}))} className="w-full px-3 py-2 border rounded-lg text-sm">
+            <div><label className="text-xs text-h1-text-secondary">Level *</label>
+              <select value={lotForm.level} onChange={e => setLotForm(f => ({...f, level: e.target.value}))} className="w-full px-3 py-2 border rounded-h1-sm text-sm">
                 {['L1','L2','L3','normal','abnormal'].map(l => <option key={l}>{l}</option>)}
               </select></div>
-            <div><label className="text-xs text-gray-500">Target Mean *</label>
-              <input type="number" step="any" value={lotForm.targetMean} onChange={e => setLotForm(f => ({...f, targetMean: e.target.value}))} className="w-full px-3 py-2 border rounded-lg text-sm" /></div>
-            <div><label className="text-xs text-gray-500">Target SD *</label>
-              <input type="number" step="any" value={lotForm.targetSd} onChange={e => setLotForm(f => ({...f, targetSd: e.target.value}))} className="w-full px-3 py-2 border rounded-lg text-sm" /></div>
+            <div><label className="text-xs text-h1-text-secondary">Target Mean *</label>
+              <input type="number" step="any" value={lotForm.targetMean} onChange={e => setLotForm(f => ({...f, targetMean: e.target.value}))} className="w-full px-3 py-2 border rounded-h1-sm text-sm" /></div>
+            <div><label className="text-xs text-h1-text-secondary">Target SD *</label>
+              <input type="number" step="any" value={lotForm.targetSd} onChange={e => setLotForm(f => ({...f, targetSd: e.target.value}))} className="w-full px-3 py-2 border rounded-h1-sm text-sm" /></div>
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <div><label className="text-xs text-gray-500">Unit</label>
-              <input type="text" value={lotForm.unit} onChange={e => setLotForm(f => ({...f, unit: e.target.value}))} className="w-full px-3 py-2 border rounded-lg text-sm" /></div>
-            <div><label className="text-xs text-gray-500">Expiry date *</label>
-              <input type="date" value={lotForm.expiryDate} onChange={e => setLotForm(f => ({...f, expiryDate: e.target.value}))} className="w-full px-3 py-2 border rounded-lg text-sm" /></div>
+            <div><label className="text-xs text-h1-text-secondary">Unit</label>
+              <input type="text" value={lotForm.unit} onChange={e => setLotForm(f => ({...f, unit: e.target.value}))} className="w-full px-3 py-2 border rounded-h1-sm text-sm" /></div>
+            <div><label className="text-xs text-h1-text-secondary">Expiry date *</label>
+              <input type="date" value={lotForm.expiryDate} onChange={e => setLotForm(f => ({...f, expiryDate: e.target.value}))} className="w-full px-3 py-2 border rounded-h1-sm text-sm" /></div>
           </div>
-          <button onClick={handleAddLot} className="px-4 py-2 bg-green-600 text-white text-sm rounded-lg">Save Lot</button>
+          <button onClick={handleAddLot} className="px-4 py-2 bg-green-600 text-white text-sm rounded-h1-sm">Save Lot</button>
         </div>
       )}
 
       {selectedLotId && (
         <>
           {/* QC value entry */}
-          <div className="bg-white rounded-xl border p-4">
+          <div className="bg-h1-card rounded-h1 border p-4">
             <div className="flex items-center gap-3">
               <h4 className="text-sm font-medium whitespace-nowrap">Run QC</h4>
               <input type="number" step="any" value={qcValue} onChange={e => setQcValue(e.target.value)}
-                className="px-3 py-2 border rounded-lg text-sm w-40" placeholder="Measured value" />
-              <button onClick={handleRunQC} disabled={!qcValue} className="px-4 py-2 bg-green-600 text-white text-sm rounded-lg disabled:opacity-50">Record</button>
+                className="px-3 py-2 border rounded-h1-sm text-sm w-40" placeholder="Measured value" />
+              <button onClick={handleRunQC} disabled={!qcValue} className="px-4 py-2 bg-green-600 text-white text-sm rounded-h1-sm disabled:opacity-50">Record</button>
               {lastWestgard && (
-                <div className={`px-3 py-1.5 rounded-lg text-xs font-medium ${lastWestgard.isRejection ? 'bg-red-100 text-red-700' : lastWestgard.isWarning ? 'bg-yellow-100 text-yellow-700' : 'bg-green-100 text-green-700'}`}>
+                <div className={`px-3 py-1.5 rounded-h1-sm text-xs font-medium ${lastWestgard.isRejection ? 'bg-h1-red/10 text-h1-red' : lastWestgard.isWarning ? 'bg-h1-yellow/10 text-h1-yellow' : 'bg-h1-success/10 text-h1-success'}`}>
                   {lastWestgard.isRejection ? `REJECTED: ${lastWestgard.violation}` : lastWestgard.isWarning ? `WARNING: ${lastWestgard.violation}` : 'ACCEPTED'}
                   {' '}({lastWestgard.sdFromMean >= 0 ? '+' : ''}{lastWestgard.sdFromMean.toFixed(1)} SD)
                 </div>
@@ -170,19 +170,19 @@ export default function QCPanel({ centreId, staffId, onFlash }: Props) {
           </div>
 
           {/* Levey-Jennings Chart */}
-          <div className="bg-white rounded-xl border p-4">
+          <div className="bg-h1-card rounded-h1 border p-4">
             <div className="flex items-center justify-between mb-2">
               <h4 className="text-sm font-medium">Levey-Jennings Chart</h4>
               <div className="flex gap-1 text-[10px]">
-                <span className="flex items-center gap-1"><span className="w-3 h-0.5 bg-green-500 inline-block"></span> Mean</span>
-                <span className="flex items-center gap-1"><span className="w-3 h-0.5 bg-yellow-500 inline-block border-dashed"></span> ±2SD</span>
-                <span className="flex items-center gap-1"><span className="w-3 h-0.5 bg-red-500 inline-block border-dashed"></span> ±3SD</span>
-                <span className="flex items-center gap-1"><span className="w-2 h-2 bg-red-500 rounded-full inline-block"></span> Rejected</span>
+                <span className="flex items-center gap-1"><span className="w-3 h-0.5 bg-h1-success/[0.05]0 inline-block"></span> Mean</span>
+                <span className="flex items-center gap-1"><span className="w-3 h-0.5 bg-h1-yellow inline-block border-dashed"></span> ±2SD</span>
+                <span className="flex items-center gap-1"><span className="w-3 h-0.5 bg-h1-red inline-block border-dashed"></span> ±3SD</span>
+                <span className="flex items-center gap-1"><span className="w-2 h-2 bg-h1-red rounded-full inline-block"></span> Rejected</span>
               </div>
             </div>
             <div className="h-64">
               {qcResults.results.length === 0 ? (
-                <div className="flex items-center justify-center h-full text-gray-400 text-sm">No QC data yet. Record a value above.</div>
+                <div className="flex items-center justify-center h-full text-h1-text-muted text-sm">No QC data yet. Record a value above.</div>
               ) : (
                 <canvas ref={canvasRef} />
               )}
@@ -190,9 +190,9 @@ export default function QCPanel({ centreId, staffId, onFlash }: Props) {
           </div>
 
           {/* Results table */}
-          <div className="bg-white rounded-xl border overflow-hidden">
+          <div className="bg-h1-card rounded-h1 border overflow-hidden">
             <table className="w-full text-xs">
-              <thead><tr className="bg-gray-50 border-b">
+              <thead><tr className="bg-h1-navy/[0.03] border-b">
                 <th className="p-2 text-left">Date</th><th className="p-2">Run</th><th className="p-2">Value</th>
                 <th className="p-2">SD from Mean</th><th className="p-2">Westgard</th><th className="p-2">Status</th>
                 <th className="p-2 text-left">By</th>
@@ -203,8 +203,8 @@ export default function QCPanel({ centreId, staffId, onFlash }: Props) {
                   <td className="p-2 text-center">R{r.run_number}</td>
                   <td className="p-2 text-center font-medium">{parseFloat(r.measured_value).toFixed(1)}</td>
                   <td className="p-2 text-center">{parseFloat(r.sd_from_mean).toFixed(2)} SD</td>
-                  <td className="p-2 text-center">{r.westgard_violation ? <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${r.is_accepted ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700'}`}>{r.westgard_violation}</span> : '—'}</td>
-                  <td className="p-2 text-center"><span className={`px-1.5 py-0.5 rounded text-[10px] ${r.is_accepted ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>{r.is_accepted ? 'Accepted' : 'Rejected'}</span></td>
+                  <td className="p-2 text-center">{r.westgard_violation ? <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${r.is_accepted ? 'bg-h1-yellow/10 text-h1-yellow' : 'bg-h1-red/10 text-h1-red'}`}>{r.westgard_violation}</span> : '—'}</td>
+                  <td className="p-2 text-center"><span className={`px-1.5 py-0.5 rounded text-[10px] ${r.is_accepted ? 'bg-h1-success/10 text-h1-success' : 'bg-h1-red/10 text-h1-red'}`}>{r.is_accepted ? 'Accepted' : 'Rejected'}</span></td>
                   <td className="p-2">{r.performer?.full_name || '—'}</td>
                 </tr>
               ))}</tbody>
@@ -212,24 +212,24 @@ export default function QCPanel({ centreId, staffId, onFlash }: Props) {
           </div>
 
           {/* Westgard Rules Reference */}
-          <div className="bg-gray-50 rounded-xl border p-4">
-            <h4 className="text-xs font-medium text-gray-500 mb-2">Westgard Rules Reference</h4>
+          <div className="bg-h1-navy/[0.03] rounded-h1 border p-4">
+            <h4 className="text-xs font-medium text-h1-text-secondary mb-2">Westgard Rules Reference</h4>
             <div className="grid grid-cols-4 gap-2 text-[10px]">
-              <div className="bg-yellow-50 p-2 rounded"><span className="font-bold">1-2s</span> Warning: 1 point beyond ±2SD</div>
-              <div className="bg-red-50 p-2 rounded"><span className="font-bold">1-3s</span> Reject: 1 point beyond ±3SD</div>
-              <div className="bg-red-50 p-2 rounded"><span className="font-bold">2-2s</span> Reject: 2 consecutive beyond same ±2SD</div>
-              <div className="bg-red-50 p-2 rounded"><span className="font-bold">R-4s</span> Reject: 1 at +2SD, 1 at -2SD</div>
-              <div className="bg-red-50 p-2 rounded"><span className="font-bold">4-1s</span> Reject: 4 consecutive beyond same ±1SD</div>
-              <div className="bg-red-50 p-2 rounded"><span className="font-bold">10x</span> Reject: 10 consecutive same side of mean</div>
-              <div className="bg-yellow-50 p-2 rounded"><span className="font-bold">7T</span> Warning: 7 consecutive trending same direction</div>
-              <div className="bg-red-50 p-2 rounded"><span className="font-bold">2of3-2s</span> Reject: 2 of 3 consecutive beyond ±2SD</div>
+              <div className="bg-h1-yellow/[0.05] p-2 rounded"><span className="font-bold">1-2s</span> Warning: 1 point beyond ±2SD</div>
+              <div className="bg-h1-red/[0.04] p-2 rounded"><span className="font-bold">1-3s</span> Reject: 1 point beyond ±3SD</div>
+              <div className="bg-h1-red/[0.04] p-2 rounded"><span className="font-bold">2-2s</span> Reject: 2 consecutive beyond same ±2SD</div>
+              <div className="bg-h1-red/[0.04] p-2 rounded"><span className="font-bold">R-4s</span> Reject: 1 at +2SD, 1 at -2SD</div>
+              <div className="bg-h1-red/[0.04] p-2 rounded"><span className="font-bold">4-1s</span> Reject: 4 consecutive beyond same ±1SD</div>
+              <div className="bg-h1-red/[0.04] p-2 rounded"><span className="font-bold">10x</span> Reject: 10 consecutive same side of mean</div>
+              <div className="bg-h1-yellow/[0.05] p-2 rounded"><span className="font-bold">7T</span> Warning: 7 consecutive trending same direction</div>
+              <div className="bg-h1-red/[0.04] p-2 rounded"><span className="font-bold">2of3-2s</span> Reject: 2 of 3 consecutive beyond ±2SD</div>
             </div>
           </div>
         </>
       )}
 
       {!selectedLotId && !showAddLot && (
-        <div className="text-center py-12 bg-white rounded-xl border text-gray-400 text-sm">Select a QC lot above or add a new one to start quality control monitoring.</div>
+        <div className="text-center py-12 bg-h1-card rounded-h1 border text-h1-text-muted text-sm">Select a QC lot above or add a new one to start quality control monitoring.</div>
       )}
     </div>
   );
