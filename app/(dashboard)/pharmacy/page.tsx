@@ -70,20 +70,20 @@ function PharmacyInner() {
 
   return (
     <div className="max-w-7xl mx-auto">
-      {toast && <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-emerald-600 text-white px-4 py-2 rounded-xl shadow-lg text-sm">{toast}</div>}
+      {toast && <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-h1-success text-white px-4 py-2 rounded-xl shadow-lg text-sm">{toast}</div>}
       <div className="flex items-center justify-between mb-3">
         <div><h1 className="text-xl font-bold text-gray-900">Pharmacy</h1><p className="text-xs text-gray-500">Drug dispensing, stock management, procurement</p></div>
       </div>
 
       <div className="flex gap-1 mb-4 pb-0.5 overflow-x-auto scrollbar-thin">
         {tabs.map(([k,l,icon]) => <button key={k} onClick={() => setTab(k)}
-          className={`flex items-center gap-1 px-2.5 py-2 text-[11px] font-medium whitespace-nowrap rounded-xl ${tab===k?'bg-teal-600 text-white shadow-sm':'bg-white text-gray-500 border border-gray-100 hover:bg-gray-50'}`}>{icon} {l}</button>)}
+          className={`flex items-center gap-1 px-2.5 py-2 text-[11px] font-medium whitespace-nowrap rounded-xl ${tab===k?'bg-h1-navy text-white shadow-sm':'bg-white text-gray-500 border border-gray-100 hover:bg-gray-50'}`}>{icon} {l}</button>)}
       </div>
 
       {/* ===== DASHBOARD ===== */}
       {tab === 'dispensing' && /* stats */ <div className="space-y-4">
         <div className="grid grid-cols-6 gap-3">
-          {[['Dispensed Today',dashboard.todayDispensed,'text-blue-700','bg-blue-50'],
+          {[['Dispensed Today',dashboard.todayDispensed,'text-h1-teal','bg-h1-teal-light'],
             ['Revenue Today',`₹${fmtL(dashboard.todayRevenue)}`,'text-green-700','bg-green-50'],
             ['Month Revenue',`₹${fmtL(dashboard.monthRevenue)}`,'text-green-700','bg-green-50'],
             ['Pending Rx',dispensing.stats.pending,'text-yellow-700','bg-yellow-50'],
@@ -98,7 +98,7 @@ function PharmacyInner() {
             <h3 className="text-xs font-bold mb-2">Stock Value</h3>
             <div className="flex justify-between text-sm"><span className="text-gray-500">At cost:</span><span className="font-bold">₹{fmtL(stock.totalValue)}</span></div>
             <div className="flex justify-between text-sm"><span className="text-gray-500">At MRP:</span><span className="font-bold text-green-700">₹{fmtL(stock.totalMRPValue)}</span></div>
-            <div className="flex justify-between text-sm"><span className="text-gray-500">Margin:</span><span className="font-bold text-blue-700">₹{fmtL(stock.totalMRPValue - stock.totalValue)}</span></div>
+            <div className="flex justify-between text-sm"><span className="text-gray-500">Margin:</span><span className="font-bold text-h1-teal">₹{fmtL(stock.totalMRPValue - stock.totalValue)}</span></div>
             <div className="flex justify-between text-sm"><span className="text-gray-500">Items:</span><span className="font-bold">{stock.aggregated.length} drugs / {stock.stock.length} batches</span></div>
           </div>
           <div className="bg-white rounded-xl border p-4">
@@ -118,11 +118,11 @@ function PharmacyInner() {
         ))}</div>
         {dispensing.queue.length === 0 ? <div className="text-center py-8 bg-white rounded-xl border text-gray-400 text-sm">No prescriptions in queue</div> :
         <div className="space-y-2">{dispensing.queue.map(rx => (
-          <div key={rx.id} className="bg-white rounded-xl border p-4 hover:border-blue-300 cursor-pointer" onClick={() => setSelectedRx(rx)}>
+          <div key={rx.id} className="bg-white rounded-xl border p-4 hover:border-h1-teal cursor-pointer" onClick={() => setSelectedRx(rx)}>
             <div className="flex justify-between">
-              <div><span className="font-semibold text-sm"><Link href={`/patients/${rx.patient_id || rx.patient?.id}`} className='hover:text-teal-600 hover:underline'>{rx.patient?.first_name} {rx.patient?.last_name}</Link></span><span className="text-xs text-gray-400 ml-2">{rx.patient?.uhid}</span></div>
+              <div><span className="font-semibold text-sm"><Link href={`/patients/${rx.patient_id || rx.patient?.id}`} className='hover:text-h1-teal hover:underline'>{rx.patient?.first_name} {rx.patient?.last_name}</Link></span><span className="text-xs text-gray-400 ml-2">{rx.patient?.uhid}</span></div>
               <div className="flex items-center gap-2">
-                <span className={`px-2 py-0.5 rounded text-[10px] ${rx.status==='pending'?'bg-yellow-100 text-yellow-700':rx.status==='dispensed'?'bg-green-100 text-green-700':'bg-blue-100 text-blue-700'}`}>{rx.status}</span>
+                <span className={`px-2 py-0.5 rounded text-[10px] ${rx.status==='pending'?'bg-yellow-100 text-yellow-700':rx.status==='dispensed'?'bg-green-100 text-green-700':'bg-h1-teal-light text-h1-teal'}`}>{rx.status}</span>
                 <span className="text-xs text-gray-400">{new Date(rx.created_at).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})}</span>
               </div>
             </div>
@@ -161,7 +161,7 @@ function PharmacyInner() {
             <div className="flex justify-between items-center mb-2">
               <span className="text-xs font-semibold text-gray-500">Items to Dispense</span>
               <button onClick={() => setDispItems(prev => [...prev, { drugId: '', drugName: '', qty: 1, prescribed: '' }])}
-                className="text-xs text-blue-600">+ Add Drug</button>
+                className="text-xs text-h1-teal">+ Add Drug</button>
             </div>
             {dispItems.map((item, idx) => (
               <div key={idx} className="flex items-center gap-2 mb-1.5">
@@ -175,7 +175,7 @@ function PharmacyInner() {
                       <div className="absolute top-full left-0 right-0 bg-white border rounded shadow z-10 mt-0.5 max-h-32 overflow-y-auto">
                         {results.map(d => (
                           <button key={d.id} onClick={() => { const items = [...dispItems]; items[idx].drugId = d.id; items[idx].drugName = `${d.generic_name} ${d.strength || ''} (${d.formulation})`; setDispItems(items); }}
-                            className="w-full text-left px-3 py-1.5 text-xs hover:bg-blue-50 border-b">{d.generic_name} {d.strength} ({d.formulation}) {d.brand_name ? `— ${d.brand_name}` : ''}</button>
+                            className="w-full text-left px-3 py-1.5 text-xs hover:bg-h1-teal-light border-b">{d.generic_name} {d.strength} ({d.formulation}) {d.brand_name ? `— ${d.brand_name}` : ''}</button>
                         ))}
                       </div>
                     ) : null;
@@ -203,7 +203,7 @@ function PharmacyInner() {
               if (!result.success) { setDispError(result.error || 'Dispensing failed'); return; }
               flash('Dispensed successfully'); setSelectedRx(null); setDispItems([]); setDispError('');
             }} disabled={dispLoading || dispItems.filter(i => i.drugId && i.qty > 0).length === 0}
-              className="px-6 py-2 bg-emerald-600 text-white text-sm rounded-lg font-medium disabled:opacity-40">{dispLoading ? 'Processing...' : 'Dispense (FEFO Auto-Pick)'}</button>
+              className="px-6 py-2 bg-h1-success text-white text-sm rounded-lg font-medium disabled:opacity-40">{dispLoading ? 'Processing...' : 'Dispense (FEFO Auto-Pick)'}</button>
           </div>
         </div>}
       </div>}
@@ -211,7 +211,7 @@ function PharmacyInner() {
       {/* ===== DRUG MASTER ===== */}
       {tab === 'drug_master' && <div className="space-y-3">
         <div className="flex gap-2"><input type="text" value={drugSearch} onChange={e => setDrugSearch(e.target.value)} className="flex-1 px-3 py-2 border rounded-lg text-sm" placeholder="Search drugs..." />
-          <button onClick={() => setShowAddDrug(!showAddDrug)} className="px-3 py-2 bg-teal-600 text-white text-xs rounded-lg">{showAddDrug?'Cancel':'+ Add Drug'}</button></div>
+          <button onClick={() => setShowAddDrug(!showAddDrug)} className="px-3 py-2 bg-h1-navy text-white text-xs rounded-lg">{showAddDrug?'Cancel':'+ Add Drug'}</button></div>
         {showAddDrug && <div className="bg-white rounded-xl border p-5 space-y-3">
           <div className="grid grid-cols-4 gap-3">
             <div><label className="text-xs text-gray-500">Generic name *</label><input type="text" value={drugForm.generic_name} onChange={e => setDrugForm(f => ({...f, generic_name:e.target.value}))} className="w-full px-3 py-2 border rounded-lg text-sm" /></div>
@@ -222,26 +222,26 @@ function PharmacyInner() {
           <div className="grid grid-cols-5 gap-3">
             <div><label className="text-xs text-gray-500">Formulation</label>
               <div className="flex gap-0.5 mt-0.5 flex-wrap">{['tablet','capsule','syrup','injection','ointment','drops','inhaler','powder','gel','patch'].map(f => (
-                <button key={f} onClick={() => setDrugForm(d => ({...d, formulation:f}))} className={`px-1.5 py-0.5 rounded text-[9px] border ${drugForm.formulation===f?'bg-teal-600 text-white':'bg-white'}`}>{f}</button>
+                <button key={f} onClick={() => setDrugForm(d => ({...d, formulation:f}))} className={`px-1.5 py-0.5 rounded text-[9px] border ${drugForm.formulation===f?'bg-h1-navy text-white':'bg-white'}`}>{f}</button>
               ))}</div></div>
             <div><label className="text-xs text-gray-500">Unit</label>
               <div className="flex gap-0.5 mt-0.5 flex-wrap">{['strip','vial','bottle','tube','ampoule','sachet','box','unit'].map(u => (
-                <button key={u} onClick={() => setDrugForm(d => ({...d, unit:u}))} className={`px-1.5 py-0.5 rounded text-[9px] border ${drugForm.unit===u?'bg-teal-600 text-white':'bg-white'}`}>{u}</button>
+                <button key={u} onClick={() => setDrugForm(d => ({...d, unit:u}))} className={`px-1.5 py-0.5 rounded text-[9px] border ${drugForm.unit===u?'bg-h1-navy text-white':'bg-white'}`}>{u}</button>
               ))}</div></div>
             <div><label className="text-xs text-gray-500">Schedule</label>
               <div className="flex gap-0.5 mt-0.5">{['','H','H1','X'].map(s => (
-                <button key={s} onClick={() => setDrugForm(d => ({...d, schedule:s, is_narcotic:s==='X'}))} className={`px-2 py-0.5 rounded text-[9px] border ${drugForm.schedule===s?'bg-teal-600 text-white':'bg-white'}`}>{s||'None'}</button>
+                <button key={s} onClick={() => setDrugForm(d => ({...d, schedule:s, is_narcotic:s==='X'}))} className={`px-2 py-0.5 rounded text-[9px] border ${drugForm.schedule===s?'bg-h1-navy text-white':'bg-white'}`}>{s||'None'}</button>
               ))}</div></div>
             <div><label className="text-xs text-gray-500">GST %</label>
               <div className="flex gap-0.5 mt-0.5">{[0,5,12,18].map(g => (
-                <button key={g} onClick={() => setDrugForm(d => ({...d, gst_rate:g}))} className={`px-2 py-0.5 rounded text-[9px] border ${drugForm.gst_rate===g?'bg-teal-600 text-white':'bg-white'}`}>{g}%</button>
+                <button key={g} onClick={() => setDrugForm(d => ({...d, gst_rate:g}))} className={`px-2 py-0.5 rounded text-[9px] border ${drugForm.gst_rate===g?'bg-h1-navy text-white':'bg-white'}`}>{g}%</button>
               ))}</div></div>
             <div className="flex gap-2">
               <label className="flex items-center gap-1 text-[10px]"><input type="checkbox" checked={drugForm.is_antibiotic} onChange={e => setDrugForm(d => ({...d, is_antibiotic:e.target.checked}))} /> Antibiotic</label>
               <label className="flex items-center gap-1 text-[10px]"><input type="checkbox" checked={drugForm.is_narcotic} onChange={e => setDrugForm(d => ({...d, is_narcotic:e.target.checked}))} /> Narcotic</label>
             </div>
           </div>
-          <button onClick={async () => { if (!drugForm.generic_name) return; await drugMaster.addDrug(drugForm); setShowAddDrug(false); flash('Drug added'); }} className="px-4 py-2 bg-emerald-600 text-white text-sm rounded-lg">Save Drug</button>
+          <button onClick={async () => { if (!drugForm.generic_name) return; await drugMaster.addDrug(drugForm); setShowAddDrug(false); flash('Drug added'); }} className="px-4 py-2 bg-h1-success text-white text-sm rounded-lg">Save Drug</button>
         </div>}
         <div className="bg-white rounded-xl border overflow-hidden"><table className="w-full text-xs"><thead><tr className="bg-gray-50 border-b">
           <th className="p-2 text-left">Generic Name</th><th className="p-2 text-left">Brand</th><th className="p-2">Form</th><th className="p-2">Strength</th><th className="p-2">Sch</th><th className="p-2">GST</th><th className="p-2">Reorder</th>
@@ -266,14 +266,14 @@ function PharmacyInner() {
             <button onClick={() => stock.load({lowStock:true})} className="px-3 py-1.5 rounded-lg text-xs border bg-red-50 text-red-700">Low Stock ({stock.lowStock.length})</button>
             <button onClick={() => stock.load({expiringSoon:true})} className="px-3 py-1.5 rounded-lg text-xs border bg-orange-50 text-orange-700">Expiring ({stock.expiringSoon.length})</button>
           </div>
-          <button onClick={() => setShowAddStock(!showAddStock)} className="px-3 py-1.5 bg-teal-600 text-white text-xs rounded-lg">{showAddStock?'Cancel':'+ Add Stock'}</button>
+          <button onClick={() => setShowAddStock(!showAddStock)} className="px-3 py-1.5 bg-h1-navy text-white text-xs rounded-lg">{showAddStock?'Cancel':'+ Add Stock'}</button>
         </div>
         {showAddStock && <div className="bg-white rounded-xl border p-5 space-y-3">
           <div className="grid grid-cols-4 gap-3">
             <div className="relative"><label className="text-xs text-gray-500">Drug *</label>
               <input type="text" value={stockDrugQ} onChange={e => setStockDrugQ(e.target.value)} className="w-full px-3 py-2 border rounded-lg text-sm" placeholder="Search drug..." />
               {stockDrugResults.length > 0 && <div className="absolute top-full left-0 right-0 bg-white border rounded-lg shadow z-10 mt-1 max-h-40 overflow-y-auto">{stockDrugResults.map(d => (
-                <button key={d.id} onClick={() => { setStockForm(f => ({...f, drug_id:d.id, drug_name:d.generic_name})); setStockDrugQ(d.generic_name); }} className="w-full text-left px-3 py-1.5 text-xs hover:bg-blue-50 border-b">{d.generic_name} {d.strength} ({d.formulation})</button>
+                <button key={d.id} onClick={() => { setStockForm(f => ({...f, drug_id:d.id, drug_name:d.generic_name})); setStockDrugQ(d.generic_name); }} className="w-full text-left px-3 py-1.5 text-xs hover:bg-h1-teal-light border-b">{d.generic_name} {d.strength} ({d.formulation})</button>
               ))}</div>}</div>
             <div><label className="text-xs text-gray-500">Batch # *</label><input type="text" value={stockForm.batch_number} onChange={e => setStockForm(f => ({...f, batch_number:e.target.value}))} className="w-full px-3 py-2 border rounded-lg text-sm" /></div>
             <div><label className="text-xs text-gray-500">Expiry *</label><input type="date" value={stockForm.expiry_date} onChange={e => setStockForm(f => ({...f, expiry_date:e.target.value}))} className="w-full px-3 py-2 border rounded-lg text-sm" /></div>
@@ -291,7 +291,7 @@ function PharmacyInner() {
             if (!result.success) { setStockError(result.error || 'Failed to add stock'); return; }
             setShowAddStock(false); setStockError(''); flash('Stock added');
             setStockForm({ drug_id:'', drug_name:'', batch_number:'', expiry_date:'', purchase_rate:'', mrp:'', quantity_received:'', supplier:'' });
-          }} className="px-4 py-2 bg-emerald-600 text-white text-sm rounded-lg">Add Stock</button>
+          }} className="px-4 py-2 bg-h1-success text-white text-sm rounded-lg">Add Stock</button>
         </div>}
         <div className="bg-white rounded-xl border overflow-hidden"><table className="w-full text-xs"><thead><tr className="bg-gray-50 border-b">
           <th className="p-2 text-left">Drug</th><th className="p-2">Form</th><th className="p-2 text-right">Total Qty</th><th className="p-2">Batches</th><th className="p-2">Earliest Exp</th><th className="p-2 text-right">Avg Cost</th><th className="p-2 text-right">MRP</th><th className="p-2 text-right">Value</th>
@@ -349,15 +349,15 @@ function PharmacyInner() {
       {tab === 'more' && /* po */ <div className="bg-white rounded-xl border p-4">
         <div className="flex items-center justify-between mb-3">
           <h2 className="font-bold text-sm">Purchase Orders</h2>
-          <a href="/vpms" className="px-3 py-1.5 bg-teal-600 text-white text-xs rounded-lg">Open VPMS →</a>
+          <a href="/vpms" className="px-3 py-1.5 bg-h1-navy text-white text-xs rounded-lg">Open VPMS →</a>
         </div>
         <div className="text-xs text-gray-500 mb-3">Purchase orders are managed in the VPMS (Vendor & Purchase Management System). POs created there auto-flow to pharmacy stock via the integration bridge.</div>
         <div className="grid grid-cols-3 gap-3">
           {stock.lowStock.length > 0 && <div className="bg-red-50 rounded-lg p-3"><div className="text-xs font-bold text-red-700 mb-1">Low Stock Alerts ({stock.lowStock.length})</div>
             {stock.lowStock.slice(0, 8).map((s: any) => <div key={s.id} className="text-[10px] flex justify-between"><span>{s.drug_name}</span><span className="font-bold text-red-600">{s.quantity} left</span></div>)}
           </div>}
-          {stock.expiringSoon.length > 0 && <div className="bg-amber-50 rounded-lg p-3"><div className="text-xs font-bold text-amber-700 mb-1">Expiring Soon ({stock.expiringSoon.length})</div>
-            {stock.expiringSoon.slice(0, 8).map((s: any) => <div key={s.id} className="text-[10px] flex justify-between"><span>{s.drug_name}</span><span className="text-amber-600">{s.expiry_date}</span></div>)}
+          {stock.expiringSoon.length > 0 && <div className="bg-h1-yellow-light rounded-lg p-3"><div className="text-xs font-bold text-h1-yellow mb-1">Expiring Soon ({stock.expiringSoon.length})</div>
+            {stock.expiringSoon.slice(0, 8).map((s: any) => <div key={s.id} className="text-[10px] flex justify-between"><span>{s.drug_name}</span><span className="text-h1-yellow">{s.expiry_date}</span></div>)}
           </div>}
         </div>
       </div>}
@@ -365,7 +365,7 @@ function PharmacyInner() {
       {tab === 'more' && /* grn */ <div className="bg-white rounded-xl border p-4">
         <h2 className="font-bold text-sm mb-3">Goods Receipt Note</h2>
         <div className="text-xs text-gray-500 mb-3">GRN verification happens in the Stock tab when adding new stock entries. Each stock entry serves as a GRN with batch number, expiry, supplier, and quantity tracking.</div>
-        <div className="text-center py-8"><button onClick={() => setTab('inventory')} className="px-4 py-2 bg-teal-600 text-white text-sm rounded-lg">Go to Stock Management →</button></div>
+        <div className="text-center py-8"><button onClick={() => setTab('inventory')} className="px-4 py-2 bg-h1-navy text-white text-sm rounded-lg">Go to Stock Management →</button></div>
       </div>}
 
       {tab === 'more' && /* transfers */ <div className="space-y-4">
@@ -382,10 +382,10 @@ function PharmacyInner() {
               {xferForm.drugSearch.length >= 2 && <div className="absolute top-full left-0 right-0 mt-1 bg-white border rounded shadow-lg z-10 max-h-32 overflow-y-auto">
                 {drugMaster.search(xferForm.drugSearch).slice(0, 5).map((d: any) => (
                   <button key={d.id} onClick={() => setXferForm(f => ({ ...f, drugId: d.id, drugName: d.drug_name || d.generic_name, drugSearch: '' }))}
-                    className="w-full text-left px-2 py-1 text-[10px] hover:bg-blue-50 border-b">{d.drug_name || d.generic_name}</button>
+                    className="w-full text-left px-2 py-1 text-[10px] hover:bg-h1-teal-light border-b">{d.drug_name || d.generic_name}</button>
                 ))}
               </div>}
-              {xferForm.drugId && <div className="text-[10px] text-blue-600 mt-0.5">{xferForm.drugName}</div>}
+              {xferForm.drugId && <div className="text-[10px] text-h1-teal mt-0.5">{xferForm.drugName}</div>}
             </div>
             <div><label className="text-[9px] text-gray-500">Qty</label>
               <input type="number" value={xferForm.quantity} onChange={e => setXferForm(f => ({ ...f, quantity: e.target.value }))} className="w-full px-2 py-1.5 border rounded text-xs" /></div>
@@ -400,7 +400,7 @@ function PharmacyInner() {
               if (r.success) { flash('Transfer initiated'); setXferForm({ drugSearch: '', drugId: '', drugName: '', quantity: '', batchNumber: '', toCentreId: '', reason: '' }); }
               else flash(r.error || 'Failed');
             }} disabled={!xferForm.drugId || !xferForm.quantity || !xferForm.toCentreId}
-              className="w-full py-1.5 bg-teal-600 text-white text-xs rounded disabled:opacity-40">Transfer</button></div>
+              className="w-full py-1.5 bg-h1-navy text-white text-xs rounded disabled:opacity-40">Transfer</button></div>
           </div>
         </div>
         {/* Transfer list */}
@@ -413,7 +413,7 @@ function PharmacyInner() {
             <tr key={t.id} className="border-b"><td className="p-2 font-medium">{t.drug?.drug_name}</td>
               <td className="p-2 text-center">{t.quantity}</td>
               <td className="p-2 text-center">{t.from_centre?.code}</td><td className="p-2 text-center">{t.to_centre?.code}</td>
-              <td className="p-2 text-center"><span className={`px-1.5 py-0.5 rounded text-[9px] ${t.status === 'received' ? 'bg-green-100 text-green-700' : t.status === 'initiated' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100'}`}>{t.status}</span></td>
+              <td className="p-2 text-center"><span className={`px-1.5 py-0.5 rounded text-[9px] ${t.status === 'received' ? 'bg-green-100 text-green-700' : t.status === 'initiated' ? 'bg-h1-teal-light text-h1-teal' : 'bg-gray-100'}`}>{t.status}</span></td>
               <td className="p-2 text-center text-gray-400">{new Date(t.created_at).toLocaleDateString('en-IN')}</td>
               <td className="p-2">{t.status === 'initiated' && t.to_centre_id === centreId && <button onClick={() => { transfers.receiveTransfer(t.id, staffId); flash('Transfer received'); }} className="px-1.5 py-0.5 bg-green-100 text-green-700 rounded text-[9px]">Receive</button>}</td>
             </tr>
@@ -438,10 +438,10 @@ function PharmacyInner() {
               {ctrlForm.drugSearch.length >= 2 && <div className="absolute top-full left-0 right-0 mt-1 bg-white border rounded shadow-lg z-10 max-h-32 overflow-y-auto">
                 {drugMaster.search(ctrlForm.drugSearch).slice(0, 5).map((d: any) => (
                   <button key={d.id} onClick={() => setCtrlForm(f => ({ ...f, drugId: d.id, drugName: d.drug_name || d.generic_name, drugSearch: '' }))}
-                    className="w-full text-left px-2 py-1 text-[10px] hover:bg-blue-50 border-b">{d.drug_name || d.generic_name}</button>
+                    className="w-full text-left px-2 py-1 text-[10px] hover:bg-h1-teal-light border-b">{d.drug_name || d.generic_name}</button>
                 ))}
               </div>}
-              {ctrlForm.drugId && <div className="text-[10px] text-blue-600 mt-0.5">{ctrlForm.drugName}</div>}
+              {ctrlForm.drugId && <div className="text-[10px] text-h1-teal mt-0.5">{ctrlForm.drugName}</div>}
             </div>
             <div><label className="text-[9px] text-gray-500">Type</label>
               <select value={ctrlForm.transactionType} onChange={e => setCtrlForm(f => ({ ...f, transactionType: e.target.value }))} className="w-full px-2 py-1.5 border rounded text-xs">
@@ -469,7 +469,7 @@ function PharmacyInner() {
           </tr></thead><tbody>{controlled.register.slice(0, 50).map((r: any) => (
             <tr key={r.id} className={`border-b ${r.transaction_type === 'wastage' ? 'bg-red-50' : ''}`}>
               <td className="p-2 font-medium">{r.drug?.drug_name}</td>
-              <td className="p-2 text-center"><span className={`px-1 py-0.5 rounded text-[9px] ${r.transaction_type === 'dispensed' ? 'bg-blue-100 text-blue-700' : r.transaction_type === 'received' ? 'bg-green-100 text-green-700' : r.transaction_type === 'wastage' ? 'bg-red-100 text-red-700' : 'bg-gray-100'}`}>{r.transaction_type}</span></td>
+              <td className="p-2 text-center"><span className={`px-1 py-0.5 rounded text-[9px] ${r.transaction_type === 'dispensed' ? 'bg-h1-teal-light text-h1-teal' : r.transaction_type === 'received' ? 'bg-green-100 text-green-700' : r.transaction_type === 'wastage' ? 'bg-red-100 text-red-700' : 'bg-gray-100'}`}>{r.transaction_type}</span></td>
               <td className="p-2 text-center font-bold">{r.quantity}</td>
               <td className="p-2 text-center text-gray-400">{r.batch_number}</td>
               <td className="p-2 text-[10px]">{r.staff?.full_name}</td>
@@ -484,7 +484,7 @@ function PharmacyInner() {
         <div className="flex items-center justify-between">
           <h2 className="font-bold text-sm">Returns & Write-offs</h2>
           <div className="flex gap-2 text-[10px]">
-            <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded">Patient returns: {returns.stats.patientReturns}</span>
+            <span className="bg-h1-teal-light text-h1-teal px-2 py-1 rounded">Patient returns: {returns.stats.patientReturns}</span>
             <span className="bg-red-100 text-red-700 px-2 py-1 rounded">Expiry write-off: {returns.stats.expiryWriteOff}</span>
             <span className="bg-green-100 text-green-700 px-2 py-1 rounded">Total refund: ₹{fmt(returns.stats.totalRefund)}</span>
           </div>
@@ -499,10 +499,10 @@ function PharmacyInner() {
               {retForm.drugSearch.length >= 2 && <div className="absolute top-full left-0 right-0 mt-1 bg-white border rounded shadow-lg z-10 max-h-32 overflow-y-auto">
                 {drugMaster.search(retForm.drugSearch).slice(0, 5).map((d: any) => (
                   <button key={d.id} onClick={() => setRetForm(f => ({ ...f, drugId: d.id, drugName: d.drug_name || d.generic_name, drugSearch: '' }))}
-                    className="w-full text-left px-2 py-1 text-[10px] hover:bg-blue-50 border-b">{d.drug_name || d.generic_name}</button>
+                    className="w-full text-left px-2 py-1 text-[10px] hover:bg-h1-teal-light border-b">{d.drug_name || d.generic_name}</button>
                 ))}
               </div>}
-              {retForm.drugId && <div className="text-[10px] text-blue-600 mt-0.5">{retForm.drugName}</div>}
+              {retForm.drugId && <div className="text-[10px] text-h1-teal mt-0.5">{retForm.drugName}</div>}
             </div>
             <div><label className="text-[9px] text-gray-500">Type</label>
               <select value={retForm.returnType} onChange={e => setRetForm(f => ({ ...f, returnType: e.target.value }))} className="w-full px-2 py-1.5 border rounded text-xs">
@@ -530,7 +530,7 @@ function PharmacyInner() {
             <th className="p-2 text-left">Drug</th><th className="p-2">Type</th><th className="p-2">Qty</th><th className="p-2">Batch</th><th className="p-2">Reason</th><th className="p-2 text-right">Refund</th><th className="p-2">By</th><th className="p-2">Date</th>
           </tr></thead><tbody>{returns.returns.slice(0, 50).map((r: any) => (
             <tr key={r.id} className="border-b"><td className="p-2 font-medium">{r.drug?.drug_name}</td>
-              <td className="p-2 text-center"><span className={`px-1 py-0.5 rounded text-[9px] ${r.return_type === 'patient_return' ? 'bg-blue-100 text-blue-700' : r.return_type === 'expiry_write_off' ? 'bg-red-100 text-red-700' : 'bg-gray-100'}`}>{r.return_type?.replace(/_/g, ' ')}</span></td>
+              <td className="p-2 text-center"><span className={`px-1 py-0.5 rounded text-[9px] ${r.return_type === 'patient_return' ? 'bg-h1-teal-light text-h1-teal' : r.return_type === 'expiry_write_off' ? 'bg-red-100 text-red-700' : 'bg-gray-100'}`}>{r.return_type?.replace(/_/g, ' ')}</span></td>
               <td className="p-2 text-center">{r.quantity}</td><td className="p-2 text-center text-gray-400">{r.batch_number}</td>
               <td className="p-2 text-gray-500 text-[10px]">{r.reason}</td>
               <td className="p-2 text-right font-bold">{parseFloat(r.refund_amount) > 0 ? `₹${fmt(parseFloat(r.refund_amount))}` : '—'}</td>

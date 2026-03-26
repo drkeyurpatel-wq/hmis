@@ -98,17 +98,17 @@ export default function CreditNoteManager({ centreId, onFlash }: Props) {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div><h2 className="font-bold text-sm">Credit Notes</h2><p className="text-xs text-gray-500">Issue credit notes against finalized bills for corrections or adjustments</p></div>
-        <button onClick={() => setShowNew(!showNew)} className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg">{showNew ? 'Cancel' : '+ Issue Credit Note'}</button>
+        <button onClick={() => setShowNew(!showNew)} className="px-4 py-2 bg-h1-navy text-white text-sm rounded-lg">{showNew ? 'Cancel' : '+ Issue Credit Note'}</button>
       </div>
 
       {showNew && <div className="bg-white rounded-xl border p-5 space-y-3">
         <h3 className="font-bold text-sm">Issue Credit Note</h3>
         <div className="grid grid-cols-3 gap-3">
           <div className="relative"><label className="text-xs text-gray-500">Bill # *</label>
-            {form.billId ? <div className="bg-blue-50 rounded-lg px-3 py-2 text-sm flex justify-between"><div><span className="font-mono">{form.billNumber}</span> — {form.patientName} — Net: {fmt(form.netAmount)}</div><button onClick={() => setForm(f => ({ ...f, billId: '' }))} className="text-xs text-red-500">Change</button></div> :
+            {form.billId ? <div className="bg-h1-teal-light rounded-lg px-3 py-2 text-sm flex justify-between"><div><span className="font-mono">{form.billNumber}</span> — {form.patientName} — Net: {fmt(form.netAmount)}</div><button onClick={() => setForm(f => ({ ...f, billId: '' }))} className="text-xs text-red-500">Change</button></div> :
             <><input type="text" value={form.billSearch} onChange={e => setForm(f => ({ ...f, billSearch: e.target.value }))} className="w-full px-3 py-2 border rounded-lg text-sm" placeholder="Search bill..." />
             {billResults.length > 0 && <div className="absolute top-full left-0 right-0 mt-1 bg-white border rounded-lg shadow-lg z-10">{billResults.map(b => (
-              <button key={b.id} onClick={() => selectBill(b)} className="w-full text-left px-3 py-2 text-xs hover:bg-blue-50 border-b">
+              <button key={b.id} onClick={() => selectBill(b)} className="w-full text-left px-3 py-2 text-xs hover:bg-h1-teal-light border-b">
                 {b.bill_number} — {b.patient.first_name} {b.patient.last_name} — {fmt(parseFloat(b.net_amount))}
               </button>
             ))}</div>}</>}</div>
@@ -138,7 +138,7 @@ export default function CreditNoteManager({ centreId, onFlash }: Props) {
             <td className="p-2">{cn.patient?.first_name} {cn.patient?.last_name}</td>
             <td className="p-2 text-right font-bold text-orange-700">{fmt(parseFloat(cn.amount))}</td>
             <td className="p-2 text-gray-500 text-[10px]">{cn.reason}</td>
-            <td className="p-2 text-center"><span className={`px-1.5 py-0.5 rounded text-[9px] ${cn.status === 'issued' ? 'bg-blue-100 text-blue-700' : cn.status === 'adjusted' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>{cn.status}</span></td>
+            <td className="p-2 text-center"><span className={`px-1.5 py-0.5 rounded text-[9px] ${cn.status === 'issued' ? 'bg-h1-teal-light text-h1-teal' : cn.status === 'adjusted' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>{cn.status}</span></td>
             <td className="p-2 text-[10px] text-gray-400">{cn.approver?.full_name}</td>
             <td className="p-2">{cn.status === 'issued' && <button onClick={() => cancelNote(cn.id)} className="text-[9px] text-red-500">Cancel</button>}</td>
           </tr>

@@ -76,16 +76,16 @@ function stColor(s: string): string {
   if (s === 'settled') return 'bg-green-100 text-green-700';
   if (s?.includes('approved')) return 'bg-green-100 text-green-700';
   if (s?.includes('rejected') || s === 'cancelled') return 'bg-red-100 text-red-700';
-  if (s?.includes('query')) return 'bg-amber-100 text-amber-700';
-  if (s?.includes('submitted') || s === 'admitted') return 'bg-blue-100 text-blue-700';
-  if (s?.includes('enhancement')) return 'bg-purple-100 text-purple-700';
+  if (s?.includes('query')) return 'bg-h1-yellow-light text-h1-yellow';
+  if (s?.includes('submitted') || s === 'admitted') return 'bg-h1-teal-light text-h1-teal';
+  if (s?.includes('enhancement')) return 'bg-h1-navy-light text-h1-navy';
   return 'bg-gray-100 text-gray-600';
 }
 
 function tatColor(days: number): string {
   if (days > 30) return 'text-red-700 font-bold';
-  if (days > 15) return 'text-amber-700 font-semibold';
-  if (days > 7) return 'text-amber-600';
+  if (days > 15) return 'text-h1-yellow font-semibold';
+  if (days > 7) return 'text-h1-yellow';
   return 'text-gray-500';
 }
 
@@ -250,13 +250,13 @@ export default function InsuranceCashless({ claims, loading, stats, centreId, st
       {/* ---- KPI Strip ---- */}
       <div className="grid grid-cols-8 gap-2">
         {[
-          ['Active', tatAnalytics.count, 'text-blue-700', 'bg-blue-50'],
-          ['Pre-Auth', stats.preauth, 'text-amber-700', 'bg-amber-50'],
+          ['Active', tatAnalytics.count, 'text-h1-teal', 'bg-h1-teal-light'],
+          ['Pre-Auth', stats.preauth, 'text-h1-yellow', 'bg-h1-yellow-light'],
           ['Approved', stats.approved, 'text-green-700', 'bg-green-50'],
-          ['Pending', stats.pending, 'text-amber-700', 'bg-amber-50'],
+          ['Pending', stats.pending, 'text-h1-yellow', 'bg-h1-yellow-light'],
           ['Settled', stats.settled, 'text-green-700', 'bg-green-50'],
           ['Rejected', stats.rejected, 'text-red-700', 'bg-red-50'],
-          ['Avg TAT', `${tatAnalytics.avgDays}d`, tatAnalytics.avgDays > 20 ? 'text-red-700' : 'text-blue-700', 'bg-white'],
+          ['Avg TAT', `${tatAnalytics.avgDays}d`, tatAnalytics.avgDays > 20 ? 'text-red-700' : 'text-h1-teal', 'bg-white'],
           ['Claimed', `₹${fmt(stats.totalClaimed)}`, 'text-gray-700', 'bg-white'],
         ].map(([label, val, tc, bg], i) => (
           <div key={i} className={`rounded-xl border p-2 text-center ${bg}`}>
@@ -277,11 +277,11 @@ export default function InsuranceCashless({ claims, loading, stats, centreId, st
       <div className="flex items-center gap-1.5 flex-wrap">
         {['all','active','preauth_initiated','preauth_submitted','preauth_approved','admitted','claim_submitted','query_raised','approved','settled','rejected'].map(s => (
           <button key={s} onClick={() => { setStatusFilter(s); if (s !== 'all' && s !== 'active') onLoad({ status: s }); else onLoad(); }}
-            className={`px-2 py-1 rounded text-[10px] border transition-colors ${statusFilter === s ? 'bg-blue-600 text-white border-blue-600' : 'bg-white border-gray-200 hover:border-blue-300'}`}>
+            className={`px-2 py-1 rounded text-[10px] border transition-colors ${statusFilter === s ? 'bg-h1-navy text-white border-h1-navy' : 'bg-white border-gray-200 hover:border-h1-teal/40'}`}>
             {s === 'all' ? 'All' : s === 'active' ? 'Active' : s.replace(/_/g, ' ')}
           </button>
         ))}
-        <button onClick={() => setShowNewPreAuth(!showNewPreAuth)} className="ml-auto px-3 py-1.5 bg-blue-600 text-white text-xs rounded-lg font-medium">
+        <button onClick={() => setShowNewPreAuth(!showNewPreAuth)} className="ml-auto px-3 py-1.5 bg-h1-navy text-white text-xs rounded-lg font-medium">
           {showNewPreAuth ? 'Cancel' : '+ New Pre-Auth'}
         </button>
       </div>
@@ -295,7 +295,7 @@ export default function InsuranceCashless({ claims, loading, stats, centreId, st
           <div className="relative">
             <label className="text-xs text-gray-500">Patient *</label>
             {paForm.patientId ? (
-              <div className="bg-blue-50 rounded-lg px-3 py-2 flex justify-between items-center">
+              <div className="bg-h1-teal-light rounded-lg px-3 py-2 flex justify-between items-center">
                 <span className="text-sm font-medium">{paForm.patientName}</span>
                 <button onClick={() => setPaForm(f => ({...f, patientId: '', patientName: '', patientSearch: ''}))} className="text-xs text-red-500">Change</button>
               </div>
@@ -306,7 +306,7 @@ export default function InsuranceCashless({ claims, loading, stats, centreId, st
                 {patResults.length > 0 && <div className="absolute top-full left-0 right-0 mt-1 bg-white border rounded-lg shadow-lg z-10 max-h-40 overflow-y-auto">
                   {patResults.map(p => (
                     <button key={p.id} onClick={() => { setPaForm(f => ({...f, patientId: p.id, patientName: `${p.first_name} ${p.last_name} (${p.uhid})`, patientSearch: ''})); setPatResults([]); }}
-                      className="w-full text-left px-3 py-2 text-sm hover:bg-blue-50 border-b">
+                      className="w-full text-left px-3 py-2 text-sm hover:bg-h1-teal-light border-b">
                       {p.first_name} {p.last_name} — {p.uhid} — {p.age_years}y {p.gender}
                     </button>
                   ))}
@@ -351,8 +351,8 @@ export default function InsuranceCashless({ claims, loading, stats, centreId, st
                 {diagResults.length > 0 && <div className="absolute top-full left-0 right-0 mt-1 bg-white border rounded-lg shadow-lg z-10 max-h-40 overflow-y-auto">
                   {diagResults.map(d => (
                     <button key={d.code} onClick={() => { setPaForm(f => ({...f, diagnosisCode: d.code, diagnosisDisplay: d.display})); setDiagSearch(''); }}
-                      className="w-full text-left px-3 py-2 text-xs hover:bg-blue-50 border-b">
-                      <span className="font-mono text-blue-600">{d.code}</span> — {d.display}
+                      className="w-full text-left px-3 py-2 text-xs hover:bg-h1-teal-light border-b">
+                      <span className="font-mono text-h1-teal">{d.code}</span> — {d.display}
                     </button>
                   ))}
                 </div>}
@@ -378,14 +378,14 @@ export default function InsuranceCashless({ claims, loading, stats, centreId, st
             <label className="text-xs text-gray-500">Room Type</label>
             <div className="flex gap-0.5 mt-1">{['general','semi_private','private','deluxe','icu'].map(r => (
               <button key={r} onClick={() => setPaForm(f => ({...f, roomType: r}))}
-                className={`flex-1 py-1.5 rounded text-[9px] border ${paForm.roomType === r ? 'bg-blue-600 text-white' : 'bg-white'}`}>{r.replace('_', ' ')}</button>
+                className={`flex-1 py-1.5 rounded text-[9px] border ${paForm.roomType === r ? 'bg-h1-navy text-white' : 'bg-white'}`}>{r.replace('_', ' ')}</button>
             ))}</div>
           </div>
           <div>
             <label className="text-xs text-gray-500">Expected LOS (days)</label>
             <div className="flex gap-0.5 mt-1">{[1,2,3,5,7,10,14].map(d => (
               <button key={d} onClick={() => setPaForm(f => ({...f, expectedLOS: d}))}
-                className={`flex-1 py-1.5 rounded text-[9px] border ${paForm.expectedLOS === d ? 'bg-blue-600 text-white' : 'bg-white'}`}>{d}</button>
+                className={`flex-1 py-1.5 rounded text-[9px] border ${paForm.expectedLOS === d ? 'bg-h1-navy text-white' : 'bg-white'}`}>{d}</button>
             ))}</div>
           </div>
           <div>
@@ -425,17 +425,17 @@ export default function InsuranceCashless({ claims, loading, stats, centreId, st
         <div className="grid grid-cols-5 gap-3 bg-gray-50 p-3 rounded-lg text-xs">
           <div><span className="text-gray-500 block">Claimed</span><span className="font-bold text-lg">₹{fmt(selectedClaim.claimed_amount)}</span></div>
           <div><span className="text-gray-500 block">Approved</span><span className="font-bold text-lg text-green-700">{selectedClaim.approved_amount ? `₹${fmt(selectedClaim.approved_amount)}` : '—'}</span></div>
-          <div><span className="text-gray-500 block">Settled</span><span className="font-bold text-lg text-blue-700">{selectedClaim.settled_amount ? `₹${fmt(selectedClaim.settled_amount)}` : '—'}</span></div>
+          <div><span className="text-gray-500 block">Settled</span><span className="font-bold text-lg text-h1-teal">{selectedClaim.settled_amount ? `₹${fmt(selectedClaim.settled_amount)}` : '—'}</span></div>
           <div><span className="text-gray-500 block">TDS</span><span>{selectedClaim.tds_amount ? `₹${fmt(selectedClaim.tds_amount)}` : '—'}</span></div>
           <div><span className="text-gray-500 block">Disallowance</span><span className="text-red-600">{selectedClaim.disallowance_amount ? `₹${fmt(selectedClaim.disallowance_amount)}` : '—'}</span></div>
         </div>
 
         {/* Status update panel */}
-        {nextStatuses.length > 0 && <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-3">
-          <div className="text-xs font-semibold text-blue-700">Update Claim Status</div>
+        {nextStatuses.length > 0 && <div className="bg-h1-teal-light border border-h1-teal/20 rounded-lg p-4 space-y-3">
+          <div className="text-xs font-semibold text-h1-teal">Update Claim Status</div>
           <div className="flex gap-1.5 flex-wrap">{nextStatuses.map(s => (
             <button key={s} onClick={() => setNewStatus(s)}
-              className={`px-3 py-1.5 rounded-lg text-xs border transition-colors ${newStatus === s ? 'bg-blue-600 text-white border-blue-600' : 'bg-white border-gray-200 hover:border-blue-300'}`}>
+              className={`px-3 py-1.5 rounded-lg text-xs border transition-colors ${newStatus === s ? 'bg-h1-navy text-white border-h1-navy' : 'bg-white border-gray-200 hover:border-h1-teal/40'}`}>
               {s.replace(/_/g, ' ')}
             </button>
           ))}</div>
@@ -445,7 +445,7 @@ export default function InsuranceCashless({ claims, loading, stats, centreId, st
             <label className="text-xs text-gray-500">Query reason</label>
             <div className="flex gap-1 flex-wrap mt-1">{QUERY_REASONS.map(r => (
               <button key={r} onClick={() => setQueryReason(r)}
-                className={`px-2 py-1 rounded text-[10px] border ${queryReason === r ? 'bg-amber-500 text-white' : 'bg-white'}`}>{r}</button>
+                className={`px-2 py-1 rounded text-[10px] border ${queryReason === r ? 'bg-h1-yellow-light0 text-white' : 'bg-white'}`}>{r}</button>
             ))}</div>
           </div>}
 
@@ -469,7 +469,7 @@ export default function InsuranceCashless({ claims, loading, stats, centreId, st
 
           <div className="flex gap-2">
             <input type="text" value={statusNote} onChange={e => setStatusNote(e.target.value)} className="flex-1 px-3 py-2 border rounded-lg text-sm" placeholder="Notes / remarks..." />
-            <button onClick={updateClaimStatus} disabled={!newStatus} className="px-5 py-2 bg-blue-600 text-white text-sm rounded-lg disabled:opacity-40">Update</button>
+            <button onClick={updateClaimStatus} disabled={!newStatus} className="px-5 py-2 bg-h1-navy text-white text-sm rounded-lg disabled:opacity-40">Update</button>
           </div>
         </div>}
       </div>}
@@ -493,14 +493,14 @@ export default function InsuranceCashless({ claims, loading, stats, centreId, st
           <tbody>{filteredClaims.map(c => {
             const tat = daysSince(c.created_at);
             return (
-              <tr key={c.id} className={`border-b cursor-pointer transition-colors ${selectedClaim?.id === c.id ? 'bg-blue-50' : 'hover:bg-gray-50'}`} onClick={() => setSelectedClaim(c)}>
+              <tr key={c.id} className={`border-b cursor-pointer transition-colors ${selectedClaim?.id === c.id ? 'bg-h1-teal-light' : 'hover:bg-gray-50'}`} onClick={() => setSelectedClaim(c)}>
                 <td className="p-2 font-mono text-[10px]">{c.claim_number}</td>
                 <td className="p-2"><span className="font-medium">{c.patient?.first_name} {c.patient?.last_name}</span><span className="text-[10px] text-gray-400 ml-1">{c.patient?.uhid}</span></td>
                 <td className="p-2 text-center text-[10px]">{c.insurer?.name || '—'}</td>
                 <td className="p-2 text-center text-[10px]">{c.tpa?.name || '—'}</td>
                 <td className="p-2 text-right font-medium">₹{fmt(c.claimed_amount)}</td>
                 <td className="p-2 text-right text-green-700">{c.approved_amount ? `₹${fmt(c.approved_amount)}` : '—'}</td>
-                <td className="p-2 text-right text-blue-700">{c.settled_amount ? `₹${fmt(c.settled_amount)}` : '—'}</td>
+                <td className="p-2 text-right text-h1-teal">{c.settled_amount ? `₹${fmt(c.settled_amount)}` : '—'}</td>
                 <td className="p-2 text-center"><span className={`px-1.5 py-0.5 rounded text-[9px] ${stColor(c.status)}`}>{c.status?.replace(/_/g, ' ')}</span></td>
                 <td className={`p-2 text-center ${tatColor(tat)}`}>{tat}d</td>
               </tr>

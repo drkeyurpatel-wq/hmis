@@ -111,7 +111,7 @@ export default function PackageBuilder({ centreId, onFlash }: Props) {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div><h2 className="font-bold text-sm">Package Builder</h2><p className="text-xs text-gray-500">Compose packages from tariff items — TKR, CABG, LSCS, etc.</p></div>
-        <button onClick={() => setShowNew(!showNew)} className="px-4 py-2 bg-blue-600 text-white text-xs rounded-lg">{showNew ? 'Cancel' : '+ Build Package'}</button>
+        <button onClick={() => setShowNew(!showNew)} className="px-4 py-2 bg-h1-navy text-white text-xs rounded-lg">{showNew ? 'Cancel' : '+ Build Package'}</button>
       </div>
 
       {/* Builder */}
@@ -143,7 +143,7 @@ export default function PackageBuilder({ centreId, onFlash }: Props) {
               ['🏥 OT Charges', 'OT Charges', 1, 1],
             ].map(([label, term, qty, days]) => (
               <button key={label as string} onClick={() => quickAdd(term as string, qty as number, days as number)}
-                className="px-2 py-1 bg-gray-50 border rounded text-[9px] hover:bg-blue-50">{label as string}</button>
+                className="px-2 py-1 bg-gray-50 border rounded text-[9px] hover:bg-h1-teal-light">{label as string}</button>
             ))}
           </div>
         </div>
@@ -154,9 +154,9 @@ export default function PackageBuilder({ centreId, onFlash }: Props) {
             className="w-full px-3 py-2 border rounded-lg text-xs" placeholder="Search tariff: physiotherapy, dressing, ventilator..." />
           {results.length > 0 && <div className="absolute top-full left-0 right-0 mt-1 bg-white border rounded-lg shadow-lg z-10 max-h-40 overflow-y-auto">
             {results.map((t: any) => (
-              <button key={t.id} onClick={() => addItem(t)} className="w-full text-left px-3 py-2 text-xs hover:bg-blue-50 border-b flex justify-between">
+              <button key={t.id} onClick={() => addItem(t)} className="w-full text-left px-3 py-2 text-xs hover:bg-h1-teal-light border-b flex justify-between">
                 <span>{t.service_name} <span className="text-gray-400">({t.category?.replace('_', ' ')})</span></span>
-                <span className="font-bold text-blue-600">{fmt(parseFloat(t.rate_self))}</span>
+                <span className="font-bold text-h1-teal">{fmt(parseFloat(t.rate_self))}</span>
               </button>
             ))}
           </div>}
@@ -189,7 +189,7 @@ export default function PackageBuilder({ centreId, onFlash }: Props) {
               <span className="text-xs text-gray-400">% = {fmt(discountAmt)}</span>
             </div>
           </div>
-          <div className="text-xl font-bold text-blue-700">Package: {fmt(net)}</div>
+          <div className="text-xl font-bold text-h1-teal">Package: {fmt(net)}</div>
         </div>
 
         <div className="flex gap-3">
@@ -209,7 +209,7 @@ export default function PackageBuilder({ centreId, onFlash }: Props) {
               <div><div className="font-bold text-sm">{pkg.name}</div>
                 <div className="text-[10px] text-gray-500">{pkg.description}</div>
                 <div className="text-[10px] text-gray-400">{pkg.roomCategory?.replace('_', ' ')} | {pkg.los} days | {(pkg.items || []).length} items</div></div>
-              <div className="text-right"><div className="text-lg font-bold text-blue-700">{fmt(pkg.net)}</div>
+              <div className="text-right"><div className="text-lg font-bold text-h1-teal">{fmt(pkg.net)}</div>
                 {pkg.discount > 0 && <div className="text-[10px] text-gray-400 line-through">{fmt(pkg.gross)}</div>}</div>
             </div>
             {(pkg.items || []).length > 0 && <div className="flex flex-wrap gap-1 mt-1">

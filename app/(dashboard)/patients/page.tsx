@@ -234,10 +234,10 @@ export default function PatientsPage() {
           <p className="text-sm text-gray-500 mt-0.5">{patients.length} patients shown</p>
         </div>
         <div className="flex gap-2">
-          {duplicates.length > 0 && <button onClick={() => setShowDuplicates(!showDuplicates)} className="flex items-center gap-1 px-3 py-2 bg-amber-50 text-amber-700 text-xs rounded-lg border border-amber-200">
+          {duplicates.length > 0 && <button onClick={() => setShowDuplicates(!showDuplicates)} className="flex items-center gap-1 px-3 py-2 bg-h1-yellow-light text-h1-yellow text-xs rounded-lg border border-h1-yellow/30">
             <AlertTriangle size={14} /> {duplicates.length} duplicates
           </button>}
-          <Link href="/patients/register" className="flex items-center gap-2 px-4 py-2.5 bg-brand-teal text-white text-sm font-semibold rounded-lg hover:bg-teal-700 transition-all shadow-sm">
+          <Link href="/patients/register" className="flex items-center gap-2 px-4 py-2.5 bg-brand-teal text-white text-sm font-semibold rounded-lg hover:bg-h1-navy/90 transition-all shadow-sm">
             <UserPlus size={16} /> New Registration
           </Link>
         </div>
@@ -246,11 +246,11 @@ export default function PatientsPage() {
       {/* Statistics Strip */}
       <div className="grid grid-cols-5 gap-3 mb-4">
         {[
-          { label: 'Total Patients', value: stats.total.toLocaleString('en-IN'), color: 'bg-blue-50 text-blue-700' },
+          { label: 'Total Patients', value: stats.total.toLocaleString('en-IN'), color: 'bg-h1-teal-light text-h1-teal' },
           { label: 'Registered Today', value: stats.today.toString(), color: 'bg-green-50 text-green-700' },
-          { label: 'This Month', value: stats.thisMonth.toString(), color: 'bg-teal-50 text-teal-700' },
+          { label: 'This Month', value: stats.thisMonth.toString(), color: 'bg-h1-navy-light text-h1-navy' },
           { label: 'Active Admissions', value: stats.activeAdmissions.toString(), color: 'bg-red-50 text-red-700' },
-          { label: 'Average Age', value: `${stats.avgAge}y`, color: 'bg-purple-50 text-purple-700' },
+          { label: 'Average Age', value: `${stats.avgAge}y`, color: 'bg-h1-navy-light text-h1-navy' },
         ].map(s => (
           <div key={s.label} className={`rounded-xl p-3 ${s.color}`}>
             <div className="text-lg font-bold">{s.value}</div>
@@ -305,8 +305,8 @@ export default function PatientsPage() {
 
       {/* Duplicate Detection Panel */}
       {showDuplicates && duplicates.length > 0 && (
-        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-4 space-y-3">
-          <h3 className="font-bold text-sm text-amber-800">Potential Duplicates (same phone number)</h3>
+        <div className="bg-h1-yellow-light border border-h1-yellow/30 rounded-xl p-4 mb-4 space-y-3">
+          <h3 className="font-bold text-sm text-h1-yellow">Potential Duplicates (same phone number)</h3>
           {duplicates.slice(0, 10).map(g => (
             <div key={g.phone} className="bg-white rounded-lg border p-3">
               <div className="text-[10px] text-gray-400 mb-1">Phone: {g.phone}</div>
@@ -324,7 +324,7 @@ export default function PatientsPage() {
                     if (confirm(`Merge ${sorted[1].first_name} (${sorted[1].uhid}) into ${sorted[0].first_name} (${sorted[0].uhid})? This keeps the older UHID.`)) {
                       mergePatients(sorted[0].id, sorted[1].id);
                     }
-                  }} disabled={merging} className="px-2 py-1 bg-amber-600 text-white text-[10px] rounded disabled:opacity-40">
+                  }} disabled={merging} className="px-2 py-1 bg-h1-yellow text-white text-[10px] rounded disabled:opacity-40">
                     {merging ? 'Merging...' : 'Merge'}
                   </button>
                 )}
@@ -370,9 +370,9 @@ export default function PatientsPage() {
                       <div className="flex items-center gap-1.5">
                         <span className="text-sm font-semibold text-gray-900 truncate">{p.first_name} {p.last_name}</span>
                         <span className="text-[10px] font-mono bg-gray-100 text-gray-600 px-1 py-0.5 rounded">{p.uhid}</span>
-                        {p.is_vip && <span className="text-[8px] font-bold bg-amber-100 text-amber-700 px-1 py-0.5 rounded">VIP</span>}
+                        {p.is_vip && <span className="text-[8px] font-bold bg-h1-yellow-light text-h1-yellow px-1 py-0.5 rounded">VIP</span>}
                         {p.is_admitted && <span className="text-[8px] font-bold bg-red-100 text-red-700 px-1 py-0.5 rounded animate-pulse">ADMITTED</span>}
-                        {p.has_insurance && <span className="text-[8px] bg-blue-100 text-blue-700 px-1 py-0.5 rounded">INS</span>}
+                        {p.has_insurance && <span className="text-[8px] bg-h1-teal-light text-h1-teal px-1 py-0.5 rounded">INS</span>}
                       </div>
                       <div className="flex items-center gap-2 text-[11px] text-gray-500 mt-0.5">
                         <span>{p.gender === 'male' ? '♂' : p.gender === 'female' ? '♀' : '⚧'} {p.age_years ? `${p.age_years}y` : ''} {p.blood_group ? `· ${p.blood_group}` : ''}</span>
@@ -390,7 +390,7 @@ export default function PatientsPage() {
                     {p.last_visit ? new Date(p.last_visit).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }) : '—'}
                   </div>
                   <div className="w-36 flex gap-1 justify-center">
-                    <Link href={`/opd?patient=${p.id}`} className="px-2 py-1 bg-blue-50 text-blue-700 text-[10px] rounded border border-blue-200 hover:bg-blue-100">Book Appt</Link>
+                    <Link href={`/opd?patient=${p.id}`} className="px-2 py-1 bg-h1-teal-light text-h1-teal text-[10px] rounded border border-h1-teal/20 hover:bg-h1-teal-light">Book Appt</Link>
                     <Link href={`/emr-v2?patient=${p.id}`} className="px-2 py-1 bg-green-50 text-green-700 text-[10px] rounded border border-green-200 hover:bg-green-100">EMR</Link>
                     <Link href={`/patients/${p.id}`} className="px-2 py-1 bg-gray-50 text-gray-600 text-[10px] rounded border hover:bg-gray-100">Profile</Link>
                   </div>

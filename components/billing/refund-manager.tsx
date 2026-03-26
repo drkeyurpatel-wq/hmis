@@ -103,13 +103,13 @@ export default function RefundManager({ centreId, onFlash }: Props) {
     onFlash('Refund rejected'); load();
   };
 
-  const statusBadge = (s: string) => s === 'processed' ? 'bg-green-100 text-green-700' : s === 'approved' ? 'bg-blue-100 text-blue-700' : s === 'initiated' ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700';
+  const statusBadge = (s: string) => s === 'processed' ? 'bg-green-100 text-green-700' : s === 'approved' ? 'bg-h1-teal-light text-h1-teal' : s === 'initiated' ? 'bg-h1-yellow-light text-h1-yellow' : 'bg-red-100 text-red-700';
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div><h2 className="font-bold text-sm">Refund Management</h2><p className="text-xs text-gray-500">Initiate → Approve → Process refunds against paid bills</p></div>
-        <button onClick={() => setShowNew(!showNew)} className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg">{showNew ? 'Cancel' : '+ Initiate Refund'}</button>
+        <button onClick={() => setShowNew(!showNew)} className="px-4 py-2 bg-h1-navy text-white text-sm rounded-lg">{showNew ? 'Cancel' : '+ Initiate Refund'}</button>
       </div>
 
       {/* New refund form */}
@@ -117,10 +117,10 @@ export default function RefundManager({ centreId, onFlash }: Props) {
         <h3 className="font-bold text-sm">Initiate Refund</h3>
         <div className="grid grid-cols-3 gap-3">
           <div className="relative"><label className="text-xs text-gray-500">Bill # *</label>
-            {form.billId ? <div className="bg-blue-50 rounded-lg px-3 py-2 text-sm flex justify-between"><div><span className="font-mono">{form.billNumber}</span> — {form.patientName} <span className="text-gray-400">{form.uhid}</span></div><button onClick={() => setForm(f => ({ ...f, billId: '', billNumber: '' }))} className="text-xs text-red-500">Change</button></div> :
+            {form.billId ? <div className="bg-h1-teal-light rounded-lg px-3 py-2 text-sm flex justify-between"><div><span className="font-mono">{form.billNumber}</span> — {form.patientName} <span className="text-gray-400">{form.uhid}</span></div><button onClick={() => setForm(f => ({ ...f, billId: '', billNumber: '' }))} className="text-xs text-red-500">Change</button></div> :
             <><input type="text" value={form.billSearch} onChange={e => setForm(f => ({ ...f, billSearch: e.target.value }))} className="w-full px-3 py-2 border rounded-lg text-sm" placeholder="Search bill number..." />
             {billResults.length > 0 && <div className="absolute top-full left-0 right-0 mt-1 bg-white border rounded-lg shadow-lg z-10">{billResults.map(b => (
-              <button key={b.id} onClick={() => selectBill(b)} className="w-full text-left px-3 py-2 text-xs hover:bg-blue-50 border-b">
+              <button key={b.id} onClick={() => selectBill(b)} className="w-full text-left px-3 py-2 text-xs hover:bg-h1-teal-light border-b">
                 <span className="font-mono">{b.bill_number}</span> — {b.patient.first_name} {b.patient.last_name} — Paid: {fmt(parseFloat(b.paid_amount))}
               </button>
             ))}</div>}</>}</div>
@@ -137,7 +137,7 @@ export default function RefundManager({ centreId, onFlash }: Props) {
         <div className="grid grid-cols-3 gap-3">
           <div><label className="text-xs text-gray-500">Refund Mode</label>
             <div className="flex gap-1 mt-1">{['neft', 'cash', 'cheque', 'upi'].map(m => (
-              <button key={m} onClick={() => setForm(f => ({ ...f, mode: m }))} className={`flex-1 py-1.5 text-[10px] rounded border ${form.mode === m ? 'bg-blue-600 text-white' : 'bg-white'}`}>{m.toUpperCase()}</button>
+              <button key={m} onClick={() => setForm(f => ({ ...f, mode: m }))} className={`flex-1 py-1.5 text-[10px] rounded border ${form.mode === m ? 'bg-h1-navy text-white' : 'bg-white'}`}>{m.toUpperCase()}</button>
             ))}</div></div>
           {form.mode !== 'cash' && <div className="col-span-2"><label className="text-xs text-gray-500">Bank / UPI / UTR details</label>
             <input type="text" value={form.bankDetails} onChange={e => setForm(f => ({ ...f, bankDetails: e.target.value }))} className="w-full px-3 py-2 border rounded-lg text-sm" placeholder="Account number / UPI ID / UTR" /></div>}
@@ -165,7 +165,7 @@ export default function RefundManager({ centreId, onFlash }: Props) {
                 <button onClick={() => approveRefund(r.id)} className="px-1.5 py-0.5 bg-green-100 text-green-700 rounded text-[9px]">Approve</button>
                 <button onClick={() => rejectRefund(r.id)} className="px-1.5 py-0.5 bg-red-100 text-red-700 rounded text-[9px]">Reject</button>
               </>}
-              {r.status === 'approved' && <button onClick={() => processRefund(r.id)} className="px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded text-[9px]">Process</button>}
+              {r.status === 'approved' && <button onClick={() => processRefund(r.id)} className="px-1.5 py-0.5 bg-h1-teal-light text-h1-teal rounded text-[9px]">Process</button>}
             </td>
           </tr>
         ))}</tbody></table>

@@ -80,20 +80,20 @@ export default function EstimateGenerator({ estimates, centreId, staffId, tariff
     printEstimatePDF(est, estItems, null, { name: 'Hospital', address: 'Shilaj, Ahmedabad' });
   };
 
-  const stColor = (s: string) => s === 'active' ? 'bg-green-100 text-green-700' : s === 'converted' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600';
+  const stColor = (s: string) => s === 'active' ? 'bg-green-100 text-green-700' : s === 'converted' ? 'bg-h1-teal-light text-h1-teal' : 'bg-gray-100 text-gray-600';
   const fmt2 = (n: number | string) => parseFloat(String(n) || '0').toLocaleString('en-IN', { maximumFractionDigits: 0 });
 
   return (
     <div>
       <div className="flex justify-between items-center mb-3">
         <h2 className="font-semibold text-sm">Cost Estimates / Proforma</h2>
-        <button onClick={() => setShowNew(!showNew)} className="px-3 py-1.5 bg-blue-600 text-white text-xs rounded-lg">{showNew ? 'Cancel' : '+ New Estimate'}</button>
+        <button onClick={() => setShowNew(!showNew)} className="px-3 py-1.5 bg-h1-navy text-white text-xs rounded-lg">{showNew ? 'Cancel' : '+ New Estimate'}</button>
       </div>
 
       {showNew && !selectedTemplate && <div className="bg-white rounded-xl border p-5 mb-4">
         <h3 className="text-sm font-medium mb-3">Select Procedure Template</h3>
         <div className="grid grid-cols-2 gap-2">{PROCEDURE_TEMPLATES.map(t => (
-          <button key={t.name} onClick={() => selectTemplate(t)} className="text-left p-3 rounded-lg border hover:border-blue-300 hover:bg-blue-50">
+          <button key={t.name} onClick={() => selectTemplate(t)} className="text-left p-3 rounded-lg border hover:border-h1-teal/40 hover:bg-h1-teal-light">
             <div className="font-medium text-sm">{t.name}</div>
             <div className="text-[10px] text-gray-400">{t.defaultLOS} days | {t.defaultRoom} | {t.defaultItems.length} items</div>
           </button>
@@ -101,15 +101,15 @@ export default function EstimateGenerator({ estimates, centreId, staffId, tariff
       </div>}
 
       {showNew && selectedTemplate && <div className="bg-white rounded-xl border p-5 mb-4 space-y-3">
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 flex justify-between items-center">
-          <div><h3 className="font-semibold text-sm text-blue-800">{selectedTemplate.name}</h3><div className="text-[10px] text-blue-600">{selectedTemplate.defaultLOS} days default stay</div></div>
-          <button onClick={() => setSelectedTemplate(null)} className="text-xs text-blue-600">Change</button>
+        <div className="bg-h1-teal-light border border-h1-teal/20 rounded-lg p-3 flex justify-between items-center">
+          <div><h3 className="font-semibold text-sm text-h1-navy">{selectedTemplate.name}</h3><div className="text-[10px] text-h1-teal">{selectedTemplate.defaultLOS} days default stay</div></div>
+          <button onClick={() => setSelectedTemplate(null)} className="text-xs text-h1-teal">Change</button>
         </div>
 
         <div className="grid grid-cols-3 gap-3">
           <div><label className="text-xs text-gray-500">Payor</label>
             <div className="flex gap-1 mt-1">{['self','insurance','govt_pmjay','govt_cghs','corporate'].map(p => (
-              <button key={p} onClick={() => updatePayor(p)} className={`flex-1 py-1.5 rounded text-[10px] border ${form.payorType === p ? 'bg-blue-600 text-white' : 'bg-white'}`}>{p.replace('govt_','').replace('_',' ').toUpperCase()}</button>
+              <button key={p} onClick={() => updatePayor(p)} className={`flex-1 py-1.5 rounded text-[10px] border ${form.payorType === p ? 'bg-h1-navy text-white' : 'bg-white'}`}>{p.replace('govt_','').replace('_',' ').toUpperCase()}</button>
             ))}</div></div>
           <div><label className="text-xs text-gray-500">Room</label>
             <select value={form.roomCategory} onChange={e => setForm((f: any) => ({...f, roomCategory: e.target.value}))} className="w-full mt-1 px-3 py-2 border rounded-lg text-sm">{ROOM_TYPES.map(r => <option key={r}>{r}</option>)}</select></div>
@@ -126,14 +126,14 @@ export default function EstimateGenerator({ estimates, centreId, staffId, tariff
               <td className="p-2 text-center"><input type="number" value={i.quantity} onChange={e => { const items = [...form.items]; items[idx] = {...items[idx], quantity: parseInt(e.target.value)||1, total: items[idx].rate * (parseInt(e.target.value)||1)}; setForm((f: any) => ({...f, items})); }} className="w-12 text-center border rounded px-1 py-0.5" min="1" /></td>
               <td className="p-2 text-right">₹{fmt(i.rate)}</td><td className="p-2 text-right font-bold">₹{fmt(i.total)}</td></tr>
           ))}</tbody>
-          <tfoot><tr className="bg-blue-50"><td colSpan={4} className="p-2 text-right font-bold text-sm">Estimated Total</td><td className="p-2 text-right font-bold text-lg text-blue-700">₹{fmt(totalEstimate)}</td></tr></tfoot>
+          <tfoot><tr className="bg-h1-teal-light"><td colSpan={4} className="p-2 text-right font-bold text-sm">Estimated Total</td><td className="p-2 text-right font-bold text-lg text-h1-teal">₹{fmt(totalEstimate)}</td></tr></tfoot>
           </table>
         </div>
 
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-2 text-xs text-yellow-800">Recommended advance deposit: <b>₹{fmt(totalEstimate * 0.5)}</b> (50% of estimate)</div>
 
         <div className="flex gap-2">
-          <button onClick={printEstimate} className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg">Print Estimate</button>
+          <button onClick={printEstimate} className="px-4 py-2 bg-h1-navy text-white text-sm rounded-lg">Print Estimate</button>
           <button onClick={async () => { await onCreate({ patient_id: form.patientId || null, estimate_type: form.estimateType, procedure_name: form.procedureName, payor_type: form.payorType, room_category: form.roomCategory, expected_los_days: form.expectedLOS, items: form.items, total_estimated: totalEstimate, notes: form.notes, valid_until: new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0] }, staffId); setShowNew(false); setSelectedTemplate(null); onFlash('Estimate created'); }} className="px-4 py-2 bg-green-600 text-white text-sm rounded-lg">Save Estimate</button>
         </div>
       </div>}
@@ -148,7 +148,7 @@ export default function EstimateGenerator({ estimates, centreId, staffId, tariff
               <span className={`px-1.5 py-0.5 rounded text-[10px] ${stColor(e.status)}`}>{e.status}</span></div>
             <div className="text-xs text-gray-500 mt-0.5">{e.procedure_name} | {e.room_category} | {e.expected_los_days} days | {e.payor_type?.replace('_',' ')}</div>
           </div>
-          <div className="text-right"><div className="text-sm font-bold text-blue-700">₹{fmt2(e.total_estimated)}</div>
+          <div className="text-right"><div className="text-sm font-bold text-h1-teal">₹{fmt2(e.total_estimated)}</div>
             {e.valid_until && <div className="text-[10px] text-gray-400">Valid: {e.valid_until}</div>}</div>
         </div>
       ))}</div>}

@@ -61,7 +61,7 @@ export default function IPDBillingTab({ centreId, staffId, bills, onSelectBill, 
     <div className="space-y-4">
       {/* KPI */}
       <div className="grid grid-cols-4 gap-3">
-        <div className="bg-white rounded-xl border p-4 text-center"><div className="text-[10px] text-gray-500">Active Admissions</div><div className="text-xl font-bold text-blue-700">{admissions.length}</div></div>
+        <div className="bg-white rounded-xl border p-4 text-center"><div className="text-[10px] text-gray-500">Active Admissions</div><div className="text-xl font-bold text-h1-teal">{admissions.length}</div></div>
         <div className="bg-white rounded-xl border p-4 text-center"><div className="text-[10px] text-gray-500">IPD Bills</div><div className="text-xl font-bold">{ipdActive.length}</div></div>
         <div className="bg-white rounded-xl border p-4 text-center"><div className="text-[10px] text-gray-500">IPD Revenue</div><div className="text-xl font-bold text-green-700">₹{fmt(ipdRevenue)}</div></div>
         <div className="bg-white rounded-xl border p-4 text-center"><div className="text-[10px] text-gray-500">Outstanding</div><div className="text-xl font-bold text-red-700">₹{fmt(ipdOutstanding)}</div></div>
@@ -76,13 +76,13 @@ export default function IPDBillingTab({ centreId, staffId, bills, onSelectBill, 
         admissions.length === 0 ? <div className="p-8 text-center text-gray-400 text-sm">No active admissions</div> :
         <div className="divide-y">
           {admissions.map(a => (
-            <div key={a.id} className="px-4 py-3 flex items-center justify-between hover:bg-blue-50/50 cursor-pointer" onClick={() => { setSelectedAdmission(a); setMode('bill'); }}>
+            <div key={a.id} className="px-4 py-3 flex items-center justify-between hover:bg-h1-teal-light/50 cursor-pointer" onClick={() => { setSelectedAdmission(a); setMode('bill'); }}>
               <div>
                 <span className="font-medium text-sm">{a.patient.first_name} {a.patient.last_name}</span>
                 <span className="ml-2 text-xs font-mono text-gray-400">{a.patient.uhid}</span>
                 <div className="text-[10px] text-gray-500 mt-0.5">Dr. {a.doctor.full_name} • Admitted {new Date(a.admission_date).toLocaleDateString('en-IN')}</div>
               </div>
-              <button className="px-3 py-1.5 bg-blue-600 text-white text-xs rounded-lg font-medium">Create Bill →</button>
+              <button className="px-3 py-1.5 bg-h1-navy text-white text-xs rounded-lg font-medium">Create Bill →</button>
             </div>
           ))}
         </div>}
@@ -94,12 +94,12 @@ export default function IPDBillingTab({ centreId, staffId, bills, onSelectBill, 
           <div className="px-4 py-3 border-b"><h3 className="text-sm font-bold">Running IPD Bills</h3></div>
           <div className="divide-y">
             {ipdActive.map(b => (
-              <div key={b.id} onClick={() => onSelectBill(b.id)} className="px-4 py-3 hover:bg-blue-50/50 cursor-pointer flex justify-between">
+              <div key={b.id} onClick={() => onSelectBill(b.id)} className="px-4 py-3 hover:bg-h1-teal-light/50 cursor-pointer flex justify-between">
                 <div>
                   <span className="font-medium text-sm">{b.patient?.first_name} {b.patient?.last_name}</span>
                   <span className="ml-2 text-xs font-mono text-gray-400">{b.bill_number}</span>
                   <div className="flex gap-1 mt-1">
-                    <span className="text-[9px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded">{b.payor_type?.replace('_', ' ')}</span>
+                    <span className="text-[9px] bg-h1-teal-light text-h1-teal px-1.5 py-0.5 rounded">{b.payor_type?.replace('_', ' ')}</span>
                     <span className="text-[9px] bg-gray-100 px-1.5 py-0.5 rounded">{b.status?.replace('_', ' ')}</span>
                   </div>
                 </div>

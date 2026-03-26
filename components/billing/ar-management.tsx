@@ -21,7 +21,7 @@ export default function ARManagement({ entries, loading, aging, totalOutstanding
   const [woAmount, setWoAmount] = useState('');
 
   const fmt = (n: number | string) => parseFloat(String(n) || '0').toLocaleString('en-IN', { maximumFractionDigits: 0 });
-  const typeColor = (t: string) => t.includes('insurance') ? 'bg-blue-100 text-blue-700' : t.includes('corporate') ? 'bg-purple-100 text-purple-700' : t.includes('govt') ? 'bg-green-100 text-green-700' : t.includes('patient') ? 'bg-gray-100 text-gray-700' : 'bg-gray-100';
+  const typeColor = (t: string) => t.includes('insurance') ? 'bg-h1-teal-light text-h1-teal' : t.includes('corporate') ? 'bg-h1-navy-light text-h1-navy' : t.includes('govt') ? 'bg-green-100 text-green-700' : t.includes('patient') ? 'bg-gray-100 text-gray-700' : 'bg-gray-100';
   const stColor = (s: string) => s === 'settled' ? 'bg-green-100 text-green-700' : s === 'written_off' ? 'bg-gray-100 text-gray-500' : s === 'disputed' ? 'bg-red-100 text-red-700' : s === 'legal' ? 'bg-red-200 text-red-800' : s === 'partial' ? 'bg-yellow-100 text-yellow-700' : 'bg-orange-100 text-orange-700';
 
   const saveFollowup = async () => {
@@ -53,7 +53,7 @@ export default function ARManagement({ entries, loading, aging, totalOutstanding
       {/* Type filter */}
       <div className="flex gap-1 flex-wrap">{AR_TYPES.map(t => (
         <button key={t} onClick={() => { setTypeFilter(t); onLoad({ arType: t }); }}
-          className={`px-2 py-1 rounded text-[10px] border ${typeFilter === t ? 'bg-blue-600 text-white' : 'bg-white border-gray-200'}`}>{t === 'all' ? 'All Types' : t.replace(/_/g,' ').replace('govt ','')}</button>
+          className={`px-2 py-1 rounded text-[10px] border ${typeFilter === t ? 'bg-h1-navy text-white' : 'bg-white border-gray-200'}`}>{t === 'all' ? 'All Types' : t.replace(/_/g,' ').replace('govt ','')}</button>
       ))}</div>
 
       {/* Selected AR detail + follow-up */}
@@ -65,7 +65,7 @@ export default function ARManagement({ entries, loading, aging, totalOutstanding
               <span className={`px-1.5 py-0.5 rounded text-[10px] ${typeColor(selectedAR.ar_type)}`}>{selectedAR.ar_type?.replace(/_/g,' ')}</span>
               <span className={`px-1.5 py-0.5 rounded text-[10px] ${stColor(selectedAR.status)}`}>{selectedAR.status}</span>
               {selectedAR.bill?.bill_number && <span className="font-mono text-gray-400">{selectedAR.bill.bill_number}</span>}
-              {selectedAR.corporate?.company_name && <span className="text-purple-600">{selectedAR.corporate.company_name}</span>}
+              {selectedAR.corporate?.company_name && <span className="text-h1-navy">{selectedAR.corporate.company_name}</span>}
             </div>
           </div>
           <div className="text-right">
@@ -76,12 +76,12 @@ export default function ARManagement({ entries, loading, aging, totalOutstanding
         </div>
 
         {/* Log follow-up */}
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 space-y-2">
-          <div className="text-xs font-medium text-blue-700">Log Follow-up</div>
+        <div className="bg-h1-teal-light border border-h1-teal/20 rounded-lg p-3 space-y-2">
+          <div className="text-xs font-medium text-h1-teal">Log Follow-up</div>
           <div className="grid grid-cols-4 gap-2">
             <div><label className="text-[10px] text-gray-500">Type</label>
               <div className="flex gap-0.5 mt-0.5 flex-wrap">{FOLLOWUP_TYPES.map(t => (
-                <button key={t} onClick={() => setFollowForm(f => ({...f, followup_type: t}))} className={`px-1.5 py-0.5 rounded text-[9px] border ${followForm.followup_type === t ? 'bg-blue-600 text-white' : 'bg-white'}`}>{t}</button>
+                <button key={t} onClick={() => setFollowForm(f => ({...f, followup_type: t}))} className={`px-1.5 py-0.5 rounded text-[9px] border ${followForm.followup_type === t ? 'bg-h1-navy text-white' : 'bg-white'}`}>{t}</button>
               ))}</div></div>
             <div><label className="text-[10px] text-gray-500">Contact person</label>
               <input type="text" value={followForm.contact_person} onChange={e => setFollowForm(f => ({...f, contact_person: e.target.value}))} className="w-full px-2 py-1.5 border rounded text-xs" /></div>
@@ -92,7 +92,7 @@ export default function ARManagement({ entries, loading, aging, totalOutstanding
           </div>
           <div className="flex gap-2">
             <input type="text" value={followForm.next_action} onChange={e => setFollowForm(f => ({...f, next_action: e.target.value}))} className="flex-1 px-2 py-1.5 border rounded text-xs" placeholder="Next action..." />
-            <button onClick={saveFollowup} className="px-3 py-1.5 bg-blue-600 text-white text-xs rounded-lg">Log Follow-up</button>
+            <button onClick={saveFollowup} className="px-3 py-1.5 bg-h1-navy text-white text-xs rounded-lg">Log Follow-up</button>
           </div>
         </div>
 
@@ -110,7 +110,7 @@ export default function ARManagement({ entries, loading, aging, totalOutstanding
       <div className="bg-white rounded-xl border overflow-hidden"><table className="w-full text-xs"><thead><tr className="bg-gray-50 border-b">
         <th className="p-2 text-left">Patient</th><th className="p-2">Type</th><th className="p-2">Bill</th><th className="p-2 text-right">Original</th><th className="p-2 text-right">Collected</th><th className="p-2 text-right">W/O</th><th className="p-2 text-right font-bold">Balance</th><th className="p-2">Aging</th><th className="p-2">Status</th><th className="p-2">Last F/U</th>
       </tr></thead><tbody>{entries.map(e => (
-        <tr key={e.id} className="border-b hover:bg-blue-50 cursor-pointer" onClick={() => setSelectedAR(e)}>
+        <tr key={e.id} className="border-b hover:bg-h1-teal-light cursor-pointer" onClick={() => setSelectedAR(e)}>
           <td className="p-2 font-medium">{e.patient?.first_name} {e.patient?.last_name} <span className="text-[10px] text-gray-400">{e.patient?.uhid}</span></td>
           <td className="p-2 text-center"><span className={`px-1 py-0.5 rounded text-[9px] ${typeColor(e.ar_type)}`}>{e.ar_type?.replace(/_/g,' ').replace('govt ','').substring(0,15)}</span></td>
           <td className="p-2 text-center font-mono text-[10px]">{e.bill?.bill_number || '—'}</td>
