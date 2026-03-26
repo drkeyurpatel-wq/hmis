@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Sidebar } from '@/components/layout/sidebar';
 import { GlobalHeader } from '@/components/layout/header';
-import { ToastProvider } from '@/components/ui/shared';
+import { ToastProvider } from '@/components/ui/toast';
 import { ErrorBoundary } from '@/components/ui/error-boundary';
 import { useAuthStore } from '@/lib/store/auth';
 import { createClient } from '@/lib/supabase/client';

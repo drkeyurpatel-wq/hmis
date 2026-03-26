@@ -200,7 +200,7 @@ export function Sidebar({ mobileOpen, onMobileClose }: { mobileOpen?: boolean; o
         <div className="h-14 flex items-center justify-between px-4 border-b border-gray-100 shrink-0">
           <Link href="/" className="flex items-center gap-2.5 min-w-0">
             {collapsed ? (
-              <div className="w-8 h-8 rounded-lg bg-teal-600 flex items-center justify-center shrink-0">
+              <div className="w-8 h-8 rounded-lg bg-h1-navy flex items-center justify-center shrink-0">
                 <span className="text-white font-black text-xs">H1</span>
               </div>
             ) : (
@@ -220,8 +220,8 @@ export function Sidebar({ mobileOpen, onMobileClose }: { mobileOpen?: boolean; o
           <div className="px-3 py-2.5 border-b border-gray-100 shrink-0 relative">
             <button onClick={() => setCentreOpen(!centreOpen)}
               className="w-full flex items-center gap-2 px-2.5 py-2 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors text-left group">
-              <div className="w-6 h-6 rounded bg-teal-100 flex items-center justify-center shrink-0">
-                <Building2 size={12} className="text-teal-700" />
+              <div className="w-6 h-6 rounded bg-h1-teal-light flex items-center justify-center shrink-0">
+                <Building2 size={12} className="text-h1-navy" />
               </div>
               <span className="text-xs font-medium text-gray-700 truncate flex-1">
                 {(activeCentre as any)?.centre?.name?.replace('Health1 ', '').replace('Hospital ', '').replace('Super Speciality', 'SS').trim() || 'Select centre'}
@@ -232,8 +232,8 @@ export function Sidebar({ mobileOpen, onMobileClose }: { mobileOpen?: boolean; o
               <div className="absolute left-3 right-3 mt-1 bg-white border border-gray-200 rounded-lg shadow-xl z-50 overflow-hidden">
                 {centres.map((c: any) => (
                   <button key={c.centre_id} onClick={() => switchCentre(c.centre_id)}
-                    className={cn('w-full text-left px-3 py-2 text-xs hover:bg-teal-50 border-b last:border-0 transition-colors',
-                      c.centre_id === activeCentreId ? 'bg-teal-50 text-teal-700 font-semibold' : 'text-gray-600')}>
+                    className={cn('w-full text-left px-3 py-2 text-xs hover:bg-h1-navy-light border-b last:border-0 transition-colors',
+                      c.centre_id === activeCentreId ? 'bg-h1-navy-light text-h1-navy font-semibold' : 'text-gray-600')}>
                     {c.centre?.name || c.centre_id}
                   </button>
                 ))}
@@ -253,11 +253,11 @@ export function Sidebar({ mobileOpen, onMobileClose }: { mobileOpen?: boolean; o
                   className={cn(
                     'flex items-center gap-2.5 px-2.5 py-[8px] rounded-lg text-[13px] font-medium transition-all duration-150 relative group',
                     collapsed && 'justify-center px-0',
-                    active ? 'bg-teal-50 text-teal-700' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-800',
+                    active ? 'bg-h1-navy-light text-h1-navy' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-800',
                   )}
                   title={collapsed ? item.label : undefined}>
-                  {active && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-4 bg-teal-600 rounded-r-full" />}
-                  <Icon size={collapsed ? 18 : 16} className={cn('shrink-0', active ? 'text-teal-600' : 'text-gray-400 group-hover:text-gray-600')} />
+                  {active && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-4 bg-h1-navy rounded-r-full" />}
+                  <Icon size={collapsed ? 18 : 16} className={cn('shrink-0', active ? 'text-h1-teal' : 'text-gray-400 group-hover:text-gray-600')} />
                   {!collapsed && <span className="truncate">{item.label}</span>}
                 </Link>
               );
@@ -291,7 +291,7 @@ export function Sidebar({ mobileOpen, onMobileClose }: { mobileOpen?: boolean; o
                       <div key={group.label}>
                         <button onClick={() => setMoreGroup(isGroupOpen ? null : group.label)}
                           className={cn('w-full flex items-center justify-between px-2.5 py-2 text-[11px] font-semibold tracking-wider text-gray-400 uppercase hover:text-gray-600 rounded-md hover:bg-gray-50 transition-colors',
-                            hasActiveChild && 'text-teal-600')}>
+                            hasActiveChild && 'text-h1-teal')}>
                           <span>{group.label}</span>
                           <ChevronRight size={10} className={cn('transition-transform', isGroupOpen && 'rotate-90')} />
                         </button>
@@ -304,9 +304,9 @@ export function Sidebar({ mobileOpen, onMobileClose }: { mobileOpen?: boolean; o
                                 <Link key={item.href} href={item.href} onClick={onMobileClose}
                                   className={cn(
                                     'flex items-center gap-2.5 px-2 py-[7px] rounded-lg text-[12px] font-medium transition-all',
-                                    active ? 'bg-teal-50 text-teal-700' : 'text-gray-400 hover:bg-gray-50 hover:text-gray-700',
+                                    active ? 'bg-h1-navy-light text-h1-navy' : 'text-gray-400 hover:bg-gray-50 hover:text-gray-700',
                                   )}>
-                                  <Icon size={14} className={active ? 'text-teal-600' : 'text-gray-300'} />
+                                  <Icon size={14} className={active ? 'text-h1-teal' : 'text-gray-300'} />
                                   <span className="truncate">{item.label}</span>
                                 </Link>
                               );
@@ -326,8 +326,8 @@ export function Sidebar({ mobileOpen, onMobileClose }: { mobileOpen?: boolean; o
         <div className="px-2 py-2 border-t border-gray-100 shrink-0">
           {collapsed ? (
             <div className="flex flex-col items-center gap-2 py-1">
-              <div className="w-8 h-8 rounded-full bg-teal-100 flex items-center justify-center">
-                <span className="text-[10px] font-bold text-teal-700">{initials}</span>
+              <div className="w-8 h-8 rounded-full bg-h1-teal-light flex items-center justify-center">
+                <span className="text-[10px] font-bold text-h1-navy">{initials}</span>
               </div>
               <button onClick={async () => {
                 if (!confirm('Sign out?')) return;
@@ -337,8 +337,8 @@ export function Sidebar({ mobileOpen, onMobileClose }: { mobileOpen?: boolean; o
             </div>
           ) : (
             <div className="flex items-center gap-2.5 px-2.5 py-2 rounded-lg hover:bg-gray-50 transition-colors">
-              <div className="w-8 h-8 rounded-full bg-teal-100 flex items-center justify-center shrink-0">
-                <span className="text-[10px] font-bold text-teal-700">{initials}</span>
+              <div className="w-8 h-8 rounded-full bg-h1-teal-light flex items-center justify-center shrink-0">
+                <span className="text-[10px] font-bold text-h1-navy">{initials}</span>
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-xs font-semibold text-gray-800 truncate">{staff?.full_name || 'Loading...'}</p>

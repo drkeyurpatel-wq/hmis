@@ -14,7 +14,7 @@ const TYPE_CONFIG: Record<string, { emoji: string; label: string; bg: string; te
   critical_lab: { emoji: '🔴', label: 'Critical Labs', bg: 'bg-red-900/80', text: 'text-red-200', pulse: true },
   overdue_med: { emoji: '⚠️', label: 'Overdue Meds', bg: 'bg-amber-900/70', text: 'text-amber-200' },
   news2_high: { emoji: '📉', label: 'NEWS2 High', bg: 'bg-purple-900/70', text: 'text-purple-200', pulse: true },
-  pending_discharge: { emoji: '🛏️', label: 'Pending Disch', bg: 'bg-teal-900/60', text: 'text-teal-200' },
+  pending_discharge: { emoji: '🛏️', label: 'Pending Disch', bg: 'bg-h1-navy/80', text: 'text-white/90' },
   nurse_call: { emoji: '🔔', label: 'Nurse Calls', bg: 'bg-blue-900/60', text: 'text-blue-200' },
   vital_abnormal: { emoji: '💓', label: 'Vitals Alert', bg: 'bg-orange-900/70', text: 'text-orange-200', pulse: true },
 };
@@ -93,7 +93,7 @@ export function SafetyTicker() {
           </button>
         )}
         {counts.pendingDischarge > 0 && (
-          <button onClick={() => setExpanded(!expanded)} className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-teal-900/60 text-teal-200 text-[11px] font-semibold hover:bg-teal-800/60 transition-colors shrink-0">
+          <button onClick={() => setExpanded(!expanded)} className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-h1-navy/80 text-white/90 text-[11px] font-semibold hover:bg-h1-navy/90 transition-colors shrink-0">
             <span>🛏️</span> {counts.pendingDischarge} Disch Pending
           </button>
         )}

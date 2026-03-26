@@ -80,7 +80,7 @@ export function useVisits(enrollmentId: string | null, nurseId?: string) {
     try {
       const pos = await new Promise<GeolocationPosition>((res, rej) => navigator.geolocation.getCurrentPosition(res, rej, { timeout: 5000 }));
       lat = pos.coords.latitude; lng = pos.coords.longitude;
-    } catch {}
+    } catch (e: any) { console.error("[HMIS Homecare]", e?.message || e); }
     await sb()!.from('hmis_hc_visits').update({
       status: 'in_progress', checkin_time: new Date().toISOString(), checkin_lat: lat, checkin_lng: lng,
     }).eq('id', visitId);
@@ -93,7 +93,7 @@ export function useVisits(enrollmentId: string | null, nurseId?: string) {
     try {
       const pos = await new Promise<GeolocationPosition>((res, rej) => navigator.geolocation.getCurrentPosition(res, rej, { timeout: 5000 }));
       lat = pos.coords.latitude; lng = pos.coords.longitude;
-    } catch {}
+    } catch (e: any) { console.error("[HMIS Homecare]", e?.message || e); }
     await sb()!.from('hmis_hc_visits').update({
       status: 'completed', checkout_time: new Date().toISOString(), checkout_lat: lat, checkout_lng: lng,
       assessment_notes: notes.assessmentNotes, plan_notes: notes.planNotes,
