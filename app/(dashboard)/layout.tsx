@@ -11,6 +11,7 @@ import { useKeyboardShortcuts, ShortcutHelpModal } from '@/components/ui/keyboar
 import { registerServiceWorker } from '@/lib/offline/sync-manager';
 import { CommandPalette } from '@/components/ui/command-palette';
 import { SafetyTicker } from '@/components/layout/safety-ticker';
+import { SessionTimeoutWarning } from '@/components/ui/session-timeout-warning';
 
 export default function DashboardLayout({
   children,
@@ -86,6 +87,7 @@ export default function DashboardLayout({
 
   return (
     <ToastProvider>
+      <SessionTimeoutWarning />
       <div className="min-h-screen bg-gray-50">
         {!online && <div className="fixed top-0 left-0 right-0 z-[60] bg-amber-500 text-white text-center py-1.5 text-xs font-medium">⚡ Offline — changes will sync when connection returns</div>}
         <ShortcutHelpModal show={showHelp} onClose={() => setShowHelp(false)} />
