@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
   return NextResponse.json({
     status: 'ok',
     keyConfigured: !!ANTHROPIC_API_KEY,
-    keyPrefix: ANTHROPIC_API_KEY ? ANTHROPIC_API_KEY.substring(0, 12) + '...' : 'NOT SET',
+    keyConfiguredFlag: !!ANTHROPIC_API_KEY,
     model: MODEL,
   });
 }
