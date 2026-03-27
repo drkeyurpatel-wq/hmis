@@ -1,0 +1,72 @@
+{
+  "hooks": [
+    {
+      "event": "PreToolUse",
+      "matcher": "tool == 'Edit' && tool_input.file_path matches '\\.(ts|tsx|js|jsx)$' && !(tool_input.file_path matches '(__tests__|test|spec|\\.test\\.|\\.spec\\.)')",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "node .claude/hooks/enforce-tdd.js \"$TOOL_INPUT_FILE_PATH\""
+        }
+      ]
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "tool == 'Edit' && tool_input.file_path matches '\\.(ts|tsx)$'",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "node .claude/hooks/typecheck-after-edit.js \"$TOOL_INPUT_FILE_PATH\""
+        }
+      ]
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "tool == 'Bash' && tool_input.command matches 'git\\s+push'",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "echo '[Hook] ⚠️  git push detected. Run /code-review and /verify before pushing.' >&2"
+        }
+      ]
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "tool == 'Bash'",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "node .claude/hooks/detect-secrets.js \"$TOOL_INPUT_COMMAND\""
+        }
+      ]
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "tool == 'Edit' && tool_input.file_path matches '\\.(ts|tsx|js|jsx)$'",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "node .claude/hooks/warn-console-log.js \"$TOOL_INPUT_FILE_PATH\""
+        }
+      ]
+    },
+    {
+      "event": "SessionStart",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "node .claude/hooks/session-start.js"
+        }
+      ]
+    },
+    {
+      "event": "Stop",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "node .claude/hooks/session-end.js"
+        }
+      ]
+    }
+  ]
+}
