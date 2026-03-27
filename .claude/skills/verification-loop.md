@@ -1,6 +1,10 @@
 ---
 name: verification-loop
 description: "Automated verification loop: build → typecheck → lint → test → security check. Run after completing any feature."
+version: "1.0.0"
+observe: "PostToolUse"
+feedback: "manual"
+rollback: "git revert"
 ---
 
 # Verification Loop — Health1

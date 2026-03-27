@@ -1,7 +1,7 @@
 ---
 name: code-reviewer
 description: Reviews code for quality, maintainability, and adherence to Health1 ENGINEERING v3 standards. Checks TypeScript types, component patterns, and business logic correctness.
-tools: ["Read", "Grep", "Glob", "Bash"]
+tools: ["Read", "Grep", "Glob"]
 model: opus
 ---
 

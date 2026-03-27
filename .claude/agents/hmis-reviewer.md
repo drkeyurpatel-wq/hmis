@@ -1,7 +1,7 @@
 ---
 name: hmis-reviewer
 description: Reviews HMIS/EMR code specifically for clinical safety, CDSS accuracy, drug interaction correctness, and HL7 integration compliance. Healthcare domain-specific review.
-tools: ["Read", "Grep", "Glob", "Bash"]
+tools: ["Read", "Grep", "Glob"]
 model: opus
 ---
 

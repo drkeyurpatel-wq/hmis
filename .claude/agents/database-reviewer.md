@@ -1,7 +1,7 @@
 ---
 name: database-reviewer
 description: Reviews Supabase schema changes, RLS policies, migrations, and query patterns for Health1 applications. Enforces the critical rule that schema/RLS changes must never be applied in bulk.
-tools: ["Read", "Grep", "Glob", "Bash"]
+tools: ["Read", "Grep", "Glob"]
 model: opus
 ---
 

@@ -1,6 +1,10 @@
 ---
 name: continuous-learning
 description: "Auto-extract patterns from successful sessions into reusable instincts. Run /learn after solving tricky problems."
+version: "1.0.0"
+observe: "PostToolUse"
+feedback: "manual"
+rollback: "git revert"
 ---
 
 # Continuous Learning — Health1
@@ -22,11 +26,19 @@ After solving a complex problem, extract the pattern so it becomes reusable know
 Save to `.claude/instincts/` with YAML frontmatter:
 
 ```markdown
+version: "1.0.0"
+observe: "PostToolUse"
+feedback: "manual"
+rollback: "git revert"
 ---
 pattern: "descriptive-slug"
 confidence: 0.8
 source: "session-date"
 tags: ["supabase", "rls", "vpms"]
+version: "1.0.0"
+observe: "PostToolUse"
+feedback: "manual"
+rollback: "git revert"
 ---
 
 # Pattern: [Name]

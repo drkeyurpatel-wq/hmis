@@ -1,6 +1,10 @@
 ---
 name: supabase-rls-patterns
 description: "Row-Level Security patterns for Health1 Supabase applications. Covers PHI/PII tables, role-based access, and common pitfalls."
+version: "1.0.0"
+observe: "PostToolUse"
+feedback: "manual"
+rollback: "git revert"
 ---
 
 # Supabase RLS Patterns — Health1

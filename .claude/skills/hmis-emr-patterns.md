@@ -1,6 +1,10 @@
 ---
 name: hmis-emr-patterns
 description: "EMR development patterns for Health1 HMIS. Clinical safety, CDSS integration, Smart Builders, and UX patterns targeting 9/10 quality (Practo/eka.care level)."
+version: "1.0.0"
+observe: "PostToolUse"
+feedback: "manual"
+rollback: "git revert"
 ---
 
 # HMIS EMR Patterns — Health1

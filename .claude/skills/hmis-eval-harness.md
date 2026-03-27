@@ -1,6 +1,10 @@
 ---
 name: hmis-eval-harness
 description: "Automated patient safety evaluation for HMIS EMR changes. Runs CDSS accuracy tests, drug interaction verification, clinical workflow validation, and PHI exposure checks before any deployment."
+version: "1.0.0"
+observe: "PostToolUse"
+feedback: "manual"
+rollback: "git revert"
 ---
 
 # HMIS Eval Harness — Patient Safety Verification

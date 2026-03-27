@@ -1,6 +1,10 @@
 ---
 name: multi-agent-orchestration
 description: "Coordinate multiple agents for complex Health1 features. Plan → Implement → Review → Verify pipeline with parallel tracks for independent modules."
+version: "1.0.0"
+observe: "PostToolUse"
+feedback: "manual"
+rollback: "git revert"
 ---
 
 # Multi-Agent Orchestration — Health1

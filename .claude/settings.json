@@ -1,4 +1,57 @@
 {
+  "permissions": {
+    "allow": [
+      "Read(*)",
+      "Glob(*)",
+      "Grep(*)",
+      "Edit(src/**)",
+      "Edit(tests/**)",
+      "Edit(app/**)",
+      "Edit(pages/**)",
+      "Edit(components/**)",
+      "Edit(lib/**)",
+      "Edit(middleware/**)",
+      "Edit(public/**)",
+      "Edit(*.ts)",
+      "Edit(*.tsx)",
+      "Edit(*.js)",
+      "Edit(*.json)",
+      "Edit(*.md)",
+      "Edit(*.css)",
+      "Write(src/**)",
+      "Write(tests/**)",
+      "Write(app/**)",
+      "Write(.claude/**)",
+      "Bash(npx *)",
+      "Bash(npm *)",
+      "Bash(git *)",
+      "Bash(cat *)",
+      "Bash(ls *)",
+      "Bash(find *)",
+      "Bash(grep *)",
+      "Bash(diff *)",
+      "Bash(head *)",
+      "Bash(tail *)",
+      "Bash(wc *)",
+      "Bash(echo *)",
+      "Bash(mkdir *)"
+    ],
+    "deny": [
+      "Bash(rm -rf /)",
+      "Bash(rm -rf ~)",
+      "Bash(sudo *)",
+      "Bash(chmod 777 *)",
+      "Bash(curl * | bash)",
+      "Bash(wget * | bash)",
+      "Bash(eval *)",
+      "Edit(.env*)",
+      "Edit(*.pem)",
+      "Edit(*.key)",
+      "Write(.env*)",
+      "Write(*.pem)",
+      "Write(*.key)"
+    ]
+  },
   "extraKnownMarketplaces": {
     "everything-claude-code": {
       "source": {
