@@ -121,7 +121,7 @@ export default function CentreOnboarding({ onComplete }: { onComplete?: (centreI
         if (!s.full_name || !s.email) continue;
         // Create auth user
         const { data: authUser } = await sb()!.auth.admin.createUser({
-          email: s.email, password: 'Welcome@123', email_confirm: true,
+          email: s.email, password: crypto.randomUUID().slice(0, 12) + 'A1!', email_confirm: true,
           user_metadata: { full_name: s.full_name },
         });
 
@@ -270,7 +270,7 @@ export default function CentreOnboarding({ onComplete }: { onComplete?: (centreI
           <div>✅ {wards.length} wards, {wards.reduce((s, w) => s + w.rooms, 0)} rooms, {totalBeds} beds created</div>
           <div>✅ {depts.length} departments configured</div>
           <div>✅ Billing sequences initialized (prefix: {billing.bill_prefix})</div>
-          <div>✅ Admin user created (default password: Welcome@123 — change immediately)</div>
+          <div>✅ Admin user created — password reset email will be sent</div>
         </div>
         <p className="text-xs text-gray-500">Next: configure tariffs in Settings → Billing, add remaining staff, and import patient data if migrating from another system.</p>
       </div>}
