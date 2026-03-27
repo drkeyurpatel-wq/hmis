@@ -71,7 +71,7 @@ export default function VPMSDashboard({ centreCode }: { centreCode?: string }) {
       <div className="text-lg font-semibold text-gray-700 mb-2">VPMS Not Connected</div>
       <div className="text-sm text-gray-500 mb-4">{error || 'Set environment variables to connect.'}</div>
       <div className="bg-gray-50 rounded-lg p-4 text-left text-xs font-mono space-y-1 max-w-md mx-auto">
-        <div>VPMS_SUPABASE_URL=https://dwukvdtacwvnudqjlwrb.supabase.co</div>
+        <div>VPMS_SUPABASE_URL=your-vpms-supabase-url</div>
         <div>VPMS_SUPABASE_SERVICE_KEY=your-service-role-key</div>
       </div>
       <a href={VPMS_URL} target="_blank" rel="noopener noreferrer" className="mt-4 inline-block text-sm text-blue-600 hover:underline">Open VPMS directly</a>
