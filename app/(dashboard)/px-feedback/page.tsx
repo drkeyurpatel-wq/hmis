@@ -1,3 +1,4 @@
+'use client';
 // app/(dashboard)/px-feedback/page.tsx
 // Feedback Manager: ratings, responses, Google Review pipeline
 

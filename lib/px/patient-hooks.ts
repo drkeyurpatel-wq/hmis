@@ -4,13 +4,13 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { createClient } from '@/lib/supabase/client';
+import { sb } from '@/lib/supabase/browser';
 import type {
   PxTokenContext, FoodMenuItem, FoodOrder, FoodOrderItem,
   PxComplaint, NurseCall, ComplaintCategory, NurseCallPriority,
 } from './types';
 
-const supabase = createClient();
+// Lazy client — no module-level Supabase instantiation
 
 // ============================================================
 // Token Validation
@@ -26,7 +26,7 @@ export function usePxToken(token: string) {
 
     async function validate() {
       try {
-        const { data, error: rpcError } = await supabase.rpc('px_validate_token', { p_token: token });
+        const { data, error: rpcError } = await sb()!.rpc('px_validate_token', { p_token: token });
         if (rpcError) throw rpcError;
         if (!data || data.length === 0) {
           setError('Invalid or expired token. Please scan the QR code on your wristband again.');
@@ -60,7 +60,7 @@ export function useFoodMenu(centreId: string | undefined) {
     if (!centreId) return;
     async function fetchMenu() {
       try {
-        const { data, error } = await supabase.rpc('px_get_menu', { p_centre_id: centreId });
+        const { data, error } = await sb()!.rpc('px_get_menu', { p_centre_id: centreId });
         if (error) throw error;
         setMenu(data || []);
       } catch (err) { console.error('Error fetching menu:', err); }
@@ -131,7 +131,7 @@ export function useSubmitFoodOrder(token: string) {
     if (!token) { setError('Session expired. Please scan QR again.'); return null; }
     setSubmitting(true); setError(null);
     try {
-      const { data, error: rpcError } = await supabase.rpc('px_create_food_order', {
+      const { data, error: rpcError } = await sb()!.rpc('px_create_food_order', {
         p_token: token, p_items: items, p_total_amount: totalAmount,
       });
       if (rpcError) throw rpcError;
@@ -158,7 +158,7 @@ export function useMyOrders(token: string | undefined) {
   const fetchOrders = useCallback(async () => {
     if (!token) return;
     try {
-      const { data, error } = await supabase.rpc('px_get_my_orders', { p_token: token });
+      const { data, error } = await sb()!.rpc('px_get_my_orders', { p_token: token });
       if (error) throw error;
       setOrders(data || []);
     } catch (err) { console.error('Error fetching orders:', err); }
@@ -187,7 +187,7 @@ export function useSubmitComplaint(token: string) {
     if (!token) { setError('Session expired.'); return null; }
     setSubmitting(true); setError(null);
     try {
-      const { data, error: rpcError } = await supabase.rpc('px_create_complaint', {
+      const { data, error: rpcError } = await sb()!.rpc('px_create_complaint', {
         p_token: token, p_category: category, p_description: description, p_priority: priority,
       });
       if (rpcError) throw rpcError;
@@ -210,7 +210,7 @@ export function useMyComplaints(token: string | undefined) {
     if (!token) return;
     async function fetch() {
       try {
-        const { data, error } = await supabase.rpc('px_get_my_complaints', { p_token: token });
+        const { data, error } = await sb()!.rpc('px_get_my_complaints', { p_token: token });
         if (error) throw error;
         setComplaints(data || []);
       } catch (err) { console.error('Error fetching complaints:', err); }
@@ -236,7 +236,7 @@ export function useNurseCall(token: string) {
     if (cooldown) { setError('Please wait 2 minutes between nurse calls.'); return null; }
     setSubmitting(true); setError(null);
     try {
-      const { data, error: rpcError } = await supabase.rpc('px_create_nurse_call', {
+      const { data, error: rpcError } = await sb()!.rpc('px_create_nurse_call', {
         p_token: token, p_reason: reason, p_priority: priority, p_details: details || null,
       });
       if (rpcError) {
@@ -264,7 +264,7 @@ export function useMyNurseCalls(token: string | undefined) {
   const fetchCalls = useCallback(async () => {
     if (!token) return;
     try {
-      const { data, error } = await supabase.rpc('px_get_my_nurse_calls', { p_token: token });
+      const { data, error } = await sb()!.rpc('px_get_my_nurse_calls', { p_token: token });
       if (error) throw error;
       setCalls(data || []);
     } catch (err) { console.error('Error fetching nurse calls:', err); }
@@ -299,7 +299,7 @@ export function useSubmitFeedback(token: string) {
     if (!token) { setError('Session expired.'); return null; }
     setSubmitting(true); setError(null);
     try {
-      const { data: result, error: rpcError } = await supabase.rpc('px_submit_feedback', {
+      const { data: result, error: rpcError } = await sb()!.rpc('px_submit_feedback', {
         p_token: token, p_overall_rating: data.overall_rating,
         p_category_ratings: data.category_ratings,
         p_comments: data.comments || null,

@@ -1,3 +1,4 @@
+'use client';
 // app/(dashboard)/px-coordinator/page.tsx
 // IPD Coordinator: overall PX dashboard with stats, complaints, SLA tracking
 

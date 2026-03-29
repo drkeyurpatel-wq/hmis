@@ -1,3 +1,4 @@
+'use client';
 // app/(dashboard)/px-kitchen/page.tsx
 // Kitchen display: only nurse-approved food orders
 

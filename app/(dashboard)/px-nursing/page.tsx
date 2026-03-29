@@ -1,3 +1,4 @@
+'use client';
 // app/(dashboard)/px-nursing/page.tsx
 // Nursing station: nurse call queue + food order approval
 

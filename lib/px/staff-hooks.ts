@@ -4,7 +4,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { createClient } from '@/lib/supabase/client';
+import { sb } from '@/lib/supabase/browser';
 import type {
   FoodOrder,
   FoodOrderStatus,
@@ -17,7 +17,7 @@ import type {
   FoodMenuItem,
 } from './types';
 
-const supabase = createClient();
+// Lazy client — no module-level Supabase instantiation
 
 // ============================================================
 // Shared: Get current staff info
@@ -32,10 +32,10 @@ export function useCurrentStaff() {
       try {
         const {
           data: { user },
-        } = await supabase.auth.getUser();
+        } = await sb()!.auth.getUser();
         if (!user) return;
 
-        const { data } = await supabase
+        const { data } = await sb()!
           .from('hmis_staff')
           .select('id, full_name, staff_type, hmis_staff_centres(centre_id)')
           .eq('auth_user_id', user.id)
@@ -74,7 +74,7 @@ export function useNurseCallQueue(centreId: string | undefined, pollInterval = 5
   const fetchCalls = useCallback(async () => {
     if (!centreId) return;
     try {
-      const { data, error } = await supabase
+      const { data, error } = await sb()!
         .from('hmis_px_nurse_calls')
         .select('*')
         .eq('centre_id', centreId)
@@ -118,7 +118,7 @@ export function useNurseCallQueue(centreId: string | undefined, pollInterval = 5
         updates.completed_at = new Date().toISOString();
       }
 
-      const { error } = await supabase.from('hmis_px_nurse_calls').update(updates).eq('id', callId);
+      const { error } = await sb()!.from('hmis_px_nurse_calls').update(updates).eq('id', callId);
 
       if (error) throw error;
 
@@ -128,12 +128,12 @@ export function useNurseCallQueue(centreId: string | undefined, pollInterval = 5
         const created = new Date(call.created_at).getTime();
         const now = Date.now();
         if (status === 'acknowledged') {
-          await supabase
+          await sb()!
             .from('hmis_px_nurse_calls')
             .update({ response_seconds: Math.round((now - created) / 1000) })
             .eq('id', callId);
         } else if (status === 'completed') {
-          await supabase
+          await sb()!
             .from('hmis_px_nurse_calls')
             .update({ resolution_seconds: Math.round((now - created) / 1000) })
             .eq('id', callId);
@@ -160,7 +160,7 @@ export function useFoodApprovalQueue(centreId: string | undefined, pollInterval 
   const fetchOrders = useCallback(async () => {
     if (!centreId) return;
     try {
-      const { data, error } = await supabase
+      const { data, error } = await sb()!
         .from('hmis_px_food_orders')
         .select('*')
         .eq('centre_id', centreId)
@@ -184,7 +184,7 @@ export function useFoodApprovalQueue(centreId: string | undefined, pollInterval 
 
   const approveOrder = useCallback(
     async (orderId: string, nurseId: string, notes?: string) => {
-      const { error } = await supabase
+      const { error } = await sb()!
         .from('hmis_px_food_orders')
         .update({
           status: 'nurse_approved' as FoodOrderStatus,
@@ -203,7 +203,7 @@ export function useFoodApprovalQueue(centreId: string | undefined, pollInterval 
 
   const rejectOrder = useCallback(
     async (orderId: string, nurseId: string, reason: string) => {
-      const { error } = await supabase
+      const { error } = await sb()!
         .from('hmis_px_food_orders')
         .update({
           status: 'nurse_rejected' as FoodOrderStatus,
@@ -235,7 +235,7 @@ export function useKitchenQueue(centreId: string | undefined, pollInterval = 800
   const fetchOrders = useCallback(async () => {
     if (!centreId) return;
     try {
-      const { data, error } = await supabase
+      const { data, error } = await sb()!
         .from('hmis_px_food_orders')
         .select('*')
         .eq('centre_id', centreId)
@@ -265,7 +265,7 @@ export function useKitchenQueue(centreId: string | undefined, pollInterval = 800
       if (status === 'delivered') updates.delivered_at = new Date().toISOString();
       if (kitchenNotes) updates.kitchen_notes = kitchenNotes;
 
-      const { error } = await supabase.from('hmis_px_food_orders').update(updates).eq('id', orderId);
+      const { error } = await sb()!.from('hmis_px_food_orders').update(updates).eq('id', orderId);
 
       if (error) throw error;
       await fetchOrders();
@@ -297,26 +297,26 @@ export function useCoordinatorDashboard(centreId: string | undefined) {
     try {
       // Parallel queries for stats
       const [foodRes, callRes, complaintRes, feedbackRes, complaintsListRes] = await Promise.all([
-        supabase
+        sb()!
           .from('hmis_px_food_orders')
           .select('id', { count: 'exact', head: true })
           .eq('centre_id', centreId)
           .in('status', ['pending', 'nurse_approved', 'preparing']),
-        supabase
+        sb()!
           .from('hmis_px_nurse_calls')
           .select('id', { count: 'exact', head: true })
           .eq('centre_id', centreId)
           .in('status', ['pending', 'acknowledged', 'in_progress']),
-        supabase
+        sb()!
           .from('hmis_px_complaints')
           .select('id', { count: 'exact', head: true })
           .eq('centre_id', centreId)
           .in('status', ['open', 'assigned', 'in_progress']),
-        supabase
+        sb()!
           .from('hmis_px_feedback')
           .select('overall_rating')
           .eq('centre_id', centreId),
-        supabase
+        sb()!
           .from('hmis_px_complaints')
           .select('*')
           .eq('centre_id', centreId)
@@ -367,7 +367,7 @@ export function useCoordinatorDashboard(centreId: string | undefined) {
         updates.closed_at = new Date().toISOString();
       }
 
-      const { error } = await supabase.from('hmis_px_complaints').update(updates).eq('id', complaintId);
+      const { error } = await sb()!.from('hmis_px_complaints').update(updates).eq('id', complaintId);
       if (error) throw error;
       await fetchDashboard();
     },
@@ -389,7 +389,7 @@ export function useFeedbackManager(centreId: string | undefined) {
   const fetchFeedback = useCallback(async () => {
     if (!centreId) return;
     try {
-      let query = supabase
+      let query = sb()!
         .from('hmis_px_feedback')
         .select('*')
         .eq('centre_id', centreId)
@@ -416,7 +416,7 @@ export function useFeedbackManager(centreId: string | undefined) {
 
   const respondToFeedback = useCallback(
     async (feedbackId: string, response: string, staffId: string) => {
-      const { error } = await supabase
+      const { error } = await sb()!
         .from('hmis_px_feedback')
         .update({
           staff_response: response,
@@ -434,7 +434,7 @@ export function useFeedbackManager(centreId: string | undefined) {
 
   const markForGoogleReview = useCallback(
     async (feedbackId: string) => {
-      const { error } = await supabase
+      const { error } = await sb()!
         .from('hmis_px_feedback')
         .update({
           google_review_status: 'prompted',
@@ -462,7 +462,7 @@ export function useMenuManager(centreId: string | undefined) {
   const fetchMenu = useCallback(async () => {
     if (!centreId) return;
     try {
-      const { data, error } = await supabase
+      const { data, error } = await sb()!
         .from('hmis_px_food_menu')
         .select('*')
         .eq('centre_id', centreId)
@@ -483,7 +483,7 @@ export function useMenuManager(centreId: string | undefined) {
 
   const toggleAvailability = useCallback(
     async (itemId: string, available: boolean) => {
-      const { error } = await supabase
+      const { error } = await sb()!
         .from('hmis_px_food_menu')
         .update({ is_available: available, updated_at: new Date().toISOString() })
         .eq('id', itemId);
@@ -496,7 +496,7 @@ export function useMenuManager(centreId: string | undefined) {
 
   const addMenuItem = useCallback(
     async (item: Partial<FoodMenuItem>) => {
-      const { error } = await supabase.from('hmis_px_food_menu').insert({
+      const { error } = await sb()!.from('hmis_px_food_menu').insert({
         ...item,
         centre_id: centreId,
       });
