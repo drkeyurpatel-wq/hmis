@@ -13,7 +13,7 @@ import {
   Activity, Truck, FileText, Wrench, SprayCan, Shirt,
   ClipboardList, UtensilsCrossed, Dumbbell, AlertTriangle,
   Package, Eye, UserPlus, MessageSquare, SlidersHorizontal,
-  MoreHorizontal, Star, Cross, Home,
+  MoreHorizontal, Star, Cross, Home, Mic,
 } from 'lucide-react';
 
 interface NavItem { href: string; label: string; icon: any; moduleKey?: string }
@@ -113,6 +113,9 @@ const MORE_NAV: { label: string; items: NavItem[] }[] = [
     { href: '/digital-consent', label: 'Digital Consent', icon: FileText, moduleKey: 'digital_consent' },
     { href: '/dietary', label: 'Dietary', icon: UtensilsCrossed, moduleKey: 'dietary' },
     { href: '/homecare', label: 'Homecare', icon: Home, moduleKey: 'homecare' },
+    { href: '/telemedicine', label: 'Telemedicine', icon: Stethoscope, moduleKey: 'telemedicine' },
+    { href: '/voice-notes', label: 'Voice Notes', icon: Mic, moduleKey: 'emr' },
+    { href: '/emr-mobile', label: 'EMR Mobile', icon: Heart, moduleKey: 'emr' },
   ]},
   { label: 'DIAGNOSTICS & PHARMACY', items: [
     { href: '/lab', label: 'Laboratory', icon: FlaskConical, moduleKey: 'lab' },
@@ -136,12 +139,15 @@ const MORE_NAV: { label: string; items: NavItem[] }[] = [
     { href: '/packages', label: 'Packages', icon: Package, moduleKey: 'billing' },
     { href: '/appointments', label: 'Appointments', icon: Calendar, moduleKey: 'opd' },
     { href: '/crm', label: 'CRM', icon: MessageSquare, moduleKey: 'crm' },
+    { href: '/accounting', label: 'Accounting', icon: BarChart3, moduleKey: 'billing' },
   ]},
   { label: 'OPERATIONS', items: [
     { href: '/vpms', label: 'Procurement', icon: Truck, moduleKey: 'procurement' },
     { href: '/cssd', label: 'CSSD', icon: Shield, moduleKey: 'cssd' },
     { href: '/housekeeping', label: 'Housekeeping', icon: SprayCan, moduleKey: 'housekeeping' },
     { href: '/biomedical', label: 'Equipment', icon: Wrench, moduleKey: 'biomedical' },
+    { href: '/equipment-lifecycle', label: 'Equipment Lifecycle', icon: Wrench, moduleKey: 'biomedical' },
+    { href: '/assets', label: 'Assets', icon: Package, moduleKey: 'assets' },
     { href: '/duty-roster', label: 'Duty Roster', icon: ClipboardList, moduleKey: 'duty_roster' },
     { href: '/linen', label: 'Linen', icon: Shirt, moduleKey: 'linen' },
     { href: '/infection-control', label: 'Infection Control', icon: Shield, moduleKey: 'infection_control' },
@@ -157,6 +163,8 @@ const MORE_NAV: { label: string; items: NavItem[] }[] = [
     { href: '/reports', label: 'Reports', icon: BarChart3 },
     { href: '/staff', label: 'Staff', icon: Users },
     { href: '/documents', label: 'Documents', icon: FileText },
+    { href: '/handover', label: 'Shift Handover', icon: ClipboardList },
+    { href: '/onboarding', label: 'Centre Setup', icon: Settings },
     { href: '/settings/modules', label: 'Module Config', icon: SlidersHorizontal },
     { href: '/settings', label: 'Settings', icon: Settings },
   ]},
