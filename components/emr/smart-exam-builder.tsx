@@ -42,7 +42,7 @@ const EXAM_SYSTEMS: SystemTemplate[] = [
     ],
   },
   {
-    id: 'cvs', label: 'CVS — Cardiovascular', icon: '❤️', color: 'border-l-red-400',
+    id: 'cvs', label: 'CVS — Cardiovascular', icon: '', color: 'border-l-red-400',
     findings: [
       { label: 'Apex beat', normal: 'Normal (5th ICS MCL)', options: ['Normal (5th ICS MCL)', 'Displaced laterally', 'Displaced inferiorly', 'Not palpable', 'Heaving', 'Tapping'] },
       { label: 'Heart sounds', normal: 'S1 S2 heard, normal', options: ['S1 S2 heard, normal', 'S1 S2 normal, S3 present', 'S1 S2 normal, S4 present', 'S1 loud', 'S1 soft', 'S2 loud', 'S2 fixed split', 'S2 paradoxical split'] },

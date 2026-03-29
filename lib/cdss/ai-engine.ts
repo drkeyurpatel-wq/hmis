@@ -138,10 +138,10 @@ export function getCopilotSuggestions(params: {
   // Alerts
   const rxCheck = reviewPrescription({ prescriptions: params.prescriptions.map(String), allergies: params.allergies || [], age: params.age, vitals: params.vitals, diagnoses: params.diagnoses });
   if (rxCheck.result.issues.length > 0) {
-    for (const issue of rxCheck.result.issues) alerts.push(`⚠️ ${issue.drug}: ${issue.message}`);
+    for (const issue of rxCheck.result.issues) alerts.push(`! ${issue.drug}: ${issue.message}`);
   }
-  if (params.vitals?.systolic > 180) alerts.push(`🔴 Systolic BP ${params.vitals.systolic} — hypertensive urgency`);
-  if (params.vitals?.spo2 && parseFloat(params.vitals.spo2) < 92) alerts.push(`🔴 SpO2 ${params.vitals.spo2}% — hypoxia, consider O2`);
+  if (params.vitals?.systolic > 180) alerts.push(`● Systolic BP ${params.vitals.systolic} — hypertensive urgency`);
+  if (params.vitals?.spo2 && parseFloat(params.vitals.spo2) < 92) alerts.push(`● SpO2 ${params.vitals.spo2}% — hypoxia, consider O2`);
 
   // Suggestions
   if (params.diagnoses.length === 0 && params.complaints.length > 0) suggestions.push({ priority: 'high', category: 'clinical', message: 'Add a working diagnosis based on complaints', action: 'Go to Diagnosis tab' });

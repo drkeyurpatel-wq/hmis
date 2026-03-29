@@ -109,7 +109,7 @@ function AmbulanceInner() {
                   <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-100 text-gray-600 text-[8px] capitalize">{r.request_type?.replace(/_/g, ' ')}</span>
                 </div>
                 <div className="flex items-center gap-1 text-[10px] text-gray-500"><MapPin size={10} />{r.pickup_location} → {r.drop_location}</div>
-                {r.ambulance?.vehicle_number && <div className="text-[10px] text-teal-600 font-medium mt-0.5">🚑 {r.ambulance.vehicle_number} · {r.driver_name || ''}</div>}
+                {r.ambulance?.vehicle_number && <div className="text-[10px] text-teal-600 font-medium mt-0.5"> {r.ambulance.vehicle_number} · {r.driver_name || ''}</div>}
                 <div className="text-[9px] text-gray-400 mt-0.5">{r.request_number} · {timeAgo(r.requested_at)}</div>
               </div>
               <div className="flex flex-col items-end gap-2 shrink-0">

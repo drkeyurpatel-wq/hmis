@@ -16,7 +16,7 @@ export default function ReactionsTab({ transfusions, groupColor }: ReactionsTabP
       <div className="space-y-2">{withReactions.map((t: any) => (
         <div key={t.id} className="bg-red-50 rounded-xl border border-red-200 p-4">
           <div className="flex items-center gap-2 mb-2">
-            <span className="text-red-600 text-lg">⚠️</span>
+            <span className="text-red-600 text-lg">!</span>
             <span className="font-medium">{t.patient?.first_name} {t.patient?.last_name}</span>
             <span className={`px-1.5 py-0.5 rounded text-[10px] ${groupColor(t.component?.blood_group || '')}`}>{t.component?.blood_group}</span>
             <span className="text-xs">{t.component?.component_type?.replace(/_/g, ' ')}</span>

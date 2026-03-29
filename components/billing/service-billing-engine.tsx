@@ -229,7 +229,7 @@ export default function ServiceBillingEngine({
   if (step === 'done' && billCreated) {
     return (
       <div className="max-w-md mx-auto text-center py-8">
-        <div className="text-5xl mb-4">✅</div>
+        <svg className="mx-auto mb-4" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg>
         <h2 className="text-lg font-bold">Bill Created</h2>
         <div className="text-2xl font-mono bg-h1-teal-light text-h1-teal px-4 py-3 rounded-xl mt-3 font-bold">{billCreated.number}</div>
         <div className="mt-2 text-sm text-gray-500">{patientName} — {INR(summary.net)}</div>

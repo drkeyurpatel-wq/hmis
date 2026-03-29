@@ -18,22 +18,22 @@ export interface JourneyEvent {
   staffName?: string;
 }
 
-const TYPE_CONFIG: Record<string, { color: string; emoji: string }> = {
-  registration: { color: '#22c55e', emoji: '📋' },
-  opd_visit: { color: '#22c55e', emoji: '🏥' },
-  consultation: { color: '#3b82f6', emoji: '🩺' },
-  lab_ordered: { color: '#a855f7', emoji: '🧪' },
-  lab_result: { color: '#6366f1', emoji: '📊' },
-  lab_critical: { color: '#ef4444', emoji: '🔴' },
+const TYPE_CONFIG: Record<string, { color: string; emoji?: string; icon?: string }> = {
+  registration: { color: '#22c55e', emoji: '' },
+  opd_visit: { color: '#22c55e', emoji: '' },
+  consultation: { color: '#3b82f6', emoji: '' },
+  lab_ordered: { color: '#a855f7', emoji: '' },
+  lab_result: { color: '#6366f1', emoji: '' },
+  lab_critical: { color: '#ef4444', icon: 'alert-circle' },
   radiology_ordered: { color: '#0ea5e9', emoji: '📷' },
-  admission: { color: '#f59e0b', emoji: '🛏️' },
+  admission: { color: '#f59e0b', icon: 'bed-double' },
   doctor_round: { color: '#10b981', emoji: '👨‍⚕️' },
-  vitals: { color: '#8b5cf6', emoji: '💓' },
-  medication_given: { color: '#06b6d4', emoji: '💉' },
-  nursing_note: { color: '#64748b', emoji: '📝' },
+  vitals: { color: '#8b5cf6', icon: 'heart' },
+  medication_given: { color: '#06b6d4', emoji: '' },
+  nursing_note: { color: '#64748b', emoji: '' },
   discharge: { color: '#22c55e', emoji: '🚪' },
   billing: { color: '#eab308', emoji: '💳' },
-  gap: { color: '#f59e0b', emoji: '⚠️' },
+  gap: { color: '#f59e0b', icon: 'alert-triangle' },
 };
 
 export { TYPE_CONFIG as JOURNEY_TYPE_CONFIG };
@@ -163,7 +163,7 @@ export function usePatientJourney(patientId: string | null) {
             (v.spo2 && v.spo2 < 92) || (v.pulse && (v.pulse > 130 || v.pulse < 40));
 
           all.push({ id: `vital-${v.id}`, type: 'vitals', timestamp: v.recorded_at,
-            title: isAbnormal ? '⚠️ Vitals — Abnormal' : 'Vitals recorded',
+            title: isAbnormal ? '! Vitals — Abnormal' : 'Vitals recorded',
             detail: parts.join(' · ') || 'No values',
             severity: isAbnormal ? 'warning' : 'normal',
             staffName: (v.recorder as any)?.full_name });

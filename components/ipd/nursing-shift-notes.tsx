@@ -82,7 +82,7 @@ export default function NursingShiftNotes({ admissionId, staffId, patientName, o
       form.patient_response ? `\nPATIENT RESPONSE: ${form.patient_response}` : '',
       `\nSAFETY: ${Object.entries(form.safety_checks).filter(([, v]) => v).map(([k]) => k.replace(/_/g, ' ')).join(', ') || 'Not documented'}`,
       form.education_given ? `\nEDUCATION: ${form.education_given}` : '',
-      form.escalation_needed ? `\n⚠️ ESCALATION: ${form.escalation_details}` : '',
+      form.escalation_needed ? `\n! ESCALATION: ${form.escalation_details}` : '',
       `\n--- HANDOVER ---\n${form.handover_notes || 'No specific handover notes'}`,
     ].filter(Boolean).join('\n');
 

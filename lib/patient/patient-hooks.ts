@@ -214,7 +214,7 @@ export function usePatientStats(centreId: string | null) {
         client.from('hmis_patients').select('id', { count: 'exact', head: true }),
         client.from('hmis_patients').select('id', { count: 'exact', head: true }).gte('created_at', today),
         client.from('hmis_patients').select('id', { count: 'exact', head: true }).gte('created_at', monthStart),
-        client.from('hmis_ipd_admissions').select('id', { count: 'exact', head: true }).eq('status', 'admitted'),
+        client.from('hmis_admissions').select('id', { count: 'exact', head: true }).eq('status', 'admitted'),
       ]);
 
       return {

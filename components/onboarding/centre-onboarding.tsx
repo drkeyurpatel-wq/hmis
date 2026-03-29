@@ -263,14 +263,14 @@ export default function CentreOnboarding({ onComplete }: { onComplete?: (centreI
 
       {/* Step 6: Go live */}
       {step === 5 && <div className="bg-white rounded-xl border p-6 text-center space-y-4">
-        <div className="text-4xl">🏥</div>
+        <div className="text-4xl"></div>
         <h2 className="text-xl font-bold text-green-700">Centre created successfully</h2>
         <div className="text-sm text-gray-600">{cf.name} is ready with {totalBeds} beds, {depts.length} departments, and {staffList.filter(s => s.email).length} staff user(s).</div>
         <div className="bg-green-50 rounded-lg p-4 text-xs text-left space-y-1">
-          <div>✅ {wards.length} wards, {wards.reduce((s, w) => s + w.rooms, 0)} rooms, {totalBeds} beds created</div>
-          <div>✅ {depts.length} departments configured</div>
-          <div>✅ Billing sequences initialized (prefix: {billing.bill_prefix})</div>
-          <div>✅ Admin user created — password reset email will be sent</div>
+          <div><span className="text-green-600 font-bold mr-1">Done:</span> {wards.length} wards, {wards.reduce((s, w) => s + w.rooms, 0)} rooms, {totalBeds} beds created</div>
+          <div><span className="text-green-600 font-bold mr-1">Done:</span> {depts.length} departments configured</div>
+          <div><span className="text-green-600 font-bold mr-1">Done:</span> Billing sequences initialized (prefix: {billing.bill_prefix})</div>
+          <div><span className="text-green-600 font-bold mr-1">Done:</span> Admin user created — password reset email will be sent</div>
         </div>
         <p className="text-xs text-gray-500">Next: configure tariffs in Settings → Billing, add remaining staff, and import patient data if migrating from another system.</p>
       </div>}

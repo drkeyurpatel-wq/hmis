@@ -89,7 +89,7 @@ export default function DashboardLayout({
     <ToastProvider>
       <SessionTimeoutWarning />
       <div className="min-h-screen bg-gray-50">
-        {!online && <div className="fixed top-0 left-0 right-0 z-[60] bg-amber-500 text-white text-center py-1.5 text-xs font-medium">⚡ Offline — changes will sync when connection returns</div>}
+        {!online && <div className="fixed top-0 left-0 right-0 z-[60] bg-amber-500 text-white text-center py-1.5 text-xs font-medium"> Offline — changes will sync when connection returns</div>}
         <ShortcutHelpModal show={showHelp} onClose={() => setShowHelp(false)} />
         <CommandPalette />
         <Sidebar mobileOpen={mobileOpen} onMobileClose={() => setMobileOpen(false)} />

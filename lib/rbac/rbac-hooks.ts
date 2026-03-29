@@ -6,26 +6,26 @@ import { sb } from '@/lib/supabase/browser';
 // MODULE + ACTION DEFINITIONS (source of truth for UI)
 // ============================================================
 export const ALL_MODULES = [
-  { key: 'dashboard', label: 'Dashboard', icon: '📊', actions: ['view', 'admin'] },
+  { key: 'dashboard', label: 'Dashboard', icon: '', actions: ['view', 'admin'] },
   { key: 'patients', label: 'Patients', icon: '👤', actions: ['view', 'create', 'edit', 'delete', 'print', 'export', 'admin'] },
-  { key: 'opd', label: 'OPD', icon: '🏥', actions: ['view', 'create', 'edit', 'delete', 'print', 'export', 'admin'] },
+  { key: 'opd', label: 'OPD', icon: '', actions: ['view', 'create', 'edit', 'delete', 'print', 'export', 'admin'] },
   { key: 'appointments', label: 'Appointments', icon: '📅', actions: ['view', 'create', 'edit', 'delete', 'print', 'export'] },
-  { key: 'ipd', label: 'IPD', icon: '🛏️', actions: ['view', 'create', 'edit', 'delete', 'print', 'approve', 'export', 'admin'] },
+  { key: 'ipd', label: 'IPD', icon: '', actions: ['view', 'create', 'edit', 'delete', 'print', 'approve', 'export', 'admin'] },
   { key: 'bed_management', label: 'Bed Management', icon: '🛌', actions: ['view', 'create', 'edit', 'admin'] },
   { key: 'nursing_station', label: 'Nursing Station', icon: '👩‍⚕️', actions: ['view', 'create', 'edit', 'print'] },
-  { key: 'emr', label: 'EMR', icon: '📋', actions: ['view', 'create', 'edit', 'delete', 'print', 'export', 'admin'] },
-  { key: 'billing', label: 'Billing & Revenue', icon: '💰', actions: ['view', 'create', 'edit', 'delete', 'print', 'approve', 'export', 'admin'] },
-  { key: 'pharmacy', label: 'Pharmacy', icon: '💊', actions: ['view', 'create', 'edit', 'delete', 'print', 'approve', 'export', 'admin'] },
-  { key: 'lab', label: 'Laboratory', icon: '🔬', actions: ['view', 'create', 'edit', 'delete', 'print', 'approve', 'export', 'admin'] },
-  { key: 'blood_bank', label: 'Blood Bank', icon: '🩸', actions: ['view', 'create', 'edit', 'print', 'approve'] },
+  { key: 'emr', label: 'EMR', icon: '', actions: ['view', 'create', 'edit', 'delete', 'print', 'export', 'admin'] },
+  { key: 'billing', label: 'Billing & Revenue', icon: '', actions: ['view', 'create', 'edit', 'delete', 'print', 'approve', 'export', 'admin'] },
+  { key: 'pharmacy', label: 'Pharmacy', icon: '', actions: ['view', 'create', 'edit', 'delete', 'print', 'approve', 'export', 'admin'] },
+  { key: 'lab', label: 'Laboratory', icon: '', actions: ['view', 'create', 'edit', 'delete', 'print', 'approve', 'export', 'admin'] },
+  { key: 'blood_bank', label: 'Blood Bank', icon: '', actions: ['view', 'create', 'edit', 'print', 'approve'] },
   { key: 'radiology', label: 'Radiology', icon: '🩻', actions: ['view', 'create', 'edit', 'delete', 'print', 'approve', 'export', 'admin'] },
   { key: 'ot', label: 'Operation Theatre', icon: '🔪', actions: ['view', 'create', 'edit', 'print', 'approve', 'admin'] },
   { key: 'vpms', label: 'VPMS (Procurement)', icon: '🏪', actions: ['view', 'create', 'edit', 'approve', 'admin'] },
   { key: 'homecare', label: 'Homecare', icon: '🏠', actions: ['view', 'create', 'edit', 'print'] },
-  { key: 'reports', label: 'MIS & Reports', icon: '📈', actions: ['view', 'export', 'admin'] },
-  { key: 'quality', label: 'Quality & NABH', icon: '✅', actions: ['view', 'create', 'edit', 'approve', 'export', 'admin'] },
+  { key: 'reports', label: 'MIS & Reports', icon: '', actions: ['view', 'export', 'admin'] },
+  { key: 'quality', label: 'Quality & NABH', icon: '[OK]', actions: ['view', 'create', 'edit', 'approve', 'export', 'admin'] },
   { key: 'settings', label: 'Settings', icon: '⚙️', actions: ['view', 'edit', 'admin'] },
-  { key: 'command_centre', label: 'Command Centre', icon: '🎯', actions: ['view', 'admin'] },
+  { key: 'command_centre', label: 'Command Centre', icon: '', actions: ['view', 'admin'] },
 ];
 
 export type Permissions = Record<string, string[]>;

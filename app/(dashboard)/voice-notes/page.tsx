@@ -246,7 +246,7 @@ function VoiceNotesInner() {
           <div className="flex-1">
             <div className="font-bold text-gray-900">{patient.first_name} {patient.last_name}</div>
             <div className="text-xs text-gray-400">{patient.uhid} · {patient.age_years}/{patient.gender?.charAt(0)} · {patient.phone_primary}</div>
-            {patient.allergies?.length > 0 && <div className="text-[10px] text-red-600 font-semibold mt-0.5">⚠️ Allergies: {patient.allergies.join(', ')}</div>}
+            {patient.allergies?.length > 0 && <div className="text-[10px] text-red-600 font-semibold mt-0.5">Allergies: {patient.allergies.join(', ')}</div>}
           </div>
           <button onClick={() => { setPatient(null); reset(); }} className="text-gray-400 hover:text-gray-600 text-xs">Change</button>
         </div>
@@ -277,7 +277,7 @@ function VoiceNotesInner() {
               </div>
 
               <div className="text-sm text-gray-400">{isRecording ? 'Recording... speak naturally' : transcript ? 'Recording paused — tap to continue' : 'Tap mic to start'}</div>
-              {isRecording && <div className="text-[10px] text-teal-400 mt-1 animate-pulse">🔴 LIVE · Speak in English or Hinglish</div>}
+              {isRecording && <div className="text-[10px] text-teal-400 mt-1 animate-pulse">REC · Speak in English or Hinglish</div>}
             </div>
 
             {/* Transcript */}
@@ -391,7 +391,7 @@ function VoiceNotesInner() {
       {/* Saved state */}
       {saved && structured && (
         <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-6 text-center">
-          <div className="text-3xl mb-2">✅</div>
+          <svg className="mx-auto mb-2" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg>
           <div className="text-lg font-bold text-emerald-800">Encounter Saved</div>
           <div className="text-sm text-emerald-600 mt-1">
             {patient?.first_name} {patient?.last_name} — {structured.diagnosis.primary}

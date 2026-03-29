@@ -14,9 +14,9 @@ const CATEGORY_ICONS: Record<ComplaintCategory, string> = {
   staff_behaviour: '👤',
   noise: '🔊',
   equipment: '🔧',
-  billing: '💰',
+  billing: '',
   delay: '⏱️',
-  other: '📝',
+  other: '',
 };
 
 export default function ComplaintPage() {

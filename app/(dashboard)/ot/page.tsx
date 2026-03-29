@@ -77,7 +77,7 @@ function OTInner() {
 
   const tabs: [Tab,string,string][] = [
     ['board','Schedule','📅'],['new_booking','Book Surgery','➕'],
-    ['utilization','Utilization','📊'],['admin','Admin','⚙️'],
+    ['utilization','Utilization',''],['admin','Admin','⚙️'],
   ];
 
   return (

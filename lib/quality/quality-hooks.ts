@@ -126,16 +126,16 @@ export function useAutoCalcKPIs(centreId: string | null) {
     const result: typeof kpis = {};
 
     // QI-11: Hospital Mortality Rate
-    const { count: totalDischarges } = await sb()!.from('hmis_ipd_admissions').select('id', { count: 'exact', head: true })
+    const { count: totalDischarges } = await sb()!.from('hmis_admissions').select('id', { count: 'exact', head: true })
       .eq('centre_id', centreId).eq('status', 'discharged').gte('discharge_date', monthStart).lte('discharge_date', monthEnd);
-    const { count: deaths } = await sb()!.from('hmis_ipd_admissions').select('id', { count: 'exact', head: true })
+    const { count: deaths } = await sb()!.from('hmis_admissions').select('id', { count: 'exact', head: true })
       .eq('centre_id', centreId).eq('discharge_type', 'death').gte('discharge_date', monthStart).lte('discharge_date', monthEnd);
     const denom11 = totalDischarges || 0;
     const num11 = deaths || 0;
     result['QI-11'] = { value: denom11 > 0 ? Math.round((num11 / denom11) * 10000) / 100 : 0, numerator: num11, denominator: denom11, autoCalc: true };
 
     // QI-12: Average Length of Stay
-    const { data: admissions } = await sb()!.from('hmis_ipd_admissions')
+    const { data: admissions } = await sb()!.from('hmis_admissions')
       .select('admission_date, discharge_date')
       .eq('centre_id', centreId).eq('status', 'discharged').gte('discharge_date', monthStart).lte('discharge_date', monthEnd).not('discharge_date', 'is', null);
     const losArr = (admissions || []).map((a: any) => {
@@ -155,7 +155,7 @@ export function useAutoCalcKPIs(centreId: string | null) {
     result['QI-13'] = { value: tb > 0 ? Math.round((ob / tb) * 10000) / 100 : 0, numerator: ob, denominator: tb, autoCalc: true };
 
     // QI-15: Discharge TAT (hours from discharge_initiated to discharged)
-    const { data: discharged } = await sb()!.from('hmis_ipd_admissions')
+    const { data: discharged } = await sb()!.from('hmis_admissions')
       .select('discharge_initiated_at, discharge_date')
       .eq('centre_id', centreId).eq('status', 'discharged').gte('discharge_date', monthStart).lte('discharge_date', monthEnd)
       .not('discharge_initiated_at', 'is', null);

@@ -65,7 +65,7 @@ function LeakageInner() {
           const cfg = LEAK_TYPES[type as keyof typeof LEAK_TYPES];
           return (
             <div key={type} className="bg-white rounded-xl border p-3 cursor-pointer hover:shadow-sm" onClick={() => setTypeFilter(typeFilter === type ? 'all' : type)}>
-              <div className="flex items-center gap-2 mb-1"><span className="text-lg">{cfg?.icon || '⚠️'}</span><span className="text-[10px] font-medium">{cfg?.label || type}</span></div>
+              <div className="flex items-center gap-2 mb-1"><span className="text-lg">{cfg?.icon || '!'}</span><span className="text-[10px] font-medium">{cfg?.label || type}</span></div>
               <div className="text-lg font-black">{data.count}</div>
               {data.amount > 0 && <div className="text-[10px] text-red-600 font-bold">{INR(data.amount)}</div>}
             </div>
@@ -102,7 +102,7 @@ function LeakageInner() {
           return (
             <tr key={l.id} className={`border-b ${SEV_ROW[l.severity]}`}>
               <td className="p-2 text-center"><span className={`text-[8px] px-1.5 py-0.5 rounded font-medium capitalize ${SEV_COLORS[l.severity]}`}>{l.severity}</span></td>
-              <td className="p-2"><div className="flex items-center gap-1.5"><span>{cfg?.icon || '⚠️'}</span><span className="text-[10px] font-medium">{cfg?.label || l.type}</span></div></td>
+              <td className="p-2"><div className="flex items-center gap-1.5"><span>{cfg?.icon || '!'}</span><span className="text-[10px] font-medium">{cfg?.label || l.type}</span></div></td>
               <td className="p-2"><span className="font-medium">{l.patient_name}</span> <span className="text-[10px] text-gray-400">{l.uhid}</span></td>
               <td className="p-2 text-gray-600 max-w-[350px]">{l.description}</td>
               <td className="p-2 text-right font-bold text-red-600">{l.amount > 0 ? `₹${fmt(l.amount)}` : '—'}</td>

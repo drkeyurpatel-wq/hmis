@@ -10,17 +10,17 @@ import { sb } from '@/lib/supabase/browser';
 type ReportType = 'revenue'|'doctors'|'occupancy'|'opd'|'discharge_tat'|'insurance'|'pharmacy'|'lab'|'radiology'|'ar_aging'|'charges'|'centre_comparison';
 
 const REPORT_META: Record<ReportType, { label: string; icon: string; desc: string }> = {
-  revenue: { label: 'Revenue MIS', icon: '💰', desc: 'Multi-centre P&L by date, payor, type' },
+  revenue: { label: 'Revenue MIS', icon: '', desc: 'Multi-centre P&L by date, payor, type' },
   doctors: { label: 'Doctor Performance', icon: '👨‍⚕️', desc: 'OPD/IPD volume, surgeries, revenue per doctor' },
-  occupancy: { label: 'Bed Occupancy', icon: '🛏️', desc: 'Utilization, ALOS, ARPOB by ward and centre' },
-  opd: { label: 'OPD Analytics', icon: '🏥', desc: 'Footfall, wait time, doctor-wise, department-wise' },
+  occupancy: { label: 'Bed Occupancy', icon: '', desc: 'Utilization, ALOS, ARPOB by ward and centre' },
+  opd: { label: 'OPD Analytics', icon: '', desc: 'Footfall, wait time, doctor-wise, department-wise' },
   discharge_tat: { label: 'Discharge TAT', icon: '⏱️', desc: 'LOS analysis, discharge type, payor-wise TAT' },
   insurance: { label: 'Insurance Claims', icon: '🛡️', desc: 'Claims pipeline, TAT, disallowance, settlement' },
-  pharmacy: { label: 'Pharmacy Stock', icon: '💊', desc: 'Stock value, expiry alerts, category breakdown' },
-  lab: { label: 'Lab Volume', icon: '🔬', desc: 'Test volume, pending, by test type' },
+  pharmacy: { label: 'Pharmacy Stock', icon: '', desc: 'Stock value, expiry alerts, category breakdown' },
+  lab: { label: 'Lab Volume', icon: '', desc: 'Test volume, pending, by test type' },
   radiology: { label: 'Radiology', icon: '🩻', desc: 'Study volume, TAT, by modality' },
-  ar_aging: { label: 'AR Aging', icon: '📊', desc: 'Outstanding receivables, aging buckets, payor-wise' },
-  charges: { label: 'Charge Capture', icon: '⚡', desc: 'Auto + manual charges by source, category, date' },
+  ar_aging: { label: 'AR Aging', icon: '', desc: 'Outstanding receivables, aging buckets, payor-wise' },
+  charges: { label: 'Charge Capture', icon: '', desc: 'Auto + manual charges by source, category, date' },
   centre_comparison: { label: 'Centre Comparison', icon: '🏢', desc: '5-centre side-by-side: revenue, OPD, IPD, beds' },
 };
 

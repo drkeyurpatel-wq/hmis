@@ -11,14 +11,14 @@ export interface Leak {
 
 export const LEAK_TYPES = {
   unbilled_charge: { label: 'Unbilled Charge', severity: 'high' as const, icon: '₹' },
-  missing_room_charge: { label: 'Missing Room Charge', severity: 'critical' as const, icon: '🛏️' },
+  missing_room_charge: { label: 'Missing Room Charge', severity: 'critical' as const, icon: '' },
   unbilled_procedure: { label: 'Unbilled Procedure', severity: 'critical' as const, icon: '🔪' },
-  unbilled_pharmacy: { label: 'Unbilled Pharmacy', severity: 'high' as const, icon: '💊' },
-  unbilled_lab: { label: 'Unbilled Lab', severity: 'high' as const, icon: '🧪' },
+  unbilled_pharmacy: { label: 'Unbilled Pharmacy', severity: 'high' as const, icon: '' },
+  unbilled_lab: { label: 'Unbilled Lab', severity: 'high' as const, icon: '' },
   unpaid_bill: { label: 'Unpaid Bill >3d', severity: 'medium' as const, icon: '⏳' },
-  package_overstay: { label: 'Package Overstay', severity: 'high' as const, icon: '📦' },
+  package_overstay: { label: 'Package Overstay', severity: 'high' as const, icon: '' },
   missing_consultation: { label: 'Missing Consult Charge', severity: 'medium' as const, icon: '👨‍⚕️' },
-  missing_nursing: { label: 'Missing Nursing Charge', severity: 'low' as const, icon: '🩺' },
+  missing_nursing: { label: 'Missing Nursing Charge', severity: 'low' as const, icon: '' },
   ot_unbilled: { label: 'OT Not Billed', severity: 'critical' as const, icon: '⚕️' },
 };
 

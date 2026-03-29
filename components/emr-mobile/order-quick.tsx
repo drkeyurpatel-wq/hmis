@@ -41,7 +41,7 @@ export default function OrderQuick({ onPlaceOrder, recentOrders, activeMeds, onF
         {(['lab', 'radiology', 'medication'] as const).map(t => (
           <button key={t} onClick={() => { setOrderType(t); setSearch(''); }}
             className={`flex-1 py-2 text-xs font-medium rounded-lg ${orderType === t ? 'bg-white shadow text-teal-700' : 'text-gray-500'}`}>
-            {t === 'lab' ? '🧪 Lab' : t === 'radiology' ? '📷 Radiology' : '💊 Meds'}
+            {t === 'lab' ? ' Lab' : t === 'radiology' ? '📷 Radiology' : ' Meds'}
           </button>
         ))}
       </div>

@@ -146,7 +146,7 @@ export default function AICopilot({
     p === 'high' ? 'text-red-600' : p === 'medium' ? 'text-orange-600' : 'text-blue-600';
 
   const severityIcon = (s: string) =>
-    s === 'critical' ? '🔴' : s === 'warning' ? '🟡' : 'ℹ️';
+    s === 'critical' ? '●' : s === 'warning' ? '●' : 'ℹ️';
 
   const probColor = (p: string) =>
     p === 'high' ? 'bg-red-100 text-red-700' : p === 'moderate' ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100 text-gray-600';
@@ -269,7 +269,7 @@ export default function AICopilot({
             {localRxAlerts.filter(a => a.severity === 'critical').map((a, i) => (
               <div key={`crit-${i}`} className="bg-red-50 border border-red-300 rounded-lg p-2.5">
                 <div className="flex items-center gap-1.5 mb-0.5">
-                  <span className="text-sm">🔴</span>
+                  <span className="text-sm">●</span>
                   <span className="text-xs font-bold text-red-700">{a.drug}</span>
                   <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-100 text-red-700">{a.type}</span>
                 </div>
@@ -279,7 +279,7 @@ export default function AICopilot({
             {localRxAlerts.filter(a => a.severity === 'warning').map((a, i) => (
               <div key={`warn-${i}`} className="bg-amber-50 border border-amber-200 rounded-lg p-2.5">
                 <div className="flex items-center gap-1.5 mb-0.5">
-                  <span className="text-sm">🟡</span>
+                  <span className="text-sm">●</span>
                   <span className="text-xs font-medium text-amber-700">{a.drug}</span>
                   <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-700">{a.type}</span>
                 </div>
@@ -400,7 +400,7 @@ export default function AICopilot({
         {/* Empty states */}
         {!loading && !error && tab === 'ddx' && !ddxResult && (
           <div className="text-center py-8">
-            <div className="text-3xl mb-2">🔬</div>
+            <div className="text-3xl mb-2"></div>
             <div className="text-sm font-medium text-gray-700 mb-1">AI Differential Diagnosis</div>
             <div className="text-xs text-gray-400 mb-3">Enter complaints and vitals, then click DDx tab to generate differentials</div>
             <button onClick={runDDx} disabled={complaints.length === 0}
@@ -411,7 +411,7 @@ export default function AICopilot({
         )}
         {!loading && !error && tab === 'rx' && !rxResult && (
           <div className="text-center py-8">
-            <div className="text-3xl mb-2">💊</div>
+            <div className="text-3xl mb-2"></div>
             <div className="text-sm font-medium text-gray-700 mb-1">AI Prescription Review</div>
             <div className="text-xs text-gray-400 mb-3">Add diagnoses and prescriptions, then click to review</div>
             <button onClick={runRxReview} disabled={prescriptions.length === 0}

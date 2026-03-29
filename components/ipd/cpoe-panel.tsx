@@ -6,8 +6,8 @@ import { useCPOE, ORDER_TEMPLATES, type CPOEOrder, type OrderTemplate } from '@/
 import { useAuthStore } from '@/lib/store/auth';
 
 const TYPE_ICONS: Record<string, string> = {
-  medication: '💊', lab: '🔬', radiology: '🩻', diet: '🍽️',
-  nursing: '🩺', activity: '🚶', consult: '👨‍⚕️', procedure: '🔪',
+  medication: '', lab: '', radiology: '🩻', diet: '🍽️',
+  nursing: '', activity: '🚶', consult: '👨‍⚕️', procedure: '🔪',
 };
 const PRIORITY_COLORS: Record<string, string> = {
   routine: 'bg-gray-100 text-gray-600', urgent: 'bg-amber-100 text-amber-700',
@@ -119,13 +119,13 @@ export default function CPOEPanel({ admissionId, patientId, onFlash }: Props) {
           {/* Quick order buttons */}
           <div className="flex flex-wrap gap-1">
             {[
-              ['💊 NS 500ml IV', 'medication', 'NS 0.9% 500ml IV over 4hr'],
-              ['💊 Paracetamol 1g IV', 'medication', 'Inj. Paracetamol 1g IV Q8H'],
-              ['🔬 CBC + RBS', 'lab', 'CBC, RBS — routine'],
-              ['🔬 ABG', 'lab', 'Arterial blood gas — stat'],
+              [' NS 500ml IV', 'medication', 'NS 0.9% 500ml IV over 4hr'],
+              [' Paracetamol 1g IV', 'medication', 'Inj. Paracetamol 1g IV Q8H'],
+              [' CBC + RBS', 'lab', 'CBC, RBS — routine'],
+              [' ABG', 'lab', 'Arterial blood gas — stat'],
               ['🩻 CXR', 'radiology', 'Chest X-ray PA view'],
-              ['🩺 Vitals Q4H', 'nursing', 'Vitals monitoring Q4H'],
-              ['🩺 Strict I/O', 'nursing', 'Strict intake/output charting'],
+              [' Vitals Q4H', 'nursing', 'Vitals monitoring Q4H'],
+              [' Strict I/O', 'nursing', 'Strict intake/output charting'],
               ['🍽️ NPO', 'diet', 'Nil per oral'],
               ['🍽️ Liquid diet', 'diet', 'Clear liquid diet'],
             ].map(([label, type, text]) => (

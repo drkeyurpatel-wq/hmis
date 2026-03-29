@@ -174,7 +174,7 @@ export function RoleGuard({ module, children, fallback }: {
 
   return fallback ? <>{fallback}</> : (
     <div className="text-center py-20">
-      <div className="text-4xl mb-3">🔒</div>
+      <div className="text-4xl mb-3"></div>
       <h2 className="text-lg font-semibold text-gray-900">Access restricted</h2>
       <p className="text-sm text-gray-500 mt-1">You don't have permission to access the {module} module.</p>
       <p className="text-xs text-gray-400 mt-2">Contact admin to request access.</p>

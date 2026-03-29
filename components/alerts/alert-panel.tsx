@@ -33,11 +33,11 @@ const TYPE_LABELS: Record<string, string> = {
   deteriorating: 'Deteriorating',
 };
 const TYPE_ICONS: Record<string, string> = {
-  news2_high: '🔴',
-  critical_lab: '🧪',
-  vital_abnormal: '🩺',
-  overdue_med: '💊',
-  deteriorating: '📉',
+  news2_high: '●',
+  critical_lab: '',
+  vital_abnormal: '',
+  overdue_med: '',
+  deteriorating: '',
 };
 
 export default function AlertPanel({ alerts, loading, onAcknowledge, onResolve, onRefresh }: Props) {
@@ -109,7 +109,7 @@ export default function AlertPanel({ alerts, loading, onAcknowledge, onResolve, 
               <div key={a.id} className={`bg-white rounded-xl border p-3 ${SEV_BORDER[a.severity] || ''} ${a.severity === 'emergency' ? 'animate-pulse-subtle' : ''}`}>
                 <div className="flex items-start justify-between">
                   <div className="flex items-start gap-2.5 flex-1">
-                    <span className="text-xl mt-0.5">{TYPE_ICONS[a.alert_type] || '⚠️'}</span>
+                    <span className="text-xl mt-0.5">{TYPE_ICONS[a.alert_type] || '!'}</span>
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-0.5">
                         <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${SEV_COLORS[a.severity]}`}>{a.severity.toUpperCase()}</span>

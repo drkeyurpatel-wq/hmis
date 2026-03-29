@@ -549,7 +549,7 @@ RULES:
         <div className={`bg-white rounded-xl border p-4 ${clearances.pharmacyCleared ? 'border-green-300' : 'border-orange-300'}`}>
           <div className="flex items-center justify-between mb-2">
             <h3 className="text-sm font-semibold flex items-center gap-2">
-              <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs ${clearances.pharmacyCleared ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`}>{clearances.pharmacyCleared ? '✓' : '💊'}</span>
+              <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs ${clearances.pharmacyCleared ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`}>{clearances.pharmacyCleared ? '✓' : ''}</span>
               Pharmacy Clearance
             </h3>
             <button onClick={() => setClearances(c => ({...c, pharmacyCleared: !c.pharmacyCleared}))}
@@ -574,7 +574,7 @@ RULES:
         <div className={`bg-white rounded-xl border p-4 ${clearances.nursingCleared ? 'border-green-300' : 'border-orange-300'}`}>
           <div className="flex items-center justify-between mb-2">
             <h3 className="text-sm font-semibold flex items-center gap-2">
-              <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs ${clearances.nursingCleared ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`}>{clearances.nursingCleared ? '✓' : '🏥'}</span>
+              <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs ${clearances.nursingCleared ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`}>{clearances.nursingCleared ? '✓' : ''}</span>
               Nursing Clearance
             </h3>
             <button onClick={() => setClearances(c => ({...c, nursingCleared: !c.nursingCleared}))}
@@ -629,7 +629,7 @@ RULES:
       {/* ===== STEP 5: FINAL DISCHARGE ===== */}
       {step === 5 && <div className="space-y-4">
         <div className="bg-white rounded-xl border p-6 text-center">
-          <div className="w-16 h-16 mx-auto mb-4 bg-green-100 rounded-full flex items-center justify-center text-3xl">🏥</div>
+          <div className="w-16 h-16 mx-auto mb-4 bg-green-100 rounded-full flex items-center justify-center text-3xl"></div>
           <h2 className="text-lg font-bold text-gray-900 mb-1">Ready to Discharge</h2>
           <p className="text-sm text-gray-500 mb-4">{pt?.first_name} {pt?.last_name} ({admission?.ipd_number})</p>
 

@@ -18,11 +18,11 @@ const WARD_COLORS: Record<string, string> = {
 
 type Tab = 'ward' | 'vitals' | 'mar' | 'io' | 'notes';
 const TABS: { key: Tab; label: string; icon: string }[] = [
-  { key: 'ward', label: 'Ward View', icon: '🏥' },
-  { key: 'vitals', label: 'Vitals', icon: '🩺' },
-  { key: 'mar', label: 'MAR', icon: '💊' },
+  { key: 'ward', label: 'Ward View', icon: '' },
+  { key: 'vitals', label: 'Vitals', icon: '' },
+  { key: 'mar', label: 'MAR', icon: '' },
   { key: 'io', label: 'IO Chart', icon: '🥤' },
-  { key: 'notes', label: 'Notes', icon: '📋' },
+  { key: 'notes', label: 'Notes', icon: '' },
 ];
 
 // ---------- GCS helpers ----------
@@ -176,17 +176,17 @@ function NursingStationInner() {
               <div className="text-xs text-gray-500 mb-2">Dr. {p.doctorName} | {p.department} | {p.ipdNumber} | {p.payorType}</div>
               {/* Alert badges */}
               <div className="flex flex-wrap gap-1.5 mb-2">
-                {p.vitalsDueAt && <span className="px-2 py-1 bg-amber-100 text-amber-700 rounded-lg text-[10px] font-medium">🩺 Vitals due</span>}
-                {p.medsDueCount > 0 && <span className={`px-2 py-1 rounded-lg text-[10px] font-medium ${p.criticalAlerts > 0 ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'}`}>💊 {p.medsDueCount} meds {p.criticalAlerts > 0 ? '(OVERDUE)' : 'due'}</span>}
-                {p.pendingLabs > 0 && <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded-lg text-[10px] font-medium">🧪 {p.pendingLabs} labs</span>}
+                {p.vitalsDueAt && <span className="px-2 py-1 bg-amber-100 text-amber-700 rounded-lg text-[10px] font-medium"> Vitals due</span>}
+                {p.medsDueCount > 0 && <span className={`px-2 py-1 rounded-lg text-[10px] font-medium ${p.criticalAlerts > 0 ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'}`}> {p.medsDueCount} meds {p.criticalAlerts > 0 ? '(OVERDUE)' : 'due'}</span>}
+                {p.pendingLabs > 0 && <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded-lg text-[10px] font-medium"> {p.pendingLabs} labs</span>}
                 {p.news2Score !== null && p.news2Score >= 5 && <span className="px-2 py-1 bg-red-600 text-white rounded-lg text-[10px] font-bold animate-pulse">NEWS2: {p.news2Score}</span>}
               </div>
               {/* Quick action buttons */}
               <div className="flex gap-1 pt-2 border-t">
-                <button onClick={e => { e.stopPropagation(); selectPatient(p, 'vitals'); }} className="px-2 py-1.5 bg-amber-50 text-amber-700 text-[10px] rounded-lg hover:bg-amber-100 font-medium">🩺 Vitals</button>
-                <button onClick={e => { e.stopPropagation(); selectPatient(p, 'mar'); }} className="px-2 py-1.5 bg-blue-50 text-blue-700 text-[10px] rounded-lg hover:bg-blue-100 font-medium">💊 MAR</button>
+                <button onClick={e => { e.stopPropagation(); selectPatient(p, 'vitals'); }} className="px-2 py-1.5 bg-amber-50 text-amber-700 text-[10px] rounded-lg hover:bg-amber-100 font-medium"> Vitals</button>
+                <button onClick={e => { e.stopPropagation(); selectPatient(p, 'mar'); }} className="px-2 py-1.5 bg-blue-50 text-blue-700 text-[10px] rounded-lg hover:bg-blue-100 font-medium"> MAR</button>
                 <button onClick={e => { e.stopPropagation(); selectPatient(p, 'io'); }} className="px-2 py-1.5 bg-green-50 text-green-700 text-[10px] rounded-lg hover:bg-green-100 font-medium">🥤 I/O</button>
-                <button onClick={e => { e.stopPropagation(); selectPatient(p, 'notes'); }} className="px-2 py-1.5 bg-purple-50 text-purple-700 text-[10px] rounded-lg hover:bg-purple-100 font-medium">📋 Notes</button>
+                <button onClick={e => { e.stopPropagation(); selectPatient(p, 'notes'); }} className="px-2 py-1.5 bg-purple-50 text-purple-700 text-[10px] rounded-lg hover:bg-purple-100 font-medium"> Notes</button>
                 <Link href={`/ipd/${p.admissionId}`} onClick={e => e.stopPropagation()} className="px-2 py-1.5 bg-gray-50 text-gray-600 text-[10px] rounded-lg hover:bg-gray-100 ml-auto">Chart →</Link>
               </div>
             </div>

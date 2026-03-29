@@ -5,6 +5,19 @@
 @tailwind utilities;
 
 @layer base {
+  /* Global cursor-pointer for all interactive elements */
+  button, [role="button"], a, select, input[type="checkbox"], input[type="radio"], summary {
+    cursor: pointer;
+  }
+  button:disabled, [disabled] {
+    cursor: not-allowed;
+  }
+  input[type="text"], input[type="email"], input[type="password"], input[type="number"],
+  input[type="tel"], input[type="url"], input[type="search"], input[type="date"],
+  input[type="time"], input[type="datetime-local"], textarea {
+    cursor: text;
+  }
+
   /* ============================================================
      HEALTH1 DESIGN TOKENS (new — all new UI uses these)
      ============================================================ */

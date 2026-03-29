@@ -18,7 +18,7 @@ export const EXAM_SYSTEMS: ExamSystem[] = [
   {
     key: 'general',
     label: 'General',
-    icon: '🏥',
+    icon: '',
     findings: [
       { label: 'Appearance', normal: 'Well-oriented, comfortable', abnormalOptions: ['Ill-looking', 'Toxic', 'Drowsy', 'Restless', 'Pale', 'Icteric', 'Cyanosed', 'Dehydrated', 'Cachetic'] },
       { label: 'Built', normal: 'Average built, well-nourished', abnormalOptions: ['Thin built', 'Obese', 'Malnourished', 'Muscular wasting'] },
@@ -34,7 +34,7 @@ export const EXAM_SYSTEMS: ExamSystem[] = [
   {
     key: 'cvs',
     label: 'Cardiovascular',
-    icon: '❤️',
+    icon: '',
     findings: [
       { label: 'Pulse', normal: 'Regular, normal volume, no radio-radial/radio-femoral delay', abnormalOptions: ['Irregularly irregular', 'Regularly irregular', 'Tachycardia', 'Bradycardia', 'Low volume', 'Bounding', 'Pulsus paradoxus', 'Radio-femoral delay'] },
       { label: 'Heart Sounds', normal: 'S1S2 normal, no murmurs', abnormalOptions: ['Loud S1', 'Soft S1', 'Loud S2', 'S3 gallop', 'S4 gallop', 'Opening snap'] },

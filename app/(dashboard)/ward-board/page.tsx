@@ -172,12 +172,12 @@ function WardBoardInner() {
                 ) : (
                   <div className="mt-1.5 text-[10px] text-red-400">No vitals</div>
                 )}
-                {c.vitals?.lastRecorded && <div className="text-[9px] text-gray-400 mt-0.5">{vitalsAgo(c.vitals.lastRecorded)} ago{vitalsOverdue(c.vitals.lastRecorded) ? ' ⚠️' : ''}</div>}
+                {c.vitals?.lastRecorded && <div className="text-[9px] text-gray-400 mt-0.5">{vitalsAgo(c.vitals.lastRecorded)} ago{vitalsOverdue(c.vitals.lastRecorded) ? ' !' : ''}</div>}
 
                 {/* Badges */}
                 <div className="flex gap-1 mt-1.5">
-                  {c.medsDue > 0 && <span className="text-[9px] bg-amber-200 text-amber-800 px-1 py-0.5 rounded">💊{c.medsDue}</span>}
-                  {c.criticalAlerts > 0 && <span className="text-[9px] bg-red-200 text-red-800 px-1 py-0.5 rounded animate-pulse">⚠️{c.criticalAlerts}</span>}
+                  {c.medsDue > 0 && <span className="text-[9px] bg-amber-200 text-amber-800 px-1 py-0.5 rounded">{c.medsDue}</span>}
+                  {c.criticalAlerts > 0 && <span className="text-[9px] bg-red-200 text-red-800 px-1 py-0.5 rounded animate-pulse">!{c.criticalAlerts}</span>}
                 </div>
               </Link>
             )}

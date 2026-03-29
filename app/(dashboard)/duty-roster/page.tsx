@@ -202,7 +202,7 @@ function Inner() {
             <div className="space-y-2">
               {dr.coverageGaps.map((g, i) => (
                 <div key={i} className="flex items-center gap-3 p-3 bg-red-50 border border-red-200 rounded">
-                  <span className="text-red-600 text-lg">⚠️</span>
+                  <span className="text-red-600 text-xs font-bold">ALERT</span>
                   <div>
                     <div className="font-medium">{g.ward} — {g.shift} ({g.date})</div>
                     <div className="text-sm text-red-600">{g.staffType}: {g.assigned} assigned, needs {g.required}</div>

@@ -8,7 +8,7 @@ import { sb } from '@/lib/supabase/browser';
 const PRIORITY_COLORS: Record<string, string> = { routine: 'bg-blue-100 text-blue-700', urgent: 'bg-amber-100 text-amber-700', emergency: 'bg-red-100 text-red-700' };
 const STATUS_COLORS: Record<string, string> = { planning: 'bg-amber-100 text-amber-700', ready: 'bg-green-100 text-green-700', blocked: 'bg-red-100 text-red-700', cancelled: 'bg-gray-200 text-gray-600', completed: 'bg-blue-100 text-blue-700' };
 const ITEM_COLORS: Record<string, string> = { pending: 'bg-amber-400', in_progress: 'bg-amber-400', done: 'bg-green-500', waived: 'bg-green-400', blocked: 'bg-red-500' };
-const TRAFFIC: Record<string, string> = { pending: '🟡', in_progress: '🟡', done: '🟢', waived: '🟢', blocked: '🔴' };
+const TRAFFIC: Record<string, string> = { pending: '●', in_progress: '●', done: '●', waived: '●', blocked: '●' };
 const CAT_LABELS: Record<string, string> = {
   pre_op_investigation: 'Pre-Op Investigations', anaesthesia_fitness: 'Anaesthesia Fitness',
   insurance_preauth: 'Insurance Pre-Auth', consent: 'Consent', blood_arrangement: 'Blood Arrangement',

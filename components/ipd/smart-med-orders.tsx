@@ -196,7 +196,7 @@ export default function SmartMedOrders({ meds, admissionId, staffId, admissionDx
               {interactions.map((ix, i) => (
                 <div key={i} className={`rounded-lg border p-2.5 ${sevColor(ix.severity)}`}>
                   <div className="flex items-center gap-2 text-xs font-medium">
-                    <span>{ix.severity === 'major' ? '⚠️' : '⚡'} INTERACTION: {ix.drug1} ↔ {ix.drug2}</span>
+                    <span>{ix.severity === 'major' ? '!' : ''} INTERACTION: {ix.drug1} ↔ {ix.drug2}</span>
                     <span className={`px-1.5 py-0.5 rounded text-[10px] uppercase font-bold ${sevColor(ix.severity)}`}>{ix.severity}</span>
                   </div>
                   <div className="text-[11px] mt-0.5">{ix.detail}</div>
@@ -206,7 +206,7 @@ export default function SmartMedOrders({ meds, admissionId, staffId, admissionDx
 
             {/* Warning */}
             {selectedDrug.warnings && <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-2 text-xs text-yellow-800">
-              <span className="font-medium">⚠️ Warning:</span> {selectedDrug.warnings}
+              <span className="font-medium">! Warning:</span> {selectedDrug.warnings}
             </div>}
 
             {/* Dose — click chips */}
@@ -248,7 +248,7 @@ export default function SmartMedOrders({ meds, admissionId, staffId, admissionDx
               <input type="text" value={form.specialInstructions} onChange={e => setForm(f => ({...f, specialInstructions: e.target.value}))} className="w-full px-3 py-2 border rounded-lg text-sm" placeholder="e.g., Before food, dilute in 100ml NS, titrate to BP..." /></div>
 
             <button onClick={saveMed} className="px-4 py-2 bg-green-600 text-white text-sm rounded-lg font-medium">
-              {interactions.some(i => i.severity === 'major') ? '⚠️ Order with Interaction Warning' : 'Order Medication'}
+              {interactions.some(i => i.severity === 'major') ? '! Order with Interaction Warning' : 'Order Medication'}
             </button>
           </>
         )}

@@ -163,7 +163,7 @@ export default function MicrobiologyPanel({ orders, staffId, onFlash }: Props) {
                   <div className="flex-1"><label className="text-[10px] text-gray-500">Organism</label>
                     <select value={addOrgId} onChange={e => setAddOrgId(e.target.value)} className="w-full px-2 py-1.5 border rounded-lg text-sm">
                       <option value="">Select organism...</option>
-                      {organisms.map(o => <option key={o.id} value={o.id}>{o.organism_name} {o.is_alert_organism ? '⚠️' : ''}</option>)}
+                      {organisms.map(o => <option key={o.id} value={o.id}>{o.organism_name} {o.is_alert_organism ? '!' : ''}</option>)}
                     </select></div>
                   <div className="w-28"><label className="text-[10px] text-gray-500">Growth</label>
                     <select value={addOrgQty} onChange={e => setAddOrgQty(e.target.value)} className="w-full px-2 py-1.5 border rounded-lg text-sm">

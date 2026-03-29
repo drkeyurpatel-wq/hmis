@@ -207,7 +207,7 @@ export default function AdmissionWizard({ onDone, onFlash, preselectedPatientId 
             <div className="grid grid-cols-4 gap-2 mb-4">
               {['self', 'cashless', 'reimbursement', 'pmjay'].map(t => (
                 <button key={t} onClick={() => setPayorType(t)} className={`py-3 rounded-lg border text-sm font-medium ${payorType === t ? 'bg-teal-600 text-white border-teal-600' : 'bg-white text-gray-600 hover:bg-gray-50'}`}>
-                  {t === 'self' ? '💰 Self Pay' : t === 'cashless' ? '🏥 Cashless' : t === 'reimbursement' ? '📄 Reimbursement' : '🇮🇳 PMJAY'}
+                  {t === 'self' ? ' Self Pay' : t === 'cashless' ? ' Cashless' : t === 'reimbursement' ? ' Reimbursement' : '🇮🇳 PMJAY'}
                 </button>
               ))}
             </div>

@@ -291,7 +291,7 @@ function Patient360Inner() {
                   <div className="flex items-center justify-between"><span className="text-xs font-semibold">{lab.test_name}</span><span className="text-[10px] text-gray-400">{ago(lab.ordered_at)}</span></div>
                   {(lab.results as any)?.slice(0,4).map((r: any, i: number) => (
                     <div key={i} className={`flex justify-between text-[11px] mt-0.5 ${r.is_critical?'text-red-600 font-bold':r.is_abnormal?'text-orange-600':'text-gray-600'}`}>
-                      <span>{r.parameter_name}</span><span>{r.result_value} {r.unit}{r.is_critical?' ⚠️':r.is_abnormal?' ↑':''}</span></div>
+                      <span>{r.parameter_name}</span><span>{r.result_value} {r.unit}{r.is_critical?' !':r.is_abnormal?' ↑':''}</span></div>
                   ))}
                 </div>
               ))}</div> : <div className="text-xs text-gray-400 text-center py-3">No results in 48h</div>}

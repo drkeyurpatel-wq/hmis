@@ -61,8 +61,8 @@ function PharmacyInner() {
   const [dispLoading, setDispLoading] = useState(false);
 
   const tabs: [Tab,string,string][] = [
-    ['dispensing','Dispensing','💊'],['inventory','Inventory','📦'],['drug_master','Drug Master','📋'],
-    ['controlled','Controlled','🔒'],['more','Transfers & Returns','🔄'],
+    ['dispensing','Dispensing',''],['inventory','Inventory',''],['drug_master','Drug Master',''],
+    ['controlled','Controlled',''],['more','Transfers & Returns','🔄'],
   ];
 
   const daysToExpiry = (d: string) => Math.ceil((new Date(d).getTime() - Date.now()) / 86400000);

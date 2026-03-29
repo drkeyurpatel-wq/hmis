@@ -1,6 +1,6 @@
 'use client';
 import React, { useState } from 'react';
-import { createClient } from '@/lib/supabase/client';
+import { sb } from '@/lib/supabase/browser';
 
 const GENDERS = ['Male', 'Female', 'Other'];
 const BLOOD_GROUPS = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
@@ -14,9 +14,6 @@ const CI = 'w-full px-3 py-2.5 rounded-lg border border-gray-300 text-sm outline
 const CL = 'block text-xs font-semibold text-gray-600 mb-1';
 const CC = 'bg-white rounded-2xl border border-gray-200 shadow-sm p-6';
 
-function sb() {
-  return createClient();
-}
 
 export default function PatientRegistrationPage() {
   const [step, setStep] = useState(1);
@@ -66,7 +63,7 @@ export default function PatientRegistrationPage() {
     setSaving(true);
     setError('');
     try {
-      const supabase = sb();
+      const supabase = sb()!;
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { setError('Not logged in'); setSaving(false); return; }
       const { data: staff } = await supabase.from('hmis_staff').select('primary_centre_id').eq('auth_user_id', user.id).single();
@@ -102,7 +99,7 @@ export default function PatientRegistrationPage() {
     return (
       <div className="max-w-md mx-auto mt-16 text-center">
         <div className={CC}>
-          <div className="text-5xl mb-4">✅</div>
+          <svg className="mx-auto mb-4" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg>
           <h2 className="text-lg font-bold">Patient Registered</h2>
           <div className="mt-3 text-xl font-mono bg-h1-teal-light text-h1-navy px-4 py-3 rounded-xl font-bold">{done}</div>
           <p className="mt-2 text-sm text-gray-500">{firstName} {lastName} — {phone}</p>
@@ -133,7 +130,7 @@ export default function PatientRegistrationPage() {
         ))}
       </div>
 
-      {error && <div className="mb-4 px-4 py-3 bg-red-50 border border-red-200 text-red-700 rounded-xl text-sm">{error}<button onClick={() => setError('')} className="float-right text-red-400">✕</button></div>}
+      {error && <div className="mb-4 px-4 py-3 bg-red-50 border border-red-200 text-red-700 rounded-xl text-sm">{error}<button onClick={() => setError('')} className="float-right text-red-400"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div>}
 
       <div className={CC}>
         {step === 1 && <div className="space-y-4">

@@ -131,16 +131,16 @@ export default function PackageBuilder({ centreId, onFlash }: Props) {
         <div><label className="text-xs text-gray-500 mb-1 block">Quick Add Components</label>
           <div className="flex flex-wrap gap-1">
             {[
-              ['🛏️ Bed charges', 'Bed Charges', 1, los],
+              [' Bed charges', 'Bed Charges', 1, los],
               ['👩‍⚕️ Nursing', 'Nursing Charges', 1, los],
               ['👨‍⚕️ MO Visit', 'Medical Officer', 1, los],
               ['🍽️ Diet', 'Diet Charges', 1, los],
-              ['🔬 CBC', 'CBC', 1, 1], ['🔬 RBS', 'Random Blood Sugar', 1, 1],
-              ['🔬 RFT', 'Renal Function', 1, 1], ['🔬 LFT', 'Liver Function', 1, 1],
+              [' CBC', 'CBC', 1, 1], [' RBS', 'Random Blood Sugar', 1, 1],
+              [' RFT', 'Renal Function', 1, 1], [' LFT', 'Liver Function', 1, 1],
               ['🩻 X-Ray', 'X-RAY CHEST', 1, 1], ['🩻 ECG', 'ECG', 1, 1],
-              ['💊 Admission Kit', 'Admission Kit', 1, 1],
-              ['🏥 Registration', 'Registration', 1, 1],
-              ['🏥 OT Charges', 'OT Charges', 1, 1],
+              [' Admission Kit', 'Admission Kit', 1, 1],
+              [' Registration', 'Registration', 1, 1],
+              [' OT Charges', 'OT Charges', 1, 1],
             ].map(([label, term, qty, days]) => (
               <button key={label as string} onClick={() => quickAdd(term as string, qty as number, days as number)}
                 className="px-2 py-1 bg-gray-50 border rounded text-[9px] hover:bg-h1-teal-light">{label as string}</button>

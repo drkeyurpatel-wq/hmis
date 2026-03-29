@@ -10,7 +10,8 @@ import { sb } from '@/lib/supabase/browser';
 export interface HandoverSection {
   title: string;
   severity: 'critical' | 'warning' | 'info' | 'normal';
-  emoji: string;
+  emoji?: string;
+  icon?: string;
   items: HandoverItem[];
 }
 
@@ -111,7 +112,7 @@ export function useShiftHandover(centreId: string | null) {
       }
 
       if (critItems.length > 0) {
-        sections.push({ title: 'CRITICAL — Needs Immediate Attention', severity: 'critical', emoji: '🔴', items: critItems });
+        sections.push({ title: 'CRITICAL — Needs Immediate Attention', severity: 'critical', icon: 'alert-circle', items: critItems });
       }
 
       // 2. NEW ADMISSIONS during shift
@@ -133,7 +134,7 @@ export function useShiftHandover(centreId: string | null) {
         });
         newAdmCount++;
       }
-      if (admItems.length > 0) sections.push({ title: 'NEW ADMISSIONS', severity: 'warning', emoji: '🏥', items: admItems });
+      if (admItems.length > 0) sections.push({ title: 'NEW ADMISSIONS', severity: 'warning', emoji: '', items: admItems });
 
       // 3. DISCHARGES during shift (actual_discharge, not discharge_date)
       const { data: discharges } = await sb()!.from('hmis_admissions')
@@ -169,7 +170,7 @@ export function useShiftHandover(centreId: string | null) {
         });
         medChangeCount++;
       }
-      if (medItems.length > 0) sections.push({ title: 'MEDICATION CHANGES', severity: 'info', emoji: '💊', items: medItems.slice(0, 15) });
+      if (medItems.length > 0) sections.push({ title: 'MEDICATION CHANGES', severity: 'info', emoji: '', items: medItems.slice(0, 15) });
 
       // 5. DOCTOR ROUNDS — join through admission for centre
       const { data: rounds } = await sb()!.from('hmis_doctor_rounds')
@@ -228,7 +229,7 @@ export function useShiftHandover(centreId: string | null) {
         .select('id', { count: 'exact', head: true })
         .eq('centre_id', centreId).eq('status', 'active');
 
-      sections.push({ title: 'BED OCCUPANCY SNAPSHOT', severity: 'normal', emoji: '🛏️',
+      sections.push({ title: 'BED OCCUPANCY SNAPSHOT', severity: 'normal', icon: 'bed-double',
         items: [{ patientName: '', detail: `${occupied}/${centreBeds.length} beds occupied · ${available} available · ${totalAdmitted || 0} patients admitted` }] });
 
       const { data: centre } = await sb()!.from('hmis_centres').select('name').eq('id', centreId).single();

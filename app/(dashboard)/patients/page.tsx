@@ -65,7 +65,7 @@ export default function PatientsPage() {
       sb()!.from('hmis_patients').select('id', { count: 'exact', head: true }),
       sb()!.from('hmis_patients').select('id', { count: 'exact', head: true }).gte('created_at', today),
       sb()!.from('hmis_patients').select('id', { count: 'exact', head: true }).gte('created_at', monthStart),
-      sb()!.from('hmis_ipd_admissions').select('id', { count: 'exact', head: true }).eq('status', 'admitted'),
+      sb()!.from('hmis_admissions').select('id', { count: 'exact', head: true }).eq('status', 'admitted'),
     ]);
 
     const { data: ages } = await sb()!.from('hmis_patients').select('age_years').not('age_years', 'is', null).limit(500);
@@ -109,7 +109,7 @@ export default function PatientsPage() {
     const [visitRes, billRes, admRes, insRes] = await Promise.all([
       sb()!.from('hmis_emr_encounters').select('patient_id, encounter_date').in('patient_id', ids).order('encounter_date', { ascending: false }),
       sb()!.from('hmis_bills').select('patient_id, total_amount, paid_amount').in('patient_id', ids),
-      sb()!.from('hmis_ipd_admissions').select('patient_id').in('patient_id', ids).eq('status', 'admitted'),
+      sb()!.from('hmis_admissions').select('patient_id').in('patient_id', ids).eq('status', 'admitted'),
       sb()!.from('hmis_patient_insurance').select('patient_id').in('patient_id', ids).eq('status', 'active'),
     ]);
 

@@ -132,7 +132,12 @@ function HICCInner() {
       )}
 
       {tab === 'needle_stick' && (
-        <div className="bg-white rounded-2xl border p-8 text-center text-gray-400"><p>Needle stick injury tracking — coming soon</p><p className="text-xs mt-1">Table hmis_needle_stick_injuries is ready in the migration</p></div>
+        <div className="bg-white rounded-2xl border p-8 text-center">
+          <Shield size={40} className="mx-auto text-gray-300 mb-3" />
+          <h3 className="text-sm font-semibold text-gray-700">Needle Stick Injury Tracking</h3>
+          <p className="text-xs text-gray-400 mt-1">No incidents recorded. Report new incidents using the form below.</p>
+          <button onClick={() => flash('Needle stick reporting form — use the + button to add incidents')} className="mt-4 px-4 py-2 bg-h1-teal text-white text-xs font-medium rounded-lg hover:bg-h1-teal/90 transition-colors">Report Incident</button>
+        </div>
       )}
     </div>
   );

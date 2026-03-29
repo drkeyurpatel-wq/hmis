@@ -173,7 +173,7 @@ export function useMyWorkQueue(centreId: string | null, staffId: string | null, 
         items.push({
           id: `crit-${c.id}`, type: 'critical_alert', patientId: c.patient_id,
           patientName: `${pt.first_name} ${pt.last_name || ''}`, patientUhid: pt.uhid,
-          title: `⚠️ CRITICAL: ${c.parameter_name} = ${c.result_value}`,
+          title: `! CRITICAL: ${c.parameter_name} = ${c.result_value}`,
           urgency: 'critical',
           action: `/patients/${c.patient_id}`,
           actionLabel: 'Respond',

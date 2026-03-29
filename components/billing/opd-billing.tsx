@@ -202,7 +202,7 @@ export default function OPDBilling({ centreId, staffId, patient, doctor, visitId
       {/* STEP 3: Done */}
       {step === 'done' && bill && <>
         <div className="text-center py-6">
-          <div className="text-4xl mb-2">✅</div>
+          <svg className="mx-auto mb-2" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg>
           <div className="text-lg font-bold">Payment Received</div>
           <div className="text-sm text-gray-500">Bill: {bill.bill_number}</div>
           <div className="text-2xl font-bold text-green-700 mt-2">{fmt(net)}</div>

@@ -155,7 +155,7 @@ function HandoverInner() {
 
       {!handover.report && !handover.loading && (
         <div className="bg-gray-50 rounded-xl p-12 text-center mb-6">
-          <div className="text-4xl mb-3">📋</div>
+          <div className="text-4xl mb-3"></div>
           <h3 className="text-sm font-semibold text-gray-700 mb-1">No handover report yet</h3>
           <p className="text-xs text-gray-400">Select shift and click Generate to create a structured handover document.</p>
         </div>

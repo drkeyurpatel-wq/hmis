@@ -15,12 +15,12 @@ const MOD_COLORS: Record<string, string> = {
 };
 
 const MOD_ICONS: Record<string, string> = {
-  XR: '🩻', CT: '🔬', MRI: '🧲', USG: '📡', ECHO: '❤️', DEXA: '🦴', MAMMO: '🩺', FLUORO: '📸',
+  XR: '🩻', CT: '', MRI: '🧲', USG: '📡', ECHO: '', DEXA: '🦴', MAMMO: '', FLUORO: '📸',
 };
 
 function StudyCard({ study, pacsConfig, onExpand }: { study: PatientStudy; pacsConfig: any; onExpand: () => void }) {
   const modCfg = MOD_COLORS[study.modality] || 'bg-gray-100 text-gray-700 border-gray-200';
-  const icon = MOD_ICONS[study.modality] || '📋';
+  const icon = MOD_ICONS[study.modality] || '';
   const date = new Date(study.date);
   const dateStr = date.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
   const timeStr = date.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });

@@ -161,7 +161,7 @@ export async function handleLinkConfirm(
   const careContextIds = linkReq?.care_context_ids || [];
 
   // Fetch encounter details
-  const { data: encounters } = await supabase.from('hmis_encounters')
+  const { data: encounters } = await supabase.from('hmis_emr_encounters')
     .select('id, encounter_type, created_at')
     .in('id', careContextIds);
 
@@ -196,7 +196,7 @@ export async function buildHealthRecord(
   const records: HealthRecord[] = [];
 
   // Load encounter with all related data
-  const { data: encounter } = await supabase.from('hmis_encounters')
+  const { data: encounter } = await supabase.from('hmis_emr_encounters')
     .select(`
       *, patient:hmis_patients(*),
       prescriptions:hmis_prescriptions(*, items:hmis_prescription_items(*)),
