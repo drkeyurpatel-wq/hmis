@@ -2704,3 +2704,241 @@ $$;
 -- 4. SELECT count(*) FROM hmis_abdm_consent_requests; -- should not error
 -- ═══════════════════════════════════════════════════════════════
 
+
+-- ═══════════════════════════════════════════════════════════════
+-- SOURCE: cdss_overrides_migration.sql
+-- ═══════════════════════════════════════════════════════════════
+-- cdss_overrides_migration.sql
+-- Tracks when doctors override CDSS alerts (drug interactions, dose warnings, allergy conflicts)
+
+CREATE TABLE IF NOT EXISTS hmis_cdss_overrides (
+  id              uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  centre_id       uuid REFERENCES hmis_centres(id),
+  patient_id      uuid NOT NULL REFERENCES hmis_patients(id),
+  encounter_id    uuid,                           -- EMR encounter or admission
+  staff_id        uuid NOT NULL REFERENCES hmis_staff(id),
+  alert_type      text NOT NULL CHECK (alert_type IN (
+    'drug_interaction', 'dose_warning', 'allergy_conflict', 'contraindication'
+  )),
+  severity        text NOT NULL CHECK (severity IN ('info', 'warning', 'critical', 'contraindicated')),
+  alert_message   text NOT NULL,
+  drug_name       text,
+  interacting_drug text,                          -- for interaction alerts
+  override_reason text,                           -- optional doctor justification
+  created_at      timestamptz DEFAULT now()
+);
+
+COMMENT ON TABLE hmis_cdss_overrides IS 'Audit trail of CDSS alert overrides by physicians';
+
+CREATE INDEX IF NOT EXISTS idx_cdss_overrides_patient ON hmis_cdss_overrides (patient_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_cdss_overrides_staff ON hmis_cdss_overrides (staff_id, created_at DESC);
+
+-- RLS
+ALTER TABLE hmis_cdss_overrides ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Staff can view cdss overrides"
+  ON hmis_cdss_overrides FOR SELECT USING (true);
+
+CREATE POLICY "Staff can create cdss overrides"
+  ON hmis_cdss_overrides FOR INSERT WITH CHECK (true);
+
+-- ═══════════════════════════════════════════════════════════════
+-- SOURCE: notification_preferences.sql
+-- ═══════════════════════════════════════════════════════════════
+-- notification_preferences.sql
+-- Stores per-centre notification preferences (which events trigger WhatsApp / SMS / email)
+-- Also creates a log table for audit trail
+
+-- ============================================================
+-- NOTIFICATION PREFERENCES
+-- ============================================================
+CREATE TABLE IF NOT EXISTS hmis_notification_preferences (
+  id            uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  centre_id     uuid NOT NULL REFERENCES hmis_centres(id) ON DELETE CASCADE,
+  event_type    text NOT NULL CHECK (event_type IN (
+    'appointment_reminder', 'lab_ready', 'pharmacy_ready', 'discharge_summary',
+    'opd_token', 'payment_receipt', 'follow_up_reminder'
+  )),
+  channel       text NOT NULL DEFAULT 'whatsapp' CHECK (channel IN ('whatsapp', 'sms', 'email')),
+  is_enabled    boolean NOT NULL DEFAULT true,
+  template_text text,  -- optional custom template override
+  created_at    timestamptz DEFAULT now(),
+  updated_at    timestamptz DEFAULT now(),
+
+  UNIQUE (centre_id, event_type, channel)
+);
+
+COMMENT ON TABLE hmis_notification_preferences IS 'Per-centre toggle for notification events and channels';
+
+-- Index for fast lookup in API route
+CREATE INDEX IF NOT EXISTS idx_notif_pref_lookup
+  ON hmis_notification_preferences (centre_id, event_type, channel);
+
+-- ============================================================
+-- NOTIFICATION LOG (audit trail)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS hmis_notification_log (
+  id            uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  centre_id     uuid REFERENCES hmis_centres(id),
+  event_type    text NOT NULL,
+  channel       text NOT NULL DEFAULT 'whatsapp',
+  phone         text,
+  status        text NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'sent', 'failed', 'skipped')),
+  message_id    text,        -- WhatsApp message ID from Meta API
+  error_message text,
+  created_at    timestamptz DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_notif_log_centre_date
+  ON hmis_notification_log (centre_id, created_at DESC);
+
+-- ============================================================
+-- SEED DEFAULT PREFERENCES (one row per event per centre)
+-- ============================================================
+INSERT INTO hmis_notification_preferences (centre_id, event_type, channel, is_enabled, template_text)
+SELECT
+  c.id,
+  ev.event_type,
+  'whatsapp',
+  true,
+  ev.default_template
+FROM hmis_centres c
+CROSS JOIN (VALUES
+  ('appointment_reminder', 'Hello {{patient_name}}, reminder for your appointment with {{doctor_name}} on {{date}} at {{time}} at {{centre_name}}.'),
+  ('lab_ready',            'Hello {{patient_name}}, your lab results for {{test_names}} are ready. Collect from {{collection_point}}.'),
+  ('pharmacy_ready',       'Hello {{patient_name}}, your {{medicine_count}} medicines are ready at {{pharmacy_counter}}.'),
+  ('discharge_summary',    'Hello {{patient_name}}, IPD# {{ipd_number}} discharge on {{discharge_date}}. Follow-up: {{follow_up_date}}.'),
+  ('opd_token',            'Hello {{patient_name}}, your token is {{token_number}}. Doctor: {{doctor_name}}. Wait: {{estimated_wait}}.'),
+  ('payment_receipt',      'Hello {{patient_name}}, payment received. Receipt: {{receipt_number}}, Amount: {{amount}}, Mode: {{payment_mode}}.'),
+  ('follow_up_reminder',   'Hello {{patient_name}}, follow-up with {{doctor_name}} on {{date}} at {{centre_name}}. {{advice}}')
+) AS ev(event_type, default_template)
+ON CONFLICT (centre_id, event_type, channel) DO NOTHING;
+
+-- ============================================================
+-- RLS
+-- ============================================================
+ALTER TABLE hmis_notification_preferences ENABLE ROW LEVEL SECURITY;
+ALTER TABLE hmis_notification_log ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Staff can view notification preferences"
+  ON hmis_notification_preferences FOR SELECT
+  USING (true);
+
+CREATE POLICY "Staff can manage notification preferences"
+  ON hmis_notification_preferences FOR ALL
+  USING (true)
+  WITH CHECK (true);
+
+CREATE POLICY "Staff can view notification log"
+  ON hmis_notification_log FOR SELECT
+  USING (true);
+
+CREATE POLICY "System can insert notification log"
+  ON hmis_notification_log FOR INSERT
+  WITH CHECK (true);
+
+-- ============================================================
+-- SEED SMS PREFERENCES (disabled by default — admin enables per centre)
+-- ============================================================
+INSERT INTO hmis_notification_preferences (centre_id, event_type, channel, is_enabled, template_text)
+SELECT
+  c.id,
+  ev.event_type,
+  'sms',
+  false,
+  ev.default_template
+FROM hmis_centres c
+CROSS JOIN (VALUES
+  ('appointment_reminder', 'Hello {{patient_name}}, reminder: appointment with {{doctor_name}} on {{date}} at {{time}}. Health1 Hospital'),
+  ('lab_ready',            'Hello {{patient_name}}, your lab results for {{test_names}} are ready. Collect from Lab Reception. Health1'),
+  ('pharmacy_ready',       'Hello {{patient_name}}, your {{medicine_count}} medicines are ready at Pharmacy Counter. Health1'),
+  ('discharge_summary',    'Hello {{patient_name}}, IPD# {{ipd_number}} discharged on {{discharge_date}}. Follow-up: {{follow_up_date}}. Health1'),
+  ('opd_token',            'Hello {{patient_name}}, token {{token_number}} for Dr {{doctor_name}}. Wait: {{estimated_wait}}. Health1'),
+  ('payment_receipt',      'Hello {{patient_name}}, payment received. Receipt: {{receipt_number}}, Amount: {{amount}}. Health1'),
+  ('follow_up_reminder',   'Hello {{patient_name}}, follow-up with {{doctor_name}} on {{date}}. Health1 Hospital')
+) AS ev(event_type, default_template)
+ON CONFLICT (centre_id, event_type, channel) DO NOTHING;
+
+-- ============================================================
+-- INTEGRATION CONFIG (MSG91, Resend, etc.)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS hmis_integration_config (
+  id          uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  provider    text NOT NULL,  -- 'msg91', 'resend', 'razorpay', etc.
+  config_json jsonb NOT NULL DEFAULT '{}'::jsonb,
+  is_active   boolean DEFAULT true,
+  centre_id   uuid REFERENCES hmis_centres(id),  -- NULL = global
+  created_at  timestamptz DEFAULT now(),
+  updated_at  timestamptz DEFAULT now(),
+  UNIQUE (provider, centre_id)
+);
+
+COMMENT ON TABLE hmis_integration_config IS 'Third-party integration credentials and config (MSG91, Resend, etc.)';
+
+ALTER TABLE hmis_integration_config ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Staff can view integration config"
+  ON hmis_integration_config FOR SELECT USING (true);
+
+CREATE POLICY "Admin can manage integration config"
+  ON hmis_integration_config FOR ALL USING (true) WITH CHECK (true);
+
+-- Updated_at trigger
+CREATE OR REPLACE FUNCTION update_notif_pref_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = now();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_notif_pref_updated_at
+  BEFORE UPDATE ON hmis_notification_preferences
+  FOR EACH ROW EXECUTE FUNCTION update_notif_pref_updated_at();
+
+-- ═══════════════════════════════════════════════════════════════
+-- SOURCE: report_subscriptions.sql
+-- ═══════════════════════════════════════════════════════════════
+-- report_subscriptions.sql
+-- Automated report email subscriptions
+
+CREATE TABLE IF NOT EXISTS hmis_report_subscriptions (
+  id          uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  centre_id   uuid NOT NULL REFERENCES hmis_centres(id) ON DELETE CASCADE,
+  email       text NOT NULL,
+  report_type text NOT NULL DEFAULT 'daily_summary' CHECK (report_type IN (
+    'daily_summary', 'revenue', 'occupancy', 'lab_tat', 'pharmacy',
+    'doctor_performance', 'discharge_tat', 'insurance', 'weekly_summary', 'monthly_summary'
+  )),
+  frequency   text NOT NULL DEFAULT 'daily' CHECK (frequency IN ('daily', 'weekly', 'monthly')),
+  is_active   boolean DEFAULT true,
+  last_sent_at timestamptz,
+  created_at  timestamptz DEFAULT now()
+);
+
+COMMENT ON TABLE hmis_report_subscriptions IS 'Email recipients for automated daily/weekly/monthly reports';
+
+CREATE INDEX IF NOT EXISTS idx_report_subs_active
+  ON hmis_report_subscriptions (is_active, frequency);
+
+-- Seed default subscription
+INSERT INTO hmis_report_subscriptions (centre_id, email, report_type, frequency, is_active)
+SELECT
+  c.id,
+  'keyaboratory@gmail.com',
+  'daily_summary',
+  'daily',
+  true
+FROM hmis_centres c
+WHERE c.code = 'SHL' OR c.name ILIKE '%shilaj%'
+LIMIT 1
+ON CONFLICT DO NOTHING;
+
+-- RLS
+ALTER TABLE hmis_report_subscriptions ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Staff can view report subscriptions"
+  ON hmis_report_subscriptions FOR SELECT USING (true);
+
+CREATE POLICY "Staff can manage report subscriptions"
+  ON hmis_report_subscriptions FOR ALL USING (true) WITH CHECK (true);
