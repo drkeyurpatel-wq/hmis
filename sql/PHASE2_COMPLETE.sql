@@ -31,6 +31,7 @@ CREATE INDEX IF NOT EXISTS idx_module_config_centre ON hmis_module_config(centre
 
 ALTER TABLE hmis_module_config ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS module_config_tenant ON hmis_module_config;
+DROP POLICY IF EXISTS "module_config_tenant" ON hmis_module_config;
 CREATE POLICY module_config_tenant ON hmis_module_config
   USING (centre_id IN (SELECT centre_id FROM hmis_staff_centres WHERE staff_id = auth.uid()));
 
@@ -182,10 +183,12 @@ ALTER TABLE hmis_bed_turnover ENABLE ROW LEVEL SECURITY;
 ALTER TABLE hmis_bed_waitlist ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS bed_turnover_tenant ON hmis_bed_turnover;
+DROP POLICY IF EXISTS "bed_turnover_tenant" ON hmis_bed_turnover;
 CREATE POLICY bed_turnover_tenant ON hmis_bed_turnover
   USING (centre_id IN (SELECT centre_id FROM hmis_staff_centres WHERE staff_id = auth.uid()));
 
 DROP POLICY IF EXISTS bed_waitlist_tenant ON hmis_bed_waitlist;
+DROP POLICY IF EXISTS "bed_waitlist_tenant" ON hmis_bed_waitlist;
 CREATE POLICY bed_waitlist_tenant ON hmis_bed_waitlist
   USING (centre_id IN (SELECT centre_id FROM hmis_staff_centres WHERE staff_id = auth.uid()));
 
@@ -232,6 +235,7 @@ CREATE INDEX IF NOT EXISTS idx_clinical_alerts_admission ON hmis_clinical_alerts
 -- RLS
 ALTER TABLE hmis_clinical_alerts ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "clinical_alerts_staff" ON hmis_clinical_alerts;
 CREATE POLICY "clinical_alerts_staff" ON hmis_clinical_alerts
   FOR ALL USING (
     EXISTS (
@@ -333,10 +337,12 @@ ALTER TABLE hmis_consent_templates ENABLE ROW LEVEL SECURITY;
 ALTER TABLE hmis_consent_audit ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS consent_tpl_tenant ON hmis_consent_templates;
+DROP POLICY IF EXISTS "consent_tpl_tenant" ON hmis_consent_templates;
 CREATE POLICY consent_tpl_tenant ON hmis_consent_templates
   USING (centre_id IN (SELECT centre_id FROM hmis_staff_centres WHERE staff_id = auth.uid()));
 
 DROP POLICY IF EXISTS consent_audit_tenant ON hmis_consent_audit;
+DROP POLICY IF EXISTS "consent_audit_tenant" ON hmis_consent_audit;
 CREATE POLICY consent_audit_tenant ON hmis_consent_audit
   USING (centre_id IN (SELECT centre_id FROM hmis_staff_centres WHERE staff_id = auth.uid()));
 
@@ -438,8 +444,11 @@ ALTER TABLE hmis_cost_centres ENABLE ROW LEVEL SECURITY;
 ALTER TABLE hmis_cost_centre_maps ENABLE ROW LEVEL SECURITY;
 ALTER TABLE hmis_cost_centre_expenses ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "cost_centres_all" ON hmis_cost_centres;
 CREATE POLICY "cost_centres_all" ON hmis_cost_centres FOR ALL USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "cost_centre_maps_all" ON hmis_cost_centre_maps;
 CREATE POLICY "cost_centre_maps_all" ON hmis_cost_centre_maps FOR ALL USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "cost_centre_expenses_all" ON hmis_cost_centre_expenses;
 CREATE POLICY "cost_centre_expenses_all" ON hmis_cost_centre_expenses FOR ALL USING (true) WITH CHECK (true);
 
 
@@ -647,18 +656,22 @@ ALTER TABLE hmis_duty_roster ENABLE ROW LEVEL SECURITY;
 ALTER TABLE hmis_duty_swap_requests ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS shift_def_tenant ON hmis_shift_definitions;
+DROP POLICY IF EXISTS "shift_def_tenant" ON hmis_shift_definitions;
 CREATE POLICY shift_def_tenant ON hmis_shift_definitions
   USING (centre_id IN (SELECT centre_id FROM hmis_staff_centres WHERE staff_id = auth.uid()));
 
 DROP POLICY IF EXISTS staffing_req_tenant ON hmis_staffing_requirements;
+DROP POLICY IF EXISTS "staffing_req_tenant" ON hmis_staffing_requirements;
 CREATE POLICY staffing_req_tenant ON hmis_staffing_requirements
   USING (centre_id IN (SELECT centre_id FROM hmis_staff_centres WHERE staff_id = auth.uid()));
 
 DROP POLICY IF EXISTS duty_roster_tenant ON hmis_duty_roster;
+DROP POLICY IF EXISTS "duty_roster_tenant" ON hmis_duty_roster;
 CREATE POLICY duty_roster_tenant ON hmis_duty_roster
   USING (centre_id IN (SELECT centre_id FROM hmis_staff_centres WHERE staff_id = auth.uid()));
 
 DROP POLICY IF EXISTS duty_swap_tenant ON hmis_duty_swap_requests;
+DROP POLICY IF EXISTS "duty_swap_tenant" ON hmis_duty_swap_requests;
 CREATE POLICY duty_swap_tenant ON hmis_duty_swap_requests
   USING (centre_id IN (SELECT centre_id FROM hmis_staff_centres WHERE staff_id = auth.uid()));
 
@@ -731,6 +744,7 @@ CREATE INDEX IF NOT EXISTS idx_calib_centre ON hmis_equipment_calibration(centre
 
 ALTER TABLE hmis_equipment_calibration ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS calib_access ON hmis_equipment_calibration;
+DROP POLICY IF EXISTS "calib_access" ON hmis_equipment_calibration;
 CREATE POLICY calib_access ON hmis_equipment_calibration FOR ALL USING (true) WITH CHECK (true);
 
 
@@ -825,8 +839,11 @@ ALTER TABLE hmis_equipment ENABLE ROW LEVEL SECURITY;
 ALTER TABLE hmis_equipment_maintenance ENABLE ROW LEVEL SECURITY;
 ALTER TABLE hmis_equipment_pm_schedule ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Access equipment" ON hmis_equipment;
 CREATE POLICY "Access equipment" ON hmis_equipment FOR ALL USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "Access maintenance" ON hmis_equipment_maintenance;
 CREATE POLICY "Access maintenance" ON hmis_equipment_maintenance FOR ALL USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "Access pm schedule" ON hmis_equipment_pm_schedule;
 CREATE POLICY "Access pm schedule" ON hmis_equipment_pm_schedule FOR ALL USING (true) WITH CHECK (true);
 
 
@@ -891,7 +908,9 @@ CREATE INDEX IF NOT EXISTS idx_hk_sched_centre ON hmis_housekeeping_schedules (c
 ALTER TABLE hmis_housekeeping_tasks ENABLE ROW LEVEL SECURITY;
 ALTER TABLE hmis_housekeeping_schedules ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Access housekeeping tasks" ON hmis_housekeeping_tasks;
 CREATE POLICY "Access housekeeping tasks" ON hmis_housekeeping_tasks FOR ALL USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "Access housekeeping schedules" ON hmis_housekeeping_schedules;
 CREATE POLICY "Access housekeeping schedules" ON hmis_housekeeping_schedules FOR ALL USING (true) WITH CHECK (true);
 
 
@@ -948,7 +967,9 @@ CREATE INDEX IF NOT EXISTS idx_linen_ex_ward ON hmis_linen_exchange (ward, excha
 ALTER TABLE hmis_linen_inventory ENABLE ROW LEVEL SECURITY;
 ALTER TABLE hmis_linen_exchange ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Access linen inventory" ON hmis_linen_inventory;
 CREATE POLICY "Access linen inventory" ON hmis_linen_inventory FOR ALL USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "Access linen exchange" ON hmis_linen_exchange;
 CREATE POLICY "Access linen exchange" ON hmis_linen_exchange FOR ALL USING (true) WITH CHECK (true);
 
 
@@ -987,6 +1008,7 @@ CREATE INDEX IF NOT EXISTS idx_mortuary_centre ON hmis_mortuary (centre_id, stat
 CREATE INDEX IF NOT EXISTS idx_mortuary_patient ON hmis_mortuary (patient_id) WHERE patient_id IS NOT NULL;
 
 ALTER TABLE hmis_mortuary ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Access mortuary" ON hmis_mortuary;
 CREATE POLICY "Access mortuary" ON hmis_mortuary FOR ALL USING (true) WITH CHECK (true);
 
 
@@ -1118,18 +1140,23 @@ ON CONFLICT DO NOTHING;
 ALTER TABLE hmis_consent_templates ENABLE ROW LEVEL SECURITY;
 ALTER TABLE hmis_patient_consents ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Staff can view consent templates" ON hmis_consent_templates;
 CREATE POLICY "Staff can view consent templates"
   ON hmis_consent_templates FOR SELECT USING (true);
 
+DROP POLICY IF EXISTS "Admin can manage consent templates" ON hmis_consent_templates;
 CREATE POLICY "Admin can manage consent templates"
   ON hmis_consent_templates FOR ALL USING (true) WITH CHECK (true);
 
+DROP POLICY IF EXISTS "Staff can view patient consents" ON hmis_patient_consents;
 CREATE POLICY "Staff can view patient consents"
   ON hmis_patient_consents FOR SELECT USING (true);
 
+DROP POLICY IF EXISTS "Staff can create patient consents" ON hmis_patient_consents;
 CREATE POLICY "Staff can create patient consents"
   ON hmis_patient_consents FOR INSERT WITH CHECK (true);
 
+DROP POLICY IF EXISTS "Staff can update patient consents" ON hmis_patient_consents;
 CREATE POLICY "Staff can update patient consents"
   ON hmis_patient_consents FOR UPDATE USING (true) WITH CHECK (true);
 
@@ -1139,6 +1166,7 @@ RETURNS TRIGGER AS $$
 BEGIN NEW.updated_at = now(); RETURN NEW; END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS trg_consent_tpl_updated_at ON hmis_consent_templates;
 CREATE TRIGGER trg_consent_tpl_updated_at
   BEFORE UPDATE ON hmis_consent_templates
   FOR EACH ROW EXECUTE FUNCTION update_consent_tpl_updated_at();
@@ -1212,8 +1240,11 @@ ALTER TABLE hmis_prescription_refill_requests ENABLE ROW LEVEL SECURITY;
 ALTER TABLE hmis_patient_feedback ENABLE ROW LEVEL SECURITY;
 ALTER TABLE hmis_insurance_documents ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Access refill requests" ON hmis_prescription_refill_requests;
 CREATE POLICY "Access refill requests" ON hmis_prescription_refill_requests FOR ALL USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "Access patient feedback" ON hmis_patient_feedback;
 CREATE POLICY "Access patient feedback" ON hmis_patient_feedback FOR ALL USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "Access insurance documents" ON hmis_insurance_documents;
 CREATE POLICY "Access insurance documents" ON hmis_insurance_documents FOR ALL USING (true) WITH CHECK (true);
 
 
@@ -1667,10 +1698,12 @@ ALTER TABLE hmis_surgical_planning ENABLE ROW LEVEL SECURITY;
 ALTER TABLE hmis_surgical_checklist_items ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS surgical_planning_tenant ON hmis_surgical_planning;
+DROP POLICY IF EXISTS "surgical_planning_tenant" ON hmis_surgical_planning;
 CREATE POLICY surgical_planning_tenant ON hmis_surgical_planning
   USING (centre_id IN (SELECT centre_id FROM hmis_staff_centres WHERE staff_id = auth.uid()));
 
 DROP POLICY IF EXISTS surgical_checklist_tenant ON hmis_surgical_checklist_items;
+DROP POLICY IF EXISTS "surgical_checklist_tenant" ON hmis_surgical_checklist_items;
 CREATE POLICY surgical_checklist_tenant ON hmis_surgical_checklist_items
   USING (centre_id IN (SELECT centre_id FROM hmis_staff_centres WHERE staff_id = auth.uid()));
 
@@ -2221,9 +2254,11 @@ ALTER TABLE hmis_px_feedback ENABLE ROW LEVEL SECURITY;
 ALTER TABLE hmis_px_activity_log ENABLE ROW LEVEL SECURITY;
 
 -- Food menu: public read for active items (patients need to see this without auth)
+DROP POLICY IF EXISTS "px_food_menu_public_read" ON hmis_px_food_menu;
 CREATE POLICY "px_food_menu_public_read" ON hmis_px_food_menu
   FOR SELECT USING (is_available = true);
 
+DROP POLICY IF EXISTS "px_food_menu_staff_all" ON hmis_px_food_menu;
 CREATE POLICY "px_food_menu_staff_all" ON hmis_px_food_menu
   FOR ALL USING (
     EXISTS (
@@ -2237,6 +2272,7 @@ CREATE POLICY "px_food_menu_staff_all" ON hmis_px_food_menu
 -- Staff policies for operational tables (orders, complaints, nurse calls, feedback, tokens, activity log)
 -- Pattern: staff with centre assignment can view/manage records for their centre
 
+DROP POLICY IF EXISTS "px_tokens_staff" ON hmis_px_tokens;
 CREATE POLICY "px_tokens_staff" ON hmis_px_tokens
   FOR ALL USING (
     EXISTS (
@@ -2247,6 +2283,7 @@ CREATE POLICY "px_tokens_staff" ON hmis_px_tokens
     )
   );
 
+DROP POLICY IF EXISTS "px_food_orders_staff" ON hmis_px_food_orders;
 CREATE POLICY "px_food_orders_staff" ON hmis_px_food_orders
   FOR ALL USING (
     EXISTS (
@@ -2257,6 +2294,7 @@ CREATE POLICY "px_food_orders_staff" ON hmis_px_food_orders
     )
   );
 
+DROP POLICY IF EXISTS "px_complaints_staff" ON hmis_px_complaints;
 CREATE POLICY "px_complaints_staff" ON hmis_px_complaints
   FOR ALL USING (
     EXISTS (
@@ -2267,6 +2305,7 @@ CREATE POLICY "px_complaints_staff" ON hmis_px_complaints
     )
   );
 
+DROP POLICY IF EXISTS "px_nurse_calls_staff" ON hmis_px_nurse_calls;
 CREATE POLICY "px_nurse_calls_staff" ON hmis_px_nurse_calls
   FOR ALL USING (
     EXISTS (
@@ -2277,6 +2316,7 @@ CREATE POLICY "px_nurse_calls_staff" ON hmis_px_nurse_calls
     )
   );
 
+DROP POLICY IF EXISTS "px_feedback_staff" ON hmis_px_feedback;
 CREATE POLICY "px_feedback_staff" ON hmis_px_feedback
   FOR ALL USING (
     EXISTS (
@@ -2287,6 +2327,7 @@ CREATE POLICY "px_feedback_staff" ON hmis_px_feedback
     )
   );
 
+DROP POLICY IF EXISTS "px_activity_log_staff" ON hmis_px_activity_log;
 CREATE POLICY "px_activity_log_staff" ON hmis_px_activity_log
   FOR ALL USING (
     EXISTS (
@@ -2459,21 +2500,27 @@ CREATE TABLE IF NOT EXISTS hmis_abdm_scan_sessions (
 DO $$
 BEGIN
     EXECUTE 'ALTER TABLE hmis_abdm_config ENABLE ROW LEVEL SECURITY';
+    EXECUTE 'DROP POLICY IF EXISTS abdm_cfg_pol ON hmis_abdm_config';
     EXECUTE 'CREATE POLICY abdm_cfg_pol ON hmis_abdm_config FOR ALL USING (auth.uid() IS NOT NULL)';
 
     EXECUTE 'ALTER TABLE hmis_abdm_link_requests ENABLE ROW LEVEL SECURITY';
+    EXECUTE 'DROP POLICY IF EXISTS abdm_link_pol ON hmis_abdm_link_requests';
     EXECUTE 'CREATE POLICY abdm_link_pol ON hmis_abdm_link_requests FOR ALL USING (auth.uid() IS NOT NULL)';
 
     EXECUTE 'ALTER TABLE hmis_abdm_consent_requests ENABLE ROW LEVEL SECURITY';
+    EXECUTE 'DROP POLICY IF EXISTS abdm_consent_pol ON hmis_abdm_consent_requests';
     EXECUTE 'CREATE POLICY abdm_consent_pol ON hmis_abdm_consent_requests FOR ALL USING (auth.uid() IS NOT NULL)';
 
     EXECUTE 'ALTER TABLE hmis_abdm_data_transfers ENABLE ROW LEVEL SECURITY';
+    EXECUTE 'DROP POLICY IF EXISTS abdm_data_pol ON hmis_abdm_data_transfers';
     EXECUTE 'CREATE POLICY abdm_data_pol ON hmis_abdm_data_transfers FOR ALL USING (auth.uid() IS NOT NULL)';
 
     EXECUTE 'ALTER TABLE hmis_abdm_audit_log ENABLE ROW LEVEL SECURITY';
+    EXECUTE 'DROP POLICY IF EXISTS abdm_audit_pol ON hmis_abdm_audit_log';
     EXECUTE 'CREATE POLICY abdm_audit_pol ON hmis_abdm_audit_log FOR ALL USING (auth.uid() IS NOT NULL)';
 
     EXECUTE 'ALTER TABLE hmis_abdm_scan_sessions ENABLE ROW LEVEL SECURITY';
+    EXECUTE 'DROP POLICY IF EXISTS abdm_scan_pol ON hmis_abdm_scan_sessions';
     EXECUTE 'CREATE POLICY abdm_scan_pol ON hmis_abdm_scan_sessions FOR ALL USING (auth.uid() IS NOT NULL)';
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
@@ -2736,9 +2783,11 @@ CREATE INDEX IF NOT EXISTS idx_cdss_overrides_staff ON hmis_cdss_overrides (staf
 -- RLS
 ALTER TABLE hmis_cdss_overrides ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Staff can view cdss overrides" ON hmis_cdss_overrides;
 CREATE POLICY "Staff can view cdss overrides"
   ON hmis_cdss_overrides FOR SELECT USING (true);
 
+DROP POLICY IF EXISTS "Staff can create cdss overrides" ON hmis_cdss_overrides;
 CREATE POLICY "Staff can create cdss overrides"
   ON hmis_cdss_overrides FOR INSERT WITH CHECK (true);
 
@@ -2820,19 +2869,23 @@ ON CONFLICT (centre_id, event_type, channel) DO NOTHING;
 ALTER TABLE hmis_notification_preferences ENABLE ROW LEVEL SECURITY;
 ALTER TABLE hmis_notification_log ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Staff can view notification preferences" ON hmis_notification_preferences;
 CREATE POLICY "Staff can view notification preferences"
   ON hmis_notification_preferences FOR SELECT
   USING (true);
 
+DROP POLICY IF EXISTS "Staff can manage notification preferences" ON hmis_notification_preferences;
 CREATE POLICY "Staff can manage notification preferences"
   ON hmis_notification_preferences FOR ALL
   USING (true)
   WITH CHECK (true);
 
+DROP POLICY IF EXISTS "Staff can view notification log" ON hmis_notification_log;
 CREATE POLICY "Staff can view notification log"
   ON hmis_notification_log FOR SELECT
   USING (true);
 
+DROP POLICY IF EXISTS "System can insert notification log" ON hmis_notification_log;
 CREATE POLICY "System can insert notification log"
   ON hmis_notification_log FOR INSERT
   WITH CHECK (true);
@@ -2877,9 +2930,11 @@ COMMENT ON TABLE hmis_integration_config IS 'Third-party integration credentials
 
 ALTER TABLE hmis_integration_config ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Staff can view integration config" ON hmis_integration_config;
 CREATE POLICY "Staff can view integration config"
   ON hmis_integration_config FOR SELECT USING (true);
 
+DROP POLICY IF EXISTS "Admin can manage integration config" ON hmis_integration_config;
 CREATE POLICY "Admin can manage integration config"
   ON hmis_integration_config FOR ALL USING (true) WITH CHECK (true);
 
@@ -2892,6 +2947,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS trg_notif_pref_updated_at ON hmis_notification_preferences;
 CREATE TRIGGER trg_notif_pref_updated_at
   BEFORE UPDATE ON hmis_notification_preferences
   FOR EACH ROW EXECUTE FUNCTION update_notif_pref_updated_at();
@@ -2937,8 +2993,10 @@ ON CONFLICT DO NOTHING;
 -- RLS
 ALTER TABLE hmis_report_subscriptions ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Staff can view report subscriptions" ON hmis_report_subscriptions;
 CREATE POLICY "Staff can view report subscriptions"
   ON hmis_report_subscriptions FOR SELECT USING (true);
 
+DROP POLICY IF EXISTS "Staff can manage report subscriptions" ON hmis_report_subscriptions;
 CREATE POLICY "Staff can manage report subscriptions"
   ON hmis_report_subscriptions FOR ALL USING (true) WITH CHECK (true);

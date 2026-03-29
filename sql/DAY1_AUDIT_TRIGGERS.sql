@@ -179,7 +179,8 @@ $$;
 ALTER TABLE hmis_audit_trail ENABLE ROW LEVEL SECURITY;
 
 -- Staff can read audit trail for their centres
-CREATE POLICY IF NOT EXISTS audit_trail_select ON hmis_audit_trail
+DROP POLICY IF EXISTS "audit_trail_select" ON hmis_audit_trail;
+CREATE POLICY audit_trail_select ON hmis_audit_trail
     FOR SELECT TO authenticated
     USING (
         centre_id = ANY(hmis_get_user_centre_ids())

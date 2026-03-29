@@ -13,16 +13,19 @@
 ALTER TABLE hmis_patients ENABLE ROW LEVEL SECURITY;
 
 -- All authenticated staff can read all patients (cross-centre referrals are common)
+DROP POLICY IF EXISTS "patients_select" ON hmis_patients;
 CREATE POLICY patients_select ON hmis_patients
     FOR SELECT TO authenticated
     USING (true);
 
 -- Insert: any authenticated staff
+DROP POLICY IF EXISTS "patients_insert" ON hmis_patients;
 CREATE POLICY patients_insert ON hmis_patients
     FOR INSERT TO authenticated
     WITH CHECK (true);
 
 -- Update: staff at the registration centre OR super_admin
+DROP POLICY IF EXISTS "patients_update" ON hmis_patients;
 CREATE POLICY patients_update ON hmis_patients
     FOR UPDATE TO authenticated
     USING (
@@ -31,6 +34,7 @@ CREATE POLICY patients_update ON hmis_patients
     );
 
 -- Delete: super_admin only (soft-delete preferred)
+DROP POLICY IF EXISTS "patients_delete" ON hmis_patients;
 CREATE POLICY patients_delete ON hmis_patients
     FOR DELETE TO authenticated
     USING (hmis_is_super_admin());
@@ -40,6 +44,7 @@ CREATE POLICY patients_delete ON hmis_patients
 -- ════════════════════════════════════
 ALTER TABLE hmis_opd_visits ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "opd_visits_select" ON hmis_opd_visits;
 CREATE POLICY opd_visits_select ON hmis_opd_visits
     FOR SELECT TO authenticated
     USING (
@@ -47,6 +52,7 @@ CREATE POLICY opd_visits_select ON hmis_opd_visits
         OR hmis_is_super_admin()
     );
 
+DROP POLICY IF EXISTS "opd_visits_insert" ON hmis_opd_visits;
 CREATE POLICY opd_visits_insert ON hmis_opd_visits
     FOR INSERT TO authenticated
     WITH CHECK (
@@ -54,6 +60,7 @@ CREATE POLICY opd_visits_insert ON hmis_opd_visits
         OR hmis_is_super_admin()
     );
 
+DROP POLICY IF EXISTS "opd_visits_update" ON hmis_opd_visits;
 CREATE POLICY opd_visits_update ON hmis_opd_visits
     FOR UPDATE TO authenticated
     USING (
@@ -66,6 +73,7 @@ CREATE POLICY opd_visits_update ON hmis_opd_visits
 -- ════════════════════════════════════
 ALTER TABLE hmis_admissions ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "admissions_select" ON hmis_admissions;
 CREATE POLICY admissions_select ON hmis_admissions
     FOR SELECT TO authenticated
     USING (
@@ -73,6 +81,7 @@ CREATE POLICY admissions_select ON hmis_admissions
         OR hmis_is_super_admin()
     );
 
+DROP POLICY IF EXISTS "admissions_insert" ON hmis_admissions;
 CREATE POLICY admissions_insert ON hmis_admissions
     FOR INSERT TO authenticated
     WITH CHECK (
@@ -80,6 +89,7 @@ CREATE POLICY admissions_insert ON hmis_admissions
         OR hmis_is_super_admin()
     );
 
+DROP POLICY IF EXISTS "admissions_update" ON hmis_admissions;
 CREATE POLICY admissions_update ON hmis_admissions
     FOR UPDATE TO authenticated
     USING (
@@ -92,6 +102,7 @@ CREATE POLICY admissions_update ON hmis_admissions
 -- ════════════════════════════════════
 ALTER TABLE hmis_bills ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "bills_select" ON hmis_bills;
 CREATE POLICY bills_select ON hmis_bills
     FOR SELECT TO authenticated
     USING (
@@ -99,6 +110,7 @@ CREATE POLICY bills_select ON hmis_bills
         OR hmis_is_super_admin()
     );
 
+DROP POLICY IF EXISTS "bills_insert" ON hmis_bills;
 CREATE POLICY bills_insert ON hmis_bills
     FOR INSERT TO authenticated
     WITH CHECK (
@@ -106,6 +118,7 @@ CREATE POLICY bills_insert ON hmis_bills
         OR hmis_is_super_admin()
     );
 
+DROP POLICY IF EXISTS "bills_update" ON hmis_bills;
 CREATE POLICY bills_update ON hmis_bills
     FOR UPDATE TO authenticated
     USING (
@@ -118,6 +131,7 @@ CREATE POLICY bills_update ON hmis_bills
 -- ════════════════════════════════════
 ALTER TABLE hmis_bill_items ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "bill_items_select" ON hmis_bill_items;
 CREATE POLICY bill_items_select ON hmis_bill_items
     FOR SELECT TO authenticated
     USING (
@@ -128,6 +142,7 @@ CREATE POLICY bill_items_select ON hmis_bill_items
         )
     );
 
+DROP POLICY IF EXISTS "bill_items_insert" ON hmis_bill_items;
 CREATE POLICY bill_items_insert ON hmis_bill_items
     FOR INSERT TO authenticated
     WITH CHECK (
@@ -138,6 +153,7 @@ CREATE POLICY bill_items_insert ON hmis_bill_items
         )
     );
 
+DROP POLICY IF EXISTS "bill_items_update" ON hmis_bill_items;
 CREATE POLICY bill_items_update ON hmis_bill_items
     FOR UPDATE TO authenticated
     USING (
@@ -153,6 +169,7 @@ CREATE POLICY bill_items_update ON hmis_bill_items
 -- ════════════════════════════════════
 ALTER TABLE hmis_payments ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "payments_select" ON hmis_payments;
 CREATE POLICY payments_select ON hmis_payments
     FOR SELECT TO authenticated
     USING (
@@ -160,6 +177,7 @@ CREATE POLICY payments_select ON hmis_payments
         OR hmis_is_super_admin()
     );
 
+DROP POLICY IF EXISTS "payments_insert" ON hmis_payments;
 CREATE POLICY payments_insert ON hmis_payments
     FOR INSERT TO authenticated
     WITH CHECK (
@@ -167,6 +185,7 @@ CREATE POLICY payments_insert ON hmis_payments
         OR hmis_is_super_admin()
     );
 
+DROP POLICY IF EXISTS "payments_update" ON hmis_payments;
 CREATE POLICY payments_update ON hmis_payments
     FOR UPDATE TO authenticated
     USING (
@@ -179,6 +198,7 @@ CREATE POLICY payments_update ON hmis_payments
 -- ════════════════════════════════════
 ALTER TABLE hmis_lab_orders ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "lab_orders_select" ON hmis_lab_orders;
 CREATE POLICY lab_orders_select ON hmis_lab_orders
     FOR SELECT TO authenticated
     USING (
@@ -186,6 +206,7 @@ CREATE POLICY lab_orders_select ON hmis_lab_orders
         OR hmis_is_super_admin()
     );
 
+DROP POLICY IF EXISTS "lab_orders_insert" ON hmis_lab_orders;
 CREATE POLICY lab_orders_insert ON hmis_lab_orders
     FOR INSERT TO authenticated
     WITH CHECK (
@@ -193,6 +214,7 @@ CREATE POLICY lab_orders_insert ON hmis_lab_orders
         OR hmis_is_super_admin()
     );
 
+DROP POLICY IF EXISTS "lab_orders_update" ON hmis_lab_orders;
 CREATE POLICY lab_orders_update ON hmis_lab_orders
     FOR UPDATE TO authenticated
     USING (
@@ -205,6 +227,7 @@ CREATE POLICY lab_orders_update ON hmis_lab_orders
 -- ════════════════════════════════════
 ALTER TABLE hmis_lab_results ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "lab_results_select" ON hmis_lab_results;
 CREATE POLICY lab_results_select ON hmis_lab_results
     FOR SELECT TO authenticated
     USING (
@@ -215,6 +238,7 @@ CREATE POLICY lab_results_select ON hmis_lab_results
         )
     );
 
+DROP POLICY IF EXISTS "lab_results_insert" ON hmis_lab_results;
 CREATE POLICY lab_results_insert ON hmis_lab_results
     FOR INSERT TO authenticated
     WITH CHECK (
@@ -225,6 +249,7 @@ CREATE POLICY lab_results_insert ON hmis_lab_results
         )
     );
 
+DROP POLICY IF EXISTS "lab_results_update" ON hmis_lab_results;
 CREATE POLICY lab_results_update ON hmis_lab_results
     FOR UPDATE TO authenticated
     USING (
@@ -240,6 +265,7 @@ CREATE POLICY lab_results_update ON hmis_lab_results
 -- ════════════════════════════════════
 ALTER TABLE hmis_lab_samples ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "lab_samples_select" ON hmis_lab_samples;
 CREATE POLICY lab_samples_select ON hmis_lab_samples
     FOR SELECT TO authenticated
     USING (
@@ -250,6 +276,7 @@ CREATE POLICY lab_samples_select ON hmis_lab_samples
         )
     );
 
+DROP POLICY IF EXISTS "lab_samples_insert" ON hmis_lab_samples;
 CREATE POLICY lab_samples_insert ON hmis_lab_samples
     FOR INSERT TO authenticated
     WITH CHECK (
@@ -265,6 +292,7 @@ CREATE POLICY lab_samples_insert ON hmis_lab_samples
 -- ════════════════════════════════════
 ALTER TABLE hmis_radiology_orders ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "radiology_orders_select" ON hmis_radiology_orders;
 CREATE POLICY radiology_orders_select ON hmis_radiology_orders
     FOR SELECT TO authenticated
     USING (
@@ -272,6 +300,7 @@ CREATE POLICY radiology_orders_select ON hmis_radiology_orders
         OR hmis_is_super_admin()
     );
 
+DROP POLICY IF EXISTS "radiology_orders_insert" ON hmis_radiology_orders;
 CREATE POLICY radiology_orders_insert ON hmis_radiology_orders
     FOR INSERT TO authenticated
     WITH CHECK (
@@ -279,6 +308,7 @@ CREATE POLICY radiology_orders_insert ON hmis_radiology_orders
         OR hmis_is_super_admin()
     );
 
+DROP POLICY IF EXISTS "radiology_orders_update" ON hmis_radiology_orders;
 CREATE POLICY radiology_orders_update ON hmis_radiology_orders
     FOR UPDATE TO authenticated
     USING (
@@ -291,6 +321,7 @@ CREATE POLICY radiology_orders_update ON hmis_radiology_orders
 -- ════════════════════════════════════
 ALTER TABLE hmis_prescriptions ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "prescriptions_select" ON hmis_prescriptions;
 CREATE POLICY prescriptions_select ON hmis_prescriptions
     FOR SELECT TO authenticated
     USING (
@@ -298,6 +329,7 @@ CREATE POLICY prescriptions_select ON hmis_prescriptions
         OR hmis_is_super_admin()
     );
 
+DROP POLICY IF EXISTS "prescriptions_insert" ON hmis_prescriptions;
 CREATE POLICY prescriptions_insert ON hmis_prescriptions
     FOR INSERT TO authenticated
     WITH CHECK (
@@ -305,6 +337,7 @@ CREATE POLICY prescriptions_insert ON hmis_prescriptions
         OR hmis_is_super_admin()
     );
 
+DROP POLICY IF EXISTS "prescriptions_update" ON hmis_prescriptions;
 CREATE POLICY prescriptions_update ON hmis_prescriptions
     FOR UPDATE TO authenticated
     USING (
@@ -317,6 +350,7 @@ CREATE POLICY prescriptions_update ON hmis_prescriptions
 -- ════════════════════════════════════
 ALTER TABLE hmis_nursing_notes ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "nursing_notes_select" ON hmis_nursing_notes;
 CREATE POLICY nursing_notes_select ON hmis_nursing_notes
     FOR SELECT TO authenticated
     USING (
@@ -324,6 +358,7 @@ CREATE POLICY nursing_notes_select ON hmis_nursing_notes
         OR hmis_is_super_admin()
     );
 
+DROP POLICY IF EXISTS "nursing_notes_insert" ON hmis_nursing_notes;
 CREATE POLICY nursing_notes_insert ON hmis_nursing_notes
     FOR INSERT TO authenticated
     WITH CHECK (
@@ -331,6 +366,7 @@ CREATE POLICY nursing_notes_insert ON hmis_nursing_notes
         OR hmis_is_super_admin()
     );
 
+DROP POLICY IF EXISTS "nursing_notes_update" ON hmis_nursing_notes;
 CREATE POLICY nursing_notes_update ON hmis_nursing_notes
     FOR UPDATE TO authenticated
     USING (
@@ -343,6 +379,7 @@ CREATE POLICY nursing_notes_update ON hmis_nursing_notes
 -- ════════════════════════════════════
 ALTER TABLE hmis_beds ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "beds_select" ON hmis_beds;
 CREATE POLICY beds_select ON hmis_beds
     FOR SELECT TO authenticated
     USING (
@@ -350,6 +387,7 @@ CREATE POLICY beds_select ON hmis_beds
         OR hmis_is_super_admin()
     );
 
+DROP POLICY IF EXISTS "beds_modify" ON hmis_beds;
 CREATE POLICY beds_modify ON hmis_beds
     FOR ALL TO authenticated
     USING (
@@ -363,10 +401,12 @@ CREATE POLICY beds_modify ON hmis_beds
 ALTER TABLE hmis_drug_master ENABLE ROW LEVEL SECURITY;
 
 -- All staff can read drug master (needed for prescriptions across centres)
+DROP POLICY IF EXISTS "drug_master_select" ON hmis_drug_master;
 CREATE POLICY drug_master_select ON hmis_drug_master
     FOR SELECT TO authenticated
     USING (true);
 
+DROP POLICY IF EXISTS "drug_master_modify" ON hmis_drug_master;
 CREATE POLICY drug_master_modify ON hmis_drug_master
     FOR ALL TO authenticated
     USING (
@@ -379,6 +419,7 @@ CREATE POLICY drug_master_modify ON hmis_drug_master
 -- ════════════════════════════════════
 ALTER TABLE hmis_ot_bookings ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "ot_bookings_select" ON hmis_ot_bookings;
 CREATE POLICY ot_bookings_select ON hmis_ot_bookings
     FOR SELECT TO authenticated
     USING (
@@ -389,6 +430,7 @@ CREATE POLICY ot_bookings_select ON hmis_ot_bookings
         )
     );
 
+DROP POLICY IF EXISTS "ot_bookings_insert" ON hmis_ot_bookings;
 CREATE POLICY ot_bookings_insert ON hmis_ot_bookings
     FOR INSERT TO authenticated
     WITH CHECK (
@@ -399,6 +441,7 @@ CREATE POLICY ot_bookings_insert ON hmis_ot_bookings
         )
     );
 
+DROP POLICY IF EXISTS "ot_bookings_update" ON hmis_ot_bookings;
 CREATE POLICY ot_bookings_update ON hmis_ot_bookings
     FOR UPDATE TO authenticated
     USING (
@@ -414,6 +457,7 @@ CREATE POLICY ot_bookings_update ON hmis_ot_bookings
 -- ════════════════════════════════════
 ALTER TABLE hmis_ot_rooms ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "ot_rooms_select" ON hmis_ot_rooms;
 CREATE POLICY ot_rooms_select ON hmis_ot_rooms
     FOR SELECT TO authenticated
     USING (
@@ -421,6 +465,7 @@ CREATE POLICY ot_rooms_select ON hmis_ot_rooms
         OR hmis_is_super_admin()
     );
 
+DROP POLICY IF EXISTS "ot_rooms_modify" ON hmis_ot_rooms;
 CREATE POLICY ot_rooms_modify ON hmis_ot_rooms
     FOR ALL TO authenticated
     USING (
@@ -433,6 +478,7 @@ CREATE POLICY ot_rooms_modify ON hmis_ot_rooms
 -- ════════════════════════════════════
 ALTER TABLE hmis_pre_auth_requests ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "preauth_select" ON hmis_pre_auth_requests;
 CREATE POLICY preauth_select ON hmis_pre_auth_requests
     FOR SELECT TO authenticated
     USING (
@@ -440,6 +486,7 @@ CREATE POLICY preauth_select ON hmis_pre_auth_requests
         OR hmis_is_super_admin()
     );
 
+DROP POLICY IF EXISTS "preauth_insert" ON hmis_pre_auth_requests;
 CREATE POLICY preauth_insert ON hmis_pre_auth_requests
     FOR INSERT TO authenticated
     WITH CHECK (
@@ -447,6 +494,7 @@ CREATE POLICY preauth_insert ON hmis_pre_auth_requests
         OR hmis_is_super_admin()
     );
 
+DROP POLICY IF EXISTS "preauth_update" ON hmis_pre_auth_requests;
 CREATE POLICY preauth_update ON hmis_pre_auth_requests
     FOR UPDATE TO authenticated
     USING (
@@ -459,6 +507,7 @@ CREATE POLICY preauth_update ON hmis_pre_auth_requests
 -- ════════════════════════════════════
 ALTER TABLE hmis_claims ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "claims_select" ON hmis_claims;
 CREATE POLICY claims_select ON hmis_claims
     FOR SELECT TO authenticated
     USING (
@@ -466,6 +515,7 @@ CREATE POLICY claims_select ON hmis_claims
         OR hmis_is_super_admin()
     );
 
+DROP POLICY IF EXISTS "claims_insert" ON hmis_claims;
 CREATE POLICY claims_insert ON hmis_claims
     FOR INSERT TO authenticated
     WITH CHECK (
@@ -473,6 +523,7 @@ CREATE POLICY claims_insert ON hmis_claims
         OR hmis_is_super_admin()
     );
 
+DROP POLICY IF EXISTS "claims_update" ON hmis_claims;
 CREATE POLICY claims_update ON hmis_claims
     FOR UPDATE TO authenticated
     USING (
@@ -486,22 +537,30 @@ CREATE POLICY claims_update ON hmis_claims
 
 -- Lab test master
 ALTER TABLE hmis_lab_test_master ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "lab_test_master_select" ON hmis_lab_test_master;
 CREATE POLICY lab_test_master_select ON hmis_lab_test_master FOR SELECT TO authenticated USING (true);
+DROP POLICY IF EXISTS "lab_test_master_modify" ON hmis_lab_test_master;
 CREATE POLICY lab_test_master_modify ON hmis_lab_test_master FOR ALL TO authenticated USING (hmis_is_super_admin());
 
 -- Departments
 ALTER TABLE hmis_departments ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "departments_select" ON hmis_departments;
 CREATE POLICY departments_select ON hmis_departments FOR SELECT TO authenticated USING (true);
+DROP POLICY IF EXISTS "departments_modify" ON hmis_departments;
 CREATE POLICY departments_modify ON hmis_departments FOR ALL TO authenticated USING (hmis_is_super_admin());
 
 -- Insurers
 ALTER TABLE hmis_insurers ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "insurers_select" ON hmis_insurers;
 CREATE POLICY insurers_select ON hmis_insurers FOR SELECT TO authenticated USING (true);
+DROP POLICY IF EXISTS "insurers_modify" ON hmis_insurers;
 CREATE POLICY insurers_modify ON hmis_insurers FOR ALL TO authenticated USING (hmis_is_super_admin());
 
 -- Module config
 ALTER TABLE hmis_module_config ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "module_config_select" ON hmis_module_config;
 CREATE POLICY module_config_select ON hmis_module_config FOR SELECT TO authenticated USING (true);
+DROP POLICY IF EXISTS "module_config_modify" ON hmis_module_config;
 CREATE POLICY module_config_modify ON hmis_module_config FOR ALL TO authenticated USING (hmis_is_super_admin());
 
 -- ════════════════════════════════════
