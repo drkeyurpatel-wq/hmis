@@ -180,7 +180,7 @@ export async function GET(request: NextRequest) {
     const byCentre = new Map<string, { centreName: string; centreId: string; emails: string[] }>();
     for (const s of subs) {
       const cid = s.centre?.id || s.centre_id;
-      const cname = s.centre?.name || 'Hospital';
+      const cname = s.centre?.name || 'Health1';
       if (!byCentre.has(cid)) byCentre.set(cid, { centreName: cname, centreId: cid, emails: [] });
       byCentre.get(cid)!.emails.push(s.email);
     }

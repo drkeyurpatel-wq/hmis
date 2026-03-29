@@ -517,7 +517,7 @@ export function printLabReport(data: {
   <!-- Header -->
   <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid #1e40af;padding-bottom:10px;margin-bottom:12px">
     <div>
-      <div style="font-size:18px;font-weight:700;color:#1e40af">${data.centreName || 'Hospital'}</div>
+      <div style="font-size:18px;font-weight:700;color:#1e40af">${data.centreName || 'Health1'}</div>
       <div style="font-size:8px;color:#666">${data.centreAddress || 'Shilaj, Ahmedabad'} | ${data.centrePhone || ''}</div>
     </div>
     <div style="text-align:right;font-size:9px;color:#666">

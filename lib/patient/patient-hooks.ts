@@ -6,6 +6,7 @@
 
 import { useSupabaseQuery, useSupabaseMutation } from '@/lib/hooks/use-supabase-query';
 import { sb } from '@/lib/supabase/browser';
+import { auditCreate } from '@/lib/audit/audit-logger';
 
 // ============================================================
 // TYPES
@@ -171,7 +172,10 @@ export function useRegisterPatient(options?: {
 
       if (insErr) return { data: null, error: insErr };
 
-      // Step 3: Insert emergency contact if provided
+      // Audit trail
+      if (patient) {
+        auditCreate(input.centre_id, input.auth_user_id, 'patient', patient.id, `Registered ${input.first_name} ${input.last_name} (${patient.uhid})`);
+      }
       if (input.emergency_contact_name?.trim() && input.emergency_contact_phone?.trim() && patient) {
         await client.from('hmis_patient_contacts').insert({
           patient_id: patient.id,

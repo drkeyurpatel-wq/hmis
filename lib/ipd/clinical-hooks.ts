@@ -3,6 +3,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { sb } from '@/lib/supabase/browser';
+import { auditCreate } from '@/lib/audit/audit-logger';
 
 // ============================================================
 // DOCTOR ROUNDS

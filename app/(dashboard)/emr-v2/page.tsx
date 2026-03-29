@@ -452,7 +452,7 @@ function EMRInner() {
                     investigations: investigations.map(inv => ({ name: inv.name, urgency: inv.urgency })),
                     prescriptions: prescriptions.map(p => ({ brand: p.drug, generic: p.generic, strength: p.dose, dose: p.dose, frequency: p.frequency, duration: p.duration, instructions: p.instructions })),
                     advice: advice ? [advice] : [], followUp: followUpDate || '',
-                  }, { name: 'Hospital', address: '', phone: '', tagline: 'NABH Accredited' });
+                  }, { name: 'Health1 Super Speciality Hospitals', address: 'Nr. Shilaj Circle, Ahmedabad', phone: '+91 79 4890 1234', tagline: 'Super Speciality Hospital' });
                 }} className="px-4 py-2.5 bg-teal-600 text-white text-sm rounded-lg">Print Summary</button>
               </div>
             </div>

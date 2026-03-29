@@ -85,10 +85,10 @@ export function generateDischargePDF(
   y = 14;
   doc.setFontSize(16); doc.setFont('helvetica', 'bold');
   doc.setTextColor(...TEAL);
-  doc.text('Hospital', 15, y);
+  doc.text('Health1 Super Speciality Hospitals', 15, y);
   doc.setFontSize(8); doc.setFont('helvetica', 'normal');
   doc.setTextColor(...GRAY);
-  doc.text('Shilaj, Ahmedabad  |  NABH Accredited  |  HFR: IN2410013685', 15, y + 5);
+  doc.text('Nr. Shilaj Circle, S.P. Ring Road, Ahmedabad - 380058  |  HFR: IN2410013685', 15, y + 5);
 
   // Title
   doc.setFontSize(14); doc.setFont('helvetica', 'bold');

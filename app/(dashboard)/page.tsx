@@ -45,7 +45,7 @@ export default function HomePage() {
   const [filter, setFilter] = useState<string>('all');
 
   const activeCentre = centres.find((c: any) => c.centre_id === centreId);
-  const centreName = (activeCentre as any)?.centre?.name || 'Hospital';
+  const centreName = (activeCentre as any)?.centre?.name || 'Health1';
   const greeting = () => {
     const h = new Date().getHours();
     return h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';

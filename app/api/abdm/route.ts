@@ -19,7 +19,7 @@ function getABDMConfig() {
     clientSecret: process.env.ABDM_CLIENT_SECRET || '',
     isProduction: process.env.ABDM_ENVIRONMENT === 'production',
     hipId: process.env.ABDM_HIP_ID || process.env.NHCX_HFR_ID || '',
-    hipName: process.env.ABDM_HIP_NAME || 'Hospital',
+    hipName: process.env.ABDM_HIP_NAME || 'Health1 Super Speciality Hospitals',
     callbackUrl: process.env.ABDM_CALLBACK_URL || '',
   };
 }

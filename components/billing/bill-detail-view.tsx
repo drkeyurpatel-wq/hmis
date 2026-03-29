@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Plus, Printer, IndianRupee, FileText, Clock, User } from 'lucide-react';
 import { loadBillDetails, addPaymentToBill, type PaymentEntry } from '@/lib/billing/billing-engine';
 import { printBillInvoice, printPaymentReceipt } from '@/components/billing/bill-pdf';
+import { HOSPITAL } from '@/lib/config/hospital';
 
 const fmt = (n: number) => Math.round(parseFloat(String(n)) || 0).toLocaleString('en-IN');
 
@@ -61,7 +62,7 @@ export default function BillDetailView({ billId, centreId, staffId, onFlash, onC
         </div>
         <div className="flex items-center gap-2">
           {bal > 0 && <button onClick={() => setShowPay(true)} className="flex items-center gap-1.5 px-4 py-2 bg-h1-success text-white text-sm rounded-xl font-semibold hover:bg-h1-success transition-colors"><Plus size={14} /> Collect Payment</button>}
-          <button onClick={() => printBillInvoice(bill, items, payments, bill.patient || {}, { name: 'Hospital', address: 'Shilaj, Ahmedabad', gstin: '24AADCH1234F1Z5' })}
+          <button onClick={() => printBillInvoice(bill, items, payments, bill.patient || {}, HOSPITAL)}
             className="flex items-center gap-1.5 px-3 py-2 bg-white text-gray-600 text-sm rounded-xl border border-gray-200 hover:bg-gray-50 transition-colors"><Printer size={14} /> Print</button>
         </div>
       </div>

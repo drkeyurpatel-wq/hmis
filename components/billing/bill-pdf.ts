@@ -20,7 +20,7 @@ export function printBillInvoice(bill: any, items: any[], payments: any[], patie
   const bal = net - paid;
 
   w.document.write(`<html><head><title>Invoice ${bill.bill_number}</title>${STYLE}</head><body>
-    <div class="header"><div><div class="logo">${hospital.name || 'Hospital'}</div>
+    <div class="header"><div><div class="logo">${hospital.name || 'Health1'}</div>
     <div class="sub">${hospital.address || 'Shilaj, Ahmedabad'}</div>
     ${hospital.gstin ? `<div class="sub">GSTIN: ${hospital.gstin}</div>` : ''}</div>
     <div style="text-align:right"><div class="b" style="font-size:15px">${bill.bill_number}</div>
@@ -68,7 +68,7 @@ export function printPaymentReceipt(payment: any, bill: any, patient: any, hospi
   const w = window.open('', '_blank');
   if (!w) return;
   w.document.write(`<html><head><title>Receipt ${payment.receipt_number || ''}</title>${STYLE}</head><body>
-    <div class="header"><div><div class="logo">${hospital.name || 'Hospital'}</div>
+    <div class="header"><div><div class="logo">${hospital.name || 'Health1'}</div>
     <div class="sub">${hospital.address || 'Shilaj, Ahmedabad'}</div></div>
     <div style="text-align:right"><div class="b" style="font-size:15px">RECEIPT</div>
     <div>${payment.receipt_number || ''}</div></div></div>
@@ -93,7 +93,7 @@ export function printEstimate(estimate: any, items: any[], patient: any, hospita
   if (!w) return;
   const total = (items || []).reduce((s: number, i: any) => s + parseFloat(i.amount || i.net_amount || 0), 0);
   w.document.write(`<html><head><title>Estimate</title>${STYLE}</head><body>
-    <div class="header"><div><div class="logo">${hospital?.name || 'Hospital'}</div>
+    <div class="header"><div><div class="logo">${hospital?.name || 'Health1'}</div>
     <div class="sub">${hospital?.address || 'Shilaj, Ahmedabad'}</div></div>
     <div style="text-align:right"><div class="b" style="font-size:15px">ESTIMATE</div>
     <div>${estimate?.estimate_number || ''}</div></div></div>

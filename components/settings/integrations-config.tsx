@@ -119,7 +119,7 @@ export default function IntegrationsConfig({ centreId, flash }: Props) {
         const url = cfg.config.api_url;
         const token = cfg.config.api_token;
         if (!url || !token) { flash('Fill WhatsApp API URL and token first'); setTesting(''); return; }
-        const res = await fetch('/api/notify', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type: 'test', phone: cfg.config.business_phone || '0000000000', centre_id: centreId, data: { patient_name: 'Test', centre_name: 'Hospital' } }) });
+        const res = await fetch('/api/notify', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type: 'test', phone: cfg.config.business_phone || '0000000000', centre_id: centreId, data: { patient_name: 'Test', centre_name: 'Health1' } }) });
         const r = await res.json();
         flash(r.success ? 'WhatsApp: Test sent!' : `WhatsApp: ${r.error || 'Failed'}`);
       } else if (provider === 'msg91') {

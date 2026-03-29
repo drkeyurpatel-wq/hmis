@@ -2,6 +2,7 @@
 // OPD: patient completes consultation → bill generated → payment → receipt
 'use client';
 import React, { useState, useCallback } from 'react';
+import { HOSPITAL } from '@/lib/config/hospital';
 import { sb } from '@/lib/supabase/browser';
 import { smartPostConsultationCharge, generateBillNumber, lookupTariff } from '@/lib/bridge/cross-module-bridge';
 import { printBillInvoice, printPaymentReceipt } from '@/components/billing/bill-pdf';
@@ -208,9 +209,9 @@ export default function OPDBilling({ centreId, staffId, patient, doctor, visitId
           <div className="text-xs text-gray-400">{payMode.toUpperCase()} {payRef ? `— ${payRef}` : ''}</div>
         </div>
         <div className="flex gap-3 justify-center">
-          <button onClick={() => printBillInvoice(bill, charges.map(c => ({ description: c.desc, quantity: 1, unit_rate: c.amount, net_amount: c.amount, service_date: bill.bill_date })), [bill.payment], { first_name: patient.name.split(' ')[0], last_name: patient.name.split(' ').slice(1).join(' '), uhid: patient.uhid, age_years: patient.age, gender: patient.gender, phone_primary: patient.phone }, { name: 'Hospital', address: 'Shilaj, Ahmedabad', gstin: '24AADCH1234F1Z5' })}
+          <button onClick={() => printBillInvoice(bill, charges.map(c => ({ description: c.desc, quantity: 1, unit_rate: c.amount, net_amount: c.amount, service_date: bill.bill_date })), [bill.payment], { first_name: patient.name.split(' ')[0], last_name: patient.name.split(' ').slice(1).join(' '), uhid: patient.uhid, age_years: patient.age, gender: patient.gender, phone_primary: patient.phone }, HOSPITAL)}
             className="px-4 py-2 bg-h1-navy text-white text-xs rounded-lg">Print Bill</button>
-          <button onClick={() => printPaymentReceipt(bill.payment, bill, { first_name: patient.name.split(' ')[0], last_name: patient.name.split(' ').slice(1).join(' '), uhid: patient.uhid }, { name: 'Hospital', address: 'Shilaj, Ahmedabad' })}
+          <button onClick={() => printPaymentReceipt(bill.payment, bill, { first_name: patient.name.split(' ')[0], last_name: patient.name.split(' ').slice(1).join(' '), uhid: patient.uhid }, HOSPITAL)}
             className="px-4 py-2 bg-green-600 text-white text-xs rounded-lg">Print Receipt</button>
           {onDone && <button onClick={onDone} className="px-4 py-2 bg-gray-200 text-xs rounded-lg">Done — Next Patient</button>}
         </div>

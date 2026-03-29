@@ -31,7 +31,7 @@ export function exportToPDF(sheets: ExcelSheet[], title: string) {
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(16);
     doc.setTextColor(...TEAL);
-    doc.text('Hospital', 14, 14);
+    doc.text('Health1 Super Speciality Hospitals', 14, 14);
 
     // Report title
     doc.setFontSize(11);

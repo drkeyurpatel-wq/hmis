@@ -38,7 +38,7 @@ interface HistoReportData {
 const HEADER = (centreName?: string, centreAddress?: string) => `
 <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid #1e40af;padding-bottom:10px;margin-bottom:12px">
   <div>
-    <div style="font-size:18px;font-weight:700;color:#1e40af">${centreName || 'Hospital'}</div>
+    <div style="font-size:18px;font-weight:700;color:#1e40af">${centreName || 'Health1 Super Speciality Hospitals'}</div>
     <div style="font-size:8px;color:#666">${centreAddress || 'Shilaj, Ahmedabad'} | NABL Accredited</div>
   </div>
   <div style="text-align:right;font-size:9px;color:#666">
@@ -60,7 +60,7 @@ const SIGNATURE = (verifiedBy?: string, reportedAt?: string) => `
   <div style="text-align:center;font-size:9px;color:#666"><div style="width:140px;border-bottom:1px solid #333;margin-bottom:4px"></div>${verifiedBy || 'Pathologist'}</div>
 </div>
 <div style="margin-top:12px;font-size:7px;color:#aaa;text-align:center">
-  This is a computer-generated report. ${reportedAt ? 'Reported: ' + reportedAt : ''}<br/>Hospital — Quality Healthcare for All
+  This is a computer-generated report. ${reportedAt ? 'Reported: ' + reportedAt : ''}<br/>Health1 Super Speciality Hospitals — Quality Healthcare for All
 </div>`;
 
 const flagStyle = (f: string) => f === 'CRITICAL' ? 'color:#dc2626;font-weight:900' : f === 'ABN' || f === 'HIGH' || f === 'LOW' ? 'color:#d97706;font-weight:700' : '';
@@ -192,14 +192,14 @@ export function sendLabReportWhatsApp(phone: string, data: {
 }) {
   // Using WhatsApp API template (wa.me deep link for now, replace with API in production)
   const message = encodeURIComponent(
-    `🏥 *Hospital — Lab Report*\n\n` +
+    `*Health1 — Lab Report*\n\n` +
     `Patient: *${data.patientName}*\n` +
     `UHID: ${data.uhid}\n` +
     `Test: *${data.testName}*\n\n` +
     `${data.resultSummary}\n\n` +
     `${data.reportUrl ? '📄 Report: ' + data.reportUrl + '\n\n' : ''}` +
-    `_Please collect your original report from the hospital._\n` +
-    `_For queries, call Hospital Lab: 079-XXXXXXXX_`
+    `_Please collect your original report from Health1 Hospital._\n` +
+    `_For queries, call Health1 Lab: +91 79 4890 1234_`
   );
   const cleanPhone = phone.replace(/[^0-9]/g, '');
   const fullPhone = cleanPhone.startsWith('91') ? cleanPhone : '91' + cleanPhone;
