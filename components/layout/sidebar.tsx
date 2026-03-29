@@ -8,16 +8,18 @@ import { useAuthStore } from '@/lib/store/auth';
 import {
   LayoutDashboard, Users, Calendar, BedDouble, Stethoscope,
   CreditCard, Pill, FlaskConical, ScanLine, Scissors, BarChart3,
-  Settings, LogOut, Building2, ChevronDown, ChevronRight,
+  Settings, LogOut, Building2, ChevronDown, ChevronRight, Droplets,
   Heart, PanelLeftClose, PanelLeft, Shield, Siren,
-  MoreHorizontal,
+  Activity, Truck, FileText, Wrench, SprayCan, Shirt,
+  ClipboardList, UtensilsCrossed, Dumbbell, AlertTriangle,
+  Package, Eye, UserPlus, MessageSquare, SlidersHorizontal,
+  MoreHorizontal, Star, Cross, Home,
 } from 'lucide-react';
 
 interface NavItem { href: string; label: string; icon: any; moduleKey?: string }
 
 // ===================================================================
-// DAY 1 — ROLE-BASED PRIMARY NAV
-// Only modules that Shilaj staff will use from go-live
+// ROLE-BASED PRIMARY NAV — what each role sees by default
 // ===================================================================
 const ROLE_NAV: Record<string, NavItem[]> = {
   doctor: [
@@ -45,6 +47,7 @@ const ROLE_NAV: Record<string, NavItem[]> = {
     { href: '/ipd', label: 'IPD', icon: BedDouble, moduleKey: 'ipd' },
     { href: '/emergency', label: 'Emergency', icon: Siren, moduleKey: 'emergency' },
     { href: '/pharmacy', label: 'Pharmacy', icon: Pill, moduleKey: 'pharmacy' },
+    { href: '/px-nursing', label: 'Patient Requests', icon: Star, moduleKey: 'px_nursing' },
   ],
   receptionist: [
     { href: '/', label: 'Dashboard', icon: LayoutDashboard },
@@ -58,58 +61,100 @@ const ROLE_NAV: Record<string, NavItem[]> = {
   pharmacist: [
     { href: '/', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/pharmacy', label: 'Dispensing', icon: Pill, moduleKey: 'pharmacy' },
+    { href: '/vpms', label: 'Procurement', icon: Truck, moduleKey: 'procurement' },
     { href: '/patients', label: 'Patients', icon: Users },
   ],
   lab_tech: [
     { href: '/', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/lab', label: 'Lab Worklist', icon: FlaskConical, moduleKey: 'lab' },
     { href: '/patients', label: 'Patients', icon: Users },
+    { href: '/blood-bank', label: 'Blood Bank', icon: Droplets, moduleKey: 'blood_bank' },
   ],
   accountant: [
     { href: '/', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/billing', label: 'Billing', icon: CreditCard, moduleKey: 'billing' },
+    { href: '/pnl', label: 'P&L', icon: BarChart3, moduleKey: 'billing' },
     { href: '/insurance', label: 'Insurance', icon: Shield, moduleKey: 'billing' },
     { href: '/reports', label: 'Reports', icon: BarChart3 },
+    { href: '/revenue-leakage', label: 'Revenue Leakage', icon: AlertTriangle, moduleKey: 'revenue_leakage' },
   ],
   admin: [
     { href: '/', label: 'Dashboard', icon: LayoutDashboard },
+    { href: '/command-centre', label: 'Command Centre', icon: Activity },
     { href: '/patients', label: 'Patients', icon: Users },
-    { href: '/appointments', label: 'Appointments', icon: Calendar, moduleKey: 'opd' },
     { href: '/opd', label: 'OPD', icon: Stethoscope, moduleKey: 'opd' },
     { href: '/ipd', label: 'IPD', icon: BedDouble, moduleKey: 'ipd' },
     { href: '/billing', label: 'Billing', icon: CreditCard, moduleKey: 'billing' },
     { href: '/lab', label: 'Lab', icon: FlaskConical, moduleKey: 'lab' },
     { href: '/reports', label: 'Reports', icon: BarChart3 },
+    { href: '/px-coordinator', label: 'Patient Experience', icon: Star, moduleKey: 'px_coordinator' },
   ],
 };
 
 // ===================================================================
-// DAY 1 "MORE" — only go-live modules not in primary nav
-// Phase 2 modules completely removed from navigation
+// MORE — all modules, grouped cleanly
 // ===================================================================
 const MORE_NAV: { label: string; items: NavItem[] }[] = [
   { label: 'CLINICAL', items: [
     { href: '/patients', label: 'Patients', icon: Users },
     { href: '/opd', label: 'OPD', icon: Stethoscope, moduleKey: 'opd' },
+    { href: '/emr-v2', label: 'EMR', icon: Stethoscope, moduleKey: 'emr' },
     { href: '/ipd', label: 'IPD', icon: BedDouble, moduleKey: 'ipd' },
-    { href: '/ward-board', label: 'Ward Board', icon: BedDouble, moduleKey: 'nursing' },
     { href: '/nursing-station', label: 'Nursing Station', icon: Heart, moduleKey: 'nursing' },
+    { href: '/ward-board', label: 'Ward Board', icon: BedDouble, moduleKey: 'nursing' },
     { href: '/emergency', label: 'Emergency', icon: Siren, moduleKey: 'emergency' },
     { href: '/ot', label: 'OT & Surgery', icon: Scissors, moduleKey: 'ot' },
-    { href: '/bed-management', label: 'Bed Management', icon: BedDouble, moduleKey: 'ipd' },
+    { href: '/cathlab', label: 'Cath Lab', icon: Heart, moduleKey: 'cathlab' },
+    { href: '/endoscopy', label: 'Endoscopy', icon: Eye, moduleKey: 'endoscopy' },
+    { href: '/dialysis', label: 'Dialysis', icon: Droplets, moduleKey: 'dialysis' },
+    { href: '/physiotherapy', label: 'Physiotherapy', icon: Dumbbell, moduleKey: 'physiotherapy' },
+    { href: '/surgical-planning', label: 'Surgical Planning', icon: ClipboardList, moduleKey: 'ot' },
+    { href: '/digital-consent', label: 'Digital Consent', icon: FileText, moduleKey: 'consent' },
+    { href: '/referrals', label: 'Referrals', icon: UserPlus, moduleKey: 'referrals' },
+    { href: '/homecare', label: 'Homecare', icon: Home, moduleKey: 'homecare' },
   ]},
   { label: 'DIAGNOSTICS & PHARMACY', items: [
     { href: '/lab', label: 'Laboratory', icon: FlaskConical, moduleKey: 'lab' },
     { href: '/radiology', label: 'Radiology', icon: ScanLine, moduleKey: 'radiology' },
+    { href: '/blood-bank', label: 'Blood Bank', icon: Droplets, moduleKey: 'blood_bank' },
     { href: '/pharmacy', label: 'Pharmacy', icon: Pill, moduleKey: 'pharmacy' },
   ]},
-  { label: 'REVENUE', items: [
+  { label: 'REVENUE & BILLING', items: [
     { href: '/billing', label: 'Billing', icon: CreditCard, moduleKey: 'billing' },
+    { href: '/pnl', label: 'P&L', icon: BarChart3, moduleKey: 'billing' },
     { href: '/insurance', label: 'Insurance', icon: Shield, moduleKey: 'billing' },
+    { href: '/packages', label: 'Packages', icon: Package, moduleKey: 'billing' },
+    { href: '/revenue-leakage', label: 'Revenue Leakage', icon: AlertTriangle, moduleKey: 'revenue_leakage' },
     { href: '/appointments', label: 'Appointments', icon: Calendar, moduleKey: 'opd' },
   ]},
-  { label: 'ADMIN', items: [
+  { label: 'PATIENT EXPERIENCE', items: [
+    { href: '/px-coordinator', label: 'PX Coordinator', icon: Star, moduleKey: 'px_coordinator' },
+    { href: '/px-nursing', label: 'PX Nursing', icon: Star, moduleKey: 'px_nursing' },
+    { href: '/px-kitchen', label: 'PX Kitchen', icon: UtensilsCrossed, moduleKey: 'px_kitchen' },
+    { href: '/px-feedback', label: 'PX Feedback', icon: MessageSquare, moduleKey: 'px_feedback' },
+    { href: '/dietary', label: 'Dietary', icon: UtensilsCrossed, moduleKey: 'dietary' },
+    { href: '/grievances', label: 'Grievances', icon: MessageSquare, moduleKey: 'grievances' },
+    { href: '/crm', label: 'CRM', icon: Users, moduleKey: 'crm' },
+    { href: '/visitors', label: 'Visitors', icon: Users, moduleKey: 'visitors' },
+  ]},
+  { label: 'OPERATIONS', items: [
+    { href: '/vpms', label: 'Procurement', icon: Truck, moduleKey: 'procurement' },
+    { href: '/biomedical', label: 'Equipment', icon: Wrench, moduleKey: 'biomedical' },
+    { href: '/housekeeping', label: 'Housekeeping', icon: SprayCan, moduleKey: 'housekeeping' },
+    { href: '/cssd', label: 'CSSD', icon: Shield, moduleKey: 'cssd' },
+    { href: '/duty-roster', label: 'Duty Roster', icon: ClipboardList, moduleKey: 'duty_roster' },
+    { href: '/linen', label: 'Linen', icon: Shirt, moduleKey: 'linen' },
+    { href: '/infection-control', label: 'Infection Control', icon: Shield, moduleKey: 'infection_control' },
+    { href: '/bed-management', label: 'Bed Management', icon: BedDouble, moduleKey: 'ipd' },
+    { href: '/mortuary', label: 'Mortuary', icon: Cross, moduleKey: 'mortuary' },
+  ]},
+  { label: 'ADMIN & ANALYTICS', items: [
+    { href: '/command-centre', label: 'Command Centre', icon: Activity },
+    { href: '/pulse', label: 'Hospital Pulse', icon: Activity },
     { href: '/reports', label: 'Reports', icon: BarChart3 },
+    { href: '/quality', label: 'Quality / NABH', icon: Shield, moduleKey: 'quality' },
+    { href: '/staff', label: 'Staff', icon: Users },
+    { href: '/settings/modules', label: 'Module Config', icon: SlidersHorizontal },
     { href: '/settings', label: 'Settings', icon: Settings },
   ]},
 ];
@@ -238,7 +283,7 @@ export function Sidebar({ mobileOpen, onMobileClose }: { mobileOpen?: boolean; o
 
           {!collapsed && <div className="border-t border-gray-100 my-3" />}
 
-          {/* MORE — Day 1 modules not in primary nav */}
+          {/* MORE — all modules grouped */}
           {!collapsed && (
             <div>
               <button onClick={() => setMoreOpen(!moreOpen)}

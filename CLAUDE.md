@@ -14,8 +14,8 @@
 ## Go-Live Status (March 29, 2026)
 
 - **Build:** 86 pages, 0 TypeScript errors, `ignoreBuildErrors` REMOVED
-- **Day 1 modules:** Dashboard, Patients, OPD, EMR, IPD, Ward Board, Lab, Pharmacy, Billing, Radiology, OT, Reports, Settings, Appointments, Nursing Station, Emergency, Insurance, Bed Management
-- **Phase 2 modules (hidden from nav):** Blood Bank, CSSD, Dietary, Housekeeping, CRM, Homecare, Ambulance, Telemedicine, Voice Notes, Pulse, Documents, Assets, Grievances, Mortuary, Visitors, Linen, Infection Control, Quality, Referrals, Physiotherapy, Cathlab, Endoscopy, Dialysis, Digital Consent, Surgical Planning, Equipment Lifecycle, Biomedical, Duty Roster, Revenue Leakage, P&L, Command Centre, PX modules, Handover, Onboarding, Packages, EMR-mobile, VPMS, Staff
+- **All modules active:** Every module accessible from sidebar and command palette
+- **Sidebar structure:** Role-based primary nav (5-8 items per role) + "More" with 6 groups (Clinical, Diagnostics & Pharmacy, Revenue & Billing, Patient Experience, Operations, Admin & Analytics)
 - **Branding:** `lib/config/hospital.ts` is single source of truth. All prints use `HOSPITAL` constant.
 - **Security:** 18/19 API routes auth-guarded, no service_role in client, no PHI in logs
 - **Pending SQL:** `sql/DAY1_RLS_CRITICAL.sql` (22 tables), `sql/DAY1_AUDIT_TRIGGERS.sql` (15 tables)
