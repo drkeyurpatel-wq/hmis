@@ -225,9 +225,9 @@ CREATE TABLE IF NOT EXISTS hmis_clinical_alerts (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE INDEX idx_clinical_alerts_active ON hmis_clinical_alerts(centre_id, status, severity) WHERE status = 'active';
-CREATE INDEX idx_clinical_alerts_patient ON hmis_clinical_alerts(patient_id, status);
-CREATE INDEX idx_clinical_alerts_admission ON hmis_clinical_alerts(admission_id) WHERE admission_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_clinical_alerts_active ON hmis_clinical_alerts(centre_id, status, severity) WHERE status = 'active';
+CREATE INDEX IF NOT EXISTS idx_clinical_alerts_patient ON hmis_clinical_alerts(patient_id, status);
+CREATE INDEX IF NOT EXISTS idx_clinical_alerts_admission ON hmis_clinical_alerts(admission_id) WHERE admission_id IS NOT NULL;
 
 -- RLS
 ALTER TABLE hmis_clinical_alerts ENABLE ROW LEVEL SECURITY;
@@ -1938,9 +1938,9 @@ CREATE TABLE IF NOT EXISTS hmis_px_tokens (
   created_by UUID REFERENCES hmis_staff(id)
 );
 
-CREATE INDEX idx_px_tokens_token ON hmis_px_tokens(token) WHERE is_active = true;
-CREATE INDEX idx_px_tokens_admission ON hmis_px_tokens(admission_id);
-CREATE INDEX idx_px_tokens_centre ON hmis_px_tokens(centre_id) WHERE is_active = true;
+CREATE INDEX IF NOT EXISTS idx_px_tokens_token ON hmis_px_tokens(token) WHERE is_active = true;
+CREATE INDEX IF NOT EXISTS idx_px_tokens_admission ON hmis_px_tokens(admission_id);
+CREATE INDEX IF NOT EXISTS idx_px_tokens_centre ON hmis_px_tokens(centre_id) WHERE is_active = true;
 
 -- 2b. Food Menu
 CREATE TABLE IF NOT EXISTS hmis_px_food_menu (
@@ -1961,7 +1961,7 @@ CREATE TABLE IF NOT EXISTS hmis_px_food_menu (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE INDEX idx_px_food_menu_centre ON hmis_px_food_menu(centre_id) WHERE is_available = true;
+CREATE INDEX IF NOT EXISTS idx_px_food_menu_centre ON hmis_px_food_menu(centre_id) WHERE is_available = true;
 
 -- 2c. Food Orders
 CREATE TABLE IF NOT EXISTS hmis_px_food_orders (
@@ -1990,9 +1990,9 @@ CREATE TABLE IF NOT EXISTS hmis_px_food_orders (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE INDEX idx_px_food_orders_token ON hmis_px_food_orders(token_id);
-CREATE INDEX idx_px_food_orders_status ON hmis_px_food_orders(centre_id, status) WHERE status NOT IN ('delivered', 'cancelled');
-CREATE INDEX idx_px_food_orders_kitchen ON hmis_px_food_orders(centre_id, status) WHERE status IN ('nurse_approved', 'preparing', 'ready');
+CREATE INDEX IF NOT EXISTS idx_px_food_orders_token ON hmis_px_food_orders(token_id);
+CREATE INDEX IF NOT EXISTS idx_px_food_orders_status ON hmis_px_food_orders(centre_id, status) WHERE status NOT IN ('delivered', 'cancelled');
+CREATE INDEX IF NOT EXISTS idx_px_food_orders_kitchen ON hmis_px_food_orders(centre_id, status) WHERE status IN ('nurse_approved', 'preparing', 'ready');
 
 -- 2d. Complaints
 CREATE TABLE IF NOT EXISTS hmis_px_complaints (
@@ -2019,8 +2019,8 @@ CREATE TABLE IF NOT EXISTS hmis_px_complaints (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE INDEX idx_px_complaints_centre ON hmis_px_complaints(centre_id, status) WHERE status NOT IN ('resolved', 'closed');
-CREATE INDEX idx_px_complaints_token ON hmis_px_complaints(token_id);
+CREATE INDEX IF NOT EXISTS idx_px_complaints_centre ON hmis_px_complaints(centre_id, status) WHERE status NOT IN ('resolved', 'closed');
+CREATE INDEX IF NOT EXISTS idx_px_complaints_token ON hmis_px_complaints(token_id);
 
 -- 2e. Nurse Calls
 CREATE TABLE IF NOT EXISTS hmis_px_nurse_calls (
@@ -2046,8 +2046,8 @@ CREATE TABLE IF NOT EXISTS hmis_px_nurse_calls (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE INDEX idx_px_nurse_calls_active ON hmis_px_nurse_calls(centre_id, priority, status) WHERE status IN ('pending', 'acknowledged', 'in_progress');
-CREATE INDEX idx_px_nurse_calls_token ON hmis_px_nurse_calls(token_id);
+CREATE INDEX IF NOT EXISTS idx_px_nurse_calls_active ON hmis_px_nurse_calls(centre_id, priority, status) WHERE status IN ('pending', 'acknowledged', 'in_progress');
+CREATE INDEX IF NOT EXISTS idx_px_nurse_calls_token ON hmis_px_nurse_calls(token_id);
 
 -- 2f. Feedback
 CREATE TABLE IF NOT EXISTS hmis_px_feedback (
@@ -2072,8 +2072,8 @@ CREATE TABLE IF NOT EXISTS hmis_px_feedback (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE INDEX idx_px_feedback_centre ON hmis_px_feedback(centre_id);
-CREATE INDEX idx_px_feedback_rating ON hmis_px_feedback(centre_id, overall_rating);
+CREATE INDEX IF NOT EXISTS idx_px_feedback_centre ON hmis_px_feedback(centre_id);
+CREATE INDEX IF NOT EXISTS idx_px_feedback_rating ON hmis_px_feedback(centre_id, overall_rating);
 
 -- 2g. Activity Log
 CREATE TABLE IF NOT EXISTS hmis_px_activity_log (
@@ -2088,8 +2088,8 @@ CREATE TABLE IF NOT EXISTS hmis_px_activity_log (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE INDEX idx_px_activity_log_token ON hmis_px_activity_log(token_id);
-CREATE INDEX idx_px_activity_log_centre ON hmis_px_activity_log(centre_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_px_activity_log_token ON hmis_px_activity_log(token_id);
+CREATE INDEX IF NOT EXISTS idx_px_activity_log_centre ON hmis_px_activity_log(centre_id, created_at DESC);
 
 -- 3. RPC FUNCTIONS
 -- ============================================================
