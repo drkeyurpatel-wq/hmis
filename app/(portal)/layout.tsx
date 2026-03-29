@@ -13,7 +13,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
               <img src="/images/health1-logo.svg" alt="Health1" className="h-6 w-auto" />
             </div>
             <div>
-              <p className="font-bold text-sm text-gray-900 leading-none">Hospital</p>
+              <p className="font-bold text-sm text-gray-900 leading-none">Health1</p>
               <p className="text-[9px] text-teal-600 font-semibold uppercase tracking-wider">Patient Portal</p>
             </div>
           </Link>

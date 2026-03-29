@@ -1,16 +1,34 @@
 // components/billing/bill-pdf.ts
 // Print functions — opens new window with formatted HTML for printing
+import { LOGO_SVG, LOGO_ASPECT } from '@/lib/config/logo';
 
 const fmt = (n: number) => Math.round(parseFloat(String(n)) || 0).toLocaleString('en-IN');
 
 const STYLE = `<style>body{font-family:'Segoe UI',sans-serif;margin:25px;font-size:12px;color:#333}
 table{width:100%;border-collapse:collapse;margin:12px 0}th,td{border:1px solid #ddd;padding:5px 8px;text-align:left}
 th{background:#f5f5f5;font-size:11px}.r{text-align:right}.b{font-weight:bold}
-.header{display:flex;justify-content:space-between;border-bottom:2px solid #0d9488;padding-bottom:10px;margin-bottom:15px}
-.logo{font-size:18px;font-weight:bold;color:#0d9488}.sub{color:#666;font-size:10px}
+.header{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #0d9488;padding-bottom:12px;margin-bottom:15px}
+.header-left{display:flex;align-items:center;gap:14px}
+.logo-img{width:160px;height:auto}
+.hospital-text{font-size:10px;color:#666;line-height:1.4}
+.sub{color:#666;font-size:10px}
 .box{padding:10px;background:#f9fafb;border-radius:4px;margin-bottom:12px}
 .total-row td{background:#f0fdf4;font-weight:bold;font-size:13px}
 @media print{@page{margin:12mm}body{margin:0}}</style>`;
+
+
+
+function printHeader(hospital: any, rightContent: string): string {
+  return `<div class="header"><div class="header-left">
+    <img src="${LOGO_SVG}" class="logo-img" alt="Health1" />
+    <div class="hospital-text">
+      <div>${hospital?.address || 'Nr. Shilaj Circle, S.P. Ring Road, Ahmedabad - 380058'}</div>
+      ${hospital?.gstin ? `<div>GSTIN: ${hospital.gstin} ${hospital?.cin ? '| CIN: ' + hospital.cin : ''}</div>` : ''}
+      ${hospital?.phone ? `<div>Ph: ${hospital.phone}</div>` : ''}
+    </div>
+  </div>
+  <div style="text-align:right">${rightContent}</div></div>`;
+}
 
 export function printBillInvoice(bill: any, items: any[], payments: any[], patient: any, hospital: any) {
   const w = window.open('', '_blank');
@@ -20,11 +38,7 @@ export function printBillInvoice(bill: any, items: any[], payments: any[], patie
   const bal = net - paid;
 
   w.document.write(`<html><head><title>Invoice ${bill.bill_number}</title>${STYLE}</head><body>
-    <div class="header"><div><div class="logo">${hospital.name || 'Health1'}</div>
-    <div class="sub">${hospital.address || 'Shilaj, Ahmedabad'}</div>
-    ${hospital.gstin ? `<div class="sub">GSTIN: ${hospital.gstin}</div>` : ''}</div>
-    <div style="text-align:right"><div class="b" style="font-size:15px">${bill.bill_number}</div>
-    <div>Date: ${bill.bill_date}</div><div>Type: ${(bill.bill_type || 'OPD').toUpperCase()}</div></div></div>
+    ${printHeader(hospital, `<div class="b" style="font-size:15px">${bill.bill_number}</div><div>Date: ${bill.bill_date}</div><div>Type: ${(bill.bill_type || 'OPD').toUpperCase()}</div>`)}
 
     <div class="box" style="display:flex;justify-content:space-between">
     <div><div class="b">Patient</div><div>${patient.first_name || ''} ${patient.last_name || ''}</div>
@@ -68,10 +82,7 @@ export function printPaymentReceipt(payment: any, bill: any, patient: any, hospi
   const w = window.open('', '_blank');
   if (!w) return;
   w.document.write(`<html><head><title>Receipt ${payment.receipt_number || ''}</title>${STYLE}</head><body>
-    <div class="header"><div><div class="logo">${hospital.name || 'Health1'}</div>
-    <div class="sub">${hospital.address || 'Shilaj, Ahmedabad'}</div></div>
-    <div style="text-align:right"><div class="b" style="font-size:15px">RECEIPT</div>
-    <div>${payment.receipt_number || ''}</div></div></div>
+    ${printHeader(hospital, `<div class="b" style="font-size:15px">RECEIPT</div><div>${payment.receipt_number || ''}</div>`)}
 
     <div class="box">
     <div><b>Patient:</b> ${patient.first_name || ''} ${patient.last_name || ''} (${patient.uhid || '-'})</div>
@@ -93,10 +104,7 @@ export function printEstimate(estimate: any, items: any[], patient: any, hospita
   if (!w) return;
   const total = (items || []).reduce((s: number, i: any) => s + parseFloat(i.amount || i.net_amount || 0), 0);
   w.document.write(`<html><head><title>Estimate</title>${STYLE}</head><body>
-    <div class="header"><div><div class="logo">${hospital?.name || 'Health1'}</div>
-    <div class="sub">${hospital?.address || 'Shilaj, Ahmedabad'}</div></div>
-    <div style="text-align:right"><div class="b" style="font-size:15px">ESTIMATE</div>
-    <div>${estimate?.estimate_number || ''}</div></div></div>
+    ${printHeader(hospital, `<div class="b" style="font-size:15px">ESTIMATE</div><div>${estimate?.estimate_number || ''}</div>`)}
 
     <div class="box"><div><b>Patient:</b> ${patient?.first_name || ''} ${patient?.last_name || ''} (${patient?.uhid || '-'})</div></div>
 

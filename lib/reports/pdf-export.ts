@@ -2,6 +2,7 @@
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import type { ExcelSheet } from './excel-export';
+import { LOGO_PNG, LOGO_ASPECT } from '@/lib/config/logo';
 
 const TEAL = [0, 128, 128] as const;
 const DARK = [51, 51, 51] as const;
@@ -27,16 +28,16 @@ export function exportToPDF(sheets: ExcelSheet[], title: string) {
     doc.setFillColor(...TEAL);
     doc.rect(0, 0, pageW, 2, 'F');
 
-    // Hospital name
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(16);
-    doc.setTextColor(...TEAL);
-    doc.text('Health1 Super Speciality Hospitals', 14, 14);
+    // Hospital logo
+    const logoW = 45;
+    const logoH = logoW / LOGO_ASPECT;
+    try { doc.addImage(LOGO_PNG, 'PNG', 14, 6, logoW, logoH); } catch {}
 
     // Report title
+    doc.setFont('helvetica', 'bold');
     doc.setFontSize(11);
     doc.setTextColor(...DARK);
-    doc.text(reportName + (sheets.length > 1 ? ' — ' + sheet.name : ''), 14, 21);
+    doc.text(reportName + (sheets.length > 1 ? ' — ' + sheet.name : ''), 14, 6 + logoH + 5);
 
     // Centre + period (right-aligned)
     doc.setFont('helvetica', 'normal');

@@ -4,6 +4,7 @@
 'use client';
 import React, { useState, useEffect, createContext, useContext, useCallback } from 'react';
 import { useAuthStore } from '@/lib/store/auth';
+import { LOGO_SVG } from '@/lib/config/logo';
 
 // ============================================================
 // LOADING SKELETON
@@ -296,7 +297,7 @@ export function openPrintWindow(html: string, title: string = 'Hospital Print') 
 * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, sans-serif; }
 body { padding: 15mm; color: #1a1a1a; font-size: 11px; line-height: 1.5; }
 .hdr { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #1e40af; padding-bottom: 10px; margin-bottom: 12px; }
-.logo { width: 60px; height: 60px; border: 1px dashed #ccc; display: flex; align-items: center; justify-content: center; font-size: 8px; color: #999; }
+.logo { width: 150px; height: auto; }
 .hn { font-size: 16px; font-weight: 700; color: #1e40af; }
 .hs { font-size: 9px; color: #666; }
 .pr { display: flex; gap: 16px; margin-bottom: 6px; font-size: 11px; }
@@ -335,7 +336,7 @@ export function printBill(bill: {
   openPrintWindow(`
 <div class="hdr">
   <div style="display:flex;gap:10px;align-items:center">
-    <div class="logo">LOGO</div>
+    <img class="logo" src="${LOGO_SVG}" alt="Health1" />
     <div><div class="hn">${centre.name}</div><div class="hs">${centre.address} | ${centre.phone}</div><div class="hs">${centre.tagline}</div></div>
   </div>
   <div style="text-align:right;font-size:10px;color:#666">
@@ -386,7 +387,7 @@ export function printDischargeSummary(data: {
   openPrintWindow(`
 <div class="hdr">
   <div style="display:flex;gap:10px;align-items:center">
-    <div class="logo">LOGO</div>
+    <img class="logo" src="${LOGO_SVG}" alt="Health1" />
     <div><div class="hn">${centre.name}</div><div class="hs">${centre.address} | ${centre.phone}</div></div>
   </div>
   <div style="text-align:right"><div style="font-size:14px;font-weight:700;color:#1e40af">DISCHARGE SUMMARY</div></div>
@@ -456,7 +457,7 @@ export function printEncounterSummary(data: {
   openPrintWindow(`
 <div class="hdr">
   <div style="display:flex;gap:10px;align-items:center">
-    <div class="logo">LOGO</div>
+    <img class="logo" src="${LOGO_SVG}" alt="Health1" />
     <div><div class="hn">${centre.name}</div><div class="hs">${centre.address} | ${centre.phone}</div><div class="hs">${centre.tagline}</div></div>
   </div>
   <div style="text-align:right;font-size:10px;color:#666">
@@ -516,9 +517,9 @@ export function printLabReport(data: {
 <div style="max-width:700px;margin:0 auto;font-family:Segoe UI,Arial,sans-serif;color:#1a1a1a">
   <!-- Header -->
   <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid #1e40af;padding-bottom:10px;margin-bottom:12px">
-    <div>
-      <div style="font-size:18px;font-weight:700;color:#1e40af">${data.centreName || 'Health1'}</div>
-      <div style="font-size:8px;color:#666">${data.centreAddress || 'Shilaj, Ahmedabad'} | ${data.centrePhone || ''}</div>
+    <div style="display:flex;align-items:center;gap:12px">
+      <img src="${LOGO_SVG}" style="width:150px;height:auto" alt="Health1" />
+      <div style="font-size:8px;color:#666;line-height:1.4">${data.centreAddress || 'Nr. Shilaj Circle, S.P. Ring Road, Ahmedabad - 380058'}<br/>${data.centrePhone || '+91 79 4890 1234'}</div>
     </div>
     <div style="text-align:right;font-size:9px;color:#666">
       <div style="font-size:12px;font-weight:700;color:#1e40af">LABORATORY REPORT</div>

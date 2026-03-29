@@ -3,6 +3,7 @@
 // Data comes from the discharge engine's state (admission, patient, ds form)
 
 import { jsPDF } from 'jspdf';
+import { LOGO_PNG, LOGO_ASPECT } from '@/lib/config/logo';
 import autoTable from 'jspdf-autotable';
 
 const TEAL = [13, 148, 136] as const;      // #0d9488
@@ -81,14 +82,14 @@ export function generateDischargePDF(
   doc.setFillColor(...TEAL);
   doc.rect(0, 0, pageW, 3, 'F');
 
-  // Hospital name
-  y = 14;
-  doc.setFontSize(16); doc.setFont('helvetica', 'bold');
-  doc.setTextColor(...TEAL);
-  doc.text('Health1 Super Speciality Hospitals', 15, y);
+  // Hospital logo
+  y = 6;
+  const logoW = 50;
+  const logoH = logoW / LOGO_ASPECT;
+  try { doc.addImage(LOGO_PNG, 'PNG', 15, y, logoW, logoH); } catch {}
   doc.setFontSize(8); doc.setFont('helvetica', 'normal');
   doc.setTextColor(...GRAY);
-  doc.text('Nr. Shilaj Circle, S.P. Ring Road, Ahmedabad - 380058  |  HFR: IN2410013685', 15, y + 5);
+  doc.text('Nr. Shilaj Circle, S.P. Ring Road, Ahmedabad - 380058  |  HFR: IN2410013685', 15, y + logoH + 3);
 
   // Title
   doc.setFontSize(14); doc.setFont('helvetica', 'bold');

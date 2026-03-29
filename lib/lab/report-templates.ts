@@ -35,11 +35,16 @@ interface HistoReportData {
   centreName?: string; centreAddress?: string;
 }
 
+import { LOGO_SVG } from '@/lib/config/logo';
+
 const HEADER = (centreName?: string, centreAddress?: string) => `
 <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid #1e40af;padding-bottom:10px;margin-bottom:12px">
-  <div>
-    <div style="font-size:18px;font-weight:700;color:#1e40af">${centreName || 'Health1 Super Speciality Hospitals'}</div>
-    <div style="font-size:8px;color:#666">${centreAddress || 'Shilaj, Ahmedabad'} | NABL Accredited</div>
+  <div style="display:flex;align-items:center;gap:12px">
+    <img src="${LOGO_SVG}" style="width:150px;height:auto" alt="Health1" />
+    <div>
+      <div style="font-size:9px;color:#666;line-height:1.4">${centreAddress || 'Nr. Shilaj Circle, S.P. Ring Road, Ahmedabad - 380058'}</div>
+      <div style="font-size:8px;color:#666">NABL Accredited | HFR: IN2410013685</div>
+    </div>
   </div>
   <div style="text-align:right;font-size:9px;color:#666">
     <div style="font-size:12px;font-weight:700;color:#1e40af">LABORATORY REPORT</div>

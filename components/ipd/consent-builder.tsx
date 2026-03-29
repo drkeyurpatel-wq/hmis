@@ -127,7 +127,7 @@ export default function ConsentBuilder({ consents, patientId, patientName, admis
 
     openPrintWindow(`<div style="max-width:700px;margin:0 auto;font-family:Segoe UI,Arial,sans-serif;font-size:11px">
       <div style="text-align:center;border-bottom:2px solid #1e40af;padding-bottom:8px;margin-bottom:12px">
-        <div style="font-size:16px;font-weight:700;color:#1e40af">Hospital</div>
+        <div style="font-size:16px;font-weight:700;color:#1e40af">Health1 Super Speciality Hospitals</div>
         <div style="font-size:9px;color:#666">Shilaj, Ahmedabad | NABH Accredited</div>
         <div style="font-size:14px;font-weight:700;margin-top:6px">${form.procedureName || 'INFORMED CONSENT FORM'}</div>
       </div>

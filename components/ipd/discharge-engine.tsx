@@ -233,7 +233,7 @@ RULES:
 
     openPrintWindow(`<div style="max-width:700px;margin:0 auto;font-family:Segoe UI,Arial,sans-serif;color:#1a1a1a">
       <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid #1e40af;padding-bottom:10px;margin-bottom:10px">
-        <div><div style="font-size:18px;font-weight:700;color:#1e40af">Hospital</div><div style="font-size:8px;color:#666">Shilaj, Ahmedabad | NABH Accredited</div></div>
+        <div><div style="font-size:18px;font-weight:700;color:#1e40af">Health1 Super Speciality Hospitals</div><div style="font-size:8px;color:#666">Nr. Shilaj Circle, S.P. Ring Road, Ahmedabad - 380058</div></div>
         <div style="text-align:right"><div style="font-size:14px;font-weight:700;color:#1e40af">DISCHARGE SUMMARY</div><div style="font-size:8px;color:#666">${new Date().toLocaleDateString('en-IN')}</div></div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;font-size:10px;padding:8px;background:#f8fafc;border-radius:6px;border:1px solid #e2e8f0;margin-bottom:10px">
@@ -262,7 +262,7 @@ RULES:
         <div style="text-align:center;font-size:9px;color:#666"><div style="width:150px;border-bottom:1px solid #333;margin-bottom:4px"></div>Resident Doctor</div>
         <div style="text-align:center;font-size:9px;color:#666"><div style="width:150px;border-bottom:1px solid #333;margin-bottom:4px"></div>Dr. ${admission?.doctor?.full_name}<br/>${admission?.department?.name}</div>
       </div>
-      <div style="margin-top:15px;font-size:7px;color:#aaa;text-align:center">This is a computer-generated Discharge Summary. Hospital — Quality Healthcare for All</div>
+      <div style="margin-top:15px;font-size:7px;color:#aaa;text-align:center">This is a computer-generated Discharge Summary. Health1 Super Speciality Hospitals — Quality Healthcare for All</div>
     </div>`, `Discharge Summary — ${pt?.uhid} — ${admission?.ipd_number}`);
   };
 
@@ -479,7 +479,7 @@ RULES:
       {step === 3 && <div className="space-y-3">
         <div className="bg-white rounded-xl border p-6">
           <h2 className="text-center text-lg font-bold text-blue-800 mb-1">DISCHARGE SUMMARY</h2>
-          <p className="text-center text-xs text-gray-400 mb-4">Hospital, Shilaj, Ahmedabad</p>
+          <p className="text-center text-xs text-gray-400 mb-4">Health1 Super Speciality Hospitals, Shilaj, Ahmedabad</p>
 
           <div className="grid grid-cols-2 gap-2 text-xs bg-gray-50 p-3 rounded-lg mb-4">
             <div><b>Patient:</b> {pt?.first_name} {pt?.last_name}</div><div><b>UHID:</b> {pt?.uhid}</div>
