@@ -5,7 +5,7 @@
 import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 
 // ── MedPay Supabase client (server-side only) ──
-const MEDPAY_URL = process.env.MEDPAY_SUPABASE_URL;
+const MEDPAY_URL = process.env.MEDPAY_SUPABASE_URL || '';
 if (!MEDPAY_URL) throw new Error('MEDPAY_SUPABASE_URL env var not configured');
 const MEDPAY_KEY = process.env.MEDPAY_SERVICE_ROLE_KEY || '';
 

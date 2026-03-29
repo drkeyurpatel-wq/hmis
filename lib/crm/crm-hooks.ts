@@ -45,15 +45,15 @@ export function useLeads(centreId: string | null) {
     return { success: true, lead };
   }, [centreId, load]);
 
-  const update = useCallback(async (leadId: string, updates: any): Promise<{ success: boolean }> => {
-    if (!sb()) return { success: false };
+  const update = useCallback(async (leadId: string, updates: any): Promise<{ success: boolean; error?: string }> => {
+    if (!sb()) return { success: false, error: "Not initialized" };
     await sb()!.from('hmis_crm_leads').update({ ...updates, updated_at: new Date().toISOString() }).eq('id', leadId);
     load();
     return { success: true };
   }, [load]);
 
-  const convert = useCallback(async (leadId: string, patientId: string, appointmentId?: string): Promise<{ success: boolean }> => {
-    if (!sb()) return { success: false };
+  const convert = useCallback(async (leadId: string, patientId: string, appointmentId?: string): Promise<{ success: boolean; error?: string }> => {
+    if (!sb()) return { success: false, error: "Not initialized" };
     await sb()!.from('hmis_crm_leads').update({
       status: 'converted', patient_id: patientId, appointment_id: appointmentId || null,
       converted_at: new Date().toISOString(), updated_at: new Date().toISOString(),
@@ -99,13 +99,13 @@ export function useActivities(leadId: string | null) {
 
   useEffect(() => { load(); }, [load]);
 
-  const add = useCallback(async (data: any, staffId: string): Promise<{ success: boolean }> => {
-    if (!leadId || !sb()) return { success: false };
+  const add = useCallback(async (data: any, staffId: string): Promise<{ success: boolean; error?: string }> => {
+    if (!leadId || !sb()) return { success: false, error: "Not initialized" };
     const { error } = await sb()!.from('hmis_crm_activities').insert({
       lead_id: leadId, centre_id: data.centre_id, performed_by: staffId, ...data,
     });
     if (!error) load();
-    return { success: !error };
+    return { success: !error, error: error?.message };
   }, [leadId, load]);
 
   return { activities, loading, load, add };

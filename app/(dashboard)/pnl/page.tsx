@@ -71,7 +71,7 @@ function PnLInner() {
     setLoading(true);
 
     // Fetch bills with items (including cost fields)
-    const { data: billData } = await sb().from('hmis_bills')
+    const { data: billData } = await sb()!.from('hmis_bills')
       .select(`id, bill_number, bill_date, bill_type, payor_type, net_amount, total_cost, status,
         patient:hmis_patients!inner(first_name, last_name, uhid),
         items:hmis_bill_items(description, net_amount, unit_cost, cost_amount)`)
@@ -81,7 +81,7 @@ function PnLInner() {
       .order('bill_date', { ascending: false });
 
     // Fetch overhead expenses
-    const { data: overheadData } = await sb().from('hmis_cost_centre_expenses')
+    const { data: overheadData } = await sb()!.from('hmis_cost_centre_expenses')
       .select('amount')
       .eq('centre_id', centreId)
       .gte('expense_date', dateFrom).lte('expense_date', dateTo);

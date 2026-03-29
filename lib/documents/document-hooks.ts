@@ -23,11 +23,11 @@ export function useDocuments(centreId: string | null) {
   useEffect(() => { load(); }, [load]);
 
   const create = useCallback(async (data: any, staffId: string) => {
-    if (!centreId || !sb()) return { success: false };
+    if (!centreId || !sb()) return { success: false, error: "Not initialized" };
     const num = `DOC-${data.doc_type?.toUpperCase().slice(0, 3)}-${Date.now().toString(36).toUpperCase()}`;
     const { error } = await sb()!.from('hmis_documents').insert({ centre_id: centreId, doc_number: num, created_by: staffId, ...data });
     if (!error) load();
-    return { success: !error };
+    return { success: !error, error: error?.message };
   }, [centreId, load]);
 
   const update = useCallback(async (id: string, updates: any) => {
@@ -41,9 +41,9 @@ export function useDocuments(centreId: string | null) {
   }, [update]);
 
   const newVersion = useCallback(async (docId: string, data: any, staffId: string) => {
-    if (!centreId || !sb()) return { success: false };
+    if (!centreId || !sb()) return { success: false, error: "Not initialized" };
     const { data: old } = await sb()!.from('hmis_documents').select('version, doc_number').eq('id', docId).single();
-    if (!old) return { success: false };
+    if (!old) return { success: false, error: "Not initialized" };
     // Supersede old
     await sb()!.from('hmis_documents').update({ status: 'superseded', superseded_date: new Date().toISOString().split('T')[0] }).eq('id', docId);
     // Create new version
@@ -52,7 +52,7 @@ export function useDocuments(centreId: string | null) {
       previous_version_id: docId, created_by: staffId, status: 'draft',
     });
     if (!error) load();
-    return { success: !error };
+    return { success: !error, error: error?.message };
   }, [centreId, load]);
 
   const stats = useMemo(() => {

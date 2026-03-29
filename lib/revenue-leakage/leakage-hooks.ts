@@ -53,7 +53,7 @@ export function useLeakageScanner(centreId: string | null) {
       const { data: admissions } = await sb()!.from('hmis_admissions')
         .select('id, admission_date, patient:hmis_patients!inner(id, first_name, last_name, uhid)')
         .eq('centre_id', centreId).eq('status', 'active');
-      for (const adm of (admissions || [])) {
+      for (const adm of (admissions || []) as any[]) {
         const { count } = await sb()!.from('hmis_charge_log').select('id', { count: 'exact', head: true })
           .eq('admission_id', adm.id).eq('category', 'room').eq('service_date', todayStr);
         if (count === 0) {

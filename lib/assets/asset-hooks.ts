@@ -24,13 +24,13 @@ export function useAssets(centreId: string | null) {
   useEffect(() => { load(); }, [load]);
 
   const create = useCallback(async (data: any) => {
-    if (!centreId || !sb()) return { success: false };
+    if (!centreId || !sb()) return { success: false, error: "Not initialized" };
     const bookValue = data.purchase_cost ? parseFloat(data.purchase_cost) : 0;
     const { error } = await sb()!.from('hmis_assets').insert({
       centre_id: centreId, current_book_value: bookValue, ...data,
     });
     if (!error) load();
-    return { success: !error };
+    return { success: !error, error: error?.message };
   }, [centreId, load]);
 
   const update = useCallback(async (id: string, updates: any) => {

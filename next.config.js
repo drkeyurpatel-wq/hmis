@@ -1,8 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   typescript: {
-    // Pre-existing type errors from Supabase join typing — tracked for cleanup
-    ignoreBuildErrors: true,
+    // All 115 TypeScript errors fixed — March 29, 2026
+    // ignoreBuildErrors: false (default)
   },
   images: {
     remotePatterns: [

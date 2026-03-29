@@ -107,14 +107,14 @@ export function useCathLab(centreId: string | null) {
   useEffect(() => { load(); }, [load]);
 
   const schedule = useCallback(async (data: any) => {
-    if (!centreId || !sb()) return { success: false };
+    if (!centreId || !sb()) return { success: false, error: "Not initialized" };
     const { error } = await sb()!.from('hmis_cathlab_procedures').insert({ centre_id: centreId, ...data });
     if (!error) load(data.procedure_date);
     return { success: !error, error: error?.message };
   }, [centreId, load]);
 
   const updateProcedure = useCallback(async (id: string, updates: any) => {
-    if (!sb()) return { success: false };
+    if (!sb()) return { success: false, error: "Not initialized" };
     const { error } = await sb()!.from('hmis_cathlab_procedures').update(updates).eq('id', id);
     if (!error) load();
     return { success: !error, error: error?.message };
@@ -174,20 +174,20 @@ export function useCathLabInventory(centreId: string | null) {
   useEffect(() => { load(); }, [load]);
 
   const addItem = useCallback(async (data: any) => {
-    if (!centreId || !sb()) return { success: false };
+    if (!centreId || !sb()) return { success: false, error: "Not initialized" };
     const { error } = await sb()!.from('hmis_cathlab_inventory').insert({ centre_id: centreId, ...data });
     if (!error) load();
     return { success: !error, error: error?.message };
   }, [centreId, load]);
 
   const markUsed = useCallback(async (itemId: string, procedureId: string, patientId: string) => {
-    if (!sb()) return { success: false };
+    if (!sb()) return { success: false, error: "Not initialized" };
     const { error } = await sb()!.from('hmis_cathlab_inventory').update({
       status: 'used', used_in_procedure_id: procedureId, used_for_patient_id: patientId,
       used_date: new Date().toISOString().split('T')[0],
     }).eq('id', itemId);
     if (!error) load();
-    return { success: !error };
+    return { success: !error, error: error?.message };
   }, [load]);
 
   const stockStats = useMemo(() => {

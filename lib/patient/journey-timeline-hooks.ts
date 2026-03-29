@@ -76,10 +76,10 @@ export function usePatientJourney(patientId: string | null) {
 
       // 3. Lab Orders + Results
       const { data: labs } = await sb()!.from('hmis_lab_orders')
-        .select('id, test_name, status, created_at, doctor:hmis_staff!hmis_lab_orders_ordered_by_fkey(full_name)')
+        .select('id, test_name, status, created_at, reported_at, doctor:hmis_staff!hmis_lab_orders_ordered_by_fkey(full_name)')
         .eq('patient_id', patientId).order('created_at', { ascending: true }).limit(30);
 
-      for (const lab of labs || []) {
+      for (const lab of (labs || []) as any[]) {
         all.push({ id: `lab-ord-${lab.id}`, type: 'lab_ordered', timestamp: lab.created_at,
           title: `Lab ordered: ${lab.test_name}`, detail: `Status: ${lab.status}`,
           staffName: (lab.doctor as any)?.full_name });
@@ -205,10 +205,10 @@ export function usePatientJourney(patientId: string | null) {
 
       // 10. Bills
       const { data: bills } = await sb()!.from('hmis_bills')
-        .select('id, bill_number, bill_date, net_amount, status')
+        .select('id, bill_number, bill_date, net_amount, status, created_at')
         .eq('patient_id', patientId).order('bill_date', { ascending: true }).limit(10);
 
-      for (const b of bills || []) {
+      for (const b of (bills || []) as any[]) {
         all.push({ id: `bill-${b.id}`, type: 'billing', timestamp: b.bill_date || b.created_at,
           title: `Bill ${b.bill_number}`,
           detail: `₹${Math.round(b.net_amount).toLocaleString('en-IN')} — ${b.status}` });

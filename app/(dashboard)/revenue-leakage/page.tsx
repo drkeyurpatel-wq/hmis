@@ -114,8 +114,8 @@ function LeakageInner() {
                   else if (l.type === 'unbilled_lab') { res = await actions.postLabCharge(l.id.replace('lab-', ''), staffId); }
                   else if (l.type === 'unbilled_pharmacy') { res = await actions.postPharmacyCharge(l.id.replace('rx-', ''), staffId); }
                   else if (l.type === 'unbilled_charge') { res = await actions.markBilled(l.id); }
-                  if (res?.success) { flash(`Charge posted${res.amount ? ` ₹${Math.round(res.amount)}` : ''}`); scanner.scan(); }
-                  else flash(res?.error || 'Failed to post charge');
+                  if ((res as any)?.success) { flash(`Charge posted${(res as any)?.amount ? ` ₹${Math.round((res as any).amount)}` : ''}`); scanner.scan(); }
+                  else flash((res as any)?.error || 'Failed to post charge');
                 }} className="px-2 py-1 bg-blue-600 text-white text-[9px] font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50">
                   {isPosting ? '...' : 'Post Charge'}
                 </button>

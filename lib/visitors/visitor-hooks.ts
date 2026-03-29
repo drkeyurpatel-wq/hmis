@@ -19,7 +19,7 @@ export function useVisitors(centreId: string | null) {
   useEffect(() => { load(); }, [load]);
 
   const issuePass = useCallback(async (data: any, staffId: string) => {
-    if (!centreId || !sb()) return { success: false };
+    if (!centreId || !sb()) return { success: false, error: "Not initialized" };
     const num = `VP-${Date.now().toString(36).toUpperCase()}`;
     const validUntil = new Date(Date.now() + (data.pass_type === 'attendant' ? 24 * 3600000 : 4 * 3600000)).toISOString();
     const { error } = await sb()!.from('hmis_visitor_passes').insert({
@@ -27,7 +27,7 @@ export function useVisitors(centreId: string | null) {
       valid_until: data.valid_until || validUntil, ...data,
     });
     if (!error) load();
-    return { success: !error };
+    return { success: !error, error: error?.message };
   }, [centreId, load]);
 
   const checkIn = useCallback(async (passId: string) => {

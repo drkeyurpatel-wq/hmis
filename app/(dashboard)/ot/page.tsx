@@ -33,6 +33,8 @@ function OTInner() {
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [toast, setToast] = useState('');
   const [selectedBooking, setSelectedBooking] = useState<any>(null);
+  const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
+  const [adminView, setAdminView] = useState<'rooms' | 'implants' | 'safety'>('rooms');
   const flash = (m: string) => { setToast(m); setTimeout(() => setToast(''), 2500); };
 
   // Booking error

@@ -8,23 +8,33 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { useAuthStore } from '@/lib/store/auth';
 import { useSafetyTicker, type TickerItem } from '@/lib/alerts/safety-ticker-hooks';
-import { X, ChevronDown, ChevronUp } from 'lucide-react';
+import { X, ChevronDown, ChevronUp, AlertCircle, Clock, TrendingDown, BedDouble, Bell, Heart } from 'lucide-react';
 
-const TYPE_CONFIG: Record<string, { emoji: string; label: string; bg: string; text: string; pulse?: boolean }> = {
-  critical_lab: { emoji: '🔴', label: 'Critical Labs', bg: 'bg-red-900/80', text: 'text-red-200', pulse: true },
-  overdue_med: { emoji: '⚠️', label: 'Overdue Meds', bg: 'bg-amber-900/70', text: 'text-amber-200' },
-  news2_high: { emoji: '📉', label: 'NEWS2 High', bg: 'bg-purple-900/70', text: 'text-purple-200', pulse: true },
-  pending_discharge: { emoji: '🛏️', label: 'Pending Disch', bg: 'bg-h1-navy/80', text: 'text-white/90' },
-  nurse_call: { emoji: '🔔', label: 'Nurse Calls', bg: 'bg-blue-900/60', text: 'text-blue-200' },
-  vital_abnormal: { emoji: '💓', label: 'Vitals Alert', bg: 'bg-orange-900/70', text: 'text-orange-200', pulse: true },
+const TYPE_ICONS: Record<string, any> = {
+  critical_lab: AlertCircle,
+  overdue_med: Clock,
+  news2_high: TrendingDown,
+  pending_discharge: BedDouble,
+  nurse_call: Bell,
+  vital_abnormal: Heart,
+};
+
+const TYPE_CONFIG: Record<string, { label: string; bg: string; text: string; pulse?: boolean }> = {
+  critical_lab: { label: 'Critical Labs', bg: 'bg-red-900/80', text: 'text-red-200', pulse: true },
+  overdue_med: { label: 'Overdue Meds', bg: 'bg-amber-900/70', text: 'text-amber-200' },
+  news2_high: { label: 'NEWS2 High', bg: 'bg-purple-900/70', text: 'text-purple-200', pulse: true },
+  pending_discharge: { label: 'Pending Disch', bg: 'bg-h1-navy/80', text: 'text-white/90' },
+  nurse_call: { label: 'Nurse Calls', bg: 'bg-blue-900/60', text: 'text-blue-200' },
+  vital_abnormal: { label: 'Vitals Alert', bg: 'bg-orange-900/70', text: 'text-orange-200', pulse: true },
 };
 
 function TickerItemRow({ item, onAcknowledge }: { item: TickerItem; onAcknowledge?: (id: string) => void }) {
-  const config = TYPE_CONFIG[item.type] || { emoji: '⚡', label: item.type, bg: 'bg-gray-800', text: 'text-gray-200' };
+  const config = TYPE_CONFIG[item.type] || { label: item.type, bg: 'bg-gray-800', text: 'text-gray-200' };
+  const Icon = TYPE_ICONS[item.type] || AlertCircle;
   return (
     <div className="flex items-center gap-3 px-3 py-2 hover:bg-white/5 rounded-lg transition-colors">
       <Link href={item.action} className="flex items-center gap-3 flex-1 min-w-0">
-        <span className="text-sm">{config.emoji}</span>
+        <Icon size={14} className="text-gray-300 shrink-0" />
         <div className="flex-1 min-w-0">
           <span className="text-xs font-semibold text-white">{item.patientName}</span>
           {item.bedLabel && <span className="text-[10px] text-gray-400 ml-1.5">Bed {item.bedLabel}</span>}
@@ -73,28 +83,28 @@ export function SafetyTicker() {
 
         {/* Counts */}
         {counts.criticalLabs > 0 && (
-          <button onClick={() => setExpanded(!expanded)} className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-red-900/80 text-red-200 text-[11px] font-semibold hover:bg-red-800/80 transition-colors shrink-0">
-            <span>🔴</span> {counts.criticalLabs} Critical Lab{counts.criticalLabs > 1 ? 's' : ''}
+          <button onClick={() => setExpanded(!expanded)} className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-red-900/80 text-red-200 text-[11px] font-semibold hover:bg-red-800/80 transition-colors shrink-0 cursor-pointer">
+            <AlertCircle size={12} /> {counts.criticalLabs} Critical Lab{counts.criticalLabs > 1 ? 's' : ''}
           </button>
         )}
         {counts.overdueMeds > 0 && (
-          <button onClick={() => setExpanded(!expanded)} className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-amber-900/70 text-amber-200 text-[11px] font-semibold hover:bg-amber-800/70 transition-colors shrink-0">
-            <span>⚠️</span> {counts.overdueMeds} Overdue Med{counts.overdueMeds > 1 ? 's' : ''}
+          <button onClick={() => setExpanded(!expanded)} className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-amber-900/70 text-amber-200 text-[11px] font-semibold hover:bg-amber-800/70 transition-colors shrink-0 cursor-pointer">
+            <Clock size={12} /> {counts.overdueMeds} Overdue Med{counts.overdueMeds > 1 ? 's' : ''}
           </button>
         )}
         {counts.news2High > 0 && (
-          <button onClick={() => setExpanded(!expanded)} className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-purple-900/70 text-purple-200 text-[11px] font-semibold hover:bg-purple-800/70 transition-colors shrink-0">
-            <span>📉</span> {counts.news2High} NEWS2 &gt;7
+          <button onClick={() => setExpanded(!expanded)} className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-purple-900/70 text-purple-200 text-[11px] font-semibold hover:bg-purple-800/70 transition-colors shrink-0 cursor-pointer">
+            <TrendingDown size={12} /> {counts.news2High} NEWS2 &gt;7
           </button>
         )}
         {counts.nurseCalls > 0 && (
-          <button onClick={() => setExpanded(!expanded)} className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-blue-900/60 text-blue-200 text-[11px] font-semibold hover:bg-blue-800/60 transition-colors shrink-0">
-            <span>🔔</span> {counts.nurseCalls} Nurse Call{counts.nurseCalls > 1 ? 's' : ''}
+          <button onClick={() => setExpanded(!expanded)} className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-blue-900/60 text-blue-200 text-[11px] font-semibold hover:bg-blue-800/60 transition-colors shrink-0 cursor-pointer">
+            <Bell size={12} /> {counts.nurseCalls} Nurse Call{counts.nurseCalls > 1 ? 's' : ''}
           </button>
         )}
         {counts.pendingDischarge > 0 && (
-          <button onClick={() => setExpanded(!expanded)} className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-h1-navy/80 text-white/90 text-[11px] font-semibold hover:bg-h1-navy/90 transition-colors shrink-0">
-            <span>🛏️</span> {counts.pendingDischarge} Disch Pending
+          <button onClick={() => setExpanded(!expanded)} className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-h1-navy/80 text-white/90 text-[11px] font-semibold hover:bg-h1-navy/90 transition-colors shrink-0 cursor-pointer">
+            <BedDouble size={12} /> {counts.pendingDischarge} Disch Pending
           </button>
         )}
 

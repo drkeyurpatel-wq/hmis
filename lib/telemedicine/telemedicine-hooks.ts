@@ -23,7 +23,7 @@ export function useTeleconsults(centreId: string | null, doctorId?: string) {
   useEffect(() => { load(); }, [load]);
 
   const schedule = useCallback(async (data: any) => {
-    if (!centreId || !sb()) return { success: false };
+    if (!centreId || !sb()) return { success: false, error: 'Not initialized' };
     const roomId = `hmis-${Date.now().toString(36)}`;
     const jitsiDomain = typeof window !== 'undefined' ? (window as any).__NEXT_DATA__?.runtimeConfig?.NEXT_PUBLIC_JITSI_DOMAIN || 'meet.jit.si' : 'meet.jit.si';
     const roomUrl = `https://${jitsiDomain}/${roomId}`;
@@ -31,7 +31,7 @@ export function useTeleconsults(centreId: string | null, doctorId?: string) {
       centre_id: centreId, room_id: roomId, room_url: roomUrl, ...data,
     }).select('*').single();
     if (!error) load();
-    return { success: !error, consult };
+    return { success: !error, error: error?.message, consult };
   }, [centreId, load]);
 
   const updateConsult = useCallback(async (id: string, updates: any) => {

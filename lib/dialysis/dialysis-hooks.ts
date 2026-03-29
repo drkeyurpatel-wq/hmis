@@ -94,7 +94,7 @@ export function useDialysis(centreId: string | null) {
   useEffect(() => { load(); }, [load]);
 
   const scheduleSession = useCallback(async (data: any) => {
-    if (!centreId || !sb()) return { success: false };
+    if (!centreId || !sb()) return { success: false, error: "Not initialized" };
     // Auto-fill from patient profile if exists
     let profile: any = null;
     if (data.patient_id) {
@@ -118,7 +118,7 @@ export function useDialysis(centreId: string | null) {
   }, [centreId, load]);
 
   const updateSession = useCallback(async (id: string, updates: any) => {
-    if (!sb()) return { success: false };
+    if (!sb()) return { success: false, error: "Not initialized" };
     const { error } = await sb()!.from('hmis_dialysis_sessions').update(updates).eq('id', id);
     if (!error) load();
     return { success: !error, error: error?.message };
@@ -174,12 +174,12 @@ export function useDialysisMonitoring(sessionId: string | null) {
   useEffect(() => { load(); }, [load]);
 
   const addCheck = useCallback(async (staffId: string, data: any) => {
-    if (!sessionId || !sb()) return { success: false };
+    if (!sessionId || !sb()) return { success: false, error: "Not initialized" };
     const { error } = await sb()!.from('hmis_dialysis_monitoring').insert({
       session_id: sessionId, recorded_by: staffId, ...data,
     });
     if (!error) load();
-    return { success: !error };
+    return { success: !error, error: error?.message };
   }, [sessionId, load]);
 
   return { checks, addCheck, load };
@@ -207,7 +207,7 @@ export function useDialysisPatients(centreId: string | null) {
   useEffect(() => { load(); }, [load]);
 
   const createProfile = useCallback(async (data: any) => {
-    if (!centreId || !sb()) return { success: false };
+    if (!centreId || !sb()) return { success: false, error: "Not initialized" };
     const { error } = await sb()!.from('hmis_dialysis_patients').insert({ centre_id: centreId, ...data });
     if (!error) load();
     return { success: !error, error: error?.message };

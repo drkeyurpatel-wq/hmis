@@ -1,5 +1,5 @@
 // app/api/ai/structure-note/route.ts
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/api/auth-guard';
 
 export async function POST(req: NextRequest) {

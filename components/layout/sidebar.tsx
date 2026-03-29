@@ -8,142 +8,108 @@ import { useAuthStore } from '@/lib/store/auth';
 import {
   LayoutDashboard, Users, Calendar, BedDouble, Stethoscope,
   CreditCard, Pill, FlaskConical, ScanLine, Scissors, BarChart3,
-  Settings, LogOut, Building2, ChevronDown, ChevronRight, Droplets,
-  Home, Activity, Truck, FileText, Shield, Heart, PanelLeftClose, PanelLeft,
-  Smartphone, ShieldCheck, Wrench, SprayCan, Shirt, Cross,
-  Mic, ClipboardList, UtensilsCrossed, Dumbbell, AlertTriangle,
-  Package, HandshakeIcon, Eye, UserPlus, Siren, MessageSquare, SlidersHorizontal,
-  MoreHorizontal, Star,
+  Settings, LogOut, Building2, ChevronDown, ChevronRight,
+  Heart, PanelLeftClose, PanelLeft, Shield, Siren,
+  MoreHorizontal,
 } from 'lucide-react';
 
 interface NavItem { href: string; label: string; icon: any; moduleKey?: string }
 
 // ===================================================================
-// ROLE-BASED PRIMARY NAV — what each role sees by default (5-8 items)
-// These are workflows, not modules
+// DAY 1 — ROLE-BASED PRIMARY NAV
+// Only modules that Shilaj staff will use from go-live
 // ===================================================================
 const ROLE_NAV: Record<string, NavItem[]> = {
   doctor: [
-    { href: '/', label: 'My Tasks', icon: LayoutDashboard },
+    { href: '/', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/opd', label: 'OPD Queue', icon: Calendar, moduleKey: 'opd' },
+    { href: '/ipd', label: 'My Patients', icon: Heart, moduleKey: 'ipd' },
     { href: '/ward-board', label: 'Ward Board', icon: BedDouble, moduleKey: 'nursing' },
-    { href: '/ipd', label: 'My Patients (IPD)', icon: Heart, moduleKey: 'ipd' },
     { href: '/lab', label: 'Lab Results', icon: FlaskConical, moduleKey: 'lab' },
     { href: '/radiology', label: 'Imaging', icon: ScanLine, moduleKey: 'radiology' },
     { href: '/ot', label: 'OT Schedule', icon: Scissors, moduleKey: 'ot' },
   ],
   consultant: [
-    { href: '/', label: 'My Tasks', icon: LayoutDashboard },
+    { href: '/', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/opd', label: 'OPD Queue', icon: Calendar, moduleKey: 'opd' },
+    { href: '/ipd', label: 'My Patients', icon: Heart, moduleKey: 'ipd' },
     { href: '/ward-board', label: 'Ward Board', icon: BedDouble, moduleKey: 'nursing' },
-    { href: '/ipd', label: 'My Patients (IPD)', icon: Heart, moduleKey: 'ipd' },
     { href: '/lab', label: 'Lab Results', icon: FlaskConical, moduleKey: 'lab' },
     { href: '/radiology', label: 'Imaging', icon: ScanLine, moduleKey: 'radiology' },
     { href: '/ot', label: 'OT Schedule', icon: Scissors, moduleKey: 'ot' },
   ],
   nurse: [
-    { href: '/', label: 'My Tasks', icon: LayoutDashboard },
+    { href: '/', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/ward-board', label: 'Ward Board', icon: BedDouble, moduleKey: 'nursing' },
     { href: '/nursing-station', label: 'Nursing Station', icon: Heart, moduleKey: 'nursing' },
     { href: '/ipd', label: 'IPD', icon: BedDouble, moduleKey: 'ipd' },
-    { href: '/pharmacy', label: 'Pharmacy', icon: Pill, moduleKey: 'pharmacy' },
     { href: '/emergency', label: 'Emergency', icon: Siren, moduleKey: 'emergency' },
-    { href: '/px-nursing', label: 'Patient Requests', icon: Star, moduleKey: 'px_nursing' },
+    { href: '/pharmacy', label: 'Pharmacy', icon: Pill, moduleKey: 'pharmacy' },
   ],
   receptionist: [
-    { href: '/', label: 'My Tasks', icon: LayoutDashboard },
+    { href: '/', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/patients', label: 'Patients', icon: Users },
-    { href: '/opd', label: 'OPD & Appointments', icon: Calendar, moduleKey: 'opd' },
+    { href: '/appointments', label: 'Appointments', icon: Calendar, moduleKey: 'opd' },
+    { href: '/opd', label: 'OPD', icon: Stethoscope, moduleKey: 'opd' },
     { href: '/billing', label: 'Billing', icon: CreditCard, moduleKey: 'billing' },
     { href: '/ipd', label: 'Admissions', icon: BedDouble, moduleKey: 'ipd' },
     { href: '/insurance', label: 'Insurance', icon: Shield, moduleKey: 'billing' },
   ],
   pharmacist: [
-    { href: '/', label: 'My Tasks', icon: LayoutDashboard },
+    { href: '/', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/pharmacy', label: 'Dispensing', icon: Pill, moduleKey: 'pharmacy' },
-    { href: '/vpms', label: 'Procurement', icon: Truck, moduleKey: 'procurement' },
     { href: '/patients', label: 'Patients', icon: Users },
   ],
   lab_tech: [
-    { href: '/', label: 'My Tasks', icon: LayoutDashboard },
+    { href: '/', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/lab', label: 'Lab Worklist', icon: FlaskConical, moduleKey: 'lab' },
     { href: '/patients', label: 'Patients', icon: Users },
-    { href: '/blood-bank', label: 'Blood Bank', icon: Droplets, moduleKey: 'blood_bank' },
   ],
   accountant: [
     { href: '/', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/billing', label: 'Billing', icon: CreditCard, moduleKey: 'billing' },
-    { href: '/pnl', label: 'P&L', icon: BarChart3, moduleKey: 'billing' },
     { href: '/insurance', label: 'Insurance', icon: Shield, moduleKey: 'billing' },
     { href: '/reports', label: 'Reports', icon: BarChart3 },
-    { href: '/revenue-leakage', label: 'Revenue Leakage', icon: AlertTriangle, moduleKey: 'revenue_leakage' },
   ],
   admin: [
     { href: '/', label: 'Dashboard', icon: LayoutDashboard },
-    { href: '/command-centre', label: 'Command Centre', icon: Activity },
     { href: '/patients', label: 'Patients', icon: Users },
-    { href: '/opd', label: 'OPD', icon: Calendar, moduleKey: 'opd' },
+    { href: '/appointments', label: 'Appointments', icon: Calendar, moduleKey: 'opd' },
+    { href: '/opd', label: 'OPD', icon: Stethoscope, moduleKey: 'opd' },
     { href: '/ipd', label: 'IPD', icon: BedDouble, moduleKey: 'ipd' },
-    { href: '/ward-board', label: 'Ward Board', icon: BedDouble, moduleKey: 'nursing' },
     { href: '/billing', label: 'Billing', icon: CreditCard, moduleKey: 'billing' },
     { href: '/lab', label: 'Lab', icon: FlaskConical, moduleKey: 'lab' },
-    { href: '/px-coordinator', label: 'Patient Experience', icon: Star, moduleKey: 'px_coordinator' },
+    { href: '/reports', label: 'Reports', icon: BarChart3 },
   ],
 };
 
 // ===================================================================
-// EVERYTHING ELSE — accessible via "More" (collapsed by default)
-// Consolidated from 6 groups → 4 for cleaner navigation
+// DAY 1 "MORE" — only go-live modules not in primary nav
+// Phase 2 modules completely removed from navigation
 // ===================================================================
 const MORE_NAV: { label: string; items: NavItem[] }[] = [
   { label: 'CLINICAL', items: [
     { href: '/patients', label: 'Patients', icon: Users },
-    { href: '/opd', label: 'OPD', icon: Calendar, moduleKey: 'opd' },
-    { href: '/emr-v2', label: 'EMR', icon: Stethoscope, moduleKey: 'emr' },
+    { href: '/opd', label: 'OPD', icon: Stethoscope, moduleKey: 'opd' },
     { href: '/ipd', label: 'IPD', icon: BedDouble, moduleKey: 'ipd' },
-    { href: '/nursing-station', label: 'Nursing Station', icon: Heart, moduleKey: 'nursing' },
     { href: '/ward-board', label: 'Ward Board', icon: BedDouble, moduleKey: 'nursing' },
+    { href: '/nursing-station', label: 'Nursing Station', icon: Heart, moduleKey: 'nursing' },
     { href: '/emergency', label: 'Emergency', icon: Siren, moduleKey: 'emergency' },
     { href: '/ot', label: 'OT & Surgery', icon: Scissors, moduleKey: 'ot' },
-    { href: '/cathlab', label: 'Cath Lab', icon: Heart, moduleKey: 'cathlab' },
-    { href: '/endoscopy', label: 'Endoscopy', icon: Eye, moduleKey: 'endoscopy' },
-    { href: '/dialysis', label: 'Dialysis', icon: Droplets, moduleKey: 'dialysis' },
-    { href: '/physiotherapy', label: 'Physiotherapy', icon: Dumbbell, moduleKey: 'physiotherapy' },
-    { href: '/dietary', label: 'Dietary', icon: UtensilsCrossed, moduleKey: 'dietary' },
-    { href: '/referrals', label: 'Referrals', icon: UserPlus, moduleKey: 'referrals' },
-    { href: '/px-coordinator', label: 'Patient Experience', icon: Star, moduleKey: 'px_coordinator' },
-    { href: '/px-nursing', label: 'PX Nursing', icon: Star, moduleKey: 'px_nursing' },
-    { href: '/px-kitchen', label: 'PX Kitchen', icon: UtensilsCrossed, moduleKey: 'px_kitchen' },
-    { href: '/px-feedback', label: 'PX Feedback', icon: MessageSquare, moduleKey: 'px_feedback' },
+    { href: '/bed-management', label: 'Bed Management', icon: BedDouble, moduleKey: 'ipd' },
   ]},
   { label: 'DIAGNOSTICS & PHARMACY', items: [
     { href: '/lab', label: 'Laboratory', icon: FlaskConical, moduleKey: 'lab' },
     { href: '/radiology', label: 'Radiology', icon: ScanLine, moduleKey: 'radiology' },
-    { href: '/blood-bank', label: 'Blood Bank', icon: Droplets, moduleKey: 'blood_bank' },
     { href: '/pharmacy', label: 'Pharmacy', icon: Pill, moduleKey: 'pharmacy' },
   ]},
-  { label: 'REVENUE & BILLING', items: [
+  { label: 'REVENUE', items: [
     { href: '/billing', label: 'Billing', icon: CreditCard, moduleKey: 'billing' },
-    { href: '/pnl', label: 'P&L', icon: BarChart3, moduleKey: 'billing' },
     { href: '/insurance', label: 'Insurance', icon: Shield, moduleKey: 'billing' },
-    { href: '/revenue-leakage', label: 'Revenue Leakage', icon: AlertTriangle, moduleKey: 'revenue_leakage' },
+    { href: '/appointments', label: 'Appointments', icon: Calendar, moduleKey: 'opd' },
   ]},
-  { label: 'OPERATIONS & ADMIN', items: [
-    { href: '/vpms', label: 'Procurement', icon: Truck, moduleKey: 'procurement' },
-    { href: '/biomedical', label: 'Equipment', icon: Wrench, moduleKey: 'biomedical' },
-    { href: '/housekeeping', label: 'Housekeeping', icon: SprayCan, moduleKey: 'housekeeping' },
-    { href: '/cssd', label: 'CSSD', icon: Shield, moduleKey: 'cssd' },
-    { href: '/duty-roster', label: 'Duty Roster', icon: ClipboardList, moduleKey: 'duty_roster' },
-    { href: '/linen', label: 'Linen', icon: Shirt, moduleKey: 'linen' },
-    { href: '/infection-control', label: 'Infection Control', icon: Shield, moduleKey: 'infection_control' },
-    { href: '/crm', label: 'CRM', icon: MessageSquare, moduleKey: 'crm' },
-    { href: '/homecare', label: 'Homecare', icon: Home, moduleKey: 'homecare' },
-    { href: '/visitors', label: 'Visitors', icon: Users, moduleKey: 'visitors' },
-    { href: '/mortuary', label: 'Mortuary', icon: Cross, moduleKey: 'mortuary' },
-    { href: '/quality', label: 'Quality', icon: Shield, moduleKey: 'quality' },
+  { label: 'ADMIN', items: [
     { href: '/reports', label: 'Reports', icon: BarChart3 },
-    { href: '/staff', label: 'Staff', icon: Users },
-    { href: '/settings/modules', label: 'Module Config', icon: SlidersHorizontal },
     { href: '/settings', label: 'Settings', icon: Settings },
   ]},
 ];
@@ -181,10 +147,7 @@ export function Sidebar({ mobileOpen, onMobileClose }: { mobileOpen?: boolean; o
   const w = collapsed ? 'w-[68px]' : 'w-[256px]';
   const initials = staff?.full_name?.split(' ').map((n: string) => n[0]).join('').slice(0, 2) || '??';
 
-  // Get primary nav for this role
   const primaryItems = (ROLE_NAV[staffType] || ROLE_NAV.admin).filter(canSee);
-
-  // For "More" — deduplicate items already in primary
   const primaryHrefs = new Set(primaryItems.map(i => i.href));
 
   return (
@@ -198,30 +161,39 @@ export function Sidebar({ mobileOpen, onMobileClose }: { mobileOpen?: boolean; o
       )}>
         {/* Logo */}
         <div className="h-14 flex items-center justify-between px-4 border-b border-gray-100 shrink-0">
-          <Link href="/" className="flex items-center gap-2.5 min-w-0">
-            {collapsed ? (
-              <div className="w-8 h-8 rounded-lg bg-h1-navy flex items-center justify-center shrink-0">
-                <span className="text-white font-black text-xs">H1</span>
-              </div>
-            ) : (
-              <img src="/images/health1-logo.svg" alt="Health1" className="h-10 w-auto shrink-0" />
-            )}
-            {!collapsed && (
-              <div className="min-w-0" />
-            )}
-          </Link>
-          <button onClick={() => setCollapsed(!collapsed)} className="hidden md:flex text-gray-400 hover:text-gray-600 transition-colors p-1 rounded">
-            {collapsed ? <PanelLeft size={16} /> : <PanelLeftClose size={16} />}
-          </button>
+          {collapsed ? (
+            <button onClick={() => setCollapsed(false)} className="w-full flex justify-center text-gray-400 hover:text-gray-600 cursor-pointer">
+              <PanelLeft size={18} />
+            </button>
+          ) : (
+            <>
+              <Link href="/" className="flex items-center gap-2">
+                <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+                  <rect x="8" y="0" width="12" height="28" rx="2" fill="#E8B931"/>
+                  <rect x="0" y="8" width="28" height="12" rx="2" fill="#E8B931"/>
+                  <rect x="9" y="1" width="10" height="26" rx="1.5" fill="#D42B2C"/>
+                  <rect x="1" y="9" width="26" height="10" rx="1.5" fill="#2A9D8F"/>
+                  <rect x="9" y="9" width="10" height="10" fill="#1B3A5C"/>
+                </svg>
+                <div>
+                  <span className="text-sm font-bold text-[#1B3A5C] tracking-wide">HEALTH1</span>
+                  <span className="text-[9px] text-gray-400 block -mt-0.5">HMIS</span>
+                </div>
+              </Link>
+              <button onClick={() => setCollapsed(true)} className="text-gray-300 hover:text-gray-500 transition-colors cursor-pointer">
+                <PanelLeftClose size={16} />
+              </button>
+            </>
+          )}
         </div>
 
-        {/* Centre selector */}
-        {!collapsed && (
-          <div className="px-3 py-2.5 border-b border-gray-100 shrink-0 relative">
+        {/* Centre Selector */}
+        {!collapsed && centres.length > 1 && (
+          <div className="px-3 py-2 border-b border-gray-100 relative">
             <button onClick={() => setCentreOpen(!centreOpen)}
-              className="w-full flex items-center gap-2 px-2.5 py-2 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors text-left group">
-              <div className="w-6 h-6 rounded bg-h1-teal-light flex items-center justify-center shrink-0">
-                <Building2 size={12} className="text-h1-navy" />
+              className="w-full flex items-center gap-2 px-2.5 py-2 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer">
+              <div className="w-5 h-5 rounded bg-h1-navy flex items-center justify-center shrink-0">
+                <Building2 size={11} className="text-white" />
               </div>
               <span className="text-xs font-medium text-gray-700 truncate flex-1">
                 {(activeCentre as any)?.centre?.name?.replace('Health1 ', '').replace('Hospital ', '').replace('Super Speciality', 'SS').trim() || 'Select centre'}
@@ -232,7 +204,7 @@ export function Sidebar({ mobileOpen, onMobileClose }: { mobileOpen?: boolean; o
               <div className="absolute left-3 right-3 mt-1 bg-white border border-gray-200 rounded-lg shadow-xl z-50 overflow-hidden">
                 {centres.map((c: any) => (
                   <button key={c.centre_id} onClick={() => switchCentre(c.centre_id)}
-                    className={cn('w-full text-left px-3 py-2 text-xs hover:bg-h1-navy-light border-b last:border-0 transition-colors',
+                    className={cn('w-full text-left px-3 py-2 text-xs hover:bg-h1-navy-light border-b last:border-0 transition-colors cursor-pointer',
                       c.centre_id === activeCentreId ? 'bg-h1-navy-light text-h1-navy font-semibold' : 'text-gray-600')}>
                     {c.centre?.name || c.centre_id}
                   </button>
@@ -242,7 +214,7 @@ export function Sidebar({ mobileOpen, onMobileClose }: { mobileOpen?: boolean; o
           </div>
         )}
 
-        {/* PRIMARY NAV — role-based, always visible */}
+        {/* PRIMARY NAV */}
         <nav className="flex-1 overflow-y-auto px-2 py-2 scrollbar-thin">
           <div className="space-y-0.5">
             {primaryItems.map(item => {
@@ -251,7 +223,7 @@ export function Sidebar({ mobileOpen, onMobileClose }: { mobileOpen?: boolean; o
               return (
                 <Link key={item.href} href={item.href} onClick={onMobileClose}
                   className={cn(
-                    'flex items-center gap-2.5 px-2.5 py-[8px] rounded-lg text-[13px] font-medium transition-all duration-150 relative group',
+                    'flex items-center gap-2.5 px-2.5 py-[8px] rounded-lg text-[13px] font-medium transition-all duration-150 relative group cursor-pointer',
                     collapsed && 'justify-center px-0',
                     active ? 'bg-h1-navy-light text-h1-navy' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-800',
                   )}
@@ -264,14 +236,13 @@ export function Sidebar({ mobileOpen, onMobileClose }: { mobileOpen?: boolean; o
             })}
           </div>
 
-          {/* DIVIDER */}
           {!collapsed && <div className="border-t border-gray-100 my-3" />}
 
-          {/* MORE — everything else, collapsed by default */}
+          {/* MORE — Day 1 modules not in primary nav */}
           {!collapsed && (
             <div>
               <button onClick={() => setMoreOpen(!moreOpen)}
-                className="w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-[13px] font-medium text-gray-400 hover:bg-gray-50 hover:text-gray-600 transition-all">
+                className="w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-[13px] font-medium text-gray-400 hover:bg-gray-50 hover:text-gray-600 transition-all cursor-pointer">
                 <div className="flex items-center gap-2.5">
                   <MoreHorizontal size={16} />
                   <span>More</span>
@@ -290,7 +261,7 @@ export function Sidebar({ mobileOpen, onMobileClose }: { mobileOpen?: boolean; o
                     return (
                       <div key={group.label}>
                         <button onClick={() => setMoreGroup(isGroupOpen ? null : group.label)}
-                          className={cn('w-full flex items-center justify-between px-2.5 py-2 text-[11px] font-semibold tracking-wider text-gray-400 uppercase hover:text-gray-600 rounded-md hover:bg-gray-50 transition-colors',
+                          className={cn('w-full flex items-center justify-between px-2.5 py-2 text-[11px] font-semibold tracking-wider text-gray-400 uppercase hover:text-gray-600 rounded-md hover:bg-gray-50 transition-colors cursor-pointer',
                             hasActiveChild && 'text-h1-teal')}>
                           <span>{group.label}</span>
                           <ChevronRight size={10} className={cn('transition-transform', isGroupOpen && 'rotate-90')} />
@@ -303,7 +274,7 @@ export function Sidebar({ mobileOpen, onMobileClose }: { mobileOpen?: boolean; o
                               return (
                                 <Link key={item.href} href={item.href} onClick={onMobileClose}
                                   className={cn(
-                                    'flex items-center gap-2.5 px-2 py-[7px] rounded-lg text-[12px] font-medium transition-all',
+                                    'flex items-center gap-2.5 px-2 py-[7px] rounded-lg text-[12px] font-medium transition-all cursor-pointer',
                                     active ? 'bg-h1-navy-light text-h1-navy' : 'text-gray-400 hover:bg-gray-50 hover:text-gray-700',
                                   )}>
                                   <Icon size={14} className={active ? 'text-h1-teal' : 'text-gray-300'} />
@@ -333,7 +304,7 @@ export function Sidebar({ mobileOpen, onMobileClose }: { mobileOpen?: boolean; o
                 if (!confirm('Sign out?')) return;
                 try { const { createClient: cc } = await import('@/lib/supabase/client'); await cc().auth.signOut(); } catch {}
                 window.location.href = '/auth/login';
-              }} className="text-gray-400 hover:text-red-500 transition-colors"><LogOut size={14} /></button>
+              }} className="text-gray-400 hover:text-red-500 transition-colors cursor-pointer"><LogOut size={14} /></button>
             </div>
           ) : (
             <div className="flex items-center gap-2.5 px-2.5 py-2 rounded-lg hover:bg-gray-50 transition-colors">
@@ -348,7 +319,7 @@ export function Sidebar({ mobileOpen, onMobileClose }: { mobileOpen?: boolean; o
                 if (!confirm('Sign out of HMIS?')) return;
                 try { const { createClient: cc } = await import('@/lib/supabase/client'); await cc().auth.signOut(); } catch {}
                 window.location.href = '/auth/login';
-              }} className="text-gray-400 hover:text-red-500 transition-colors p-1" title="Sign out">
+              }} className="text-gray-400 hover:text-red-500 transition-colors p-1 cursor-pointer" title="Sign out">
                 <LogOut size={14} />
               </button>
             </div>

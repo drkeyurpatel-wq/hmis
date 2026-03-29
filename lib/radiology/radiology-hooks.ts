@@ -668,27 +668,28 @@ export function useStudyDetail(orderId: string | null) {
       .eq('id', orderId).single();
 
     if (!data) { setStudy(null); setLoading(false); return; }
+    const d = data as any;
 
-    const latestReport = data.reports?.sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())?.[0];
+    const latestReport = d.reports?.sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())?.[0];
 
     setStudy({
-      id: data.id, orderId: data.id, centreId: data.centre_id, patientId: data.patient_id,
-      accessionNumber: data.accession_number, modality: data.modality || data.test?.modality || '',
-      bodyPart: data.body_part || data.test?.body_part || '',
-      studyDescription: data.test?.test_name || data.clinical_indication || data.modality || '',
-      studyDate: data.created_at?.split('T')[0] || '', status: data.status, urgency: data.urgency,
-      isContrast: data.is_contrast,
+      id: d.id, orderId: d.id, centreId: d.centre_id, patientId: d.patient_id,
+      accessionNumber: d.accession_number, modality: d.modality || d.test?.modality || '',
+      bodyPart: d.body_part || d.test?.body_part || '',
+      studyDescription: d.test?.test_name || d.clinical_indication || d.modality || '',
+      studyDate: d.created_at?.split('T')[0] || '', status: d.status, urgency: d.urgency,
+      isContrast: d.is_contrast,
       // Patient
-      patientName: `${data.patient?.first_name || ''} ${data.patient?.last_name || ''}`.trim(),
-      patientUhid: data.patient?.uhid, patientAge: data.patient?.age_years, patientGender: data.patient?.gender,
-      referringDoctorName: data.ordered_doc?.full_name, technicianName: data.technician?.full_name,
+      patientName: `${d.patient?.first_name || ''} ${d.patient?.last_name || ''}`.trim(),
+      patientUhid: d.patient?.uhid, patientAge: d.patient?.age_years, patientGender: d.patient?.gender,
+      referringDoctorName: d.ordered_doc?.full_name, technicianName: d.technician?.full_name,
       // PACS
-      pacsStudyUid: data.pacs_study_uid,
-      stradusStudyUrl: data.stradus_viewer_url,
-      pacsViewerUrl: data.stradus_viewer_url,
+      pacsStudyUid: d.pacs_study_uid,
+      stradusStudyUrl: d.stradus_viewer_url,
+      pacsViewerUrl: d.stradus_viewer_url,
       // Timing
-      startedAt: data.started_at, reportedAt: data.reported_at, verifiedAt: data.verified_at,
-      tatMinutes: data.tat_minutes, expectedTatHours: data.test?.tat_hours || 24,
+      startedAt: d.started_at, reportedAt: d.reported_at, verifiedAt: d.verified_at,
+      tatMinutes: d.tat_minutes, expectedTatHours: d.test?.tat_hours || 24,
       // Reports
       report: latestReport ? {
         id: latestReport.id, findings: latestReport.findings, impression: latestReport.impression,
@@ -698,7 +699,7 @@ export function useStudyDetail(orderId: string | null) {
         reportedBy: latestReport.reporter?.full_name, verifiedBy: latestReport.verifier?.full_name,
         reportedAt: latestReport.created_at, verifiedAt: latestReport.verified_at,
       } : null,
-      reports: (data.reports || []).map((r: any) => ({
+      reports: (d.reports || []).map((r: any) => ({
         id: r.id, findings: r.findings, impression: r.impression,
         isCritical: r.is_critical, isAddendum: r.is_addendum, status: r.status,
         reportedBy: r.reporter?.full_name, verifiedBy: r.verifier?.full_name,

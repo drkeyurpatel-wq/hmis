@@ -109,7 +109,7 @@ export function useCssd(centreId: string | null) {
 
   // ── Instrument Sets ──
   const createSet = useCallback(async (data: any) => {
-    if (!centreId || !sb()) return { success: false };
+    if (!centreId || !sb()) return { success: false, error: "Not initialized" };
     const { error } = await sb()!.from('hmis_cssd_instrument_sets').insert({ centre_id: centreId, ...data });
     if (!error) load();
     return { success: !error, error: error?.message };
@@ -123,7 +123,7 @@ export function useCssd(centreId: string | null) {
 
   // ── Cycles ──
   const startCycle = useCallback(async (data: any, staffId: string) => {
-    if (!centreId || !sb()) return { success: false };
+    if (!centreId || !sb()) return { success: false, error: "Not initialized" };
     const cycleNum = `CY-${Date.now().toString(36).toUpperCase()}`;
     const { error } = await sb()!.from('hmis_cssd_cycles').insert({
       centre_id: centreId, cycle_number: cycleNum, operator_id: staffId,
@@ -178,7 +178,7 @@ export function useCssd(centreId: string | null) {
     patient_id?: string; surgery_name?: string; staffId: string;
     ot_booking_id?: string;
   }) => {
-    if (!centreId || !sb()) return { success: false };
+    if (!centreId || !sb()) return { success: false, error: "Not initialized" };
     const { error } = await sb()!.from('hmis_cssd_issue_return').insert({
       centre_id: centreId, set_id: data.set_id, issued_to: data.issued_to,
       issued_to_location: data.issued_to_location,
@@ -204,7 +204,7 @@ export function useCssd(centreId: string | null) {
     condition: string; missing_items?: any[]; instrument_count_verified: boolean;
     sharps_count_match?: boolean; contamination_level?: string; return_wash_done?: boolean;
   }) => {
-    if (!sb()) return { success: false };
+    if (!sb()) return { success: false, error: "Not initialized" };
     const { error } = await sb()!.from('hmis_cssd_issue_return').update({
       returned_at: new Date().toISOString(), returned_by: staffId,
       condition_on_return: data.condition, missing_items: data.missing_items || [],
@@ -216,7 +216,7 @@ export function useCssd(centreId: string | null) {
       await sb()!.from('hmis_cssd_instrument_sets').update({ status: 'available', location: 'cssd_store' }).eq('id', setId);
       load();
     }
-    return { success: !error };
+    return { success: !error, error: error?.message };
   }, [load]);
 
   // ── Recall ──

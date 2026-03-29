@@ -154,13 +154,16 @@ const STAFF_TYPE_FALLBACK: Record<string, string[]> = {
 };
 
 export function RoleGuard({ module, children, fallback }: {
-  module: string; children: React.ReactNode; fallback?: React.ReactNode;
+  module?: string; children: React.ReactNode; fallback?: React.ReactNode;
 }) {
   const { staff, hasPermission } = useAuthStore();
   const staffType = staff?.staff_type || '';
 
   // Super admin always has access
   if (staffType === 'admin') return <>{children}</>;
+
+  // No module specified = accessible to all authenticated users
+  if (!module) return <>{children}</>;
 
   // Check DB role permissions first
   if (hasPermission(module, 'view')) return <>{children}</>;

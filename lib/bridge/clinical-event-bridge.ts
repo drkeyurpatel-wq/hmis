@@ -38,13 +38,13 @@ export async function onVitalsSaved(params: {
   try {
     // Calculate NEWS2
     const news2 = calculateNEWS2({
-      respRate: vitals.resp_rate,
+      respiratoryRate: vitals.resp_rate,
       spo2: vitals.spo2,
-      supplementalO2: false,
+      onSupplementalO2: false,
       temperature: vitals.temperature,
-      systolicBP: vitals.bp_systolic,
+      systolic: vitals.bp_systolic,
       heartRate: vitals.pulse,
-      consciousness: 'alert',
+      isAlert: true,
     });
 
     if (news2 && news2.total >= 5) {

@@ -23,7 +23,7 @@ export function useIndents(centreId: string | null, staffId?: string) {
   useEffect(() => { load(); }, [load]);
 
   const create = useCallback(async (data: any, requesterId: string) => {
-    if (!centreId || !sb()) return { success: false };
+    if (!centreId || !sb()) return { success: false, error: "Not initialized" };
     const num = `IND-${Date.now().toString(36).toUpperCase()}`;
     const items = data.items || [];
     const totalEst = items.reduce((s: number, i: any) => s + (parseFloat(i.estimated_cost || 0) * parseFloat(i.qty || 1)), 0);
@@ -32,7 +32,7 @@ export function useIndents(centreId: string | null, staffId?: string) {
       total_estimated_cost: totalEst, ...data,
     });
     if (!error) load();
-    return { success: !error };
+    return { success: !error, error: error?.message };
   }, [centreId, load]);
 
   const submit = useCallback(async (id: string) => {
@@ -148,11 +148,11 @@ export function useVendors(centreId: string | null) {
   useEffect(() => { load(); }, [load]);
 
   const create = useCallback(async (data: any) => {
-    if (!centreId || !sb()) return { success: false };
+    if (!centreId || !sb()) return { success: false, error: "Not initialized" };
     const code = `VND-${Date.now().toString(36).toUpperCase()}`;
     const { error } = await sb()!.from('hmis_vendors').insert({ centre_id: centreId, code, ...data });
     if (!error) load();
-    return { success: !error };
+    return { success: !error, error: error?.message };
   }, [centreId, load]);
 
   const update = useCallback(async (id: string, updates: any) => {

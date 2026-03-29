@@ -23,11 +23,11 @@ export function useGrievances(centreId: string | null) {
   useEffect(() => { load(); }, [load]);
 
   const create = useCallback(async (data: any) => {
-    if (!centreId || !sb()) return { success: false };
+    if (!centreId || !sb()) return { success: false, error: "Not initialized" };
     const num = `GRV-${Date.now().toString(36).toUpperCase()}`;
     const { error } = await sb()!.from('hmis_grievances').insert({ centre_id: centreId, grievance_number: num, ...data });
     if (!error) load();
-    return { success: !error };
+    return { success: !error, error: error?.message };
   }, [centreId, load]);
 
   const update = useCallback(async (id: string, updates: any) => {

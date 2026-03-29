@@ -65,10 +65,11 @@ export function useCostCentres(centreId: string | null) {
 
   const load = useCallback(async () => {
     if (!centreId || !sb()) return;
+    const client = sb()!;
     setLoading(true);
     const [ccRes, mapRes] = await Promise.all([
-      sb().from('hmis_cost_centres').select('*').eq('centre_id', centreId).order('code'),
-      sb().from('hmis_cost_centre_maps')
+      sb()!.from('hmis_cost_centres').select('*').eq('centre_id', centreId).order('code'),
+      sb()!.from('hmis_cost_centre_maps')
         .select('*, cost_centre:hmis_cost_centres(code, name)')
         .eq('centre_id', centreId).order('priority', { ascending: false }),
     ]);
@@ -82,7 +83,7 @@ export function useCostCentres(centreId: string | null) {
   const saveCostCentre = useCallback(async (cc: Partial<CostCentre> & { id?: string }) => {
     if (!centreId || !sb()) return { error: 'No centre' };
     if (cc.id) {
-      const { error } = await sb().from('hmis_cost_centres')
+      const { error } = await sb()!.from('hmis_cost_centres')
         .update({ name: cc.name, code: cc.code, type: cc.type, parent_id: cc.parent_id || null,
           gl_revenue_account_id: cc.gl_revenue_account_id || null,
           gl_expense_account_id: cc.gl_expense_account_id || null,
@@ -90,7 +91,7 @@ export function useCostCentres(centreId: string | null) {
         .eq('id', cc.id);
       if (error) return { error: error.message };
     } else {
-      const { error } = await sb().from('hmis_cost_centres')
+      const { error } = await sb()!.from('hmis_cost_centres')
         .insert({ centre_id: centreId, name: cc.name, code: cc.code, type: cc.type || 'revenue',
           parent_id: cc.parent_id || null,
           gl_revenue_account_id: cc.gl_revenue_account_id || null,
@@ -104,19 +105,19 @@ export function useCostCentres(centreId: string | null) {
 
   const toggleActive = useCallback(async (id: string, isActive: boolean) => {
     if (!sb()) return;
-    await sb().from('hmis_cost_centres').update({ is_active: isActive, updated_at: new Date().toISOString() }).eq('id', id);
+    await sb()!.from('hmis_cost_centres').update({ is_active: isActive, updated_at: new Date().toISOString() }).eq('id', id);
     setCostCentres(prev => prev.map(c => c.id === id ? { ...c, is_active: isActive } : c));
   }, []);
 
   const saveMap = useCallback(async (map: Partial<CostCentreMap> & { id?: string }) => {
     if (!centreId || !sb()) return { error: 'No centre' };
     if (map.id) {
-      const { error } = await sb().from('hmis_cost_centre_maps')
+      const { error } = await sb()!.from('hmis_cost_centre_maps')
         .update({ cost_centre_id: map.cost_centre_id, match_type: map.match_type, match_value: map.match_value, priority: map.priority || 0 })
         .eq('id', map.id);
       if (error) return { error: error.message };
     } else {
-      const { error } = await sb().from('hmis_cost_centre_maps')
+      const { error } = await sb()!.from('hmis_cost_centre_maps')
         .insert({ centre_id: centreId, cost_centre_id: map.cost_centre_id, match_type: map.match_type, match_value: map.match_value, priority: map.priority || 0, is_active: true });
       if (error) return { error: error.message };
     }
@@ -126,7 +127,7 @@ export function useCostCentres(centreId: string | null) {
 
   const deleteMap = useCallback(async (id: string) => {
     if (!sb()) return;
-    await sb().from('hmis_cost_centre_maps').delete().eq('id', id);
+    await sb()!.from('hmis_cost_centre_maps').delete().eq('id', id);
     setMaps(prev => prev.filter(m => m.id !== id));
   }, []);
 
@@ -143,7 +144,7 @@ export async function resolveCostCentre(
   if (!sb()) return null;
 
   // Fetch active maps for this centre, ordered by priority desc
-  const { data: maps } = await sb().from('hmis_cost_centre_maps')
+  const { data: maps } = await sb()!.from('hmis_cost_centre_maps')
     .select('cost_centre_id, match_type, match_value, priority')
     .eq('centre_id', centreId).eq('is_active', true)
     .order('priority', { ascending: false });
@@ -183,23 +184,24 @@ export function usePnL(centreId: string | null) {
 
   const loadPnL = useCallback(async (dateFrom: string, dateTo: string) => {
     if (!centreId || !sb()) return;
+    const client = sb()!;
     setLoading(true);
 
     // Fetch cost centres, bill items with cost_centre_id, and expenses in parallel
     const [ccRes, itemsRes, expensesRes, unmappedRes] = await Promise.all([
-      sb().from('hmis_cost_centres').select('id, code, name, type, budget_monthly')
+      sb()!.from('hmis_cost_centres').select('id, code, name, type, budget_monthly')
         .eq('centre_id', centreId).eq('is_active', true).order('code'),
-      sb().from('hmis_bill_items')
+      sb()!.from('hmis_bill_items')
         .select('cost_centre_id, net_amount, description, bill:hmis_bills!inner(bill_date, centre_id, status)')
         .eq('bill.centre_id', centreId)
         .gte('bill.bill_date', dateFrom).lte('bill.bill_date', dateTo)
         .neq('bill.status', 'cancelled'),
-      sb().from('hmis_cost_centre_expenses')
+      sb()!.from('hmis_cost_centre_expenses')
         .select('cost_centre_id, amount, category')
         .eq('centre_id', centreId)
         .gte('expense_date', dateFrom).lte('expense_date', dateTo),
       // Also get revenue from bills without cost_centre_id on items (fallback grouping by bill_type)
-      sb().from('hmis_bills')
+      sb()!.from('hmis_bills')
         .select('id, bill_type, net_amount, bill_date')
         .eq('centre_id', centreId)
         .gte('bill_date', dateFrom).lte('bill_date', dateTo)
@@ -283,7 +285,7 @@ export function usePnL(centreId: string | null) {
   // Expense CRUD
   const addExpense = useCallback(async (expense: Omit<CostCentreExpense, 'id'> & { staffId?: string }) => {
     if (!centreId || !sb()) return { error: 'No centre' };
-    const { error } = await sb().from('hmis_cost_centre_expenses').insert({
+    const { error } = await sb()!.from('hmis_cost_centre_expenses').insert({
       centre_id: centreId, cost_centre_id: expense.cost_centre_id,
       expense_date: expense.expense_date, category: expense.category,
       description: expense.description, amount: expense.amount,

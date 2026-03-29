@@ -24,18 +24,18 @@ export function useAmbulances(centreId: string | null) {
   useEffect(() => { load(); }, [load]);
 
   const addVehicle = useCallback(async (data: any) => {
-    if (!centreId || !sb()) return { success: false };
+    if (!centreId || !sb()) return { success: false, error: "Not initialized" };
     const { error } = await sb()!.from('hmis_ambulances').insert({ centre_id: centreId, ...data });
     if (!error) load();
-    return { success: !error };
+    return { success: !error, error: error?.message };
   }, [centreId, load]);
 
   const createRequest = useCallback(async (data: any, staffId: string) => {
-    if (!centreId || !sb()) return { success: false };
+    if (!centreId || !sb()) return { success: false, error: "Not initialized" };
     const num = `TRQ-${Date.now().toString(36).toUpperCase()}`;
     const { error } = await sb()!.from('hmis_transport_requests').insert({ centre_id: centreId, request_number: num, requested_by: staffId, ...data });
     if (!error) load();
-    return { success: !error };
+    return { success: !error, error: error?.message };
   }, [centreId, load]);
 
   const dispatch = useCallback(async (requestId: string, ambulanceId: string) => {

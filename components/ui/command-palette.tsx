@@ -5,7 +5,7 @@ import { sb } from '@/lib/supabase/browser';
 import {
   Search, Users, Calendar, BedDouble, CreditCard, FlaskConical, Pill,
   FileText, Settings, BarChart3, Activity, Stethoscope, Scissors, Plus,
-  ArrowRight, Mic, Heart, Shield, Truck, AlertTriangle,
+  ArrowRight, Shield, AlertTriangle,
 } from 'lucide-react';
 
 interface CommandItem {
@@ -21,30 +21,20 @@ interface CommandItem {
 
 const NAV_ITEMS: CommandItem[] = [
   { id: 'nav-dashboard', label: 'Dashboard', icon: Activity, category: 'navigation', href: '/', keywords: 'home main' },
-  { id: 'nav-pulse', label: 'Hospital Pulse', icon: Heart, category: 'navigation', href: '/pulse', keywords: 'live command center' },
   { id: 'nav-opd', label: 'OPD Queue', icon: Users, category: 'navigation', href: '/opd', keywords: 'outpatient queue token' },
   { id: 'nav-appointments', label: 'Appointments', icon: Calendar, category: 'navigation', href: '/appointments', keywords: 'book schedule slot' },
   { id: 'nav-emergency', label: 'Emergency / ER', icon: AlertTriangle, category: 'navigation', href: '/emergency', keywords: 'triage trauma mlc' },
   { id: 'nav-ipd', label: 'IPD Admissions', icon: BedDouble, category: 'navigation', href: '/ipd', keywords: 'inpatient admit' },
   { id: 'nav-emr', label: 'EMR', icon: Stethoscope, category: 'navigation', href: '/emr-v2', keywords: 'encounter medical record' },
-  { id: 'nav-voice', label: 'Voice Notes', icon: Mic, category: 'navigation', href: '/voice-notes', keywords: 'speak dictate' },
   { id: 'nav-billing', label: 'Billing', icon: CreditCard, category: 'navigation', href: '/billing', keywords: 'bill invoice payment' },
   { id: 'nav-lab', label: 'Laboratory', icon: FlaskConical, category: 'navigation', href: '/lab', keywords: 'test blood cbc' },
   { id: 'nav-pharmacy', label: 'Pharmacy', icon: Pill, category: 'navigation', href: '/pharmacy', keywords: 'medicine drug dispense' },
   { id: 'nav-radiology', label: 'Radiology', icon: FileText, category: 'navigation', href: '/radiology', keywords: 'xray ct mri ultrasound' },
   { id: 'nav-ot', label: 'OT Management', icon: Scissors, category: 'navigation', href: '/ot', keywords: 'surgery operation theatre' },
   { id: 'nav-beds', label: 'Bed Management', icon: BedDouble, category: 'navigation', href: '/bed-management', keywords: 'ward room' },
-  { id: 'nav-crm', label: 'CRM & Leads', icon: Users, category: 'navigation', href: '/crm', keywords: 'lead pipeline sales' },
+  { id: 'nav-insurance', label: 'Insurance', icon: Shield, category: 'navigation', href: '/insurance', keywords: 'cashless tpa preauth' },
   { id: 'nav-reports', label: 'Reports', icon: BarChart3, category: 'navigation', href: '/reports', keywords: 'mis analytics export' },
-  { id: 'nav-staff', label: 'Staff & Access', icon: Users, category: 'navigation', href: '/staff', keywords: 'employee user role' },
   { id: 'nav-settings', label: 'Settings', icon: Settings, category: 'navigation', href: '/settings', keywords: 'config integration' },
-  { id: 'nav-cathlab', label: 'Cath Lab', icon: Heart, category: 'navigation', href: '/cathlab', keywords: 'cag ptca stent angiography' },
-  { id: 'nav-dialysis', label: 'Dialysis', icon: Activity, category: 'navigation', href: '/dialysis', keywords: 'hd session machine' },
-  { id: 'nav-ambulance', label: 'Ambulance', icon: Truck, category: 'navigation', href: '/ambulance', keywords: 'transport dispatch' },
-  { id: 'nav-quality', label: 'Quality / NABH', icon: Shield, category: 'navigation', href: '/quality', keywords: 'kpi indicator audit' },
-  { id: 'nav-assets', label: 'Assets', icon: Settings, category: 'navigation', href: '/assets', keywords: 'equipment depreciation amc' },
-  { id: 'nav-grievances', label: 'Grievances', icon: AlertTriangle, category: 'navigation', href: '/grievances', keywords: 'complaint feedback' },
-  { id: 'nav-telemedicine', label: 'Telemedicine', icon: Stethoscope, category: 'navigation', href: '/telemedicine', keywords: 'video call consult' },
 ];
 
 const ACTION_ITEMS: CommandItem[] = [
@@ -53,8 +43,6 @@ const ACTION_ITEMS: CommandItem[] = [
   { id: 'act-new-bill', label: 'Create New Bill', icon: Plus, category: 'action', href: '/billing', keywords: 'invoice charge' },
   { id: 'act-new-admission', label: 'New IPD Admission', icon: Plus, category: 'action', href: '/ipd', keywords: 'admit inpatient' },
   { id: 'act-er-register', label: 'ER Registration', icon: AlertTriangle, category: 'action', href: '/emergency', keywords: 'emergency triage' },
-  { id: 'act-voice', label: 'Start Voice Note', icon: Mic, category: 'action', href: '/voice-notes', keywords: 'speak dictate' },
-  { id: 'act-teleconsult', label: 'Schedule Teleconsult', icon: Stethoscope, category: 'action', href: '/telemedicine', keywords: 'video call' },
 ];
 
 export function CommandPalette() {

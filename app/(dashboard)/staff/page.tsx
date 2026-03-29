@@ -49,7 +49,7 @@ function StaffInner() {
   const handleCreate = async () => {
     if (!form.fullName || !form.email || !form.password) return;
     setCreating(true);
-    const result = await mgmt.createUser(form);
+    const result = await mgmt.createUser({ ...form, username: form.email.split('@')[0] || form.employeeCode });
     if (result.success) { flash(`Created: ${form.fullName} (${form.email})`); setForm({ employeeCode: '', fullName: '', email: '', password: '', phone: '', staffType: 'doctor', designation: '', roleName: 'doctor', specialisation: '', medicalRegNo: '' }); }
     else flash(result.error || 'Failed');
     setCreating(false);

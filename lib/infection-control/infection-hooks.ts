@@ -22,10 +22,10 @@ export function useHAISurveillance(centreId: string | null) {
   useEffect(() => { load(); }, [load]);
 
   const report = useCallback(async (data: any, staffId: string) => {
-    if (!centreId || !sb()) return { success: false };
+    if (!centreId || !sb()) return { success: false, error: "Not initialized" };
     const { error } = await sb()!.from('hmis_hai_surveillance').insert({ centre_id: centreId, reported_by: staffId, ...data });
     if (!error) load();
-    return { success: !error };
+    return { success: !error, error: error?.message };
   }, [centreId, load]);
 
   const update = useCallback(async (id: string, updates: any) => {
@@ -96,10 +96,10 @@ export function useHandHygiene(centreId: string | null) {
   useEffect(() => { load(); }, [load]);
 
   const addAudit = useCallback(async (data: any, staffId: string) => {
-    if (!centreId || !sb()) return { success: false };
+    if (!centreId || !sb()) return { success: false, error: "Not initialized" };
     const { error } = await sb()!.from('hmis_hand_hygiene_audit').insert({ centre_id: centreId, auditor_id: staffId, ...data });
     if (!error) load();
-    return { success: !error };
+    return { success: !error, error: error?.message };
   }, [centreId, load]);
 
   const wardCompliance = useMemo(() => {
