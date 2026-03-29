@@ -53,15 +53,8 @@ export default function LoginPage() {
       <div className="w-full max-w-sm">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="flex items-center justify-center gap-2 mb-3">
-            <svg width="40" height="40" viewBox="0 0 28 28" fill="none">
-              <rect x="8" y="0" width="12" height="28" rx="2" fill="#E8B931"/>
-              <rect x="0" y="8" width="28" height="12" rx="2" fill="#E8B931"/>
-              <rect x="9" y="1" width="10" height="26" rx="1.5" fill="#D4382C"/>
-              <rect x="1" y="9" width="26" height="10" rx="1.5" fill="#2A9D8F"/>
-              <rect x="9" y="9" width="10" height="10" fill="#1B3A5C"/>
-            </svg>
-            <span className="text-xl font-bold text-[#1B3A5C] tracking-wide">HEALTH1</span>
+          <div className="flex justify-center mb-4">
+            <img src="/images/health1-logo.svg" alt="Health1 Super Speciality Hospitals" className="w-56 h-auto" />
           </div>
           <h1 className="font-bold text-lg text-gray-900">Hospital Management System</h1>
           <p className="text-sm text-gray-500 mt-1">Sign in to continue</p>
