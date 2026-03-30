@@ -211,6 +211,16 @@ function EMRInner() {
             })),
             status: 'pending',
           });
+
+          // Also insert individual prescriptions for tracking/refills
+          const rxRows = prescriptions.map(p => ({
+            centre_id: centreId, patient_id: patient.id,
+            drug_name: p.drug,
+            dosage: p.dose, route: p.route,
+            frequency: p.frequency, duration_days: parseInt(p.duration) || 0,
+            instructions: p.instructions || '',
+          }));
+          await sb().from('hmis_prescriptions').insert(rxRows);
         }
 
         const orderCount = labInvs.length + radInvs.length;
