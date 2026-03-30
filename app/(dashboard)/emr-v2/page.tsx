@@ -236,7 +236,7 @@ function EMRInner() {
       if (sign) {
         // Auto-complete OPD visit if opened from queue
         // Sign the encounter (change status to 'signed')
-        const signEncId = encounterId || emr.activeEncounterId;
+        const signEncId = result.id || null;
         if (signEncId) {
           const { error: signErr } = await sb().from('hmis_emr_encounters').update({
             status: 'signed', signed_at: new Date().toISOString(),
