@@ -10,7 +10,7 @@ export function useHAISurveillance(centreId: string | null) {
   const load = useCallback(async (filters?: { type?: string; status?: string; year?: number }) => {
     if (!centreId || !sb()) return;
     setLoading(true);
-    let q = sb()!.from('hmis_hai_surveillance')
+    let q = sb().from('hmis_hai_surveillance')
       .select('*, patient:hmis_patients!inner(first_name, last_name, uhid), reporter:hmis_staff!hmis_hai_surveillance_reported_by_fkey(full_name)')
       .eq('centre_id', centreId).order('created_at', { ascending: false }).limit(200);
     if (filters?.type && filters.type !== 'all') q = q.eq('infection_type', filters.type);
@@ -19,18 +19,19 @@ export function useHAISurveillance(centreId: string | null) {
     setCases(data || []);
     setLoading(false);
   }, [centreId]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { load(); }, [load]);
 
   const report = useCallback(async (data: any, staffId: string) => {
     if (!centreId || !sb()) return { success: false, error: "Not initialized" };
-    const { error } = await sb()!.from('hmis_hai_surveillance').insert({ centre_id: centreId, reported_by: staffId, ...data });
+    const { error } = await sb().from('hmis_hai_surveillance').insert({ centre_id: centreId, reported_by: staffId, ...data });
     if (!error) load();
     return { success: !error, error: error?.message };
   }, [centreId, load]);
 
   const update = useCallback(async (id: string, updates: any) => {
     if (!sb()) return;
-    await sb()!.from('hmis_hai_surveillance').update(updates).eq('id', id);
+    await sb().from('hmis_hai_surveillance').update(updates).eq('id', id);
     load();
   }, [load]);
 
@@ -60,7 +61,7 @@ export function useAntibiogramData(centreId: string | null, year?: number) {
   useEffect(() => {
     if (!centreId || !sb()) return;
     const y = year || new Date().getFullYear();
-    sb()!.from('hmis_antibiogram').select('*').eq('centre_id', centreId).eq('year', y)
+    sb().from('hmis_antibiogram').select('*').eq('centre_id', centreId).eq('year', y)
       .order('organism').order('antibiotic')
       .then(({ data: d }: any) => setData(d || []));
   }, [centreId, year]);
@@ -88,16 +89,17 @@ export function useHandHygiene(centreId: string | null) {
   const [audits, setAudits] = useState<any[]>([]);
   const load = useCallback(async () => {
     if (!centreId || !sb()) return;
-    const { data } = await sb()!.from('hmis_hand_hygiene_audit')
+    const { data } = await sb().from('hmis_hand_hygiene_audit')
       .select('*, auditor:hmis_staff!hmis_hand_hygiene_audit_auditor_id_fkey(full_name)')
       .eq('centre_id', centreId).order('audit_date', { ascending: false }).limit(100);
     setAudits(data || []);
   }, [centreId]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { load(); }, [load]);
 
   const addAudit = useCallback(async (data: any, staffId: string) => {
     if (!centreId || !sb()) return { success: false, error: "Not initialized" };
-    const { error } = await sb()!.from('hmis_hand_hygiene_audit').insert({ centre_id: centreId, auditor_id: staffId, ...data });
+    const { error } = await sb().from('hmis_hand_hygiene_audit').insert({ centre_id: centreId, auditor_id: staffId, ...data });
     if (!error) load();
     return { success: !error, error: error?.message };
   }, [centreId, load]);

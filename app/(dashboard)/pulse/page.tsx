@@ -82,6 +82,7 @@ export default function HospitalPulsePage() {
   const [now, setNow] = useState(new Date());
   const [fullscreen, setFullscreen] = useState(false);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { const t = setInterval(() => { setNow(new Date()); setTick(p => p + 1); }, 1000); return () => clearInterval(t); }, []);
 
   const load = useCallback(async () => {
@@ -90,17 +91,17 @@ export default function HospitalPulsePage() {
     const ts = today + 'T00:00:00';
 
     const [beds, opd, ipdActive, bills, lab, rad, ot, pharma, charges, discharges, er] = await Promise.all([
-      sb()!.from('hmis_beds').select('id, name, status, room:hmis_rooms!inner(name, floor, ward:hmis_wards!inner(name, ward_type, centre_id))').eq('room.ward.centre_id', centreId).eq('is_active', true),
-      sb()!.from('hmis_opd_visits').select('id, status, created_at').eq('centre_id', centreId).gte('created_at', ts),
-      sb()!.from('hmis_admissions').select('id').eq('centre_id', centreId).eq('status', 'active'),
-      sb()!.from('hmis_bills').select('net_amount, paid_amount, created_at, payor_type').eq('centre_id', centreId).eq('bill_date', today).neq('status', 'cancelled'),
-      sb()!.from('hmis_lab_orders').select('id, status').eq('centre_id', centreId).gte('created_at', ts),
-      sb()!.from('hmis_radiology_orders').select('id, status').eq('centre_id', centreId).gte('created_at', ts),
-      sb()!.from('hmis_ot_bookings').select('id, status, procedure_name, estimated_duration_min, actual_start, surgeon:hmis_staff!hmis_ot_bookings_surgeon_id_fkey(full_name), ot_room:hmis_ot_rooms(name)').eq('centre_id', centreId).eq('scheduled_date', today),
-      sb()!.from('hmis_pharmacy_dispensing').select('id, status').eq('centre_id', centreId).gte('created_at', ts),
-      sb()!.from('hmis_charge_log').select('amount').eq('centre_id', centreId).eq('service_date', today).neq('status', 'reversed'),
-      sb()!.from('hmis_admissions').select('id').eq('centre_id', centreId).eq('status', 'discharged').gte('discharge_date', ts),
-      sb()!.from('hmis_opd_visits').select('id').eq('centre_id', centreId).gte('created_at', ts).eq('visit_type', 'emergency'),
+      sb().from('hmis_beds').select('id, name, status, room:hmis_rooms!inner(name, floor, ward:hmis_wards!inner(name, ward_type, centre_id))').eq('room.ward.centre_id', centreId).eq('is_active', true),
+      sb().from('hmis_opd_visits').select('id, status, created_at').eq('centre_id', centreId).gte('created_at', ts),
+      sb().from('hmis_admissions').select('id').eq('centre_id', centreId).eq('status', 'active'),
+      sb().from('hmis_bills').select('net_amount, paid_amount, created_at, payor_type').eq('centre_id', centreId).eq('bill_date', today).neq('status', 'cancelled'),
+      sb().from('hmis_lab_orders').select('id, status').eq('centre_id', centreId).gte('created_at', ts),
+      sb().from('hmis_radiology_orders').select('id, status').eq('centre_id', centreId).gte('created_at', ts),
+      sb().from('hmis_ot_bookings').select('id, status, procedure_name, estimated_duration_min, actual_start, surgeon:hmis_staff!hmis_ot_bookings_surgeon_id_fkey(full_name), ot_room:hmis_ot_rooms(name)').eq('centre_id', centreId).eq('scheduled_date', today),
+      sb().from('hmis_pharmacy_dispensing').select('id, status').eq('centre_id', centreId).gte('created_at', ts),
+      sb().from('hmis_charge_log').select('amount').eq('centre_id', centreId).eq('service_date', today).neq('status', 'reversed'),
+      sb().from('hmis_admissions').select('id').eq('centre_id', centreId).eq('status', 'discharged').gte('discharge_date', ts),
+      sb().from('hmis_opd_visits').select('id').eq('centre_id', centreId).gte('created_at', ts).eq('visit_type', 'emergency'),
     ]);
 
     const bd = beds.data || []; const od = opd.data || []; const bl = bills.data || [];
@@ -147,17 +148,19 @@ export default function HospitalPulsePage() {
     });
   }, [centreId]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { load(); }, [load]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { const t = setInterval(load, 12000); return () => clearInterval(t); }, [load]);
   useEffect(() => {
     if (!centreId || !sb()) return;
-    const ch = sb()!.channel('pulse-v2-' + centreId)
+    const ch = sb().channel('pulse-v2-' + centreId)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'hmis_beds' }, load)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'hmis_bills', filter: `centre_id=eq.${centreId}` }, load)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'hmis_admissions', filter: `centre_id=eq.${centreId}` }, load)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'hmis_opd_visits', filter: `centre_id=eq.${centreId}` }, load)
       .subscribe();
-    return () => { sb()!.removeChannel(ch); };
+    return () => { sb().removeChannel(ch); };
   }, [centreId, load]);
 
   const toggleFS = () => {

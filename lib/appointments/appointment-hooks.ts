@@ -32,7 +32,7 @@ export function useDoctorSchedules(centreId: string | null) {
   const loadSchedules = useCallback(async () => {
     if (!centreId || !sb()) return;
     setLoading(true);
-    const { data } = await sb()!.from('hmis_doctor_schedules')
+    const { data } = await sb().from('hmis_doctor_schedules')
       .select('*, doctor:hmis_staff!inner(full_name, specialisation), department:hmis_departments(name)')
       .eq('centre_id', centreId).eq('is_active', true).order('day_of_week').order('start_time');
     setSchedules((data || []).map((s: any) => ({
@@ -48,11 +48,12 @@ export function useDoctorSchedules(centreId: string | null) {
 
   const loadLeaves = useCallback(async () => {
     if (!centreId || !sb()) return;
-    const { data } = await sb()!.from('hmis_doctor_leaves').select('*, doctor:hmis_staff(full_name)')
+    const { data } = await sb().from('hmis_doctor_leaves').select('*, doctor:hmis_staff(full_name)')
       .gte('leave_date', new Date().toISOString().split('T')[0]).order('leave_date');
     setLeaves(data || []);
   }, [centreId]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { loadSchedules(); loadLeaves(); }, [loadSchedules, loadLeaves]);
 
   const addSchedule = useCallback(async (data: {
@@ -61,7 +62,7 @@ export function useDoctorSchedules(centreId: string | null) {
     slotDuration?: number; maxPatients?: number; room?: string; fee?: number;
   }) => {
     if (!centreId || !sb()) return { success: false };
-    const { error } = await sb()!.from('hmis_doctor_schedules').insert({
+    const { error } = await sb().from('hmis_doctor_schedules').insert({
       centre_id: centreId, doctor_id: data.doctorId, department_id: data.departmentId,
       day_of_week: data.dayOfWeek, start_time: data.startTime + ':00', end_time: data.endTime + ':00',
       slot_duration_min: data.slotDuration || 15, max_patients: data.maxPatients || 20,
@@ -73,13 +74,13 @@ export function useDoctorSchedules(centreId: string | null) {
 
   const removeSchedule = useCallback(async (id: string) => {
     if (!sb()) return;
-    await sb()!.from('hmis_doctor_schedules').update({ is_active: false }).eq('id', id);
+    await sb().from('hmis_doctor_schedules').update({ is_active: false }).eq('id', id);
     loadSchedules();
   }, [loadSchedules]);
 
   const addLeave = useCallback(async (doctorId: string, date: string, reason: string, approvedBy: string) => {
     if (!sb()) return { success: false };
-    const { error } = await sb()!.from('hmis_doctor_leaves').insert({
+    const { error } = await sb().from('hmis_doctor_leaves').insert({
       doctor_id: doctorId, leave_date: date, reason, approved_by: approvedBy,
     });
     if (!error) loadLeaves();
@@ -99,7 +100,7 @@ export function useAppointments(centreId: string | null) {
     setLoading(true);
     const date = filters?.date || new Date().toISOString().split('T')[0];
 
-    let q = sb()!.from('hmis_appointments')
+    let q = sb().from('hmis_appointments')
       .select(`*, patient:hmis_patients!inner(first_name, last_name, uhid, phone_primary, age_years, gender),
         doctor:hmis_staff!hmis_appointments_doctor_id_fkey(full_name, specialisation),
         department:hmis_departments(name)`)
@@ -137,15 +138,16 @@ export function useAppointments(centreId: string | null) {
     setLoading(false);
   }, [centreId]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { load(); }, [load]);
 
   // Realtime
   useEffect(() => {
     if (!centreId || !sb()) return;
-    const ch = sb()!.channel('appts-' + centreId)
+    const ch = sb().channel('appts-' + centreId)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'hmis_appointments', filter: `centre_id=eq.${centreId}` }, () => load())
       .subscribe();
-    return () => { sb()!.removeChannel(ch); };
+    return () => { sb().removeChannel(ch); };
   }, [centreId, load]);
 
   const stats = useMemo(() => ({
@@ -160,21 +162,22 @@ export function useAppointments(centreId: string | null) {
   }), [appointments]);
 
   // Available slots
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const getAvailableSlots = useCallback(async (doctorId: string, date: string): Promise<TimeSlot[]> => {
     if (!centreId || !sb()) return [];
     const dayOfWeek = new Date(date + 'T00:00:00').getDay();
 
     // Check leave
-    const { data: leave } = await sb()!.from('hmis_doctor_leaves').select('id')
+    const { data: leave } = await sb().from('hmis_doctor_leaves').select('id')
       .eq('doctor_id', doctorId).eq('leave_date', date).limit(1);
     if (leave?.length) return []; // On leave
 
-    const { data: schedules } = await sb()!.from('hmis_doctor_schedules')
+    const { data: schedules } = await sb().from('hmis_doctor_schedules')
       .select('*').eq('centre_id', centreId).eq('doctor_id', doctorId)
       .eq('day_of_week', dayOfWeek).eq('is_active', true);
     if (!schedules?.length) return [];
 
-    const { data: existing } = await sb()!.from('hmis_appointments')
+    const { data: existing } = await sb().from('hmis_appointments')
       .select('appointment_time').eq('centre_id', centreId).eq('doctor_id', doctorId)
       .eq('appointment_date', date).not('status', 'in', '(cancelled,rescheduled)');
     const bookedSet = new Set((existing || []).map((a: any) => a.appointment_time));
@@ -205,11 +208,11 @@ export function useAppointments(centreId: string | null) {
     if (!centreId || !sb()) return { success: false, error: 'Not ready' };
 
     // Token
-    const { data: tokenResult } = await sb()!.rpc('generate_appointment_token', {
+    const { data: tokenResult } = await sb().rpc('generate_appointment_token', {
       p_centre_id: centreId, p_doctor_id: data.doctorId, p_date: data.date,
     });
 
-    const { data: appt, error } = await sb()!.from('hmis_appointments').insert({
+    const { data: appt, error } = await sb().from('hmis_appointments').insert({
       centre_id: centreId, patient_id: data.patientId, doctor_id: data.doctorId,
       department_id: data.departmentId,
       appointment_date: data.date, appointment_time: data.time,
@@ -225,23 +228,23 @@ export function useAppointments(centreId: string | null) {
 
   // Status transitions
   const checkIn = useCallback(async (id: string) => {
-    const { error } = await sb()!.from('hmis_appointments').update({ status: 'checked_in', checked_in_at: new Date().toISOString() }).eq('id', id);
+    const { error } = await sb().from('hmis_appointments').update({ status: 'checked_in', checked_in_at: new Date().toISOString() }).eq('id', id);
     if (!error) load();
     return { error: error?.message };
   }, [load]);
 
   const startConsultation = useCallback(async (id: string) => {
-    const { error } = await sb()!.from('hmis_appointments').update({ status: 'in_consultation', consultation_start: new Date().toISOString() }).eq('id', id);
+    const { error } = await sb().from('hmis_appointments').update({ status: 'in_consultation', consultation_start: new Date().toISOString() }).eq('id', id);
     if (!error) load();
   }, [load]);
 
   const complete = useCallback(async (id: string) => {
-    const { error } = await sb()!.from('hmis_appointments').update({ status: 'completed', consultation_end: new Date().toISOString() }).eq('id', id);
+    const { error } = await sb().from('hmis_appointments').update({ status: 'completed', consultation_end: new Date().toISOString() }).eq('id', id);
     if (!error) load();
   }, [load]);
 
   const cancel = useCallback(async (id: string, reason: string, staffId: string) => {
-    const { error } = await sb()!.from('hmis_appointments').update({
+    const { error } = await sb().from('hmis_appointments').update({
       status: 'cancelled', cancel_reason: reason, cancelled_by: staffId, cancelled_at: new Date().toISOString(),
     }).eq('id', id);
     if (!error) load();
@@ -249,22 +252,22 @@ export function useAppointments(centreId: string | null) {
 
   const reschedule = useCallback(async (id: string, newDate: string, newTime: string, staffId: string) => {
     if (!centreId || !sb()) return { success: false };
-    const { data: old } = await sb()!.from('hmis_appointments').select('*').eq('id', id).single();
+    const { data: old } = await sb().from('hmis_appointments').select('*').eq('id', id).single();
     if (!old) return { success: false, error: 'Not found' };
-    await sb()!.from('hmis_appointments').update({ status: 'rescheduled' }).eq('id', id);
+    await sb().from('hmis_appointments').update({ status: 'rescheduled' }).eq('id', id);
     const result = await bookAppointment({
       patientId: old.patient_id, doctorId: old.doctor_id, departmentId: old.department_id,
       date: newDate, time: newTime, type: old.type, visitReason: old.visit_reason,
       priority: old.priority, source: old.booking_source, staffId,
     });
     if (result.success && result.appointment) {
-      await sb()!.from('hmis_appointments').update({ rescheduled_from: id }).eq('id', result.appointment.id);
+      await sb().from('hmis_appointments').update({ rescheduled_from: id }).eq('id', result.appointment.id);
     }
     return result;
   }, [centreId, bookAppointment]);
 
   const markNoShow = useCallback(async (id: string) => {
-    await sb()!.from('hmis_appointments').update({ status: 'no_show' }).eq('id', id);
+    await sb().from('hmis_appointments').update({ status: 'no_show' }).eq('id', id);
     load();
   }, [load]);
 
@@ -276,17 +279,17 @@ export function usePatientDocuments(patientId: string | null) {
   const [documents, setDocuments] = useState<any[]>([]);
   useEffect(() => {
     if (!patientId || !sb()) return;
-    sb()!.from('hmis_patient_documents').select('*').eq('patient_id', patientId).order('created_at', { ascending: false })
+    sb().from('hmis_patient_documents').select('*').eq('patient_id', patientId).order('created_at', { ascending: false })
       .then(({ data }: any) => setDocuments(data || []));
   }, [patientId]);
   const upload = useCallback(async (file: File, docType: string, staffId: string) => {
     if (!patientId || !sb()) return { success: false };
     const path = `patients/${patientId}/${Date.now()}.${file.name.split('.').pop()}`;
-    const { error: ue } = await sb()!.storage.from('documents').upload(path, file);
+    const { error: ue } = await sb().storage.from('documents').upload(path, file);
     if (ue) return { success: false, error: ue.message };
-    const { data: urlData } = sb()!.storage.from('documents').getPublicUrl(path);
-    const { error } = await sb()!.from('hmis_patient_documents').insert({ patient_id: patientId, document_type: docType, document_name: file.name, file_url: urlData.publicUrl, file_size: file.size, mime_type: file.type, uploaded_by: staffId });
-    if (!error) { const { data } = await sb()!.from('hmis_patient_documents').select('*').eq('patient_id', patientId).order('created_at', { ascending: false }); setDocuments(data || []); }
+    const { data: urlData } = sb().storage.from('documents').getPublicUrl(path);
+    const { error } = await sb().from('hmis_patient_documents').insert({ patient_id: patientId, document_type: docType, document_name: file.name, file_url: urlData.publicUrl, file_size: file.size, mime_type: file.type, uploaded_by: staffId });
+    if (!error) { const { data } = await sb().from('hmis_patient_documents').select('*').eq('patient_id', patientId).order('created_at', { ascending: false }); setDocuments(data || []); }
     return { success: !error, error: error?.message };
   }, [patientId]);
   return { documents, upload };
@@ -297,16 +300,17 @@ export function useEmergencyContacts(patientId: string | null) {
   const [contacts, setContacts] = useState<any[]>([]);
   useEffect(() => {
     if (!patientId || !sb()) return;
-    sb()!.from('hmis_patient_emergency_contacts').select('*').eq('patient_id', patientId).order('is_primary', { ascending: false })
+    sb().from('hmis_patient_emergency_contacts').select('*').eq('patient_id', patientId).order('is_primary', { ascending: false })
       .then(({ data }: any) => setContacts(data || []));
   }, [patientId]);
   const add = useCallback(async (name: string, relationship: string, phone: string, isPrimary = false) => {
     if (!patientId || !sb()) return;
-    await sb()!.from('hmis_patient_emergency_contacts').insert({ patient_id: patientId, name, relationship, phone, is_primary: isPrimary });
-    const { data } = await sb()!.from('hmis_patient_emergency_contacts').select('*').eq('patient_id', patientId);
+    await sb().from('hmis_patient_emergency_contacts').insert({ patient_id: patientId, name, relationship, phone, is_primary: isPrimary });
+    const { data } = await sb().from('hmis_patient_emergency_contacts').select('*').eq('patient_id', patientId);
     setContacts(data || []);
   }, [patientId]);
-  const remove = useCallback(async (id: string) => { if (!sb()) return; await sb()!.from('hmis_patient_emergency_contacts').delete().eq('id', id); setContacts(p => p.filter(c => c.id !== id)); }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const remove = useCallback(async (id: string) => { if (!sb()) return; await sb().from('hmis_patient_emergency_contacts').delete().eq('id', id); setContacts(p => p.filter(c => c.id !== id)); }, []);
   return { contacts, add, remove };
 }
 
@@ -315,13 +319,13 @@ export function usePatientInsurance(patientId: string | null) {
   const [policies, setPolicies] = useState<any[]>([]);
   useEffect(() => {
     if (!patientId || !sb()) return;
-    sb()!.from('hmis_patient_insurance').select('*').eq('patient_id', patientId).eq('is_active', true).order('valid_to', { ascending: false })
+    sb().from('hmis_patient_insurance').select('*').eq('patient_id', patientId).eq('is_active', true).order('valid_to', { ascending: false })
       .then(({ data }: any) => setPolicies(data || []));
   }, [patientId]);
   const add = useCallback(async (data: any) => {
     if (!patientId || !sb()) return;
-    await sb()!.from('hmis_patient_insurance').insert({ patient_id: patientId, ...data });
-    const { data: d } = await sb()!.from('hmis_patient_insurance').select('*').eq('patient_id', patientId).eq('is_active', true);
+    await sb().from('hmis_patient_insurance').insert({ patient_id: patientId, ...data });
+    const { data: d } = await sb().from('hmis_patient_insurance').select('*').eq('patient_id', patientId).eq('is_active', true);
     setPolicies(d || []);
   }, [patientId]);
   return { policies, add };

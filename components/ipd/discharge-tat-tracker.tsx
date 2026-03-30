@@ -21,7 +21,7 @@ export default function DischargeTATTracker({ centreId, dateFrom, dateTo }: Prop
   useEffect(() => {
     if (!centreId || !sb()) return;
     setLoading(true);
-    sb()!.from('hmis_admissions')
+    sb().from('hmis_admissions')
       .select('id, ipd_number, admission_date, actual_discharge, discharge_type, payor_type, patient:hmis_patients!inner(first_name, last_name)')
       .eq('centre_id', centreId).eq('status', 'discharged')
       .gte('actual_discharge', dateFrom).lte('actual_discharge', dateTo)

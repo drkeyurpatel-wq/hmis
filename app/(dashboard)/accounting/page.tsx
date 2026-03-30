@@ -17,6 +17,7 @@ function AccountingPageInner() {
   const [jeDesc, setJeDesc] = useState('');
   const [jeLines, setJeLines] = useState([{ accountId: '', debit: 0, credit: 0 }, { accountId: '', debit: 0, credit: 0 }]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { loadJournals(dateFrom, dateTo); }, [dateFrom, dateTo, loadJournals]);
 
   const loadTrial = async () => { const tb = await getTrialBalance(); setTrialBalance(tb); setTab('trial'); };

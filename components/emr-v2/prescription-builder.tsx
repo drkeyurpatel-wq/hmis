@@ -69,6 +69,7 @@ export default function PrescriptionBuilder({ prescriptions, onChange, allergies
   const [showMedSets, setShowMedSets] = useState(false);
   const [alerts, setAlerts] = useState<CDSSAlert[]>([]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const results = useMemo(() => search.length >= 2 ? searchMedications(search).slice(0, 8) : [], [search]);
 
   // Run full CDSS checks on a drug against current prescriptions + patient allergies
@@ -206,7 +207,7 @@ export default function PrescriptionBuilder({ prescriptions, onChange, allergies
     // Log override to DB
     const alert = alerts.find(a => a.id === alertId);
     if (alert && sb() && patientId && staffId) {
-      await sb()!.from('hmis_cdss_overrides').insert({
+      await sb().from('hmis_cdss_overrides').insert({
         centre_id: centreId || null,
         patient_id: patientId,
         staff_id: staffId,

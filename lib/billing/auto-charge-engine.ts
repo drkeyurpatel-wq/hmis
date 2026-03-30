@@ -19,7 +19,7 @@ export async function runDailyAutoCharges(centreId: string, chargeDate: string, 
   if (!sb()) return { results: [], totalCharged: 0, patientsProcessed: 0, errors: 0 };
 
   // Get all active admissions
-  const { data: admissions } = await sb()!.from('hmis_admissions')
+  const { data: admissions } = await sb().from('hmis_admissions')
     .select(`id, ipd_number, payor_type, admission_date,
       patient:hmis_patients!inner(id, first_name, last_name, uhid),
       bed:hmis_beds(id, bed_number, room:hmis_rooms(room_number, ward:hmis_wards(name, type, bed_charge_per_day)))`)
@@ -29,7 +29,7 @@ export async function runDailyAutoCharges(centreId: string, chargeDate: string, 
 
   // Check which admissions already have charges for this date
   const admIds = admissions.map((a: any) => a.id);
-  const { data: existingRuns } = await sb()!.from('hmis_auto_charge_runs')
+  const { data: existingRuns } = await sb().from('hmis_auto_charge_runs')
     .select('admission_id').eq('charge_date', chargeDate).in('admission_id', admIds);
   const alreadyCharged = new Set((existingRuns || []).map((r: any) => r.admission_id));
 
@@ -58,7 +58,7 @@ export async function runDailyAutoCharges(centreId: string, chargeDate: string, 
     }
 
     // Diet charge (if active diet order)
-    const { data: diet } = await sb()!.from('hmis_diet_orders')
+    const { data: diet } = await sb().from('hmis_diet_orders')
       .select('diet_type').eq('patient_id', pt.id).eq('centre_id', centreId).eq('status', 'active').limit(1).maybeSingle();
     if (diet) {
       const dietRate = diet.diet_type === 'npo' ? 0 : diet.diet_type === 'liquid' ? 150 : diet.diet_type === 'soft' ? 200 : 250;
@@ -71,14 +71,14 @@ export async function runDailyAutoCharges(centreId: string, chargeDate: string, 
 
     try {
       // Post to charge log
-      await sb()!.from('hmis_charge_log').insert(charges.map((c: any) => ({
+      await sb().from('hmis_charge_log').insert(charges.map((c: any) => ({
         centre_id: centreId, patient_id: pt.id, admission_id: adm.id,
         description: c.description, amount: c.amount, charge_date: chargeDate,
         charge_type: 'auto_daily', created_by: staffId,
       })));
 
       // Mark as processed
-      await sb()!.from('hmis_auto_charge_runs').insert({
+      await sb().from('hmis_auto_charge_runs').insert({
         centre_id: centreId, admission_id: adm.id, charge_date: chargeDate,
         total_amount: total, items_count: charges.length, created_by: staffId,
       });

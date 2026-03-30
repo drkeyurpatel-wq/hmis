@@ -35,7 +35,7 @@ export function useHousekeepingTasks(centreId: string | null) {
   const load = useCallback(async (statusFilter?: string) => {
     if (!centreId || !sb()) return;
     setLoading(true);
-    let q = sb()!.from('hmis_housekeeping_tasks')
+    let q = sb().from('hmis_housekeeping_tasks')
       .select('*, assignee:hmis_staff!hmis_housekeeping_tasks_assigned_to_fkey(full_name), requester:hmis_staff!hmis_housekeeping_tasks_requested_by_fkey(full_name), verifier:hmis_staff!hmis_housekeeping_tasks_verified_by_fkey(full_name)')
       .eq('centre_id', centreId)
       .order('requested_at', { ascending: false }).limit(300);
@@ -45,15 +45,16 @@ export function useHousekeepingTasks(centreId: string | null) {
     setLoading(false);
   }, [centreId]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { load(); }, [load]);
 
   // Realtime subscription for discharge cleaning auto-tasks
   useEffect(() => {
     if (!centreId || !sb()) return;
-    const ch = sb()!.channel('hk-beds')
+    const ch = sb().channel('hk-beds')
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'hmis_beds', filter: `status=eq.housekeeping` }, () => load())
       .subscribe();
-    return () => { sb()!.removeChannel(ch); };
+    return () => { sb().removeChannel(ch); };
   }, [centreId, load]);
 
   const stats = useMemo(() => {
@@ -87,7 +88,7 @@ export function useHousekeepingTasks(centreId: string | null) {
     checklist?: { item: string; done: boolean }[]; notes?: string;
   }) => {
     if (!centreId || !sb()) return;
-    await sb()!.from('hmis_housekeeping_tasks').insert({
+    await sb().from('hmis_housekeeping_tasks').insert({
       centre_id: centreId, task_type: data.taskType,
       area_type: data.areaType, area_name: data.areaName,
       priority: data.priority, assigned_to: data.assignedTo || null,
@@ -111,10 +112,10 @@ export function useHousekeepingTasks(centreId: string | null) {
       // If discharge cleaning, update bed to available
       const task = tasks.find(t => t.id === id);
       if (task?.bed_id && task.task_type === 'discharge') {
-        await sb()!.from('hmis_beds').update({ status: 'available' }).eq('id', task.bed_id);
+        await sb().from('hmis_beds').update({ status: 'available' }).eq('id', task.bed_id);
       }
     }
-    await sb()!.from('hmis_housekeeping_tasks').update(upd).eq('id', id);
+    await sb().from('hmis_housekeeping_tasks').update(upd).eq('id', id);
     load();
   }, [tasks, load]);
 
@@ -131,30 +132,31 @@ export function useHousekeepingSchedules(centreId: string | null) {
   const load = useCallback(async () => {
     if (!centreId || !sb()) return;
     setLoading(true);
-    const { data } = await sb()!.from('hmis_housekeeping_schedules')
+    const { data } = await sb().from('hmis_housekeeping_schedules')
       .select('*').eq('centre_id', centreId).eq('is_active', true)
       .order('area_name');
     setSchedules(data || []);
     setLoading(false);
   }, [centreId]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { load(); }, [load]);
 
   const addSchedule = useCallback(async (data: Partial<HKSchedule>) => {
     if (!centreId || !sb()) return;
-    await sb()!.from('hmis_housekeeping_schedules').insert({ ...data, centre_id: centreId });
+    await sb().from('hmis_housekeeping_schedules').insert({ ...data, centre_id: centreId });
     load();
   }, [centreId, load]);
 
   const updateSchedule = useCallback(async (id: string, data: Partial<HKSchedule>) => {
     if (!sb()) return;
-    await sb()!.from('hmis_housekeeping_schedules').update(data).eq('id', id);
+    await sb().from('hmis_housekeeping_schedules').update(data).eq('id', id);
     load();
   }, [load]);
 
   const deleteSchedule = useCallback(async (id: string) => {
     if (!sb()) return;
-    await sb()!.from('hmis_housekeeping_schedules').update({ is_active: false }).eq('id', id);
+    await sb().from('hmis_housekeeping_schedules').update({ is_active: false }).eq('id', id);
     load();
   }, [load]);
 

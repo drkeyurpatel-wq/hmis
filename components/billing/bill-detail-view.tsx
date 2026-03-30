@@ -26,6 +26,7 @@ export default function BillDetailView({ billId, centreId, staffId, onFlash, onC
     if (data) { setBill(data.bill); setItems(data.items || []); setPayments(data.payments || []); }
     setLoading(false);
   };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { load(); }, [billId]);
 
   const handlePay = async () => {

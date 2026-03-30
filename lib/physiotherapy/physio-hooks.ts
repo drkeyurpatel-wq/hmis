@@ -22,17 +22,17 @@ export function usePhysio(centreId: string | null) {
     setLoading(true);
     const d = dateFilter || new Date().toISOString().split('T')[0];
     const [sRes, pRes, prRes] = await Promise.all([
-      sb()!.from('hmis_physio_sessions')
+      sb().from('hmis_physio_sessions')
         .select(`*, patient:hmis_patients!inner(first_name, last_name, uhid, age_years, gender),
           therapist:hmis_staff!hmis_physio_sessions_therapist_id_fkey(full_name),
           plan:hmis_physio_plans(plan_type, sport, diagnosis)`)
         .eq('centre_id', centreId).eq('session_date', d).order('created_at'),
-      sb()!.from('hmis_physio_plans')
+      sb().from('hmis_physio_plans')
         .select(`*, patient:hmis_patients!inner(first_name, last_name, uhid, age_years, gender),
           therapist:hmis_staff!hmis_physio_plans_therapist_id_fkey(full_name),
           referring_doc:hmis_staff!hmis_physio_plans_referring_doctor_id_fkey(full_name)`)
         .eq('centre_id', centreId).in('status', ['active']).order('created_at', { ascending: false }),
-      sb()!.from('hmis_physio_prevention_programs').select('*').eq('centre_id', centreId).eq('is_active', true).order('program_name'),
+      sb().from('hmis_physio_prevention_programs').select('*').eq('centre_id', centreId).eq('is_active', true).order('program_name'),
     ]);
 
     setSessions((sRes.data || []).map((s: any) => ({
@@ -55,38 +55,39 @@ export function usePhysio(centreId: string | null) {
     setLoading(false);
   }, [centreId]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { load(); }, [load]);
 
   const createPlan = useCallback(async (data: any) => {
     if (!centreId || !sb()) return { success: false };
-    const { error } = await sb()!.from('hmis_physio_plans').insert({ centre_id: centreId, start_date: new Date().toISOString().split('T')[0], ...data });
+    const { error } = await sb().from('hmis_physio_plans').insert({ centre_id: centreId, start_date: new Date().toISOString().split('T')[0], ...data });
     if (!error) load();
     return { success: !error, error: error?.message };
   }, [centreId, load]);
 
   const updatePlan = useCallback(async (id: string, data: any) => {
     if (!sb()) return;
-    await sb()!.from('hmis_physio_plans').update(data).eq('id', id);
+    await sb().from('hmis_physio_plans').update(data).eq('id', id);
     load();
   }, [load]);
 
   const createSession = useCallback(async (data: any) => {
     if (!centreId || !sb()) return { success: false };
-    const { error } = await sb()!.from('hmis_physio_sessions').insert({ centre_id: centreId, session_date: new Date().toISOString().split('T')[0], ...data });
+    const { error } = await sb().from('hmis_physio_sessions').insert({ centre_id: centreId, session_date: new Date().toISOString().split('T')[0], ...data });
     if (!error) load();
     return { success: !error, error: error?.message };
   }, [centreId, load]);
 
   const updateSession = useCallback(async (id: string, data: any) => {
     if (!sb()) return;
-    await sb()!.from('hmis_physio_sessions').update(data).eq('id', id);
+    await sb().from('hmis_physio_sessions').update(data).eq('id', id);
     load();
   }, [load]);
 
   // Save outcome measure
   const saveOutcome = useCallback(async (data: { patient_id: string; plan_id?: string; measure_type: string; score: number; max_score?: number; subscales?: any; staffId: string }) => {
     if (!sb()) return { success: false };
-    const { error } = await sb()!.from('hmis_physio_outcomes').insert({
+    const { error } = await sb().from('hmis_physio_outcomes').insert({
       patient_id: data.patient_id, plan_id: data.plan_id || null,
       measure_type: data.measure_type, score: data.score,
       max_score: data.max_score || null, subscales: data.subscales || {},
@@ -115,7 +116,7 @@ export function usePhysio(centreId: string | null) {
     if (Math.abs((data.rotary_stability_l || 0) - (data.rotary_stability_r || 0)) >= 1) asymmetries.push('rotary_stability');
     const risk = total <= 14 ? 'high' : total <= 17 ? 'moderate' : 'low';
 
-    const { error } = await sb()!.from('hmis_physio_fms').insert({ ...data, total_score: total, asymmetries, risk_level: risk });
+    const { error } = await sb().from('hmis_physio_fms').insert({ ...data, total_score: total, asymmetries, risk_level: risk });
     return { success: !error, error: error?.message };
   }, []);
 

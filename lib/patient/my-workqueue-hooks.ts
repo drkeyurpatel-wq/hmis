@@ -41,7 +41,7 @@ export function useMyWorkQueue(centreId: string | null, staffId: string | null, 
     // ============================================================
     if (staffType === 'doctor' || staffType === 'consultant' || staffType === 'admin') {
       // My OPD patients (waiting + checked_in + with_doctor)
-      const { data: opdVisits } = await sb()!.from('hmis_opd_visits')
+      const { data: opdVisits } = await sb().from('hmis_opd_visits')
         .select('id, token_number, status, chief_complaint, check_in_time, patient:hmis_patients!inner(id, uhid, first_name, last_name, age_years, gender)')
         .eq('centre_id', centreId).eq('doctor_id', staffId)
         .in('status', ['waiting', 'checked_in', 'with_doctor'])
@@ -62,7 +62,7 @@ export function useMyWorkQueue(centreId: string | null, staffId: string | null, 
       }
 
       // My IPD patients
-      const { data: myIPD } = await sb()!.from('hmis_admissions')
+      const { data: myIPD } = await sb().from('hmis_admissions')
         .select('id, ipd_number, admission_date, provisional_diagnosis, status, patient:hmis_patients!inner(id, uhid, first_name, last_name, age_years, gender), bed:hmis_beds(bed_number)')
         .eq('centre_id', centreId).eq('primary_doctor_id', staffId).eq('status', 'active');
 
@@ -83,7 +83,7 @@ export function useMyWorkQueue(centreId: string | null, staffId: string | null, 
       }
 
       // Pending lab results to review (my patients)
-      const { data: pendingLabs } = await sb()!.from('hmis_lab_orders')
+      const { data: pendingLabs } = await sb().from('hmis_lab_orders')
         .select('id, test_name, status, ordered_at, patient:hmis_patients!inner(id, uhid, first_name, last_name)')
         .eq('centre_id', centreId).eq('ordered_by', staffId)
         .in('status', ['reported', 'verified'])
@@ -108,7 +108,7 @@ export function useMyWorkQueue(centreId: string | null, staffId: string | null, 
     // ============================================================
     if (staffType === 'nurse' || staffType === 'admin') {
       // All admitted patients at my centre — vitals + meds due
-      const { data: admitted } = await sb()!.from('hmis_admissions')
+      const { data: admitted } = await sb().from('hmis_admissions')
         .select('id, ipd_number, admission_date, patient:hmis_patients!inner(id, uhid, first_name, last_name), bed:hmis_beds(bed_number, room:hmis_rooms(ward:hmis_wards(name, type)))')
         .eq('centre_id', centreId).eq('status', 'active');
 
@@ -118,7 +118,7 @@ export function useMyWorkQueue(centreId: string | null, staffId: string | null, 
         const ward = bed?.room?.ward as any;
 
         // Check latest vitals
-        const { data: lastVitals } = await sb()!.from('hmis_vitals')
+        const { data: lastVitals } = await sb().from('hmis_vitals')
           .select('recorded_at').eq('patient_id', pt.id)
           .order('recorded_at', { ascending: false }).limit(1).maybeSingle();
 
@@ -140,7 +140,7 @@ export function useMyWorkQueue(centreId: string | null, staffId: string | null, 
         }
 
         // Check meds due
-        const { data: medsDue, count: medsCount } = await sb()!.from('hmis_mar')
+        const { data: medsDue, count: medsCount } = await sb().from('hmis_mar')
           .select('id', { count: 'exact', head: true })
           .eq('admission_id', a.id).in('status', ['due', 'overdue']);
 
@@ -162,13 +162,13 @@ export function useMyWorkQueue(centreId: string | null, staffId: string | null, 
     // ============================================================
     // CRITICAL ALERTS (all roles)
     // ============================================================
-    const { data: criticals } = await sb()!.from('hmis_lab_critical_alerts')
+    const { data: criticals } = await sb().from('hmis_lab_critical_alerts')
       .select('id, parameter_name, result_value, created_at, patient_id')
       .eq('status', 'pending')
       .order('created_at', { ascending: false }).limit(5);
 
     for (const c of criticals || []) {
-      const { data: pt } = await sb()!.from('hmis_patients').select('uhid, first_name, last_name').eq('id', c.patient_id).single();
+      const { data: pt } = await sb().from('hmis_patients').select('uhid, first_name, last_name').eq('id', c.patient_id).single();
       if (pt) {
         items.push({
           id: `crit-${c.id}`, type: 'critical_alert', patientId: c.patient_id,
@@ -200,8 +200,10 @@ export function useMyWorkQueue(centreId: string | null, staffId: string | null, 
     setLoading(false);
   }, [centreId, staffId, staffType]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { load(); }, [load]);
   // Auto-refresh every 90s
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { const i = setInterval(load, 90000); return () => clearInterval(i); }, [load]);
 
   return { items, loading, stats, reload: load };

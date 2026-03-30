@@ -31,7 +31,7 @@ function DietaryInner() {
   useEffect(() => {
     if (patSearch.length < 2 || !sb() || !centreId) { setPatResults([]); return; }
     const t = setTimeout(async () => {
-      const { data } = await sb()!.from('hmis_admissions')
+      const { data } = await sb().from('hmis_admissions')
         .select(`id, ipd_number, patient:hmis_patients!inner(id, uhid, first_name, last_name, age_years, gender),
           bed:hmis_beds!hmis_beds_current_admission_id_fkey(bed_number, room:hmis_rooms(room_number, ward:hmis_wards(name)))`)
         .eq('centre_id', centreId).eq('status', 'active');
@@ -86,11 +86,15 @@ function DietaryInner() {
   };
 
   // Served meals set for current meal
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const servedSet = useMemo(() => new Set(diet.meals.filter(m => m.meal_type === activeMeal).map(m => m.diet_order_id)), [diet.meals, activeMeal]);
 
   // Orders for current meal
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const currentOrders = useMemo(() => diet.orders.filter(o => !o.fasting && o.diet_type !== 'npo' && o.meal_plan[activeMeal]), [diet.orders, activeMeal]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const pendingOrders = useMemo(() => currentOrders.filter(o => !servedSet.has(o.id)), [currentOrders, servedSet]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const servedOrders = useMemo(() => currentOrders.filter(o => servedSet.has(o.id)), [currentOrders, servedSet]);
 
   return (

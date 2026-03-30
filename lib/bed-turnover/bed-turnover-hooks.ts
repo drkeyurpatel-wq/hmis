@@ -49,13 +49,13 @@ export function useBedTurnover(centreId: string | null) {
     if (!centreId || !sb()) return;
     setLoading(true);
     const [tRes, wRes] = await Promise.all([
-      sb()!.from('hmis_bed_turnover')
+      sb().from('hmis_bed_turnover')
         .select(SELECT_TURNOVER)
         .eq('centre_id', centreId)
         .not('status', 'eq', 'completed')
         .order('discharge_confirmed_at', { ascending: false })
         .limit(200),
-      sb()!.from('hmis_bed_waitlist')
+      sb().from('hmis_bed_waitlist')
         .select('*, patient:hmis_patients!hmis_bed_waitlist_patient_id_fkey(first_name, last_name, uhid), ward:hmis_wards!hmis_bed_waitlist_ward_id_fkey(name)')
         .eq('centre_id', centreId)
         .eq('status', 'waiting')
@@ -74,7 +74,7 @@ export function useBedTurnover(centreId: string | null) {
   }) => {
     if (!centreId || !sb()) return null;
     // Create turnover record
-    const { data: turnover, error } = await sb()!.from('hmis_bed_turnover').insert({
+    const { data: turnover, error } = await sb().from('hmis_bed_turnover').insert({
       centre_id: centreId,
       bed_id: input.bed_id,
       room_id: input.room_id || null,
@@ -86,13 +86,13 @@ export function useBedTurnover(centreId: string | null) {
     if (error || !turnover) return null;
 
     // Auto-create housekeeping task
-    const bedInfo = await sb()!.from('hmis_beds')
+    const bedInfo = await sb().from('hmis_beds')
       .select('bed_number, room:hmis_rooms(name, ward:hmis_wards(name))')
       .eq('id', input.bed_id).single();
     const b = bedInfo.data as any;
     const areaName = `${b?.room?.ward?.name || 'Ward'} - ${b?.room?.name || 'Room'} - Bed ${b?.bed_number || '?'}`;
 
-    const { data: hkTask } = await sb()!.from('hmis_housekeeping_tasks').insert({
+    const { data: hkTask } = await sb().from('hmis_housekeeping_tasks').insert({
       centre_id: centreId,
       task_type: 'discharge',
       area_type: 'room',
@@ -105,11 +105,11 @@ export function useBedTurnover(centreId: string | null) {
     }).select().single();
 
     if (hkTask) {
-      await sb()!.from('hmis_bed_turnover').update({ hk_task_id: hkTask.id, updated_at: new Date().toISOString() }).eq('id', turnover.id);
+      await sb().from('hmis_bed_turnover').update({ hk_task_id: hkTask.id, updated_at: new Date().toISOString() }).eq('id', turnover.id);
     }
 
     // Update bed status to cleaning
-    await sb()!.from('hmis_beds').update({ status: 'cleaning', current_admission_id: null }).eq('id', input.bed_id);
+    await sb().from('hmis_beds').update({ status: 'cleaning', current_admission_id: null }).eq('id', input.bed_id);
 
     return turnover;
   }, [centreId]);
@@ -118,35 +118,35 @@ export function useBedTurnover(centreId: string | null) {
   const assignHK = useCallback(async (turnoverId: string, staffId: string) => {
     if (!sb()) return;
     const now = new Date().toISOString();
-    const { data: t } = await sb()!.from('hmis_bed_turnover').select('hk_task_id').eq('id', turnoverId).single();
-    await sb()!.from('hmis_bed_turnover').update({
+    const { data: t } = await sb().from('hmis_bed_turnover').select('hk_task_id').eq('id', turnoverId).single();
+    await sb().from('hmis_bed_turnover').update({
       hk_assigned_to: staffId, status: 'housekeeping_in_progress', hk_started_at: now, updated_at: now,
     }).eq('id', turnoverId);
     if (t?.hk_task_id) {
-      await sb()!.from('hmis_housekeeping_tasks').update({ assigned_to: staffId, started_at: now, status: 'in_progress' }).eq('id', t.hk_task_id);
+      await sb().from('hmis_housekeeping_tasks').update({ assigned_to: staffId, started_at: now, status: 'in_progress' }).eq('id', t.hk_task_id);
     }
   }, []);
 
   // Update checklist item
   const updateChecklist = useCallback(async (turnoverId: string, index: number, done: boolean) => {
     if (!sb()) return;
-    const { data } = await sb()!.from('hmis_bed_turnover').select('hk_checklist').eq('id', turnoverId).single();
+    const { data } = await sb().from('hmis_bed_turnover').select('hk_checklist').eq('id', turnoverId).single();
     if (!data) return;
     const checklist = [...(data.hk_checklist || [])];
     if (checklist[index]) checklist[index] = { ...checklist[index], done };
-    await sb()!.from('hmis_bed_turnover').update({ hk_checklist: checklist, updated_at: new Date().toISOString() }).eq('id', turnoverId);
+    await sb().from('hmis_bed_turnover').update({ hk_checklist: checklist, updated_at: new Date().toISOString() }).eq('id', turnoverId);
   }, []);
 
   // Complete housekeeping
   const completeHK = useCallback(async (turnoverId: string) => {
     if (!sb()) return;
     const now = new Date().toISOString();
-    const { data: t } = await sb()!.from('hmis_bed_turnover').select('hk_task_id').eq('id', turnoverId).single();
-    await sb()!.from('hmis_bed_turnover').update({
+    const { data: t } = await sb().from('hmis_bed_turnover').select('hk_task_id').eq('id', turnoverId).single();
+    await sb().from('hmis_bed_turnover').update({
       hk_completed_at: now, status: 'inspection_pending', updated_at: now,
     }).eq('id', turnoverId);
     if (t?.hk_task_id) {
-      await sb()!.from('hmis_housekeeping_tasks').update({ completed_at: now, status: 'completed' }).eq('id', t.hk_task_id);
+      await sb().from('hmis_housekeeping_tasks').update({ completed_at: now, status: 'completed' }).eq('id', t.hk_task_id);
     }
   }, []);
 
@@ -156,11 +156,11 @@ export function useBedTurnover(centreId: string | null) {
     const now = new Date().toISOString();
     if (passed) {
       // Get turnover for SLA calculation
-      const { data: t } = await sb()!.from('hmis_bed_turnover').select('discharge_confirmed_at, bed_id, sla_target_minutes').eq('id', turnoverId).single();
+      const { data: t } = await sb().from('hmis_bed_turnover').select('discharge_confirmed_at, bed_id, sla_target_minutes').eq('id', turnoverId).single();
       const elapsed = t ? Math.round((Date.now() - new Date(t.discharge_confirmed_at).getTime()) / 60000) : 0;
       const slaStatus = elapsed <= (t?.sla_target_minutes || 45) ? 'on_track' : elapsed <= 90 ? 'warning' : 'breached';
 
-      await sb()!.from('hmis_bed_turnover').update({
+      await sb().from('hmis_bed_turnover').update({
         inspected_by: staffId, inspected_at: now, inspection_passed: true,
         inspection_remarks: remarks || null,
         bed_available_at: now, status: 'ready',
@@ -170,7 +170,7 @@ export function useBedTurnover(centreId: string | null) {
 
       // Update bed status to available
       if (t?.bed_id) {
-        await sb()!.from('hmis_beds').update({ status: 'available' }).eq('id', t.bed_id);
+        await sb().from('hmis_beds').update({ status: 'available' }).eq('id', t.bed_id);
       }
 
       // Auto-check waitlist
@@ -179,7 +179,7 @@ export function useBedTurnover(centreId: string | null) {
       }
     } else {
       // Failed inspection — back to housekeeping
-      await sb()!.from('hmis_bed_turnover').update({
+      await sb().from('hmis_bed_turnover').update({
         inspected_by: staffId, inspected_at: now, inspection_passed: false,
         inspection_remarks: remarks || 'Inspection failed — needs re-cleaning',
         status: 'housekeeping_pending', hk_completed_at: null,
@@ -192,12 +192,12 @@ export function useBedTurnover(centreId: string | null) {
   const autoAssignWaitlist = useCallback(async (turnoverId: string, bedId: string) => {
     if (!centreId || !sb()) return;
     // Get bed ward
-    const { data: bed } = await sb()!.from('hmis_beds').select('room:hmis_rooms(ward_id)').eq('id', bedId).single();
+    const { data: bed } = await sb().from('hmis_beds').select('room:hmis_rooms(ward_id)').eq('id', bedId).single();
     const wardId = (bed?.room as any)?.ward_id;
     if (!wardId) return;
 
     // Find first waiting patient for this ward
-    const { data: waiting } = await sb()!.from('hmis_bed_waitlist')
+    const { data: waiting } = await sb().from('hmis_bed_waitlist')
       .select('*')
       .eq('centre_id', centreId)
       .eq('ward_id', wardId)
@@ -209,10 +209,10 @@ export function useBedTurnover(centreId: string | null) {
     if (waiting && waiting.length > 0) {
       const entry = waiting[0];
       const now = new Date().toISOString();
-      await sb()!.from('hmis_bed_waitlist').update({
+      await sb().from('hmis_bed_waitlist').update({
         assigned_bed_id: bedId, assigned_at: now, notified_at: now, status: 'notified',
       }).eq('id', entry.id);
-      await sb()!.from('hmis_bed_turnover').update({
+      await sb().from('hmis_bed_turnover').update({
         next_admission_id: entry.admission_id, next_patient_notified_at: now,
         status: 'assigned', updated_at: now,
       }).eq('id', turnoverId);
@@ -222,7 +222,7 @@ export function useBedTurnover(centreId: string | null) {
   // Mark complete (next patient admitted)
   const markComplete = useCallback(async (turnoverId: string) => {
     if (!sb()) return;
-    await sb()!.from('hmis_bed_turnover').update({
+    await sb().from('hmis_bed_turnover').update({
       status: 'completed', updated_at: new Date().toISOString(),
     }).eq('id', turnoverId);
   }, []);
@@ -233,7 +233,7 @@ export function useBedTurnover(centreId: string | null) {
     bed_type?: string; priority?: string; requested_by: string; notes?: string;
   }) => {
     if (!centreId || !sb()) return;
-    await sb()!.from('hmis_bed_waitlist').insert({
+    await sb().from('hmis_bed_waitlist').insert({
       centre_id: centreId, ...input,
     });
   }, [centreId]);
@@ -241,7 +241,7 @@ export function useBedTurnover(centreId: string | null) {
   // Cancel waitlist entry
   const cancelWaitlist = useCallback(async (id: string) => {
     if (!sb()) return;
-    await sb()!.from('hmis_bed_waitlist').update({ status: 'cancelled' }).eq('id', id);
+    await sb().from('hmis_bed_waitlist').update({ status: 'cancelled' }).eq('id', id);
   }, []);
 
   // Stats
@@ -273,6 +273,7 @@ export function useBedTurnover(centreId: string | null) {
     return 'breached';
   }, [getElapsed]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { load(); }, [load]);
 
   // Auto-refresh every 30s

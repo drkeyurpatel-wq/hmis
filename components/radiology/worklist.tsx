@@ -63,11 +63,11 @@ export default function RadiologyWorklist({ centreId, modalities, staffId, onSel
 
   useEffect(() => {
     if (!sb()) return;
-    sb()!.from('hmis_staff').select('id, full_name').eq('is_active', true)
+    sb().from('hmis_staff').select('id, full_name').eq('is_active', true)
       .ilike('designation', '%technician%').order('full_name').limit(50)
       .then(({ data }: any) => setTechnicians(data || []));
     // Query radiologists: staff_type = 'doctor' and specialisation contains 'radiol'
-    sb()!.from('hmis_staff').select('id, full_name').eq('is_active', true)
+    sb().from('hmis_staff').select('id, full_name').eq('is_active', true)
       .eq('staff_type', 'doctor').ilike('specialisation', '%radiol%')
       .order('full_name').limit(50)
       .then(({ data }: any) => setRadiologists(data || []));
@@ -274,7 +274,7 @@ function InlineReportPanel({ order, staffId, onFlash, onDone }: {
     // Update order status to reported if finalizing
     if (finalize) {
       if (!sb()) { setSaving(false); return; }
-      await sb()!.from('hmis_radiology_orders').update({
+      await sb().from('hmis_radiology_orders').update({
         status: 'reported',
         reported_at: new Date().toISOString(),
         tat_minutes: Math.round((Date.now() - new Date(order.created_at).getTime()) / 60000),
@@ -283,7 +283,7 @@ function InlineReportPanel({ order, staffId, onFlash, onDone }: {
 
       // If critical, also update order-level flag
       if (isCritical) {
-        await sb()!.from('hmis_radiology_reports')
+        await sb().from('hmis_radiology_reports')
           .update({ is_critical: true })
           .eq('radiology_order_id', order.id)
           .is('is_addendum', false);
@@ -300,7 +300,7 @@ function InlineReportPanel({ order, staffId, onFlash, onDone }: {
     // If there is already an existing report, also update it in DB
     if (report.latestReport?.id) {
       const newCritical = !isCritical;
-      await sb()!.from('hmis_radiology_reports').update({ is_critical: newCritical }).eq('id', report.latestReport.id);
+      await sb().from('hmis_radiology_reports').update({ is_critical: newCritical }).eq('id', report.latestReport.id);
       report.load();
       onFlash(newCritical ? 'Marked as critical' : 'Critical flag removed');
     }

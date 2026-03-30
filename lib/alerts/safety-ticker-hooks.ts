@@ -42,7 +42,7 @@ export function useSafetyTicker(centreId: string | null, staffType: string | nul
 
     try {
       // 1. CRITICAL LABS — completed in last 24h with critical results
-      const { data: critLabs } = await sb()!.from('hmis_lab_orders')
+      const { data: critLabs } = await sb().from('hmis_lab_orders')
         .select('id, test_name, patient_id, patient:hmis_patients!inner(first_name, last_name)')
         .eq('centre_id', centreId).eq('status', 'completed')
         .gte('created_at', new Date(Date.now() - 24 * 3600000).toISOString())
@@ -50,7 +50,7 @@ export function useSafetyTicker(centreId: string | null, staffType: string | nul
 
       for (const lab of critLabs || []) {
         // Check if this lab has critical results
-        const { data: results } = await sb()!.from('hmis_lab_results')
+        const { data: results } = await sb().from('hmis_lab_results')
           .select('parameter_name, result_value, is_critical')
           .eq('lab_order_id', lab.id).eq('is_critical', true).limit(5);
 
@@ -67,7 +67,7 @@ export function useSafetyTicker(centreId: string | null, staffType: string | nul
       }
 
       // 2. OVERDUE MEDS — MAR entries past due, join through medication_order for drug name
-      const { data: overdueMar } = await sb()!.from('hmis_mar')
+      const { data: overdueMar } = await sb().from('hmis_mar')
         .select(`id, scheduled_time, status,
           medication_order:hmis_ipd_medication_orders!inner(drug_name,
             admission:hmis_admissions!inner(id, centre_id, 
@@ -92,7 +92,7 @@ export function useSafetyTicker(centreId: string | null, staffType: string | nul
       }
 
       // 3. PENDING DISCHARGES
-      const { data: pendingDisch } = await sb()!.from('hmis_admissions')
+      const { data: pendingDisch } = await sb().from('hmis_admissions')
         .select('id, ipd_number, patient:hmis_patients!inner(id, first_name, last_name)')
         .eq('centre_id', centreId).eq('status', 'discharge_initiated').limit(20);
 
@@ -107,7 +107,7 @@ export function useSafetyTicker(centreId: string | null, staffType: string | nul
       }
 
       // 4. ACTIVE NURSE CALLS (PX module)
-      const { data: nurseCalls } = await sb()!.from('hmis_px_nurse_calls')
+      const { data: nurseCalls } = await sb().from('hmis_px_nurse_calls')
         .select('id, patient_name, bed_label, ward_name, reason, priority, created_at')
         .eq('centre_id', centreId)
         .in('status', ['pending', 'acknowledged'])
@@ -125,7 +125,7 @@ export function useSafetyTicker(centreId: string | null, staffType: string | nul
 
       // 5. CLINICAL ALERTS (NEWS2, vital abnormal) — only if table exists
       try {
-        const { data: alerts } = await sb()!.from('hmis_clinical_alerts')
+        const { data: alerts } = await sb().from('hmis_clinical_alerts')
           .select('id, patient_id, admission_id, title, description, severity, patient:hmis_patients!inner(first_name, last_name)')
           .eq('centre_id', centreId).eq('status', 'active')
           .in('severity', ['critical', 'emergency']).limit(10);

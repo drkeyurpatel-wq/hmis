@@ -58,14 +58,14 @@ export default function DischargeEngine({ admissionId, patientId, staffId, admis
     setLoading(true);
 
     const [roundsRes, medsRes, procsRes, labsRes, radRes, vitalsRes, ioRes, consentsRes] = await Promise.all([
-      sb()!.from('hmis_doctor_rounds').select('*, doctor:hmis_staff!hmis_doctor_rounds_doctor_id_fkey(full_name)').eq('admission_id', admissionId).order('round_date', { ascending: true }),
-      sb()!.from('hmis_ipd_medication_orders').select('*').eq('admission_id', admissionId).order('start_date'),
-      sb()!.from('hmis_procedural_notes').select('*, doctor:hmis_staff!hmis_procedural_notes_performed_by_fkey(full_name)').eq('admission_id', admissionId).order('procedure_date'),
-      sb()!.from('hmis_lab_orders').select('*, test:hmis_lab_test_master(test_code, test_name), results:hmis_lab_results(parameter_name, result_value, unit, is_abnormal, is_critical)').eq('patient_id', patientId).gte('created_at', admission?.admission_date || '2020-01-01').order('created_at'),
-      sb()!.from('hmis_radiology_orders').select('*, test:hmis_radiology_test_master(test_code, test_name)').eq('patient_id', patientId).gte('created_at', admission?.admission_date || '2020-01-01').order('created_at'),
-      sb()!.from('hmis_icu_charts').select('hr, bp_sys, bp_dia, spo2, temp, rr, recorded_at').eq('admission_id', admissionId).order('recorded_at', { ascending: false }).limit(10),
-      sb()!.from('hmis_io_chart').select('shift, total_intake, total_output, balance, recorded_date').eq('admission_id', admissionId).order('recorded_date', { ascending: false }).limit(7),
-      sb()!.from('hmis_consents').select('consent_type, procedure_name, consent_given').eq('admission_id', admissionId),
+      sb().from('hmis_doctor_rounds').select('*, doctor:hmis_staff!hmis_doctor_rounds_doctor_id_fkey(full_name)').eq('admission_id', admissionId).order('round_date', { ascending: true }),
+      sb().from('hmis_ipd_medication_orders').select('*').eq('admission_id', admissionId).order('start_date'),
+      sb().from('hmis_procedural_notes').select('*, doctor:hmis_staff!hmis_procedural_notes_performed_by_fkey(full_name)').eq('admission_id', admissionId).order('procedure_date'),
+      sb().from('hmis_lab_orders').select('*, test:hmis_lab_test_master(test_code, test_name), results:hmis_lab_results(parameter_name, result_value, unit, is_abnormal, is_critical)').eq('patient_id', patientId).gte('created_at', admission?.admission_date || '2020-01-01').order('created_at'),
+      sb().from('hmis_radiology_orders').select('*, test:hmis_radiology_test_master(test_code, test_name)').eq('patient_id', patientId).gte('created_at', admission?.admission_date || '2020-01-01').order('created_at'),
+      sb().from('hmis_icu_charts').select('hr, bp_sys, bp_dia, spo2, temp, rr, recorded_at').eq('admission_id', admissionId).order('recorded_at', { ascending: false }).limit(10),
+      sb().from('hmis_io_chart').select('shift, total_intake, total_output, balance, recorded_date').eq('admission_id', admissionId).order('recorded_date', { ascending: false }).limit(7),
+      sb().from('hmis_consents').select('consent_type, procedure_name, consent_given').eq('admission_id', admissionId),
     ]);
 
     const rounds = roundsRes.data || [];
@@ -210,6 +210,7 @@ RULES:
     }
   };
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { loadJourney(); }, [loadJourney]);
 
   // Toggle helpers
@@ -275,7 +276,7 @@ RULES:
   // Save discharge summary to admission
   const saveAndDischarge = async () => {
     if (!sb()) return;
-    await sb()!.from('hmis_admissions').update({
+    await sb().from('hmis_admissions').update({
       actual_discharge: new Date().toISOString(),
       discharge_type: ds.dischargeType,
       final_diagnosis: ds.finalDiagnosis,
@@ -283,7 +284,7 @@ RULES:
     }).eq('id', admissionId);
     // Free the bed
     if (admission?.bed_id) {
-      await sb()!.from('hmis_beds').update({ status: 'housekeeping', current_admission_id: null }).eq('id', admission.bed_id);
+      await sb().from('hmis_beds').update({ status: 'housekeeping', current_admission_id: null }).eq('id', admission.bed_id);
 
       // BRIDGE: Auto-trigger bed turnover workflow
       import('@/lib/bridge/module-events').then(({ onDischargeConfirmed }) =>
@@ -295,7 +296,7 @@ RULES:
       );
     }
     // Discontinue all active meds
-    await sb()!.from('hmis_ipd_medication_orders').update({ status: 'completed', end_date: new Date().toISOString().split('T')[0] }).eq('admission_id', admissionId).eq('status', 'active');
+    await sb().from('hmis_ipd_medication_orders').update({ status: 'completed', end_date: new Date().toISOString().split('T')[0] }).eq('admission_id', admissionId).eq('status', 'active');
     // Trigger final bill check
     await triggerFinalBillOnDischarge({ centreId: admission?.centre_id || '', admissionId, patientId, staffId });
     // Notify patient

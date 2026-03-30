@@ -37,7 +37,7 @@ export function useLeakageScanner(centreId: string | null) {
 
     try {
       // 1. Unbilled charges (charge_log without bill)
-      const { data: charges } = await sb()!.from('hmis_charge_log')
+      const { data: charges } = await sb().from('hmis_charge_log')
         .select('id, amount, category, service_date, patient:hmis_patients!inner(first_name, last_name, uhid)')
         .eq('centre_id', centreId).is('bill_id', null).neq('status', 'reversed')
         .gte('service_date', new Date(Date.now() - 30 * dayMs).toISOString().split('T')[0]).limit(100);
@@ -50,11 +50,11 @@ export function useLeakageScanner(centreId: string | null) {
       });
 
       // 2. Active admissions without today's room charge
-      const { data: admissions } = await sb()!.from('hmis_admissions')
+      const { data: admissions } = await sb().from('hmis_admissions')
         .select('id, admission_date, patient:hmis_patients!inner(id, first_name, last_name, uhid)')
         .eq('centre_id', centreId).eq('status', 'active');
       for (const adm of (admissions || []) as any[]) {
-        const { count } = await sb()!.from('hmis_charge_log').select('id', { count: 'exact', head: true })
+        const { count } = await sb().from('hmis_charge_log').select('id', { count: 'exact', head: true })
           .eq('admission_id', adm.id).eq('category', 'room').eq('service_date', todayStr);
         if (count === 0) {
           const d = Math.floor((today.getTime() - new Date(adm.admission_date).getTime()) / dayMs);
@@ -66,7 +66,7 @@ export function useLeakageScanner(centreId: string | null) {
       }
 
       // 3. Completed labs not billed
-      const { data: labs } = await sb()!.from('hmis_lab_orders')
+      const { data: labs } = await sb().from('hmis_lab_orders')
         .select('id, test_name, created_at, patient:hmis_patients!inner(first_name, last_name, uhid)')
         .eq('centre_id', centreId).eq('status', 'completed').is('bill_id', null)
         .gte('created_at', new Date(Date.now() - 7 * dayMs).toISOString()).limit(50);
@@ -78,7 +78,7 @@ export function useLeakageScanner(centreId: string | null) {
       });
 
       // 4. Dispensed pharmacy not billed
-      const { data: rx } = await sb()!.from('hmis_pharmacy_dispensing')
+      const { data: rx } = await sb().from('hmis_pharmacy_dispensing')
         .select('id, created_at, patient:hmis_patients!inner(first_name, last_name, uhid)')
         .eq('centre_id', centreId).eq('status', 'dispensed').is('bill_id', null)
         .gte('created_at', new Date(Date.now() - 7 * dayMs).toISOString()).limit(50);
@@ -90,7 +90,7 @@ export function useLeakageScanner(centreId: string | null) {
       });
 
       // 5. Unpaid bills >3 days, >₹10K
-      const { data: bills } = await sb()!.from('hmis_bills')
+      const { data: bills } = await sb().from('hmis_bills')
         .select('id, bill_number, balance_amount, bill_date, patient:hmis_patients!inner(first_name, last_name, uhid)')
         .eq('centre_id', centreId).neq('status', 'cancelled').neq('status', 'paid')
         .gt('balance_amount', 10000).order('bill_date').limit(50);
@@ -103,7 +103,7 @@ export function useLeakageScanner(centreId: string | null) {
       });
 
       // 6. Completed OT bookings not billed — join through admission for centre_id + patient
-      const { data: ot } = await sb()!.from('hmis_ot_bookings')
+      const { data: ot } = await sb().from('hmis_ot_bookings')
         .select('id, procedure_name, scheduled_date, admission:hmis_admissions!inner(centre_id, patient:hmis_patients!inner(first_name, last_name, uhid))')
         .eq('status', 'completed')
         .gte('scheduled_date', new Date(Date.now() - 14 * dayMs).toISOString().split('T')[0]).limit(30);
@@ -116,7 +116,7 @@ export function useLeakageScanner(centreId: string | null) {
       });
 
       // 7. Package overstay
-      const { data: pkgUtils } = await sb()!.from('hmis_package_utilization')
+      const { data: pkgUtils } = await sb().from('hmis_package_utilization')
         .select('id, expected_los, package_rate, patient:hmis_patients(first_name, last_name, uhid), admission:hmis_admissions!inner(admission_date, status)')
         .eq('centre_id', centreId).eq('status', 'active');
       (pkgUtils || []).forEach((u: any) => {
@@ -168,7 +168,7 @@ export function useLeakageActions(centreId: string | null) {
     setPosting(admissionId);
     try {
       // Lookup bed rate from admission → bed → room
-      const { data: adm } = await sb()!.from('hmis_admissions')
+      const { data: adm } = await sb().from('hmis_admissions')
         .select('bed_id, patient_id, bed:hmis_beds!inner(room_id, bed_number, room:hmis_rooms!inner(room_type, daily_rate))')
         .eq('id', admissionId).single();
 
@@ -178,7 +178,7 @@ export function useLeakageActions(centreId: string | null) {
       const roomType = room?.room_type || 'General';
       const today = new Date().toISOString().split('T')[0];
 
-      await sb()!.from('hmis_charge_log').insert({
+      await sb().from('hmis_charge_log').insert({
         centre_id: centreId, patient_id: adm.patient_id, admission_id: admissionId,
         category: 'room', description: `Bed Charge (${roomType})`,
         quantity: 1, unit_rate: rate, amount: rate,
@@ -196,16 +196,16 @@ export function useLeakageActions(centreId: string | null) {
     if (!sb() || !centreId) return { success: false, error: 'No connection' };
     setPosting(labOrderId);
     try {
-      const { data: lab } = await sb()!.from('hmis_lab_orders')
+      const { data: lab } = await sb().from('hmis_lab_orders')
         .select('id, test_name, patient_id, admission_id').eq('id', labOrderId).single();
       if (!lab) return { success: false, error: 'Lab order not found' };
 
       // Lookup tariff
-      const { data: tariff } = await sb()!.from('hmis_tariff_master')
+      const { data: tariff } = await sb().from('hmis_tariff_master')
         .select('rate_self').ilike('service_name', `%${lab.test_name}%`).eq('centre_id', centreId).limit(1).maybeSingle();
       const rate = tariff?.rate_self || 500;
 
-      await sb()!.from('hmis_charge_log').insert({
+      await sb().from('hmis_charge_log').insert({
         centre_id: centreId, patient_id: lab.patient_id, admission_id: lab.admission_id,
         category: 'lab', description: lab.test_name,
         quantity: 1, unit_rate: rate, amount: rate,
@@ -214,7 +214,7 @@ export function useLeakageActions(centreId: string | null) {
       });
 
       // Mark as billed (set bill_id to indicate charged)
-      await sb()!.from('hmis_lab_orders').update({ bill_id: 'leakage-recovery' }).eq('id', labOrderId);
+      await sb().from('hmis_lab_orders').update({ bill_id: 'leakage-recovery' }).eq('id', labOrderId);
 
       return { success: true, amount: rate };
     } catch (err: any) {
@@ -226,14 +226,14 @@ export function useLeakageActions(centreId: string | null) {
     if (!sb() || !centreId) return { success: false, error: 'No connection' };
     setPosting(dispensingId);
     try {
-      const { data: disp } = await sb()!.from('hmis_pharmacy_dispensing')
+      const { data: disp } = await sb().from('hmis_pharmacy_dispensing')
         .select('id, patient_id, prescription_data, encounter_id').eq('id', dispensingId).single();
       if (!disp) return { success: false, error: 'Dispensing record not found' };
 
       const items = disp.prescription_data || [];
       const totalAmount = items.reduce((s: number, i: any) => s + (parseFloat(i.price || 0) * (i.qty || 1)), 0) || 200;
 
-      await sb()!.from('hmis_charge_log').insert({
+      await sb().from('hmis_charge_log').insert({
         centre_id: centreId, patient_id: disp.patient_id,
         category: 'pharmacy', description: `Pharmacy (${items.length} items)`,
         quantity: 1, unit_rate: totalAmount, amount: totalAmount,
@@ -241,7 +241,7 @@ export function useLeakageActions(centreId: string | null) {
         source: 'leakage_recovery', source_ref_id: dispensingId, source_ref_type: 'pharmacy_dispense',
       });
 
-      await sb()!.from('hmis_pharmacy_dispensing').update({ bill_id: 'leakage-recovery' }).eq('id', dispensingId);
+      await sb().from('hmis_pharmacy_dispensing').update({ bill_id: 'leakage-recovery' }).eq('id', dispensingId);
 
       return { success: true, amount: totalAmount };
     } catch (err: any) {
@@ -252,7 +252,7 @@ export function useLeakageActions(centreId: string | null) {
   const markBilled = useCallback(async (chargeLogId: string, billId?: string) => {
     if (!sb()) return { success: false };
     const sourceId = chargeLogId.replace(/^ch-/, '');
-    await sb()!.from('hmis_charge_log').update({
+    await sb().from('hmis_charge_log').update({
       bill_id: billId || 'manual', status: 'billed',
     }).eq('id', sourceId);
     return { success: true };

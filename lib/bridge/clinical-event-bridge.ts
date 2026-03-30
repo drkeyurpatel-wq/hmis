@@ -49,7 +49,7 @@ export async function onVitalsSaved(params: {
 
     if (news2 && news2.total >= 5) {
       // Dedup: check if there's already an active NEWS2 alert for this patient
-      const { data: existing } = await sb()!.from('hmis_clinical_alerts')
+      const { data: existing } = await sb().from('hmis_clinical_alerts')
         .select('id')
         .eq('patient_id', patientId)
         .eq('alert_type', 'news2_high')
@@ -58,7 +58,7 @@ export async function onVitalsSaved(params: {
         .limit(1);
 
       if (!existing || existing.length === 0) {
-        await sb()!.from('hmis_clinical_alerts').insert({
+        await sb().from('hmis_clinical_alerts').insert({
           centre_id: centreId,
           patient_id: patientId,
           admission_id: admissionId || null,
@@ -83,7 +83,7 @@ export async function onVitalsSaved(params: {
     if (vitals.temperature && vitals.temperature > 39.5) abnormals.push(`High fever: ${vitals.temperature}°C`);
 
     if (abnormals.length > 0) {
-      await sb()!.from('hmis_clinical_alerts').insert({
+      await sb().from('hmis_clinical_alerts').insert({
         centre_id: centreId,
         patient_id: patientId,
         admission_id: admissionId || null,
@@ -117,7 +117,7 @@ export async function onMedicationAdministered(params: {
 
   try {
     // Resolve any active overdue_med alerts for this patient
-    await sb()!.from('hmis_clinical_alerts')
+    await sb().from('hmis_clinical_alerts')
       .update({
         status: 'resolved',
         resolved_by: params.staffId,
@@ -151,14 +151,14 @@ export async function onLabResultCritical(params: {
     const paramsSummary = params.criticalParams.map(p => `${p.name}: ${p.value}`).join(', ');
 
     // Dedup
-    const { data: existing } = await sb()!.from('hmis_clinical_alerts')
+    const { data: existing } = await sb().from('hmis_clinical_alerts')
       .select('id')
       .eq('source_ref_id', params.labOrderId)
       .eq('alert_type', 'lab_critical')
       .limit(1);
 
     if (!existing || existing.length === 0) {
-      await sb()!.from('hmis_clinical_alerts').insert({
+      await sb().from('hmis_clinical_alerts').insert({
         centre_id: params.centreId,
         patient_id: params.patientId,
         admission_id: params.admissionId || null,
@@ -183,7 +183,7 @@ export async function onLabResultCritical(params: {
 export async function acknowledgeAlert(alertId: string, staffId: string) {
   if (!sb()) return { success: false };
   try {
-    await sb()!.from('hmis_clinical_alerts').update({
+    await sb().from('hmis_clinical_alerts').update({
       status: 'acknowledged',
       acknowledged_by: staffId,
       acknowledged_at: new Date().toISOString(),
@@ -201,7 +201,7 @@ export async function acknowledgeAlert(alertId: string, staffId: string) {
 export async function resolveAlert(alertId: string, staffId: string) {
   if (!sb()) return { success: false };
   try {
-    await sb()!.from('hmis_clinical_alerts').update({
+    await sb().from('hmis_clinical_alerts').update({
       status: 'resolved',
       resolved_by: staffId,
       resolved_at: new Date().toISOString(),

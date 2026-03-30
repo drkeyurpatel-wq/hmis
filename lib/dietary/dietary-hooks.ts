@@ -55,17 +55,17 @@ export function useDietary(centreId: string | null) {
     setLoading(true);
     const today = new Date().toISOString().split('T')[0];
     const [oRes, mRes, miRes] = await Promise.all([
-      sb()!.from('hmis_diet_orders')
+      sb().from('hmis_diet_orders')
         .select(`*, patient:hmis_patients!inner(first_name, last_name, uhid),
           admission:hmis_admissions!inner(ipd_number,
             bed:hmis_beds!hmis_beds_current_admission_id_fkey(bed_number, room:hmis_rooms(room_number, ward:hmis_wards(name)))),
           orderer:hmis_staff!hmis_diet_orders_ordered_by_fkey(full_name)`)
         .eq('centre_id', centreId).eq('status', 'active'),
-      sb()!.from('hmis_meal_service')
+      sb().from('hmis_meal_service')
         .select(`*, patient:hmis_patients(first_name, last_name),
           server:hmis_staff!hmis_meal_service_served_by_fkey(full_name)`)
         .eq('centre_id', centreId).eq('service_date', today),
-      sb()!.from('hmis_menu_master').select('*').eq('centre_id', centreId).eq('is_active', true).order('category').order('item_name'),
+      sb().from('hmis_menu_master').select('*').eq('centre_id', centreId).eq('is_active', true).order('category').order('item_name'),
     ]);
 
     setOrders((oRes.data || []).map((o: any) => {
@@ -104,11 +104,12 @@ export function useDietary(centreId: string | null) {
     setLoading(false);
   }, [centreId]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { load(); }, [load]);
 
   const createOrder = useCallback(async (data: any, staffId: string) => {
     if (!centreId || !sb()) return { success: false };
-    const { error } = await sb()!.from('hmis_diet_orders').insert({
+    const { error } = await sb().from('hmis_diet_orders').insert({
       centre_id: centreId, ordered_by: staffId,
       effective_from: new Date().toISOString(), ...data,
     });
@@ -118,13 +119,13 @@ export function useDietary(centreId: string | null) {
 
   const updateOrder = useCallback(async (id: string, data: any) => {
     if (!sb()) return;
-    await sb()!.from('hmis_diet_orders').update(data).eq('id', id);
+    await sb().from('hmis_diet_orders').update(data).eq('id', id);
     load();
   }, [load]);
 
   const serveMeal = useCallback(async (data: any, staffId: string) => {
     if (!centreId || !sb()) return { success: false };
-    const { error } = await sb()!.from('hmis_meal_service').insert({
+    const { error } = await sb().from('hmis_meal_service').insert({
       centre_id: centreId, served_by: staffId, served_at: new Date().toISOString(), ...data,
     });
     if (!error) load();

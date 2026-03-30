@@ -61,6 +61,7 @@ function VoiceNotesInner() {
   const flash = (m: string) => { setToast(m); setTimeout(() => setToast(''), 3000); };
 
   // Check browser support
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SR) setSupported(false);
@@ -70,7 +71,7 @@ function VoiceNotesInner() {
   useEffect(() => {
     if (patientSearch.length < 2) { setPatientResults([]); return; }
     const t = setTimeout(async () => {
-      const { data } = await sb()!.from('hmis_patients')
+      const { data } = await sb().from('hmis_patients')
         .select('id, uhid, first_name, last_name, age_years, gender, phone_primary, allergies')
         .or(`uhid.ilike.%${patientSearch}%,first_name.ilike.%${patientSearch}%,last_name.ilike.%${patientSearch}%`)
         .eq('is_active', true).limit(5);
@@ -175,7 +176,7 @@ function VoiceNotesInner() {
       source: 'voice_note',
     };
 
-    const { error } = await sb()!.from('hmis_emr_encounters').insert(encounterData);
+    const { error } = await sb().from('hmis_emr_encounters').insert(encounterData);
     if (error) { flash('Save failed: ' + error.message); }
     else { setSaved(true); flash('Encounter saved to EMR'); }
     setSaving(false);

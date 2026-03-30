@@ -17,7 +17,7 @@ interface DispatchResult {
 async function getEnabledChannels(centreId: string | undefined, eventType: string): Promise<{ whatsapp: boolean; sms: boolean }> {
   const defaults = { whatsapp: true, sms: false };
   if (!centreId || !sb()) return defaults;
-  const { data } = await sb()!.from('hmis_notification_templates').select('whatsapp_enabled, sms_enabled')
+  const { data } = await sb().from('hmis_notification_templates').select('whatsapp_enabled, sms_enabled')
     .eq('centre_id', centreId).eq('event_type', eventType).eq('is_active', true).maybeSingle();
   if (data) return { whatsapp: data.whatsapp_enabled ?? true, sms: data.sms_enabled ?? false };
   return defaults;

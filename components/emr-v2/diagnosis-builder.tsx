@@ -10,6 +10,7 @@ interface Props { diagnoses: DiagnosisEntry[]; onChange: (d: DiagnosisEntry[]) =
 
 export default function DiagnosisBuilder({ diagnoses, onChange }: Props) {
   const [search, setSearch] = useState('');
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const results = useMemo(() => search.length >= 2 ? searchDiagnoses(search).slice(0, 8) : [], [search]);
 
   const add = (dx: any) => {

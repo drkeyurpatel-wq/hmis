@@ -45,7 +45,7 @@ function Patient360Inner() {
     if (vf.spo2) record.spo2 = parseFloat(vf.spo2);
     if (vf.respiratory_rate) record.respiratory_rate = parseFloat(vf.respiratory_rate);
     if (p.admission) record.admission_id = p.admission.id;
-    const { error } = await sb()!.from('hmis_vitals').insert(record);
+    const { error } = await sb().from('hmis_vitals').insert(record);
     if (!error) {
       flash('Vitals recorded'); setShowVitals(false); setVf({ heart_rate: '', systolic_bp: '', diastolic_bp: '', temperature: '', spo2: '', respiratory_rate: '' }); p.reload();
       // BRIDGE: fire alert engine
@@ -65,7 +65,7 @@ function Patient360Inner() {
   const [noteText, setNoteText] = useState('');
   const saveNote = useCallback(async () => {
     if (!sb() || !staff || !noteText.trim()) return;
-    const { error } = await sb()!.from('hmis_emr_encounters').insert({
+    const { error } = await sb().from('hmis_emr_encounters').insert({
       patient_id: patientId, doctor_id: staff.id, centre_id: activeCentreId,
       encounter_type: 'note', chief_complaint: noteText.trim().substring(0, 100),
       assessment: noteText.trim(), encounter_date: new Date().toISOString().split('T')[0],
@@ -77,7 +77,7 @@ function Patient360Inner() {
   // Administer medication (mark MAR as given)
   const giveMed = useCallback(async (marId: string, medName: string) => {
     if (!sb() || !staff) return;
-    const { error } = await sb()!.from('hmis_mar').update({
+    const { error } = await sb().from('hmis_mar').update({
       status: 'given', administered_by: staff.id, administered_at: new Date().toISOString(),
     }).eq('id', marId);
     if (!error) { flash(`${medName} — given ✓`); p.reload(); }

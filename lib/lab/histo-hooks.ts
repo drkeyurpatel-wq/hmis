@@ -14,11 +14,12 @@ export function useHistoCase(orderId: string | null) {
   const load = useCallback(async () => {
     if (!orderId || !sb()) return;
     setLoading(true);
-    const { data } = await sb()!.from('hmis_lab_histo_cases').select('*').eq('order_id', orderId).single();
+    const { data } = await sb().from('hmis_lab_histo_cases').select('*').eq('order_id', orderId).single();
     setHistoCase(data);
     setLoading(false);
   }, [orderId]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { load(); }, [load]);
 
   const createCase = useCallback(async (data: {
@@ -27,8 +28,8 @@ export function useHistoCase(orderId: string | null) {
   }, staffId: string) => {
     if (!orderId || !sb()) return null;
     // Get next case number via RPC
-    const { data: caseNum } = await sb()!.rpc('hmis_next_histo_case');
-    const { data: result, error } = await sb()!.from('hmis_lab_histo_cases').insert({
+    const { data: caseNum } = await sb().rpc('hmis_next_histo_case');
+    const { data: result, error } = await sb().from('hmis_lab_histo_cases').insert({
       order_id: orderId, case_number: caseNum || `HP-${Date.now()}`,
       specimen_type: data.specimenType, specimen_site: data.specimenSite,
       laterality: data.laterality || 'na',
@@ -44,7 +45,7 @@ export function useHistoCase(orderId: string | null) {
     blocksCount?: number; slidesCount?: number;
   }, staffId: string) => {
     if (!histoCase?.id || !sb()) return;
-    await sb()!.from('hmis_lab_histo_cases').update({
+    await sb().from('hmis_lab_histo_cases').update({
       gross_description: data.grossDescription, gross_measurements: data.grossMeasurements,
       gross_weight: data.grossWeight, blocks_count: data.blocksCount || 1,
       slides_count: data.slidesCount || 1, grossing_by: staffId,
@@ -55,7 +56,7 @@ export function useHistoCase(orderId: string | null) {
 
   const updateMicroscopy = useCallback(async (microDescription: string) => {
     if (!histoCase?.id || !sb()) return;
-    await sb()!.from('hmis_lab_histo_cases').update({
+    await sb().from('hmis_lab_histo_cases').update({
       micro_description: microDescription, status: 'reporting',
     }).eq('id', histoCase.id);
     load();
@@ -67,7 +68,7 @@ export function useHistoCase(orderId: string | null) {
     synopticData?: any; specialStains?: string[]; ihcMarkers?: string[];
   }, staffId: string) => {
     if (!histoCase?.id || !sb()) return;
-    await sb()!.from('hmis_lab_histo_cases').update({
+    await sb().from('hmis_lab_histo_cases').update({
       histo_diagnosis: data.diagnosis, icd_code: data.icdCode,
       tumor_grade: data.tumorGrade, margin_status: data.marginStatus || 'not_applicable',
       lymph_node_status: data.lymphNodeStatus, tnm_staging: data.tnmStaging,
@@ -76,13 +77,13 @@ export function useHistoCase(orderId: string | null) {
       reported_at: new Date().toISOString(), status: 'verified',
     }).eq('id', histoCase.id);
     // Update order
-    await sb()!.from('hmis_lab_orders').update({ status: 'completed', reported_at: new Date().toISOString(), reported_by: staffId }).eq('id', orderId);
+    await sb().from('hmis_lab_orders').update({ status: 'completed', reported_at: new Date().toISOString(), reported_by: staffId }).eq('id', orderId);
     load();
   }, [histoCase, orderId, load]);
 
   const addAddendum = useCallback(async (text: string, staffId: string) => {
     if (!histoCase?.id || !sb()) return;
-    await sb()!.from('hmis_lab_histo_cases').update({
+    await sb().from('hmis_lab_histo_cases').update({
       addendum: text, addendum_date: new Date().toISOString(), addendum_by: staffId, status: 'amended',
     }).eq('id', histoCase.id);
     load();
@@ -101,7 +102,7 @@ export function useHistoCaseList(centreId: string | null) {
   const load = useCallback(async (statusFilter?: string) => {
     if (!sb()) return;
     setLoading(true);
-    let q = sb()!.from('hmis_lab_histo_cases')
+    let q = sb().from('hmis_lab_histo_cases')
       .select('*, order:hmis_lab_orders!inner(patient:hmis_patients!inner(first_name, last_name, uhid, age_years, gender))')
       .order('created_at', { ascending: false }).limit(100);
     if (statusFilter && statusFilter !== 'all') q = q.eq('status', statusFilter);
@@ -110,6 +111,7 @@ export function useHistoCaseList(centreId: string | null) {
     setLoading(false);
   }, []);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { load(); }, [load]);
 
   return { cases, loading, load };
@@ -125,7 +127,7 @@ export function useAuditLog() {
   const load = useCallback(async (entityType?: string, entityId?: string, limit: number = 100) => {
     if (!sb()) return;
     setLoading(true);
-    let q = sb()!.from('hmis_lab_audit_log')
+    let q = sb().from('hmis_lab_audit_log')
       .select('*, staff:hmis_staff!hmis_lab_audit_log_performed_by_fkey(full_name)')
       .order('performed_at', { ascending: false }).limit(limit);
     if (entityType) q = q.eq('entity_type', entityType);
@@ -141,7 +143,7 @@ export function useAuditLog() {
     reason?: string; metadata?: any;
   }, staffId: string) => {
     if (!sb()) return;
-    await sb()!.from('hmis_lab_audit_log').insert({
+    await sb().from('hmis_lab_audit_log').insert({
       entity_type: data.entityType, entity_id: data.entityId,
       action: data.action, performed_by: staffId,
       field_name: data.fieldName, old_value: data.oldValue, new_value: data.newValue,
@@ -160,12 +162,13 @@ export function useReflexRules() {
 
   const load = useCallback(async () => {
     if (!sb()) return;
-    const { data } = await sb()!.from('hmis_lab_reflex_rules')
+    const { data } = await sb().from('hmis_lab_reflex_rules')
       .select('*, trigger_test:hmis_lab_test_master!hmis_lab_reflex_rules_trigger_test_id_fkey(test_code, test_name), reflex_test:hmis_lab_test_master!hmis_lab_reflex_rules_reflex_test_id_fkey(test_code, test_name)')
       .eq('is_active', true).order('rule_name');
     setRules(data || []);
   }, []);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { load(); }, [load]);
 
   // Check if a result triggers any reflex rules
@@ -202,21 +205,22 @@ export function useNCR() {
 
   const load = useCallback(async () => {
     if (!sb()) return;
-    const { data } = await sb()!.from('hmis_lab_ncr')
+    const { data } = await sb().from('hmis_lab_ncr')
       .select('*, reporter:hmis_staff!hmis_lab_ncr_reported_by_fkey(full_name), assignee:hmis_staff!hmis_lab_ncr_assigned_to_fkey(full_name)')
       .order('created_at', { ascending: false }).limit(50);
     setNcrs(data || []);
   }, []);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { load(); }, [load]);
 
   const create = useCallback(async (data: {
     ncrType: string; title: string; description: string; severity?: string; assignedTo?: string;
   }, staffId: string) => {
     if (!sb()) return;
-    const { data: seq } = await sb()!.rpc('nextval', { seq_name: 'hmis_ncr_seq' });
+    const { data: seq } = await sb().rpc('nextval', { seq_name: 'hmis_ncr_seq' });
     const ncrNum = `NCR-${new Date().getFullYear()}-${String(seq || Date.now()).padStart(4, '0')}`;
-    await sb()!.from('hmis_lab_ncr').insert({
+    await sb().from('hmis_lab_ncr').insert({
       ncr_number: ncrNum, ncr_type: data.ncrType, title: data.title,
       description: data.description, severity: data.severity || 'minor',
       reported_by: staffId, assigned_to: data.assignedTo || null,
@@ -226,7 +230,7 @@ export function useNCR() {
 
   const update = useCallback(async (id: string, updates: any) => {
     if (!sb()) return;
-    await sb()!.from('hmis_lab_ncr').update(updates).eq('id', id);
+    await sb().from('hmis_lab_ncr').update(updates).eq('id', id);
     load();
   }, [load]);
 

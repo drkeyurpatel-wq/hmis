@@ -39,7 +39,7 @@ function MobileEMRInner() {
   useEffect(() => {
     if (!searchQ || searchQ.length < 2 || !sb()) { setSearchResults([]); return; }
     const timer = setTimeout(async () => {
-      const { data } = await sb()!.from('hmis_patients')
+      const { data } = await sb().from('hmis_patients')
         .select('id, uhid, first_name, last_name, age_years, gender, phone_primary')
         .or(`uhid.ilike.%${searchQ}%,first_name.ilike.%${searchQ}%,last_name.ilike.%${searchQ}%,phone_primary.ilike.%${searchQ}%`)
         .limit(6);
@@ -51,13 +51,13 @@ function MobileEMRInner() {
   // Load patient by ID
   const loadPatient = useCallback(async (pid: string) => {
     if (!sb()) return;
-    const { data: pt } = await sb()!.from('hmis_patients')
+    const { data: pt } = await sb().from('hmis_patients')
       .select('id, uhid, first_name, last_name, age_years, gender, blood_group, phone_primary')
       .eq('id', pid).single();
     if (pt) { setPatient(pt); setSearchQ(''); setSearchResults([]); }
 
     // Check for active admission
-    const { data: adm } = await sb()!.from('hmis_admissions')
+    const { data: adm } = await sb().from('hmis_admissions')
       .select('id, ipd_number, admission_date, status, ward:hmis_wards(name), doctor:hmis_staff!hmis_admissions_primary_doctor_id_fkey(full_name)')
       .eq('patient_id', pid).eq('status', 'active').limit(1).maybeSingle();
     setAdmission(adm);
@@ -66,9 +66,9 @@ function MobileEMRInner() {
     const admId = adm?.id || preAdmission;
     if (admId) {
       const [orders, meds, vitals] = await Promise.all([
-        sb()!.from('hmis_cpoe_orders').select('id, order_type, order_text, status, priority, created_at').eq('admission_id', admId).order('created_at', { ascending: false }).limit(10),
-        sb()!.from('hmis_ipd_medication_orders').select('id, drug_name, dose, route, frequency, status').eq('admission_id', admId).eq('status', 'active'),
-        sb()!.from('hmis_icu_charts').select('hr, bp_sys, bp_dia, spo2, temp, rr, recorded_at').eq('admission_id', admId).order('recorded_at', { ascending: false }).limit(5),
+        sb().from('hmis_cpoe_orders').select('id, order_type, order_text, status, priority, created_at').eq('admission_id', admId).order('created_at', { ascending: false }).limit(10),
+        sb().from('hmis_ipd_medication_orders').select('id, drug_name, dose, route, frequency, status').eq('admission_id', admId).eq('status', 'active'),
+        sb().from('hmis_icu_charts').select('hr, bp_sys, bp_dia, spo2, temp, rr, recorded_at').eq('admission_id', admId).order('recorded_at', { ascending: false }).limit(5),
       ]);
       setRecentOrders((orders.data || []).map((o: any) => ({ orderType: o.order_type, orderText: o.order_text, status: o.status })));
       setActiveMeds(meds.data || []);
@@ -76,18 +76,19 @@ function MobileEMRInner() {
     }
 
     // Load recent encounters
-    const { data: encs } = await sb()!.from('hmis_emr_encounters')
+    const { data: encs } = await sb().from('hmis_emr_encounters')
       .select('id, encounter_date, chief_complaint, diagnosis, prescriptions, doctor:hmis_staff!hmis_emr_encounters_doctor_id_fkey(full_name)')
       .eq('patient_id', pid).order('encounter_date', { ascending: false }).limit(5);
     setEncounters(encs || []);
   }, [preAdmission]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { if (prePatient) loadPatient(prePatient); }, [prePatient, loadPatient]);
 
   // Save vitals to hmis_icu_charts
   const saveVitals = async (vitals: Record<string, number>) => {
     if (!admission?.id || !sb()) { flash('No active admission'); return; }
-    await sb()!.from('hmis_icu_charts').insert({
+    await sb().from('hmis_icu_charts').insert({
       admission_id: admission.id, ...vitals,
       recorded_by: staffId, recorded_at: new Date().toISOString(),
     });
@@ -97,7 +98,7 @@ function MobileEMRInner() {
   // Save clinical note
   const saveNote = async (note: string) => {
     if (!patient?.id || !sb()) return;
-    await sb()!.from('hmis_emr_encounters').insert({
+    await sb().from('hmis_emr_encounters').insert({
       patient_id: patient.id, doctor_id: staffId, centre_id: centreId,
       encounter_date: new Date().toISOString().split('T')[0],
       progress_notes: note, status: 'completed', encounter_type: 'progress_note',
@@ -108,7 +109,7 @@ function MobileEMRInner() {
   // Place CPOE order
   const placeOrder = async (order: { orderType: string; orderText: string; details: any; priority: string }) => {
     if (!admission?.id || !sb()) { flash('No active admission for orders'); return; }
-    await sb()!.from('hmis_cpoe_orders').insert({
+    await sb().from('hmis_cpoe_orders').insert({
       admission_id: admission.id, patient_id: patient.id,
       order_type: order.orderType, order_text: order.orderText,
       details: order.details, priority: order.priority,

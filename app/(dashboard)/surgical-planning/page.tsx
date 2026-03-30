@@ -45,13 +45,13 @@ function Inner() {
 
   useEffect(() => {
     if (!centreId || !sb()) return;
-    sb()!.from('hmis_staff').select('id, full_name').eq('is_active', true).order('full_name').then(({ data }) => setStaffList(data || []));
+    sb().from('hmis_staff').select('id, full_name').eq('is_active', true).order('full_name').then(({ data }) => setStaffList(data || []));
   }, [centreId]);
 
   // Load pending OT bookings for create form
   const loadBookings = useCallback(async () => {
     if (!centreId || !sb()) return;
-    const { data } = await sb()!.from('hmis_ot_bookings')
+    const { data } = await sb().from('hmis_ot_bookings')
       .select(`*, admission:hmis_admissions!inner(id, centre_id, patient_id, ipd_number, patient:hmis_patients!inner(first_name, last_name, uhid)),
         surgeon:hmis_staff!hmis_ot_bookings_surgeon_id_fkey(full_name)`)
       .eq('admission.centre_id', centreId)

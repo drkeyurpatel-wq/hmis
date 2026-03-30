@@ -15,13 +15,14 @@ export function useDoctorRounds(admissionId: string | null) {
   const load = useCallback(async () => {
     if (!admissionId || !sb()) return;
     setLoading(true);
-    const { data } = await sb()!.from('hmis_doctor_rounds')
+    const { data } = await sb().from('hmis_doctor_rounds')
       .select('*, doctor:hmis_staff!hmis_doctor_rounds_doctor_id_fkey(full_name)')
       .eq('admission_id', admissionId).order('created_at', { ascending: false });
     setRounds(data || []);
     setLoading(false);
   }, [admissionId]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { load(); }, [load]);
 
   const addRound = useCallback(async (round: {
@@ -30,7 +31,7 @@ export function useDoctorRounds(admissionId: string | null) {
     dietInstruction?: string; activityLevel?: string; codeStatus?: string; isCritical?: boolean;
   }) => {
     if (!admissionId || !sb()) return null;
-    const { data, error } = await sb()!.from('hmis_doctor_rounds').insert({
+    const { data, error } = await sb().from('hmis_doctor_rounds').insert({
       admission_id: admissionId, doctor_id: round.doctorId, round_type: round.roundType,
       subjective: round.subjective, objective: round.objective, vitals_data: round.vitalsData,
       assessment: round.assessment, plan: round.plan, orders_given: round.ordersGiven || [],
@@ -55,7 +56,7 @@ export function useICUChart(admissionId: string | null) {
     if (!admissionId || !sb()) return;
     setLoading(true);
     const since = new Date(Date.now() - hoursBack * 60 * 60 * 1000).toISOString();
-    const { data } = await sb()!.from('hmis_icu_charts')
+    const { data } = await sb().from('hmis_icu_charts')
       .select('*, nurse:hmis_staff!hmis_icu_charts_recorded_by_fkey(full_name)')
       .eq('admission_id', admissionId).gte('recorded_at', since)
       .order('recorded_at', { ascending: false });
@@ -63,12 +64,13 @@ export function useICUChart(admissionId: string | null) {
     setLoading(false);
   }, [admissionId]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { load(); }, [load]);
 
   const addEntry = useCallback(async (entry: any, staffId: string) => {
     if (!admissionId || !sb()) return null;
     const gcsTotal = (entry.gcs_eye || 0) + (entry.gcs_verbal || 0) + (entry.gcs_motor || 0);
-    const { data, error } = await sb()!.from('hmis_icu_charts').insert({
+    const { data, error } = await sb().from('hmis_icu_charts').insert({
       admission_id: admissionId, recorded_by: staffId, ...entry,
       gcs_total: gcsTotal > 0 ? gcsTotal : null,
     }).select().single();
@@ -87,17 +89,18 @@ export function useICUScores(admissionId: string | null) {
 
   const load = useCallback(async () => {
     if (!admissionId || !sb()) return;
-    const { data } = await sb()!.from('hmis_icu_scores')
+    const { data } = await sb().from('hmis_icu_scores')
       .select('*, scorer:hmis_staff!hmis_icu_scores_scored_by_fkey(full_name)')
       .eq('admission_id', admissionId).order('created_at', { ascending: false });
     setScores(data || []);
   }, [admissionId]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { load(); }, [load]);
 
   const addScore = useCallback(async (scoreType: string, scoreValue: number, components: any, interpretation: string, staffId: string) => {
     if (!admissionId || !sb()) return;
-    await sb()!.from('hmis_icu_scores').insert({
+    await sb().from('hmis_icu_scores').insert({
       admission_id: admissionId, scored_by: staffId,
       score_type: scoreType, score_value: scoreValue,
       components, interpretation,
@@ -118,18 +121,19 @@ export function useIOChart(admissionId: string | null) {
   const load = useCallback(async () => {
     if (!admissionId || !sb()) return;
     setLoading(true);
-    const { data } = await sb()!.from('hmis_io_chart')
+    const { data } = await sb().from('hmis_io_chart')
       .select('*, nurse:hmis_staff!hmis_io_chart_recorded_by_fkey(full_name)')
       .eq('admission_id', admissionId).order('io_date', { ascending: false }).order('shift').limit(50);
     setEntries(data || []);
     setLoading(false);
   }, [admissionId]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { load(); }, [load]);
 
   const addEntry = useCallback(async (entry: any, staffId: string) => {
     if (!admissionId || !sb()) return;
-    await sb()!.from('hmis_io_chart').insert({ admission_id: admissionId, recorded_by: staffId, ...entry });
+    await sb().from('hmis_io_chart').insert({ admission_id: admissionId, recorded_by: staffId, ...entry });
     load();
   }, [admissionId, load]);
 
@@ -146,13 +150,14 @@ export function useMedicationOrders(admissionId: string | null) {
   const load = useCallback(async () => {
     if (!admissionId || !sb()) return;
     setLoading(true);
-    const { data } = await sb()!.from('hmis_ipd_medication_orders')
+    const { data } = await sb().from('hmis_ipd_medication_orders')
       .select('*, doctor:hmis_staff!hmis_ipd_medication_orders_ordered_by_fkey(full_name)')
       .eq('admission_id', admissionId).order('created_at', { ascending: false });
     setOrders(data || []);
     setLoading(false);
   }, [admissionId]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { load(); }, [load]);
 
   const addOrder = useCallback(async (order: {
@@ -161,7 +166,7 @@ export function useMedicationOrders(admissionId: string | null) {
     prnInstruction?: string; specialInstructions?: string;
   }, staffId: string) => {
     if (!admissionId || !sb()) return;
-    await sb()!.from('hmis_ipd_medication_orders').insert({
+    await sb().from('hmis_ipd_medication_orders').insert({
       admission_id: admissionId, ordered_by: staffId,
       drug_name: order.drugName, generic_name: order.genericName,
       dose: order.dose, route: order.route, frequency: order.frequency,
@@ -175,7 +180,7 @@ export function useMedicationOrders(admissionId: string | null) {
 
   const discontinue = useCallback(async (orderId: string, staffId: string, reason: string) => {
     if (!sb()) return;
-    await sb()!.from('hmis_ipd_medication_orders').update({
+    await sb().from('hmis_ipd_medication_orders').update({
       status: 'discontinued', discontinued_by: staffId, discontinue_reason: reason,
     }).eq('id', orderId);
     load();
@@ -193,7 +198,7 @@ export function useMAR(admissionId: string | null) {
   const load = useCallback(async (dateFilter?: string) => {
     if (!admissionId || !sb()) return;
     const dt = dateFilter || new Date().toISOString().split('T')[0];
-    const { data } = await sb()!.from('hmis_mar')
+    const { data } = await sb().from('hmis_mar')
       .select('*, medication:hmis_ipd_medication_orders(drug_name, dose, route, frequency)')
       .eq('admission_id', admissionId)
       .gte('scheduled_time', dt + 'T00:00:00').lte('scheduled_time', dt + 'T23:59:59')
@@ -201,18 +206,19 @@ export function useMAR(admissionId: string | null) {
     setRecords(data || []);
   }, [admissionId]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { load(); }, [load]);
 
   const administer = useCallback(async (marId: string, staffId: string, doseGiven?: string, site?: string, notes?: string) => {
     if (!sb()) return;
-    await sb()!.from('hmis_mar').update({
+    await sb().from('hmis_mar').update({
       status: 'given', administered_by: staffId, administered_time: new Date().toISOString(),
       dose_given: doseGiven, site, notes,
     }).eq('id', marId);
     load();
     // BRIDGE: resolve overdue med alerts for this patient
     if (admissionId) {
-      const { data: marRow } = await sb()!.from('hmis_mar')
+      const { data: marRow } = await sb().from('hmis_mar')
         .select('medication_order:hmis_ipd_medication_orders!inner(drug_name, admission:hmis_admissions!inner(patient_id, centre_id))')
         .eq('id', marId).single();
       const adm = (marRow?.medication_order as any)?.admission;
@@ -229,7 +235,7 @@ export function useMAR(admissionId: string | null) {
 
   const holdDose = useCallback(async (marId: string, reason: string) => {
     if (!sb()) return;
-    await sb()!.from('hmis_mar').update({ status: 'held', hold_reason: reason }).eq('id', marId);
+    await sb().from('hmis_mar').update({ status: 'held', hold_reason: reason }).eq('id', marId);
     load();
   }, [load]);
 
@@ -244,7 +250,7 @@ export function useConsents(admissionId: string | null, patientId?: string) {
 
   const load = useCallback(async () => {
     if (!sb()) return;
-    let query = sb()!.from('hmis_consents')
+    let query = sb().from('hmis_consents')
       .select('*, staff:hmis_staff!hmis_consents_obtained_by_fkey(full_name)')
       .order('consent_date', { ascending: false });
     if (admissionId) query = query.eq('admission_id', admissionId);
@@ -254,6 +260,7 @@ export function useConsents(admissionId: string | null, patientId?: string) {
     setConsents(data || []);
   }, [admissionId, patientId]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { load(); }, [load]);
 
   const addConsent = useCallback(async (consent: {
@@ -262,7 +269,7 @@ export function useConsents(admissionId: string | null, patientId?: string) {
     patientId: string;
   }, staffId: string) => {
     if (!sb()) return;
-    await sb()!.from('hmis_consents').insert({
+    await sb().from('hmis_consents').insert({
       admission_id: admissionId, patient_id: consent.patientId,
       consent_type: consent.consentType, procedure_name: consent.procedureName,
       risks_explained: consent.risksExplained, alternatives_explained: consent.alternativesExplained,
@@ -283,12 +290,13 @@ export function useProceduralNotes(admissionId: string | null) {
 
   const load = useCallback(async () => {
     if (!admissionId || !sb()) return;
-    const { data } = await sb()!.from('hmis_procedural_notes')
+    const { data } = await sb().from('hmis_procedural_notes')
       .select('*, doctor:hmis_staff!hmis_procedural_notes_performed_by_fkey(full_name)')
       .eq('admission_id', admissionId).order('procedure_date', { ascending: false });
     setNotes(data || []);
   }, [admissionId]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { load(); }, [load]);
 
   const addNote = useCallback(async (note: {
@@ -297,7 +305,7 @@ export function useProceduralNotes(admissionId: string | null) {
     specimensSent?: string; eblMl?: number; consentId?: string;
   }, staffId: string, assistantId?: string) => {
     if (!admissionId || !sb()) return;
-    await sb()!.from('hmis_procedural_notes').insert({
+    await sb().from('hmis_procedural_notes').insert({
       admission_id: admissionId, performed_by: staffId, assisted_by: assistantId,
       procedure_type: note.procedureType, procedure_name: note.procedureName,
       indication: note.indication, site: note.site, laterality: note.laterality,
@@ -319,18 +327,19 @@ export function useWHOChecklist(bookingId: string | null) {
 
   const load = useCallback(async () => {
     if (!bookingId || !sb()) return;
-    const { data } = await sb()!.from('hmis_ot_safety_checklist').select('*').eq('ot_booking_id', bookingId).single();
+    const { data } = await sb().from('hmis_ot_safety_checklist').select('*').eq('ot_booking_id', bookingId).single();
     setChecklist(data);
   }, [bookingId]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { load(); }, [load]);
 
   const createOrUpdate = useCallback(async (updates: any, staffId: string) => {
     if (!bookingId || !sb()) return;
     if (checklist?.id) {
-      await sb()!.from('hmis_ot_safety_checklist').update(updates).eq('id', checklist.id);
+      await sb().from('hmis_ot_safety_checklist').update(updates).eq('id', checklist.id);
     } else {
-      await sb()!.from('hmis_ot_safety_checklist').insert({ ot_booking_id: bookingId, ...updates });
+      await sb().from('hmis_ot_safety_checklist').insert({ ot_booking_id: bookingId, ...updates });
     }
     load();
   }, [bookingId, checklist, load]);
@@ -346,17 +355,18 @@ export function useOTNotes(bookingId: string | null) {
 
   const load = useCallback(async () => {
     if (!bookingId || !sb()) return;
-    const { data } = await sb()!.from('hmis_ot_notes')
+    const { data } = await sb().from('hmis_ot_notes')
       .select('*, author:hmis_staff!hmis_ot_notes_author_id_fkey(full_name)')
       .eq('ot_booking_id', bookingId).order('created_at');
     setNotes(data || []);
   }, [bookingId]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { load(); }, [load]);
 
   const addNote = useCallback(async (note: any, staffId: string) => {
     if (!bookingId || !sb()) return;
-    await sb()!.from('hmis_ot_notes').insert({
+    await sb().from('hmis_ot_notes').insert({
       ot_booking_id: bookingId, author_id: staffId, ...note,
     });
     load();

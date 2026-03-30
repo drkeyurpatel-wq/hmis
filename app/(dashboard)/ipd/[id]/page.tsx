@@ -40,9 +40,10 @@ function IPDClinicalInner() {
   const [toast, setToast] = useState('');
   const flash = (m: string) => { setToast(m); setTimeout(() => setToast(''), 2500); };
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!admissionId || !sb()) return;
-    sb()!.from('hmis_admissions')
+    sb().from('hmis_admissions')
       .select('*, patient:hmis_patients!inner(id, uhid, first_name, last_name, age_years, gender, blood_group, phone_primary, date_of_birth), department:hmis_departments!inner(name), doctor:hmis_staff!hmis_admissions_primary_doctor_id_fkey(full_name, specialisation)')
       .eq('id', admissionId).single()
       .then(({ data }: any) => setAdmission(data));

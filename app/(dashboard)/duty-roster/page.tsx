@@ -33,8 +33,8 @@ function Inner() {
 
   useEffect(() => {
     if (!centreId || !sb()) return;
-    sb()!.from('hmis_staff').select('id, full_name, staff_type').eq('is_active', true).order('full_name').then(({ data }) => setStaffList(data || []));
-    sb()!.from('hmis_wards').select('id, name').eq('centre_id', centreId).eq('is_active', true).order('name').then(({ data }) => setWards(data || []));
+    sb().from('hmis_staff').select('id, full_name, staff_type').eq('is_active', true).order('full_name').then(({ data }) => setStaffList(data || []));
+    sb().from('hmis_wards').select('id, name').eq('centre_id', centreId).eq('is_active', true).order('name').then(({ data }) => setWards(data || []));
   }, [centreId]);
 
   // Load roster when month changes

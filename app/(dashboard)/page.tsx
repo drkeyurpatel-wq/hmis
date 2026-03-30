@@ -61,7 +61,7 @@ export default function HomePage() {
       <div className="mb-4">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-bold text-gray-900">{greeting()}, {staff?.full_name?.split(' ')[0] || 'Doctor'}</h1>
+            <h1 className="text-xl font-bold text-gray-900">{greeting()}, {staff?.full_name?.replace(/^Dr\.?\s*/i, '') || 'Doctor'}</h1>
             <p className="text-sm text-gray-500">{centreName} &middot; {new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'short' })}</p>
           </div>
           <button onClick={wq.reload} className="p-2 hover:bg-gray-100 rounded-lg">

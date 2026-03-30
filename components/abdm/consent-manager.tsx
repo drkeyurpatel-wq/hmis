@@ -83,7 +83,7 @@ export default function ConsentManager({ patientAbhaAddress, patientName, staffI
 
   const loadRequests = async () => {
     setLoading(true);
-    const { data } = await sb()!.from('hmis_abdm_consent_requests')
+    const { data } = await sb().from('hmis_abdm_consent_requests')
       .select('*')
       .eq('patient_abha_address', patientAbhaAddress)
       .order('created_at', { ascending: false });

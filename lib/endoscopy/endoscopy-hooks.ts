@@ -36,13 +36,13 @@ export function useEndoscopy(centreId: string | null) {
     setLoading(true);
     const d = dateFilter || new Date().toISOString().split('T')[0];
     const [pRes, sRes] = await Promise.all([
-      sb()!.from('hmis_endoscopy_procedures')
+      sb().from('hmis_endoscopy_procedures')
         .select(`*, patient:hmis_patients!inner(first_name, last_name, uhid, age_years, gender),
           endoscopist:hmis_staff!hmis_endoscopy_procedures_endoscopist_id_fkey(full_name),
           nurse:hmis_staff!hmis_endoscopy_procedures_nurse_id_fkey(full_name)`)
         .eq('centre_id', centreId).eq('procedure_date', d)
         .order('scheduled_time', { nullsFirst: false }).order('created_at'),
-      sb()!.from('hmis_endoscopy_scopes').select('*').eq('centre_id', centreId).eq('is_active', true).order('scope_code'),
+      sb().from('hmis_endoscopy_scopes').select('*').eq('centre_id', centreId).eq('is_active', true).order('scope_code'),
     ]);
 
     setProcedures((pRes.data || []).map((p: any) => ({
@@ -72,18 +72,19 @@ export function useEndoscopy(centreId: string | null) {
     setLoading(false);
   }, [centreId]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { load(); }, [load]);
 
   const schedule = useCallback(async (data: any) => {
     if (!centreId || !sb()) return { success: false };
-    const { error } = await sb()!.from('hmis_endoscopy_procedures').insert({ centre_id: centreId, ...data });
+    const { error } = await sb().from('hmis_endoscopy_procedures').insert({ centre_id: centreId, ...data });
     if (!error) load(data.procedure_date);
     return { success: !error, error: error?.message };
   }, [centreId, load]);
 
   const updateProcedure = useCallback(async (id: string, updates: any) => {
     if (!sb()) return { success: false };
-    const { error } = await sb()!.from('hmis_endoscopy_procedures').update(updates).eq('id', id);
+    const { error } = await sb().from('hmis_endoscopy_procedures').update(updates).eq('id', id);
     if (!error) load();
     return { success: !error, error: error?.message };
   }, [load]);
@@ -129,18 +130,19 @@ export function useDecontamination(centreId: string | null) {
 
   const load = useCallback(async (scopeId?: string) => {
     if (!centreId || !sb()) return;
-    let q = sb()!.from('hmis_scope_decontamination').select('*, performed:hmis_staff(full_name)')
+    let q = sb().from('hmis_scope_decontamination').select('*, performed:hmis_staff(full_name)')
       .eq('centre_id', centreId).order('created_at', { ascending: false }).limit(50);
     if (scopeId) q = q.eq('scope_id', scopeId);
     const { data } = await q;
     setLogs(data || []);
   }, [centreId]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { load(); }, [load]);
 
   const addLog = useCallback(async (data: any) => {
     if (!centreId || !sb()) return { success: false };
-    const { error } = await sb()!.from('hmis_scope_decontamination').insert({ centre_id: centreId, ...data });
+    const { error } = await sb().from('hmis_scope_decontamination').insert({ centre_id: centreId, ...data });
     if (!error) load();
     return { success: !error, error: error?.message };
   }, [centreId, load]);

@@ -47,16 +47,16 @@ export function PatientTimeline({ patientId }: { patientId: string }) {
 
     try {
       const [patient, visits, encounters, labOrders, radOrders, admissions, otBookings, bills, erVisits, teleconsults] = await Promise.all([
-        sb()!.from('hmis_patients').select('created_at, first_name, last_name, uhid').eq('id', patientId).single(),
-        sb()!.from('hmis_opd_visits').select('id, visit_number, chief_complaint, status, created_at, doctor:hmis_staff!inner(full_name)').eq('patient_id', patientId).order('created_at', { ascending: false }).limit(50),
-        sb()!.from('hmis_emr_encounters').select('id, encounter_type, chief_complaints, diagnoses, prescriptions, created_at, doctor:hmis_staff!hmis_emr_encounters_doctor_id_fkey(full_name)').eq('patient_id', patientId).order('created_at', { ascending: false }).limit(30),
-        sb()!.from('hmis_lab_orders').select('id, test_name, status, result_value, created_at').eq('patient_id', patientId).order('created_at', { ascending: false }).limit(30),
-        sb()!.from('hmis_radiology_orders').select('id, study_description, status, created_at').eq('patient_id', patientId).order('created_at', { ascending: false }).limit(20),
-        sb()!.from('hmis_admissions').select('id, ipd_number, admission_date, discharge_date, status, department_id').eq('patient_id', patientId).order('admission_date', { ascending: false }).limit(10),
-        sb()!.from('hmis_ot_bookings').select('id, procedure_name, scheduled_date, status, surgeon:hmis_staff!hmis_ot_bookings_surgeon_id_fkey(full_name)').eq('patient_id', patientId).order('scheduled_date', { ascending: false }).limit(10),
-        sb()!.from('hmis_bills').select('id, bill_number, net_amount, paid_amount, status, bill_date').eq('patient_id', patientId).order('created_at', { ascending: false }).limit(20),
-        sb()!.from('hmis_er_visits').select('id, triage_category, chief_complaint, arrival_time, status').eq('patient_id', patientId).order('arrival_time', { ascending: false }).limit(10),
-        sb()!.from('hmis_teleconsults').select('id, chief_complaint, status, scheduled_at, doctor:hmis_staff!hmis_teleconsults_doctor_id_fkey(full_name)').eq('patient_id', patientId).order('scheduled_at', { ascending: false }).limit(10),
+        sb().from('hmis_patients').select('created_at, first_name, last_name, uhid').eq('id', patientId).single(),
+        sb().from('hmis_opd_visits').select('id, visit_number, chief_complaint, status, created_at, doctor:hmis_staff!inner(full_name)').eq('patient_id', patientId).order('created_at', { ascending: false }).limit(50),
+        sb().from('hmis_emr_encounters').select('id, encounter_type, chief_complaints, diagnoses, prescriptions, created_at, doctor:hmis_staff!hmis_emr_encounters_doctor_id_fkey(full_name)').eq('patient_id', patientId).order('created_at', { ascending: false }).limit(30),
+        sb().from('hmis_lab_orders').select('id, test_name, status, result_value, created_at').eq('patient_id', patientId).order('created_at', { ascending: false }).limit(30),
+        sb().from('hmis_radiology_orders').select('id, study_description, status, created_at').eq('patient_id', patientId).order('created_at', { ascending: false }).limit(20),
+        sb().from('hmis_admissions').select('id, ipd_number, admission_date, discharge_date, status, department_id').eq('patient_id', patientId).order('admission_date', { ascending: false }).limit(10),
+        sb().from('hmis_ot_bookings').select('id, procedure_name, scheduled_date, status, surgeon:hmis_staff!hmis_ot_bookings_surgeon_id_fkey(full_name)').eq('patient_id', patientId).order('scheduled_date', { ascending: false }).limit(10),
+        sb().from('hmis_bills').select('id, bill_number, net_amount, paid_amount, status, bill_date').eq('patient_id', patientId).order('created_at', { ascending: false }).limit(20),
+        sb().from('hmis_er_visits').select('id, triage_category, chief_complaint, arrival_time, status').eq('patient_id', patientId).order('arrival_time', { ascending: false }).limit(10),
+        sb().from('hmis_teleconsults').select('id, chief_complaint, status, scheduled_at, doctor:hmis_staff!hmis_teleconsults_doctor_id_fkey(full_name)').eq('patient_id', patientId).order('scheduled_at', { ascending: false }).limit(10),
       ]);
 
       // Registration
@@ -143,6 +143,7 @@ export function PatientTimeline({ patientId }: { patientId: string }) {
     setLoading(false);
   }, [patientId]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { load(); }, [load]);
 
   const filtered = filter === 'all' ? events : events.filter(e => e.type === filter || (filter === 'lab' && (e.type === 'lab_ordered' || e.type === 'lab_result')));

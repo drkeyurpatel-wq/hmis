@@ -87,7 +87,7 @@ export interface PmjayPackage {
 
 export async function searchPmjayPackages(centreId: string, query: string): Promise<PmjayPackage[]> {
   if (!query || query.length < 2) return [];
-  const { data } = await sb()!.from('hmis_pmjay_packages')
+  const { data } = await sb().from('hmis_pmjay_packages')
     .select('*').eq('centre_id', centreId).eq('is_active', true)
     .or(`package_name.ilike.%${query}%,procedure_name.ilike.%${query}%,specialty.ilike.%${query}%,procedure_code.ilike.%${query}%`)
     .order('package_name').limit(20);
@@ -95,7 +95,7 @@ export async function searchPmjayPackages(centreId: string, query: string): Prom
 }
 
 export async function getPmjaySpecialties(centreId: string): Promise<string[]> {
-  const { data } = await sb()!.from('hmis_pmjay_packages')
+  const { data } = await sb().from('hmis_pmjay_packages')
     .select('specialty').eq('centre_id', centreId).eq('is_active', true);
   const specs: string[] = (data || []).map((d: any) => String(d.specialty).split(',')[0].trim());
   return [...new Set(specs)].sort();
@@ -110,7 +110,7 @@ export async function searchTariff(
   category?: string
 ): Promise<TariffItem[]> {
   if (!query || query.length < 2) return [];
-  let q = sb()!.from('hmis_tariff_master')
+  let q = sb().from('hmis_tariff_master')
     .select('id, service_name, service_code, category, rate_self, rate_insurance, rate_pmjay, rate_cghs, cost_price')
     .eq('centre_id', centreId).eq('is_active', true)
     .ilike('service_name', `%${query}%`)
@@ -121,7 +121,7 @@ export async function searchTariff(
 }
 
 export async function getTariffCategories(centreId: string): Promise<string[]> {
-  const { data } = await sb()!.from('hmis_tariff_master')
+  const { data } = await sb().from('hmis_tariff_master')
     .select('category').eq('centre_id', centreId).eq('is_active', true);
   const cats: string[] = (data || []).map((d: any) => String(d.category));
   return [...new Set(cats)].sort();
@@ -221,11 +221,11 @@ export async function createBill(params: {
   const summary = calcBillSummary(finalItems, payments);
 
   // Generate bill number
-  const { data: billNumber, error: seqErr } = await sb()!.rpc('hmis_next_sequence', { p_centre_id: centreId, p_type: 'bill' });
+  const { data: billNumber, error: seqErr } = await sb().rpc('hmis_next_sequence', { p_centre_id: centreId, p_type: 'bill' });
   if (seqErr || !billNumber) return { success: false, error: 'Bill number generation failed' };
 
   // Insert bill
-  const { data: bill, error: billErr } = await sb()!.from('hmis_bills').insert({
+  const { data: bill, error: billErr } = await sb().from('hmis_bills').insert({
     centre_id: centreId, patient_id: patientId,
     bill_number: billNumber, bill_type: params.billType,
     encounter_id: params.encounterId || null,
@@ -256,13 +256,13 @@ export async function createBill(params: {
       cost_centre_id: costCentreId,
     };
   }));
-  await sb()!.from('hmis_bill_items').insert(itemRows);
+  await sb().from('hmis_bill_items').insert(itemRows);
 
   // Insert payments
   for (const p of payments) {
     if (p.amount <= 0) continue;
-    const { data: receiptNo } = await sb()!.rpc('hmis_next_sequence', { p_centre_id: centreId, p_type: 'receipt' });
-    await sb()!.from('hmis_payments').insert({
+    const { data: receiptNo } = await sb().rpc('hmis_next_sequence', { p_centre_id: centreId, p_type: 'receipt' });
+    await sb().from('hmis_payments').insert({
       bill_id: bill.id, amount: p.amount, payment_mode: p.mode,
       reference_number: p.reference || null, receipt_number: receiptNo || `R-${Date.now()}`,
       payment_date: new Date().toISOString().split('T')[0], received_by: staffId,
@@ -271,7 +271,7 @@ export async function createBill(params: {
 
   // BRIDGE: Auto-create insurance claim for insured IPD patients
   if (params.billType === 'ipd' && params.payorType !== 'self' && params.encounterId) {
-    const { data: adm } = await sb()!.from('hmis_admissions')
+    const { data: adm } = await sb().from('hmis_admissions')
       .select('patient_insurance_id').eq('id', params.encounterId).single();
     if (adm?.patient_insurance_id) {
       import('@/lib/bridge/module-events').then(({ onFinalBillCreatedForInsured }) =>
@@ -293,8 +293,8 @@ export async function createBill(params: {
 export async function addPaymentToBill(
   billId: string, centreId: string, staffId: string, payment: PaymentEntry
 ): Promise<{ success: boolean; error?: string }> {
-  const { data: receiptNo } = await sb()!.rpc('hmis_next_sequence', { p_centre_id: centreId, p_type: 'receipt' });
-  const { error: payErr } = await sb()!.from('hmis_payments').insert({
+  const { data: receiptNo } = await sb().rpc('hmis_next_sequence', { p_centre_id: centreId, p_type: 'receipt' });
+  const { error: payErr } = await sb().from('hmis_payments').insert({
     bill_id: billId, amount: payment.amount, payment_mode: payment.mode,
     reference_number: payment.reference || null, receipt_number: receiptNo || `R-${Date.now()}`,
     payment_date: new Date().toISOString().split('T')[0], received_by: staffId,
@@ -302,11 +302,11 @@ export async function addPaymentToBill(
   if (payErr) return { success: false, error: payErr.message };
 
   // Update bill totals
-  const { data: allPayments } = await sb()!.from('hmis_payments').select('amount').eq('bill_id', billId);
+  const { data: allPayments } = await sb().from('hmis_payments').select('amount').eq('bill_id', billId);
   const totalPaid = (allPayments || []).reduce((s: number, p: any) => s + parseFloat(p.amount), 0);
-  const { data: bill } = await sb()!.from('hmis_bills').select('net_amount').eq('id', billId).single();
+  const { data: bill } = await sb().from('hmis_bills').select('net_amount').eq('id', billId).single();
   const balance = parseFloat(bill?.net_amount || 0) - totalPaid;
-  await sb()!.from('hmis_bills').update({
+  await sb().from('hmis_bills').update({
     paid_amount: totalPaid, balance_amount: balance,
     status: balance <= 0 ? 'paid' : 'partially_paid',
   }).eq('id', billId);
@@ -320,7 +320,7 @@ export async function postDailyIPDCharges(
   admissionId: string, centreId: string, staffId: string
 ): Promise<{ posted: number; total: number }> {
   // Get admission details
-  const { data: admission } = await sb()!.from('hmis_admissions')
+  const { data: admission } = await sb().from('hmis_admissions')
     .select('id, patient_id, bed:hmis_beds(room:hmis_rooms(ward:hmis_wards(name)))').eq('id', admissionId).single();
   if (!admission) return { posted: 0, total: 0 };
 
@@ -337,7 +337,7 @@ export async function postDailyIPDCharges(
 
   for (const charge of charges) {
     // Look up tariff
-    const { data: tariffs } = await sb()!.from('hmis_tariff_master')
+    const { data: tariffs } = await sb().from('hmis_tariff_master')
       .select('id, service_name, rate_self, rate_insurance')
       .eq('centre_id', centreId).eq('is_active', true)
       .ilike('service_name', `%${charge.name}%`).limit(1);
@@ -348,13 +348,13 @@ export async function postDailyIPDCharges(
       total += rate;
 
       // Check if already posted today
-      const { count } = await sb()!.from('hmis_charge_log')
+      const { count } = await sb().from('hmis_charge_log')
         .select('id', { count: 'exact', head: true })
         .eq('admission_id', admissionId).eq('service_date', today)
         .ilike('service_name', `%${charge.name}%`);
 
       if (count === 0 && rate > 0) {
-        await sb()!.from('hmis_charge_log').insert({
+        await sb().from('hmis_charge_log').insert({
           centre_id: centreId, patient_id: admission.patient_id,
           admission_id: admissionId, service_name: tariff.service_name,
           tariff_id: tariff.id, amount: rate, status: 'posted',
@@ -374,7 +374,7 @@ export async function postDailyIPDCharges(
 export async function buildIPDBillFromCharges(
   admissionId: string, centreId: string, staffId: string, payorType: string
 ): Promise<BillLineItem[]> {
-  const { data: charges } = await sb()!.from('hmis_charge_log')
+  const { data: charges } = await sb().from('hmis_charge_log')
     .select('*').eq('admission_id', admissionId).eq('status', 'posted')
     .order('service_date').order('service_name');
   if (!charges || charges.length === 0) return [];
@@ -406,14 +406,14 @@ export async function buildIPDBillFromCharges(
 export async function loadBillDetails(billId: string): Promise<{
   bill: any; items: any[]; payments: any[];
 } | null> {
-  const { data: bill } = await sb()!.from('hmis_bills')
+  const { data: bill } = await sb().from('hmis_bills')
     .select('*, patient:hmis_patients(first_name, last_name, uhid, phone_primary)')
     .eq('id', billId).single();
   if (!bill) return null;
 
-  const { data: items } = await sb()!.from('hmis_bill_items')
+  const { data: items } = await sb().from('hmis_bill_items')
     .select('*').eq('bill_id', billId).order('service_date');
-  const { data: payments } = await sb()!.from('hmis_payments')
+  const { data: payments } = await sb().from('hmis_payments')
     .select('*').eq('bill_id', billId).order('created_at');
 
   return { bill, items: items || [], payments: payments || [] };

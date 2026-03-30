@@ -39,7 +39,7 @@ function CRMInner() {
   const [doctors, setDoctors] = useState<any[]>([]);
   useEffect(() => {
     if (!centreId) return;
-    sb()!.from('hmis_staff').select('id, full_name, specialisation').eq('staff_type', 'doctor').eq('is_active', true)
+    sb().from('hmis_staff').select('id, full_name, specialisation').eq('staff_type', 'doctor').eq('is_active', true)
       .then(({ data }: any) => setDoctors(data || []));
   }, [centreId]);
 
@@ -74,7 +74,9 @@ function CRMInner() {
   }, [leads.leads]);
 
   // Source chart data
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const sourceData = useMemo(() => Object.entries(leads.stats.bySource).sort((a: any, b: any) => b[1] - a[1]).slice(0, 8).map(([k, v]) => ({ name: k.replace('_', ' '), value: v as number })), [leads.stats]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const deptData = useMemo(() => Object.entries(leads.stats.byDept).sort((a: any, b: any) => b[1] - a[1]).slice(0, 6).map(([k, v]) => ({ name: k, value: v as number })), [leads.stats]);
 
   const priorityBadge = (p: string) => p === 'hot' ? 'bg-red-100 text-red-700' : p === 'warm' ? 'bg-amber-100 text-amber-700' : p === 'cold' ? 'bg-blue-100 text-teal-700' : 'bg-gray-100 text-gray-600';

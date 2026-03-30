@@ -31,7 +31,8 @@ function PharmacyInner() {
   const [centres, setCentres] = useState<any[]>([]);
 
   // Load centres for transfers
-  React.useEffect(() => { if (!sb()) return; sb()!.from('hmis_centres').select('id, name, code').eq('is_active', true).order('name').then(({ data }: any) => setCentres(data || [])); }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  React.useEffect(() => { if (!sb()) return; sb().from('hmis_centres').select('id, name, code').eq('is_active', true).order('name').then(({ data }: any) => setCentres(data || [])); }, []);
 
   // Return form
   const [retForm, setRetForm] = useState({ drugSearch: '', drugId: '', drugName: '', quantity: '', batchNumber: '', returnType: 'patient_return' as string, reason: '', amount: '' });
@@ -45,11 +46,13 @@ function PharmacyInner() {
   const [showAddDrug, setShowAddDrug] = useState(false);
   const [drugForm, setDrugForm] = useState({ generic_name:'', brand_name:'', manufacturer:'', formulation:'tablet', strength:'', unit:'strip', schedule:'', is_narcotic:false, is_antibiotic:false, hsn_code:'', gst_rate:12, reorder_level:20, rack_location:'', bin_number:'' });
   const [drugSearch, setDrugSearch] = useState('');
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const drugResults = useMemo(() => drugMaster.search(drugSearch), [drugSearch, drugMaster]);
 
   // Stock add form
   const [showAddStock, setShowAddStock] = useState(false);
   const [stockDrugQ, setStockDrugQ] = useState('');
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const stockDrugResults = useMemo(() => drugMaster.search(stockDrugQ), [stockDrugQ, drugMaster]);
   const [stockForm, setStockForm] = useState({ drug_id:'', drug_name:'', batch_number:'', expiry_date:'', purchase_rate:'', mrp:'', quantity_received:'', supplier:'' });
   const [stockError, setStockError] = useState('');

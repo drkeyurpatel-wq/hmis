@@ -43,43 +43,44 @@ function SettingsInner() {
     const needsLegacy = ['staff', 'wards', 'tariffs', 'auto_charges', 'reports'].includes(tab);
     if (!needsLegacy) { setLoading(false); return; }
     const [s, w, t, ar, rs] = await Promise.all([
-      tab === 'staff' ? sb()!.from('hmis_staff').select('id, full_name, staff_type, designation, specialisation, phone, email, is_active, department:hmis_departments(name)').order('full_name') : { data: [] },
-      tab === 'wards' ? sb()!.from('hmis_wards').select('*, centre:hmis_centres(name)').order('name') : { data: [] },
-      tab === 'tariffs' && centreId ? sb()!.from('hmis_tariff_master').select('*').eq('centre_id', centreId).eq('is_active', true).order('category, service_name') : { data: [] },
-      tab === 'auto_charges' && centreId ? sb()!.from('hmis_billing_auto_rules').select('*').eq('centre_id', centreId).order('trigger_type, ward_type') : { data: [] },
-      tab === 'reports' && centreId ? sb()!.from('hmis_report_subscriptions').select('*').eq('centre_id', centreId).order('created_at', { ascending: false }) : { data: [] },
+      tab === 'staff' ? sb().from('hmis_staff').select('id, full_name, staff_type, designation, specialisation, phone, email, is_active, department:hmis_departments(name)').order('full_name') : { data: [] },
+      tab === 'wards' ? sb().from('hmis_wards').select('*, centre:hmis_centres(name)').order('name') : { data: [] },
+      tab === 'tariffs' && centreId ? sb().from('hmis_tariff_master').select('*').eq('centre_id', centreId).eq('is_active', true).order('category, service_name') : { data: [] },
+      tab === 'auto_charges' && centreId ? sb().from('hmis_billing_auto_rules').select('*').eq('centre_id', centreId).order('trigger_type, ward_type') : { data: [] },
+      tab === 'reports' && centreId ? sb().from('hmis_report_subscriptions').select('*').eq('centre_id', centreId).order('created_at', { ascending: false }) : { data: [] },
     ]);
     setStaffList(s.data || []); setWards(w.data || []); setTariffs(t.data || []);
     setAutoRules(ar.data || []); setReportSubs(rs.data || []);
     setLoading(false);
   }, [tab, centreId]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { loadLegacy(); }, [loadLegacy]);
 
   const toggleStaffActive = async (id: string, isActive: boolean) => {
-    await sb()!.from('hmis_staff').update({ is_active: isActive }).eq('id', id);
+    await sb().from('hmis_staff').update({ is_active: isActive }).eq('id', id);
     flash(`Staff ${isActive ? 'activated' : 'deactivated'}`); loadLegacy();
   };
 
   const updateTariffRate = async (id: string, field: string, value: number) => {
-    await sb()!.from('hmis_tariff_master').update({ [field]: value }).eq('id', id);
+    await sb().from('hmis_tariff_master').update({ [field]: value }).eq('id', id);
     flash('Rate updated');
   };
 
   const toggleAutoRule = async (id: string, isActive: boolean) => {
-    await sb()!.from('hmis_billing_auto_rules').update({ is_active: isActive }).eq('id', id);
+    await sb().from('hmis_billing_auto_rules').update({ is_active: isActive }).eq('id', id);
     flash(`Rule ${isActive ? 'enabled' : 'disabled'}`); loadLegacy();
   };
 
   const updateAutoRuleAmount = async (id: string, amount: number) => {
-    await sb()!.from('hmis_billing_auto_rules').update({ charge_amount: amount }).eq('id', id);
+    await sb().from('hmis_billing_auto_rules').update({ charge_amount: amount }).eq('id', id);
     flash('Amount updated');
   };
 
   const addReportSub = async () => {
     if (!newSubEmail || !newSubEmail.includes('@')) { flash('Enter a valid email'); return; }
     if (!centreId) return;
-    await sb()!.from('hmis_report_subscriptions').insert({
+    await sb().from('hmis_report_subscriptions').insert({
       centre_id: centreId, email: newSubEmail, report_type: newSubType,
       frequency: newSubFreq, is_active: true,
     });
@@ -88,13 +89,13 @@ function SettingsInner() {
   };
 
   const toggleReportSub = async (id: string, isActive: boolean) => {
-    await sb()!.from('hmis_report_subscriptions').update({ is_active: isActive }).eq('id', id);
+    await sb().from('hmis_report_subscriptions').update({ is_active: isActive }).eq('id', id);
     setReportSubs(prev => prev.map(s => s.id === id ? { ...s, is_active: isActive } : s));
     flash(`Subscription ${isActive ? 'activated' : 'paused'}`);
   };
 
   const deleteReportSub = async (id: string) => {
-    await sb()!.from('hmis_report_subscriptions').delete().eq('id', id);
+    await sb().from('hmis_report_subscriptions').delete().eq('id', id);
     setReportSubs(prev => prev.filter(s => s.id !== id));
     flash('Subscription removed');
   };

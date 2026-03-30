@@ -15,6 +15,7 @@ export default function AuditPanel({ centreId, staffId, onFlash }: Props) {
   const [showNewNCR, setShowNewNCR] = useState(false);
   const [ncrForm, setNcrForm] = useState({ ncrType: 'non_conformance', title: '', description: '', severity: 'minor' });
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { audit.load(entityFilter || undefined); }, [entityFilter]);
 
   const actionColor = (a: string) => a === 'create' ? 'bg-green-100 text-green-700' : a === 'verify' ? 'bg-blue-100 text-blue-700' : a === 'reject' ? 'bg-red-100 text-red-700' : a === 'update' ? 'bg-yellow-100 text-yellow-700' : a === 'print' ? 'bg-purple-100 text-purple-700' : a === 'amend' ? 'bg-orange-100 text-orange-700' : 'bg-gray-100 text-gray-600';

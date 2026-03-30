@@ -47,7 +47,7 @@ export default function OPDBilling({ centreId, staffId, patient, doctor, visitId
   React.useEffect(() => {
     if (addServiceSearch.length < 2 || !sb()) { setSearchResults([]); return; }
     const t = setTimeout(async () => {
-      const { data } = await sb()!.from('hmis_tariff_master')
+      const { data } = await sb().from('hmis_tariff_master')
         .select('id, service_name, category, rate_self')
         .eq('centre_id', centreId).eq('is_active', true)
         .ilike('service_name', `%${addServiceSearch}%`).limit(6);
@@ -75,7 +75,7 @@ export default function OPDBilling({ centreId, staffId, patient, doctor, visitId
     const billNumber = await generateBillNumber(centreId, 'opd');
 
     // Create bill
-    const { data: billData, error: billErr } = await sb()!.from('hmis_bills').insert({
+    const { data: billData, error: billErr } = await sb().from('hmis_bills').insert({
       centre_id: centreId, patient_id: patient.id, bill_number: billNumber,
       bill_type: 'opd', encounter_type: 'opd', encounter_id: visitId,
       payor_type: 'self', gross_amount: gross, discount_amount: discount,
@@ -87,7 +87,7 @@ export default function OPDBilling({ centreId, staffId, patient, doctor, visitId
 
     // Create bill items
     for (const charge of charges) {
-      await sb()!.from('hmis_bill_items').insert({
+      await sb().from('hmis_bill_items').insert({
         bill_id: billData.id, tariff_id: charge.tariffId || null,
         description: charge.desc, quantity: 1, unit_rate: charge.amount,
         amount: charge.amount, discount: 0, tax: 0, net_amount: charge.amount,
@@ -98,7 +98,7 @@ export default function OPDBilling({ centreId, staffId, patient, doctor, visitId
 
     // Create payment
     const receiptNumber = `RCP-${new Date().toISOString().slice(2, 10).replace(/-/g, '')}-${Math.floor(Math.random() * 9999).toString().padStart(4, '0')}`;
-    const { data: payment } = await sb()!.from('hmis_payments').insert({
+    const { data: payment } = await sb().from('hmis_payments').insert({
       bill_id: billData.id, amount: net,
       payment_mode: payMode, reference_number: payRef || null,
       receipt_number: receiptNumber, received_by: staffId,

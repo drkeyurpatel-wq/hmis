@@ -26,7 +26,7 @@ export default function BillingConfig({ centreId, flash }: Props) {
   const load = useCallback(async () => {
     if (!centreId || !sb()) return;
     setLoading(true);
-    const { data } = await sb()!.from('hmis_settings').select('key, value').eq('centre_id', centreId).in('key', [
+    const { data } = await sb().from('hmis_settings').select('key, value').eq('centre_id', centreId).in('key', [
       'receipt_prefix', 'bill_number_format', 'default_discount_percent', 'max_discount_percent',
       'gst_rate_general', 'gst_rate_pharmacy', 'gst_rate_lab', 'enable_gst', 'round_off_bills',
     ]);
@@ -45,6 +45,7 @@ export default function BillingConfig({ centreId, flash }: Props) {
     setLoading(false);
   }, [centreId]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { load(); }, [load]);
 
   const set = (k: keyof BillingSettings, v: string | boolean) => setSettings(s => ({ ...s, [k]: v }));
@@ -54,7 +55,7 @@ export default function BillingConfig({ centreId, flash }: Props) {
     setSaving(true);
     const entries = Object.entries(settings);
     for (const [key, value] of entries) {
-      await sb()!.from('hmis_settings').upsert({ centre_id: centreId, key, value }, { onConflict: 'centre_id,key' });
+      await sb().from('hmis_settings').upsert({ centre_id: centreId, key, value }, { onConflict: 'centre_id,key' });
     }
     setSaving(false);
     flash('Billing configuration saved');

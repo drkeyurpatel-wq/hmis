@@ -41,7 +41,7 @@ export function useBedManagement(centreId: string | null) {
 
     try {
       // Single query: beds + room + ward + current admission + patient + doctor
-      const { data, error: qErr } = await sb()!
+      const { data, error: qErr } = await sb()
         .from('hmis_beds')
         .select(`
           id, bed_number, status, is_active, room_id, current_admission_id,
@@ -61,7 +61,7 @@ export function useBedManagement(centreId: string | null) {
       let admissionMap = new Map<string, any>();
 
       if (occupiedBedIds.length > 0) {
-        const { data: admissions } = await sb()!
+        const { data: admissions } = await sb()
           .from('hmis_admissions')
           .select('id, admission_date, expected_discharge, payor_type, provisional_diagnosis, patient:hmis_patients!inner(first_name, last_name, uhid), doctor:hmis_staff!hmis_admissions_primary_doctor_id_fkey(full_name)')
           .in('id', occupiedBedIds);
@@ -107,19 +107,21 @@ export function useBedManagement(centreId: string | null) {
     setLoading(false);
   }, [centreId]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { load(); }, [load]);
 
   // Real-time: beds update when admissions/discharges happen
   useEffect(() => {
     if (!centreId || !sb()) return;
-    const ch = sb()!.channel('bed-board-' + centreId)
+    const ch = sb().channel('bed-board-' + centreId)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'hmis_beds', filter: `centre_id=eq.${centreId}` }, () => load())
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'hmis_admissions', filter: `centre_id=eq.${centreId}` }, () => load())
       .subscribe();
-    return () => { sb()!.removeChannel(ch); };
+    return () => { sb().removeChannel(ch); };
   }, [centreId, load]);
 
   // ---- WARD TREE ----
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const wards = useMemo((): WardSummary[] => {
     const wardMap = new Map<string, WardSummary>();
 
@@ -195,7 +197,7 @@ export function useBedManagement(centreId: string | null) {
     if (newStatus === 'occupied' && admissionId) update.current_admission_id = admissionId;
     if (newStatus !== 'occupied') update.current_admission_id = null;
 
-    const { error } = await sb()!.from('hmis_beds').update(update).eq('id', bedId);
+    const { error } = await sb().from('hmis_beds').update(update).eq('id', bedId);
     if (error) return { success: false, error: error.message };
 
     load();
@@ -218,20 +220,20 @@ export function useBedManagement(centreId: string | null) {
     if (!reason.trim()) return { success: false, error: 'Transfer reason is required' };
 
     // 1. Create transfer record
-    const { error: txErr } = await sb()!.from('hmis_bed_transfers').insert({
+    const { error: txErr } = await sb().from('hmis_bed_transfers').insert({
       admission_id: admissionId, from_bed_id: fromBedId, to_bed_id: toBedId,
       reason: reason.trim(), transferred_by: staffId,
     });
     if (txErr) return { success: false, error: 'Transfer record failed: ' + txErr.message };
 
     // 2. Free old bed (→ housekeeping)
-    await sb()!.from('hmis_beds').update({ status: 'housekeeping', current_admission_id: null }).eq('id', fromBedId);
+    await sb().from('hmis_beds').update({ status: 'housekeeping', current_admission_id: null }).eq('id', fromBedId);
 
     // 3. Assign new bed
-    await sb()!.from('hmis_beds').update({ status: 'occupied', current_admission_id: admissionId }).eq('id', toBedId);
+    await sb().from('hmis_beds').update({ status: 'occupied', current_admission_id: admissionId }).eq('id', toBedId);
 
     // 4. Update admission record
-    await sb()!.from('hmis_admissions').update({ bed_id: toBedId, updated_at: new Date().toISOString() }).eq('id', admissionId);
+    await sb().from('hmis_admissions').update({ bed_id: toBedId, updated_at: new Date().toISOString() }).eq('id', admissionId);
 
     load();
     return { success: true };
@@ -244,7 +246,7 @@ export function useBedManagement(centreId: string | null) {
     if (!bed) return { success: false, error: 'Bed not found' };
     if (bed.status !== 'housekeeping') return { success: false, error: 'Bed is not in housekeeping status' };
 
-    const { error } = await sb()!.from('hmis_beds').update({ status: 'available', current_admission_id: null }).eq('id', bedId);
+    const { error } = await sb().from('hmis_beds').update({ status: 'available', current_admission_id: null }).eq('id', bedId);
     if (error) return { success: false, error: error.message };
     load();
     return { success: true };

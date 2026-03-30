@@ -306,7 +306,7 @@ export function useAlerts(centreId: string, admissionId?: string | null) {
 
   const load = useCallback(async () => {
     if (!sb() || !centreId) return;
-    let query = sb()!
+    let query = sb()
       .from('hmis_clinical_alerts')
       .select('*, patient:hmis_patients!inner(first_name, last_name, uhid), ack_staff:hmis_staff!hmis_clinical_alerts_acknowledged_by_fkey(full_name)')
       .eq('centre_id', centreId)
@@ -321,12 +321,13 @@ export function useAlerts(centreId: string, admissionId?: string | null) {
     setLoading(false);
   }, [centreId, admissionId]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { load(); }, [load]);
 
   // Realtime subscription
   useEffect(() => {
     if (!sb() || !centreId) return;
-    const channel = sb()!
+    const channel = sb()
       .channel(`alerts-${centreId}`)
       .on('postgres_changes', {
         event: '*',
@@ -336,12 +337,12 @@ export function useAlerts(centreId: string, admissionId?: string | null) {
       }, () => { load(); })
       .subscribe();
 
-    return () => { sb()!.removeChannel(channel); };
+    return () => { sb().removeChannel(channel); };
   }, [centreId, load]);
 
   const acknowledge = useCallback(async (alertId: string, staffId: string) => {
     if (!sb()) return;
-    await sb()!.from('hmis_clinical_alerts').update({
+    await sb().from('hmis_clinical_alerts').update({
       status: 'acknowledged',
       acknowledged_by: staffId,
       acknowledged_at: new Date().toISOString(),
@@ -351,7 +352,7 @@ export function useAlerts(centreId: string, admissionId?: string | null) {
 
   const resolve = useCallback(async (alertId: string, staffId: string, note?: string) => {
     if (!sb()) return;
-    await sb()!.from('hmis_clinical_alerts').update({
+    await sb().from('hmis_clinical_alerts').update({
       status: 'resolved',
       resolved_by: staffId,
       resolved_at: new Date().toISOString(),

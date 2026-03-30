@@ -16,11 +16,12 @@ export default function DepartmentsConfig({ centreId, flash }: Props) {
   const load = useCallback(async () => {
     if (!centreId || !sb()) return;
     setLoading(true);
-    const { data } = await sb()!.from('hmis_departments').select('id, name, code, hod_name, is_active').eq('centre_id', centreId).order('name');
+    const { data } = await sb().from('hmis_departments').select('id, name, code, hod_name, is_active').eq('centre_id', centreId).order('name');
     setDepartments(data || []);
     setLoading(false);
   }, [centreId]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { load(); }, [load]);
 
   const resetForm = () => { setForm({ name: '', code: '', hod_name: '' }); setShowAdd(false); setEditId(null); };
@@ -30,10 +31,10 @@ export default function DepartmentsConfig({ centreId, flash }: Props) {
     const code = form.code || form.name.substring(0, 4).toUpperCase();
 
     if (editId) {
-      const { error } = await sb()!.from('hmis_departments').update({ name: form.name, code, hod_name: form.hod_name || null }).eq('id', editId);
+      const { error } = await sb().from('hmis_departments').update({ name: form.name, code, hod_name: form.hod_name || null }).eq('id', editId);
       if (error) flash(`Error: ${error.message}`); else flash('Department updated');
     } else {
-      const { error } = await sb()!.from('hmis_departments').insert({ centre_id: centreId, name: form.name, code, hod_name: form.hod_name || null, is_active: true });
+      const { error } = await sb().from('hmis_departments').insert({ centre_id: centreId, name: form.name, code, hod_name: form.hod_name || null, is_active: true });
       if (error) flash(`Error: ${error.message}`); else flash('Department added');
     }
     resetForm();
@@ -41,7 +42,7 @@ export default function DepartmentsConfig({ centreId, flash }: Props) {
   };
 
   const toggleActive = async (id: string, isActive: boolean) => {
-    await sb()!.from('hmis_departments').update({ is_active: isActive }).eq('id', id);
+    await sb().from('hmis_departments').update({ is_active: isActive }).eq('id', id);
     flash(`Department ${isActive ? 'activated' : 'deactivated'}`);
     setDepartments(prev => prev.map(d => d.id === id ? { ...d, is_active: isActive } : d));
   };

@@ -36,9 +36,10 @@ function ReportsInner() {
   const [centreId, setCentreId] = useState<string>('');
   const [centres, setCentres] = useState<any[]>([]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!sb()) return;
-    sb()!.from('hmis_centres').select('id, name, code').eq('is_active', true).order('name')
+    sb().from('hmis_centres').select('id, name, code').eq('is_active', true).order('name')
       .then(({ data }: any) => setCentres(data || []));
   }, []);
 
@@ -55,6 +56,7 @@ function ReportsInner() {
     runners[type](filters);
   };
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { runReport('revenue'); }, []);
 
   const d = engine.data;

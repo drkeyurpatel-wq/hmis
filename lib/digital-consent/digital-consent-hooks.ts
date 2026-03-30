@@ -62,7 +62,7 @@ export function useDigitalConsent(centreId: string | null) {
 
   const loadTemplates = useCallback(async () => {
     if (!centreId || !sb()) return;
-    const { data } = await sb()!.from('hmis_consent_templates')
+    const { data } = await sb().from('hmis_consent_templates')
       .select('*').eq('centre_id', centreId).eq('is_active', true).eq('is_current', true)
       .order('template_name');
     setTemplates((data || []) as ConsentTemplate[]);
@@ -71,7 +71,7 @@ export function useDigitalConsent(centreId: string | null) {
   const loadConsents = useCallback(async (patientId?: string, admissionId?: string) => {
     if (!centreId || !sb()) return;
     setLoading(true);
-    let q = sb()!.from('hmis_consents')
+    let q = sb().from('hmis_consents')
       .select(CONSENT_SELECT)
       .eq('centre_id', centreId)
       .order('created_at', { ascending: false }).limit(200);
@@ -90,7 +90,7 @@ export function useDigitalConsent(centreId: string | null) {
   }) => {
     if (!centreId || !sb()) return null;
     // Get template
-    const { data: tpl } = await sb()!.from('hmis_consent_templates')
+    const { data: tpl } = await sb().from('hmis_consent_templates')
       .select('*').eq('id', input.template_id).single();
     if (!tpl) return null;
 
@@ -99,7 +99,7 @@ export function useDigitalConsent(centreId: string | null) {
     const risksKey = `risks_${lang}` as keyof typeof tpl;
     const altKey = `alternatives_${lang}` as keyof typeof tpl;
 
-    const { data: consent, error } = await sb()!.from('hmis_consents').insert({
+    const { data: consent, error } = await sb().from('hmis_consents').insert({
       patient_id: input.patient_id,
       admission_id: input.admission_id || null,
       template_id: input.template_id,
@@ -126,7 +126,7 @@ export function useDigitalConsent(centreId: string | null) {
   // Record education shown
   const markEducationShown = useCallback(async (consentId: string, staffId: string) => {
     if (!sb()) return;
-    await sb()!.from('hmis_consents').update({ education_shown: true }).eq('id', consentId);
+    await sb().from('hmis_consents').update({ education_shown: true }).eq('id', consentId);
     await logAudit(consentId, 'education_shown', staffId, 'Patient education material presented');
   }, []);
 
@@ -137,13 +137,13 @@ export function useDigitalConsent(centreId: string | null) {
     interpreter_name?: string;
   }) => {
     if (!sb()) return;
-    await sb()!.from('hmis_consents').update(updates).eq('id', consentId);
+    await sb().from('hmis_consents').update(updates).eq('id', consentId);
   }, []);
 
   // Capture patient signature
   const capturePatientSignature = useCallback(async (consentId: string, signatureData: string, staffId: string) => {
     if (!sb()) return;
-    await sb()!.from('hmis_consents').update({
+    await sb().from('hmis_consents').update({
       patient_signature_data: signatureData,
       consent_date: new Date().toISOString(),
       ip_address: '', // Would be set server-side
@@ -154,7 +154,7 @@ export function useDigitalConsent(centreId: string | null) {
   // Capture witness signature
   const captureWitnessSignature = useCallback(async (consentId: string, signatureData: string, witnessStaffId: string, witnessName: string, witnessRelation?: string) => {
     if (!sb()) return;
-    await sb()!.from('hmis_consents').update({
+    await sb().from('hmis_consents').update({
       witness_signature_data: signatureData,
       witness_staff_id: witnessStaffId,
       witness_name: witnessName,
@@ -166,7 +166,7 @@ export function useDigitalConsent(centreId: string | null) {
   // Finalize consent (mark as obtained)
   const finalizeConsent = useCallback(async (consentId: string, staffId: string) => {
     if (!sb()) return;
-    await sb()!.from('hmis_consents').update({
+    await sb().from('hmis_consents').update({
       consent_given: true,
       consent_date: new Date().toISOString(),
       obtained_by: staffId,
@@ -174,7 +174,7 @@ export function useDigitalConsent(centreId: string | null) {
     await logAudit(consentId, 'obtained', staffId, 'Consent finalized and obtained');
 
     // BRIDGE: Update surgical planning checklist
-    const { data: c } = await sb()!.from('hmis_consents')
+    const { data: c } = await sb().from('hmis_consents')
       .select('centre_id, admission_id, ot_booking_id, consent_type')
       .eq('id', consentId).single();
     if (c) {
@@ -190,7 +190,7 @@ export function useDigitalConsent(centreId: string | null) {
   // Withdraw consent
   const withdrawConsent = useCallback(async (consentId: string, staffId: string, reason: string) => {
     if (!sb()) return;
-    await sb()!.from('hmis_consents').update({
+    await sb().from('hmis_consents').update({
       revoked: true, revoked_at: new Date().toISOString(),
       withdrawal_reason: reason, withdrawn_by: staffId,
       consent_given: false,
@@ -203,14 +203,14 @@ export function useDigitalConsent(centreId: string | null) {
     if (!centreId || !sb()) return;
     if (input.id) {
       // New version — mark old as not current
-      await sb()!.from('hmis_consent_templates').update({ is_current: false }).eq('id', input.id);
-      const { data: old } = await sb()!.from('hmis_consent_templates').select('version').eq('id', input.id).single();
-      await sb()!.from('hmis_consent_templates').insert({
+      await sb().from('hmis_consent_templates').update({ is_current: false }).eq('id', input.id);
+      const { data: old } = await sb().from('hmis_consent_templates').select('version').eq('id', input.id).single();
+      await sb().from('hmis_consent_templates').insert({
         ...input, id: undefined, centre_id: centreId, version: (old?.version || 0) + 1,
         is_current: true, created_by: staffId,
       });
     } else {
-      await sb()!.from('hmis_consent_templates').insert({
+      await sb().from('hmis_consent_templates').insert({
         ...input, centre_id: centreId, version: 1, is_current: true, created_by: staffId,
       });
     }
@@ -219,16 +219,17 @@ export function useDigitalConsent(centreId: string | null) {
   // Audit trail
   const logAudit = async (consentId: string, action: string, staffId: string, details?: string) => {
     if (!centreId || !sb()) return;
-    await sb()!.from('hmis_consent_audit').insert({
+    await sb().from('hmis_consent_audit').insert({
       consent_id: consentId, centre_id: centreId, action,
       performed_by: staffId, details: details || null,
       device_info: navigator.userAgent,
     });
   };
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const loadAudit = useCallback(async (consentId: string): Promise<ConsentAudit[]> => {
     if (!sb()) return [];
-    const { data } = await sb()!.from('hmis_consent_audit')
+    const { data } = await sb().from('hmis_consent_audit')
       .select('*, performer:hmis_staff!hmis_consent_audit_performed_by_fkey(full_name)')
       .eq('consent_id', consentId)
       .order('created_at', { ascending: true });
@@ -244,6 +245,7 @@ export function useDigitalConsent(centreId: string | null) {
     return { total, signed, pending, revoked };
   }, [consents]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { loadTemplates(); loadConsents(); }, [loadTemplates, loadConsents]);
 
   return {

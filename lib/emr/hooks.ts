@@ -44,11 +44,11 @@ export function usePatient(patientId: string | null) {
 
     async function load() {
       try {
-        const { data: pt, error: ptErr } = await sb()!.from('hmis_patients').select('*').eq('id', patientId).single();
+        const { data: pt, error: ptErr } = await sb().from('hmis_patients').select('*').eq('id', patientId).single();
         if (ptErr) throw ptErr;
         if (cancelled) return;
 
-        const { data: allergies } = await sb()!.from('hmis_patient_allergies').select('allergen, severity').eq('patient_id', patientId);
+        const { data: allergies } = await sb().from('hmis_patient_allergies').select('allergen, severity').eq('patient_id', patientId);
 
         let age = pt.age_years?.toString() || '--';
         if (pt.date_of_birth) {
@@ -56,7 +56,7 @@ export function usePatient(patientId: string | null) {
           age = Math.floor((Date.now() - dob.getTime()) / (365.25 * 24 * 60 * 60 * 1000)).toString();
         }
 
-        const { data: lastVisit } = await sb()!.from('hmis_emr_encounters').select('encounter_date').eq('patient_id', patientId).order('encounter_date', { ascending: false }).limit(1);
+        const { data: lastVisit } = await sb().from('hmis_emr_encounters').select('encounter_date').eq('patient_id', patientId).order('encounter_date', { ascending: false }).limit(1);
 
         if (cancelled) return;
         setPatient({
@@ -80,13 +80,13 @@ export function usePatient(patientId: string | null) {
 
   const addAllergy = useCallback(async (allergen: string, staffId: string) => {
     if (!patientId || !sb()) return;
-    const { error } = await sb()!.from('hmis_patient_allergies').insert({ patient_id: patientId, allergen, severity: 'moderate', recorded_by: staffId });
+    const { error } = await sb().from('hmis_patient_allergies').insert({ patient_id: patientId, allergen, severity: 'moderate', recorded_by: staffId });
     if (!error && patient) setPatient({ ...patient, allergies: [...patient.allergies, allergen] });
   }, [patientId, patient]);
 
   const removeAllergy = useCallback(async (allergen: string) => {
     if (!patientId || !sb()) return;
-    await sb()!.from('hmis_patient_allergies').delete().eq('patient_id', patientId).eq('allergen', allergen);
+    await sb().from('hmis_patient_allergies').delete().eq('patient_id', patientId).eq('allergen', allergen);
     if (patient) setPatient({ ...patient, allergies: patient.allergies.filter(a => a !== allergen) });
   }, [patientId, patient]);
 
@@ -104,7 +104,7 @@ export function usePatientSearch() {
     if (query.length < 2 || !sb()) { setResults([]); return; }
     setSearching(true);
     try {
-      const { data } = await sb()!.from('hmis_patients')
+      const { data } = await sb().from('hmis_patients')
         .select('id, uhid, first_name, last_name, age_years, gender, phone_primary, blood_group')
         .or(`uhid.ilike.%${query}%,first_name.ilike.%${query}%,last_name.ilike.%${query}%,phone_primary.ilike.%${query}%`)
         .eq('is_active', true).limit(10);
@@ -130,7 +130,7 @@ export function useEncounters(patientId: string | null) {
     setLoading(true);
 
     async function load() {
-      const { data } = await sb()!.from('hmis_emr_encounters')
+      const { data } = await sb().from('hmis_emr_encounters')
         .select('id, encounter_date, status, primary_diagnosis_code, primary_diagnosis_label, prescription_count, investigation_count')
         .eq('patient_id', patientId).order('encounter_date', { ascending: false }).limit(50);
 
@@ -149,7 +149,7 @@ export function useEncounters(patientId: string | null) {
 
   const loadEncounter = useCallback(async (encounterId: string): Promise<EncounterData | null> => {
     if (!sb()) return null;
-    const { data, error } = await sb()!.from('hmis_emr_encounters').select('*').eq('id', encounterId).single();
+    const { data, error } = await sb().from('hmis_emr_encounters').select('*').eq('id', encounterId).single();
     if (error || !data) return null;
     return {
       vitals: data.vitals || {}, complaints: data.complaints || [],
@@ -175,9 +175,9 @@ export function useEncounters(patientId: string | null) {
     let result;
     if (activeEncounterId) {
       const updatePayload = data.status ? { ...payload, status: data.status, ...(data.status === 'signed' ? { signed_at: new Date().toISOString() } : {}) } : payload;
-      result = await sb()!.from('hmis_emr_encounters').update(updatePayload).eq('id', activeEncounterId).select().single();
+      result = await sb().from('hmis_emr_encounters').update(updatePayload).eq('id', activeEncounterId).select().single();
     } else {
-      result = await sb()!.from('hmis_emr_encounters').insert({ ...payload, status: data.status || 'in_progress' }).select().single();
+      result = await sb().from('hmis_emr_encounters').insert({ ...payload, status: data.status || 'in_progress' }).select().single();
       if (result.data) setActiveEncounterId(result.data.id);
     }
     return result;
@@ -185,7 +185,7 @@ export function useEncounters(patientId: string | null) {
 
   const signEncounter = useCallback(async (encounterId: string, staffId: string) => {
     if (!sb()) return { error: { message: 'No client' } };
-    return sb()!.from('hmis_emr_encounters').update({ status: 'signed', signed_at: new Date().toISOString(), signed_by: staffId }).eq('id', encounterId);
+    return sb().from('hmis_emr_encounters').update({ status: 'signed', signed_at: new Date().toISOString(), signed_by: staffId }).eq('id', encounterId);
   }, []);
 
   return { encounters, loading, activeEncounterId, setActiveEncounterId, loadEncounter, saveEncounter, signEncounter };
@@ -200,7 +200,7 @@ export function useEMRTemplates(doctorId: string | null) {
   useEffect(() => {
     if (!doctorId || !sb()) return;
     async function load() {
-      const { data } = await sb()!.from('hmis_emr_templates').select('*')
+      const { data } = await sb().from('hmis_emr_templates').select('*')
         .or(`doctor_id.eq.${doctorId},is_shared.eq.true`).order('usage_count', { ascending: false });
       setTemplates((data || []).map((t: any) => ({
         id: t.id, name: t.name, data: t.data, usageCount: t.usage_count, isShared: t.is_shared,
@@ -211,7 +211,7 @@ export function useEMRTemplates(doctorId: string | null) {
 
   const saveTemplate = useCallback(async (name: string, data: any, centreId: string) => {
     if (!doctorId || !sb()) return;
-    const { data: result } = await sb()!.from('hmis_emr_templates')
+    const { data: result } = await sb().from('hmis_emr_templates')
       .insert({ doctor_id: doctorId, centre_id: centreId, name, data, template_type: 'prescription' }).select().single();
     if (result) setTemplates(prev => [...prev, { id: result.id, name: result.name, data: result.data, usageCount: 0, isShared: false }]);
   }, [doctorId]);
@@ -219,7 +219,7 @@ export function useEMRTemplates(doctorId: string | null) {
   const useTemplate = useCallback(async (templateId: string) => {
     if (!sb()) return;
     try {
-      await sb()!.from('hmis_emr_templates').update({ usage_count: (templates.find(t => t.id === templateId)?.usageCount || 0) + 1 }).eq('id', templateId);
+      await sb().from('hmis_emr_templates').update({ usage_count: (templates.find(t => t.id === templateId)?.usageCount || 0) + 1 }).eq('id', templateId);
     } catch { /* ignore */ }
   }, [templates]);
 
@@ -240,7 +240,7 @@ export function useTodayQueue(doctorId: string | null, centreId: string | null) 
 
     async function load() {
       const today = new Date().toISOString().split('T')[0];
-      const { data } = await sb()!.from('hmis_opd_visits')
+      const { data } = await sb().from('hmis_opd_visits')
         .select('id, visit_number, token_number, status, check_in_time, patient:hmis_patients(id, uhid, first_name, last_name, age_years, gender, blood_group, phone_primary)')
         .eq('doctor_id', doctorId).eq('centre_id', centreId)
         .gte('created_at', today + 'T00:00:00').lte('created_at', today + 'T23:59:59')
@@ -249,11 +249,11 @@ export function useTodayQueue(doctorId: string | null, centreId: string | null) 
     }
     load();
 
-    const channel = sb()!.channel('opd-queue-' + doctorId)
+    const channel = sb().channel('opd-queue-' + doctorId)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'hmis_opd_visits', filter: `doctor_id=eq.${doctorId}` }, () => { load(); })
       .subscribe();
 
-    return () => { cancelled = true; sb()!.removeChannel(channel); };
+    return () => { cancelled = true; sb().removeChannel(channel); };
   }, [doctorId, centreId]);
 
   return { queue, loading };

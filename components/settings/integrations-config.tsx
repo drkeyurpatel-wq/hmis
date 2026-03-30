@@ -46,7 +46,7 @@ export default function IntegrationsConfig({ centreId, flash }: Props) {
   useEffect(() => {
     if (!centreId || !sb()) return;
     setLoading(true);
-    sb()!.from('hmis_integration_config').select('*').eq('centre_id', centreId).then(({ data }: any) => {
+    sb().from('hmis_integration_config').select('*').eq('centre_id', centreId).then(({ data }: any) => {
       const map: Record<string, ProviderConfig> = {};
       for (const row of (data || [])) {
         map[row.provider] = { id: row.id, provider: row.provider, is_enabled: row.is_enabled ?? false, config: row.config || {}, last_sync_at: row.last_sync_at, sync_status: row.sync_status };
@@ -79,10 +79,10 @@ export default function IntegrationsConfig({ centreId, flash }: Props) {
     const payload = { centre_id: centreId, provider, is_enabled: cfg.is_enabled, config: cfg.config };
 
     if (cfg.id) {
-      const { error } = await sb()!.from('hmis_integration_config').update(payload).eq('id', cfg.id);
+      const { error } = await sb().from('hmis_integration_config').update(payload).eq('id', cfg.id);
       if (error) flash(`Error: ${error.message}`); else flash(`${provider} config saved`);
     } else {
-      const { data, error } = await sb()!.from('hmis_integration_config').insert(payload).select('id').maybeSingle();
+      const { data, error } = await sb().from('hmis_integration_config').insert(payload).select('id').maybeSingle();
       if (error) flash(`Error: ${error.message}`);
       else {
         if (data) setConfigs(prev => ({ ...prev, [provider]: { ...cfg, id: data.id } }));
@@ -132,7 +132,7 @@ export default function IntegrationsConfig({ centreId, flash }: Props) {
     }
     // Update sync status
     if (cfg.id && sb()) {
-      await sb()!.from('hmis_integration_config').update({ last_sync_at: new Date().toISOString(), sync_status: 'tested' }).eq('id', cfg.id);
+      await sb().from('hmis_integration_config').update({ last_sync_at: new Date().toISOString(), sync_status: 'tested' }).eq('id', cfg.id);
     }
     setTesting('');
   };

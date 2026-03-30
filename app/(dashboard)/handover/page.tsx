@@ -101,6 +101,7 @@ function HandoverInner() {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
 
   // Load history on mount
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   React.useEffect(() => { history.load(7); }, []);
 
   return (

@@ -124,17 +124,18 @@ export default function InsuranceCashless({ claims, loading, stats, centreId, st
   const [utrNumber, setUtrNumber] = useState('');
 
   // Load insurers + TPAs
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!sb()) return;
-    sb()!.from('hmis_insurers').select('id, name, nhcx_code').eq('is_active', true).order('name').then(({ data }: any) => setInsurers(data || []));
-    sb()!.from('hmis_tpas').select('id, name, nhcx_code').eq('is_active', true).order('name').then(({ data }: any) => setTpas(data || []));
+    sb().from('hmis_insurers').select('id, name, nhcx_code').eq('is_active', true).order('name').then(({ data }: any) => setInsurers(data || []));
+    sb().from('hmis_tpas').select('id, name, nhcx_code').eq('is_active', true).order('name').then(({ data }: any) => setTpas(data || []));
   }, []);
 
   // Patient search
   useEffect(() => {
     if (paForm.patientSearch.length < 2 || !sb()) { setPatResults([]); return; }
     const t = setTimeout(async () => {
-      const { data } = await sb()!.from('hmis_patients')
+      const { data } = await sb().from('hmis_patients')
         .select('id, uhid, first_name, last_name, age_years, gender, phone_primary')
         .or(`uhid.ilike.%${paForm.patientSearch}%,first_name.ilike.%${paForm.patientSearch}%,phone_primary.ilike.%${paForm.patientSearch}%`)
         .eq('is_active', true).limit(5);

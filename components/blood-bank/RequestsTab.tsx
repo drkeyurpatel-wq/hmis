@@ -20,7 +20,7 @@ export default function RequestsTab({ requests, create, updateStatus, staffId, g
   useEffect(() => {
     if (reqForm.patientSearch.length < 2 || !sb()) { setPatResults([]); return; }
     const t = setTimeout(async () => {
-      const { data } = await sb()!.from('hmis_patients').select('id, uhid, first_name, last_name, blood_group')
+      const { data } = await sb().from('hmis_patients').select('id, uhid, first_name, last_name, blood_group')
         .or(`uhid.ilike.%${reqForm.patientSearch}%,first_name.ilike.%${reqForm.patientSearch}%`).eq('is_active', true).limit(5);
       setPatResults(data || []);
     }, 300);

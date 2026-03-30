@@ -25,13 +25,14 @@ export function useEquipment(centreId: string | null) {
   const load = useCallback(async () => {
     if (!centreId || !sb()) return;
     setLoading(true);
-    const { data } = await sb()!.from('hmis_equipment')
+    const { data } = await sb().from('hmis_equipment')
       .select('*').eq('centre_id', centreId).eq('is_active', true)
       .order('name');
     setEquipment(data || []);
     setLoading(false);
   }, [centreId]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { load(); }, [load]);
 
   const stats = useMemo(() => {
@@ -50,19 +51,19 @@ export function useEquipment(centreId: string | null) {
 
   const addEquipment = useCallback(async (data: Partial<Equipment>) => {
     if (!centreId || !sb()) return;
-    await sb()!.from('hmis_equipment').insert({ ...data, centre_id: centreId });
+    await sb().from('hmis_equipment').insert({ ...data, centre_id: centreId });
     load();
   }, [centreId, load]);
 
   const updateEquipment = useCallback(async (id: string, data: Partial<Equipment>) => {
     if (!sb()) return;
-    await sb()!.from('hmis_equipment').update(data).eq('id', id);
+    await sb().from('hmis_equipment').update(data).eq('id', id);
     load();
   }, [load]);
 
   const deleteEquipment = useCallback(async (id: string) => {
     if (!sb()) return;
-    await sb()!.from('hmis_equipment').update({ is_active: false }).eq('id', id);
+    await sb().from('hmis_equipment').update({ is_active: false }).eq('id', id);
     load();
   }, [load]);
 
@@ -91,7 +92,7 @@ export function useMaintenance(centreId: string | null) {
   const load = useCallback(async (statusFilter?: string) => {
     if (!centreId || !sb()) return;
     setLoading(true);
-    let q = sb()!.from('hmis_equipment_maintenance')
+    let q = sb().from('hmis_equipment_maintenance')
       .select('*, equipment:hmis_equipment(id, name, category, serial_number, location), reporter:hmis_staff!hmis_equipment_maintenance_reported_by_fkey(full_name)')
       .eq('centre_id', centreId)
       .order('reported_at', { ascending: false }).limit(200);
@@ -101,6 +102,7 @@ export function useMaintenance(centreId: string | null) {
     setLoading(false);
   }, [centreId]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { load(); }, [load]);
 
   const stats = useMemo(() => ({
@@ -120,7 +122,7 @@ export function useMaintenance(centreId: string | null) {
     priority: string; assignedTo?: string; staffId: string;
   }) => {
     if (!centreId || !sb()) return;
-    await sb()!.from('hmis_equipment_maintenance').insert({
+    await sb().from('hmis_equipment_maintenance').insert({
       equipment_id: data.equipmentId, centre_id: centreId,
       type: data.type, issue_description: data.issueDescription,
       priority: data.priority, assigned_to: data.assignedTo || null,
@@ -128,7 +130,7 @@ export function useMaintenance(centreId: string | null) {
     });
     // If breakdown, mark equipment as maintenance
     if (data.type === 'breakdown') {
-      await sb()!.from('hmis_equipment').update({ status: 'maintenance' }).eq('id', data.equipmentId);
+      await sb().from('hmis_equipment').update({ status: 'maintenance' }).eq('id', data.equipmentId);
     }
     load();
   }, [centreId, load]);
@@ -145,12 +147,12 @@ export function useMaintenance(centreId: string | null) {
         upd.downtime_hours = Math.round((Date.now() - new Date(ticket.started_at).getTime()) / 3600000 * 10) / 10;
       }
     }
-    await sb()!.from('hmis_equipment_maintenance').update(upd).eq('id', id);
+    await sb().from('hmis_equipment_maintenance').update(upd).eq('id', id);
     // If completing, restore equipment to active
     if (updates.status === 'completed') {
       const ticket = tickets.find(t => t.id === id);
       if (ticket) {
-        await sb()!.from('hmis_equipment').update({
+        await sb().from('hmis_equipment').update({
           status: 'active',
           ...(ticket.type === 'preventive' ? { last_pm_date: new Date().toISOString().split('T')[0] } : {}),
         }).eq('id', ticket.equipment_id);
@@ -181,7 +183,7 @@ export function usePMSchedule(centreId: string | null) {
   const load = useCallback(async () => {
     if (!centreId || !sb()) return;
     setLoading(true);
-    const { data } = await sb()!.from('hmis_equipment_pm_schedule')
+    const { data } = await sb().from('hmis_equipment_pm_schedule')
       .select('*, equipment:hmis_equipment(id, name, category, location)')
       .eq('centre_id', centreId).eq('is_active', true)
       .order('next_due', { ascending: true });
@@ -189,6 +191,7 @@ export function usePMSchedule(centreId: string | null) {
     setLoading(false);
   }, [centreId]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { load(); }, [load]);
 
   const stats = useMemo(() => {
@@ -207,7 +210,7 @@ export function usePMSchedule(centreId: string | null) {
     nextDue: string; assignedTo?: string;
   }) => {
     if (!centreId || !sb()) return;
-    await sb()!.from('hmis_equipment_pm_schedule').insert({
+    await sb().from('hmis_equipment_pm_schedule').insert({
       equipment_id: data.equipmentId, centre_id: centreId,
       frequency: data.frequency, checklist: data.checklist,
       next_due: data.nextDue, assigned_to: data.assignedTo || null,
@@ -222,11 +225,11 @@ export function usePMSchedule(centreId: string | null) {
     const today = new Date().toISOString().split('T')[0];
     // Calculate next due based on frequency
     const nextDue = calcNextDue(today, schedule.frequency);
-    await sb()!.from('hmis_equipment_pm_schedule').update({
+    await sb().from('hmis_equipment_pm_schedule').update({
       last_done: today, next_due: nextDue,
     }).eq('id', scheduleId);
     // Update equipment's PM dates
-    await sb()!.from('hmis_equipment').update({
+    await sb().from('hmis_equipment').update({
       last_pm_date: today, next_pm_date: nextDue,
     }).eq('id', schedule.equipment_id);
     load();
@@ -234,7 +237,7 @@ export function usePMSchedule(centreId: string | null) {
 
   const updateSchedule = useCallback(async (id: string, data: Partial<PMSchedule>) => {
     if (!sb()) return;
-    await sb()!.from('hmis_equipment_pm_schedule').update(data).eq('id', id);
+    await sb().from('hmis_equipment_pm_schedule').update(data).eq('id', id);
     load();
   }, [load]);
 

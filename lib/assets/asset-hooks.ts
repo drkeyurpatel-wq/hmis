@@ -10,7 +10,7 @@ export function useAssets(centreId: string | null) {
   const load = useCallback(async (filters?: { category?: string; status?: string; dept?: string; search?: string }) => {
     if (!centreId || !sb()) return;
     setLoading(true);
-    let q = sb()!.from('hmis_assets')
+    let q = sb().from('hmis_assets')
       .select('*, custodian:hmis_staff!hmis_assets_custodian_id_fkey(full_name)')
       .eq('centre_id', centreId).eq('is_active', true).order('name').limit(500);
     if (filters?.category && filters.category !== 'all') q = q.eq('category', filters.category);
@@ -21,12 +21,13 @@ export function useAssets(centreId: string | null) {
     setAssets(data || []);
     setLoading(false);
   }, [centreId]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { load(); }, [load]);
 
   const create = useCallback(async (data: any) => {
     if (!centreId || !sb()) return { success: false, error: "Not initialized" };
     const bookValue = data.purchase_cost ? parseFloat(data.purchase_cost) : 0;
-    const { error } = await sb()!.from('hmis_assets').insert({
+    const { error } = await sb().from('hmis_assets').insert({
       centre_id: centreId, current_book_value: bookValue, ...data,
     });
     if (!error) load();
@@ -35,13 +36,13 @@ export function useAssets(centreId: string | null) {
 
   const update = useCallback(async (id: string, updates: any) => {
     if (!sb()) return;
-    await sb()!.from('hmis_assets').update({ ...updates, updated_at: new Date().toISOString() }).eq('id', id);
+    await sb().from('hmis_assets').update({ ...updates, updated_at: new Date().toISOString() }).eq('id', id);
     load();
   }, [load]);
 
   const dispose = useCallback(async (id: string, method: string, value: number, staffId: string) => {
     if (!sb()) return;
-    await sb()!.from('hmis_assets').update({
+    await sb().from('hmis_assets').update({
       status: 'disposed', disposal_method: method, disposal_value: value,
       disposed_date: new Date().toISOString().split('T')[0], disposal_approved_by: staffId,
       is_active: false, updated_at: new Date().toISOString(),

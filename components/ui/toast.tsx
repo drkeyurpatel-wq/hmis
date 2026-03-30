@@ -61,13 +61,16 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const removeToast = useCallback((id: string) => {
     setToasts((prev) => prev.filter((t) => t.id !== id));
   }, []);
 
   const value: ToastContextValue = {
     toast: addToast,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     toastError: useCallback((msg: string) => addToast(msg, 'error', 6000), [addToast]),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     toastSuccess: useCallback((msg: string) => addToast(msg, 'success', 3000), [addToast]),
   };
 

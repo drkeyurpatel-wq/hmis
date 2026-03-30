@@ -22,19 +22,20 @@ export default function CreditNoteManager({ centreId, onFlash }: Props) {
   const load = useCallback(async () => {
     if (!centreId || !sb()) { setLoading(false); return; }
     setLoading(true);
-    const { data } = await sb()!.from('hmis_credit_notes')
+    const { data } = await sb().from('hmis_credit_notes')
       .select('*, bill:hmis_bills(bill_number, net_amount), patient:hmis_patients!inner(first_name, last_name, uhid), approver:hmis_staff!hmis_credit_notes_approved_by_fkey(full_name)')
       .eq('centre_id', centreId).order('created_at', { ascending: false }).limit(50);
     setNotes(data || []);
     setLoading(false);
   }, [centreId]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { load(); }, [load]);
 
   useEffect(() => {
     if (form.billSearch.length < 2 || !sb()) { setBillResults([]); return; }
     const t = setTimeout(async () => {
-      const { data } = await sb()!.from('hmis_bills')
+      const { data } = await sb().from('hmis_bills')
         .select('id, bill_number, net_amount, status, patient:hmis_patients!inner(id, first_name, last_name, uhid)')
         .eq('centre_id', centreId).in('status', ['final', 'paid', 'partially_paid'])
         .or(`bill_number.ilike.%${form.billSearch}%`).limit(5);
@@ -61,9 +62,9 @@ export default function CreditNoteManager({ centreId, onFlash }: Props) {
     setError('');
 
     const cnNumber = `CN-${new Date().toISOString().slice(2, 10).replace(/-/g, '')}-${Date.now().toString(36).slice(-4).toUpperCase()}`;
-    const { data: patient } = await sb()!.from('hmis_bills').select('patient_id').eq('id', form.billId).single();
+    const { data: patient } = await sb().from('hmis_bills').select('patient_id').eq('id', form.billId).single();
 
-    const { error: err } = await sb()!.from('hmis_credit_notes').insert({
+    const { error: err } = await sb().from('hmis_credit_notes').insert({
       centre_id: centreId, bill_id: form.billId, patient_id: patient?.patient_id,
       credit_note_number: cnNumber, amount: amt,
       reason: form.reason, items: form.items ? JSON.parse(`[${form.items}]`) : [],
@@ -73,9 +74,9 @@ export default function CreditNoteManager({ centreId, onFlash }: Props) {
     if (err) { setError(err.message); return; }
 
     // Adjust bill: reduce net_amount and balance
-    const { data: bill } = await sb()!.from('hmis_bills').select('net_amount, balance_amount, discount_amount').eq('id', form.billId).single();
+    const { data: bill } = await sb().from('hmis_bills').select('net_amount, balance_amount, discount_amount').eq('id', form.billId).single();
     if (bill) {
-      await sb()!.from('hmis_bills').update({
+      await sb().from('hmis_bills').update({
         discount_amount: parseFloat(bill.discount_amount) + amt,
         net_amount: parseFloat(bill.net_amount) - amt,
         balance_amount: Math.max(0, parseFloat(bill.balance_amount) - amt),
@@ -89,7 +90,7 @@ export default function CreditNoteManager({ centreId, onFlash }: Props) {
   };
 
   const cancelNote = async (id: string) => {
-    await sb()!.from('hmis_credit_notes').update({ status: 'cancelled' }).eq('id', id);
+    await sb().from('hmis_credit_notes').update({ status: 'cancelled' }).eq('id', id);
     auditCancel(centreId, staffId, 'credit_note', id, 'Credit note cancelled');
     onFlash('Credit note cancelled'); load();
   };

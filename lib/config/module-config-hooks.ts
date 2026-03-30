@@ -15,7 +15,7 @@ export function useModuleConfig(centreId: string | null) {
   const load = useCallback(async () => {
     if (!centreId || !sb()) return;
     setLoading(true);
-    const { data } = await sb()!.from('hmis_module_config')
+    const { data } = await sb().from('hmis_module_config')
       .select('*').eq('centre_id', centreId).order('sort_order');
     setModules((data || []) as ModuleConfig[]);
     setLoading(false);
@@ -23,7 +23,7 @@ export function useModuleConfig(centreId: string | null) {
 
   const toggle = useCallback(async (moduleKey: string, enabled: boolean, staffId: string) => {
     if (!centreId || !sb()) return;
-    await sb()!.from('hmis_module_config').update({
+    await sb().from('hmis_module_config').update({
       is_enabled: enabled, updated_by: staffId, updated_at: new Date().toISOString(),
     }).eq('centre_id', centreId).eq('module_key', moduleKey);
     // Update local state immediately
@@ -41,7 +41,7 @@ export function useModuleConfig(centreId: string | null) {
 // Lightweight loader for sidebar — fetches only enabled module keys
 export async function loadEnabledModules(centreId: string): Promise<Set<string>> {
   if (!sb()) return new Set();
-  const { data } = await sb()!.from('hmis_module_config')
+  const { data } = await sb().from('hmis_module_config')
     .select('module_key').eq('centre_id', centreId).eq('is_enabled', true);
   return new Set((data || []).map((d: any) => d.module_key));
 }

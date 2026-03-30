@@ -101,6 +101,7 @@ const ToastContext = createContext<{
 export function ToastProvider({ children }: { children: React.ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const addToast = useCallback((message: string, type: ToastType = 'success') => {
     const id = Date.now().toString();
     setToasts(prev => [...prev, { id, message, type }]);

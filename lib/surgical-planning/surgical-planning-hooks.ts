@@ -58,7 +58,7 @@ export function useSurgicalPlanning(centreId: string | null) {
   const load = useCallback(async (dateFrom?: string, dateTo?: string) => {
     if (!centreId || !sb()) return;
     setLoading(true);
-    let q = sb()!.from('hmis_surgical_planning')
+    let q = sb().from('hmis_surgical_planning')
       .select(`*, patient:hmis_patients!hmis_surgical_planning_patient_id_fkey(first_name, last_name, uhid, age_years, gender),
         surgeon:hmis_staff!hmis_surgical_planning_surgeon_id_fkey(full_name),
         ot_booking:hmis_ot_bookings!hmis_surgical_planning_ot_booking_id_fkey(scheduled_date, scheduled_start, status, ot_room:hmis_ot_rooms(name))`)
@@ -71,9 +71,10 @@ export function useSurgicalPlanning(centreId: string | null) {
     setLoading(false);
   }, [centreId]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const loadItems = useCallback(async (planningId: string): Promise<ChecklistItem[]> => {
     if (!sb()) return [];
-    const { data } = await sb()!.from('hmis_surgical_checklist_items')
+    const { data } = await sb().from('hmis_surgical_checklist_items')
       .select(`*, assignee:hmis_staff!hmis_surgical_checklist_items_assigned_to_fkey(full_name),
         completer:hmis_staff!hmis_surgical_checklist_items_completed_by_fkey(full_name)`)
       .eq('planning_id', planningId)
@@ -87,7 +88,7 @@ export function useSurgicalPlanning(centreId: string | null) {
     priority?: string; notes?: string; created_by: string;
   }) => {
     if (!centreId || !sb()) return null;
-    const { data: plan, error } = await sb()!.from('hmis_surgical_planning')
+    const { data: plan, error } = await sb().from('hmis_surgical_planning')
       .insert({ ...input, centre_id: centreId })
       .select().single();
     if (error || !plan) return null;
@@ -97,7 +98,7 @@ export function useSurgicalPlanning(centreId: string | null) {
       centre_id: centreId,
       ...d,
     }));
-    await sb()!.from('hmis_surgical_checklist_items').insert(items);
+    await sb().from('hmis_surgical_checklist_items').insert(items);
     // Compute initial readiness
     await recalcReadiness(plan.id);
     return plan;
@@ -108,14 +109,14 @@ export function useSurgicalPlanning(centreId: string | null) {
     const updates: any = { status, updated_at: new Date().toISOString() };
     if (status === 'done') { updates.completed_by = staffId; updates.completed_at = new Date().toISOString(); updates.actual_date = new Date().toISOString().split('T')[0]; }
     if (remarks !== undefined) updates.remarks = remarks;
-    await sb()!.from('hmis_surgical_checklist_items').update(updates).eq('id', itemId);
+    await sb().from('hmis_surgical_checklist_items').update(updates).eq('id', itemId);
   }, []);
 
   const addCustomItem = useCallback(async (planningId: string, item: { item_name: string; is_mandatory: boolean; category?: string; assigned_to?: string; due_date?: string }) => {
     if (!centreId || !sb()) return;
-    const { data: existing } = await sb()!.from('hmis_surgical_checklist_items').select('sort_order').eq('planning_id', planningId).order('sort_order', { ascending: false }).limit(1);
+    const { data: existing } = await sb().from('hmis_surgical_checklist_items').select('sort_order').eq('planning_id', planningId).order('sort_order', { ascending: false }).limit(1);
     const nextSort = (existing?.[0]?.sort_order || 0) + 1;
-    await sb()!.from('hmis_surgical_checklist_items').insert({
+    await sb().from('hmis_surgical_checklist_items').insert({
       planning_id: planningId, centre_id: centreId,
       category: item.category || 'custom', item_name: item.item_name,
       is_mandatory: item.is_mandatory, assigned_to: item.assigned_to || null,
@@ -125,7 +126,7 @@ export function useSurgicalPlanning(centreId: string | null) {
 
   const recalcReadiness = useCallback(async (planningId: string) => {
     if (!sb()) return;
-    const { data: items } = await sb()!.from('hmis_surgical_checklist_items').select('is_mandatory, status').eq('planning_id', planningId);
+    const { data: items } = await sb().from('hmis_surgical_checklist_items').select('is_mandatory, status').eq('planning_id', planningId);
     if (!items || items.length === 0) return;
     const mandatory = items.filter(i => i.is_mandatory);
     const mandatoryDone = mandatory.filter(i => i.status === 'done' || i.status === 'waived').length;
@@ -133,19 +134,19 @@ export function useSurgicalPlanning(centreId: string | null) {
     const hasBlocker = mandatory.some(i => i.status === 'blocked');
     const allDone = mandatory.every(i => i.status === 'done' || i.status === 'waived');
     const status = hasBlocker ? 'blocked' : allDone ? 'ready' : 'planning';
-    await sb()!.from('hmis_surgical_planning').update({ readiness_pct: pct, overall_status: status, updated_at: new Date().toISOString() }).eq('id', planningId);
+    await sb().from('hmis_surgical_planning').update({ readiness_pct: pct, overall_status: status, updated_at: new Date().toISOString() }).eq('id', planningId);
   }, []);
 
   const clearForSurgery = useCallback(async (planningId: string, staffId: string) => {
     if (!sb()) return;
-    await sb()!.from('hmis_surgical_planning').update({
+    await sb().from('hmis_surgical_planning').update({
       overall_status: 'ready', cleared_by: staffId, cleared_at: new Date().toISOString(), updated_at: new Date().toISOString(),
     }).eq('id', planningId);
   }, []);
 
   const cancelCase = useCallback(async (planningId: string, reason: string) => {
     if (!sb()) return;
-    await sb()!.from('hmis_surgical_planning').update({
+    await sb().from('hmis_surgical_planning').update({
       overall_status: 'cancelled', notes: reason, updated_at: new Date().toISOString(),
     }).eq('id', planningId);
   }, []);
@@ -159,6 +160,7 @@ export function useSurgicalPlanning(centreId: string | null) {
     return { total, ready, blocked, planning };
   }, [cases]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { load(); }, [load]);
 
   return { cases, loading, stats, load, loadItems, createCase, updateItemStatus, addCustomItem, recalcReadiness, clearForSurgery, cancelCase };

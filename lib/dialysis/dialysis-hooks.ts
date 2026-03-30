@@ -56,13 +56,13 @@ export function useDialysis(centreId: string | null) {
     setLoading(true);
     const d = dateFilter || new Date().toISOString().split('T')[0];
     const [sRes, mRes] = await Promise.all([
-      sb()!.from('hmis_dialysis_sessions')
+      sb().from('hmis_dialysis_sessions')
         .select(`*, patient:hmis_patients!inner(first_name, last_name, uhid, age_years, gender),
           machine:hmis_dialysis_machines(machine_number),
           tech:hmis_staff!hmis_dialysis_sessions_technician_id_fkey(full_name),
           doctor:hmis_staff!hmis_dialysis_sessions_doctor_id_fkey(full_name)`)
         .eq('centre_id', centreId).eq('session_date', d).order('shift').order('actual_start', { nullsFirst: false }),
-      sb()!.from('hmis_dialysis_machines').select('*').eq('centre_id', centreId).eq('is_active', true).order('machine_number'),
+      sb().from('hmis_dialysis_machines').select('*').eq('centre_id', centreId).eq('is_active', true).order('machine_number'),
     ]);
 
     setSessions((sRes.data || []).map((s: any) => ({
@@ -91,6 +91,7 @@ export function useDialysis(centreId: string | null) {
     setLoading(false);
   }, [centreId]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { load(); }, [load]);
 
   const scheduleSession = useCallback(async (data: any) => {
@@ -98,7 +99,7 @@ export function useDialysis(centreId: string | null) {
     // Auto-fill from patient profile if exists
     let profile: any = null;
     if (data.patient_id) {
-      const { data: p } = await sb()!.from('hmis_dialysis_patients').select('*').eq('patient_id', data.patient_id).single();
+      const { data: p } = await sb().from('hmis_dialysis_patients').select('*').eq('patient_id', data.patient_id).single();
       profile = p;
     }
     const payload = {
@@ -108,10 +109,10 @@ export function useDialysis(centreId: string | null) {
       dialysate_flow_rate: data.dialysate_flow_rate || profile?.standing_dfr || 500,
       duration_minutes: data.duration_minutes || profile?.standing_duration_min || 240,
     };
-    const { error } = await sb()!.from('hmis_dialysis_sessions').insert(payload);
+    const { error } = await sb().from('hmis_dialysis_sessions').insert(payload);
     if (!error) {
       // Update machine status
-      if (data.machine_id) await sb()!.from('hmis_dialysis_machines').update({ status: 'in_use' }).eq('id', data.machine_id);
+      if (data.machine_id) await sb().from('hmis_dialysis_machines').update({ status: 'in_use' }).eq('id', data.machine_id);
       load(data.session_date);
     }
     return { success: !error, error: error?.message };
@@ -119,7 +120,7 @@ export function useDialysis(centreId: string | null) {
 
   const updateSession = useCallback(async (id: string, updates: any) => {
     if (!sb()) return { success: false, error: "Not initialized" };
-    const { error } = await sb()!.from('hmis_dialysis_sessions').update(updates).eq('id', id);
+    const { error } = await sb().from('hmis_dialysis_sessions').update(updates).eq('id', id);
     if (!error) load();
     return { success: !error, error: error?.message };
   }, [load]);
@@ -166,16 +167,17 @@ export function useDialysisMonitoring(sessionId: string | null) {
 
   const load = useCallback(async () => {
     if (!sessionId || !sb()) return;
-    const { data } = await sb()!.from('hmis_dialysis_monitoring').select('*, nurse:hmis_staff(full_name)')
+    const { data } = await sb().from('hmis_dialysis_monitoring').select('*, nurse:hmis_staff(full_name)')
       .eq('session_id', sessionId).order('check_time');
     setChecks(data || []);
   }, [sessionId]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { load(); }, [load]);
 
   const addCheck = useCallback(async (staffId: string, data: any) => {
     if (!sessionId || !sb()) return { success: false, error: "Not initialized" };
-    const { error } = await sb()!.from('hmis_dialysis_monitoring').insert({
+    const { error } = await sb().from('hmis_dialysis_monitoring').insert({
       session_id: sessionId, recorded_by: staffId, ...data,
     });
     if (!error) load();
@@ -193,7 +195,7 @@ export function useDialysisPatients(centreId: string | null) {
   const load = useCallback(async () => {
     if (!centreId || !sb()) return;
     setLoading(true);
-    const { data } = await sb()!.from('hmis_dialysis_patients')
+    const { data } = await sb().from('hmis_dialysis_patients')
       .select('*, patient:hmis_patients!inner(first_name, last_name, uhid, age_years, gender)')
       .eq('centre_id', centreId).eq('is_active', true).order('created_at', { ascending: false });
     setPatients((data || []).map((p: any) => ({
@@ -204,18 +206,19 @@ export function useDialysisPatients(centreId: string | null) {
     setLoading(false);
   }, [centreId]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { load(); }, [load]);
 
   const createProfile = useCallback(async (data: any) => {
     if (!centreId || !sb()) return { success: false, error: "Not initialized" };
-    const { error } = await sb()!.from('hmis_dialysis_patients').insert({ centre_id: centreId, ...data });
+    const { error } = await sb().from('hmis_dialysis_patients').insert({ centre_id: centreId, ...data });
     if (!error) load();
     return { success: !error, error: error?.message };
   }, [centreId, load]);
 
   const updateProfile = useCallback(async (id: string, updates: any) => {
     if (!sb()) return;
-    await sb()!.from('hmis_dialysis_patients').update({ ...updates, updated_at: new Date().toISOString() }).eq('id', id);
+    await sb().from('hmis_dialysis_patients').update({ ...updates, updated_at: new Date().toISOString() }).eq('id', id);
     load();
   }, [load]);
 

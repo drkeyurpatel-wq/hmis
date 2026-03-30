@@ -70,7 +70,7 @@ export default function CentreOnboarding({ onComplete }: { onComplete?: (centreI
 
     try {
       // 1. Create centre
-      const { data: centre, error: cErr } = await sb()!.from('hmis_centres').insert({
+      const { data: centre, error: cErr } = await sb().from('hmis_centres').insert({
         name: cf.name, short_name: cf.short_name || cf.name.substring(0, 10),
         code: cf.code || cf.name.substring(0, 3).toUpperCase(),
         entity_type: cf.entity_type,
@@ -85,20 +85,20 @@ export default function CentreOnboarding({ onComplete }: { onComplete?: (centreI
 
       // 2. Create departments
       if (depts.length > 0) {
-        await sb()!.from('hmis_departments').insert(
+        await sb().from('hmis_departments').insert(
           depts.map(d => ({ centre_id: cid, name: d.name, type: d.type, is_active: true }))
         );
       }
 
       // 3. Create wards, rooms, beds
       for (const w of wards) {
-        const { data: ward } = await sb()!.from('hmis_wards').insert({
+        const { data: ward } = await sb().from('hmis_wards').insert({
           centre_id: cid, name: w.name, ward_type: w.type, is_active: true,
         }).select('id').single();
         if (!ward) continue;
 
         for (let r = 1; r <= w.rooms; r++) {
-          const { data: room } = await sb()!.from('hmis_rooms').insert({
+          const { data: room } = await sb().from('hmis_rooms').insert({
             ward_id: ward.id, room_number: `${w.name.substring(0, 2).toUpperCase()}-${String(r).padStart(2, '0')}`,
             room_type: w.type, is_active: true,
           }).select('id').single();
@@ -109,7 +109,7 @@ export default function CentreOnboarding({ onComplete }: { onComplete?: (centreI
             bed_type: w.type, status: 'available', is_active: true,
             rate_per_day: w.rate_per_day,
           }));
-          await sb()!.from('hmis_beds').insert(beds);
+          await sb().from('hmis_beds').insert(beds);
         }
       }
 
@@ -117,12 +117,12 @@ export default function CentreOnboarding({ onComplete }: { onComplete?: (centreI
       for (const s of staffList) {
         if (!s.full_name || !s.email) continue;
         // Create auth user
-        const { data: authUser } = await sb()!.auth.admin.createUser({
+        const { data: authUser } = await sb().auth.admin.createUser({
           email: s.email, password: crypto.randomUUID().slice(0, 12) + 'A1!', email_confirm: true,
           user_metadata: { full_name: s.full_name },
         });
 
-        await sb()!.from('hmis_staff').insert({
+        await sb().from('hmis_staff').insert({
           auth_user_id: authUser?.user?.id || null,
           full_name: s.full_name, staff_type: s.staff_type, designation: s.designation,
           phone: s.phone, email: s.email, is_active: true,
@@ -130,7 +130,7 @@ export default function CentreOnboarding({ onComplete }: { onComplete?: (centreI
       }
 
       // 5. Create default billing sequences
-      await sb()!.from('hmis_sequences').insert([
+      await sb().from('hmis_sequences').insert([
         { centre_id: cid, sequence_type: 'bill', prefix: billing.bill_prefix, current_value: 0 },
         { centre_id: cid, sequence_type: 'receipt', prefix: 'RCP', current_value: 0 },
         { centre_id: cid, sequence_type: 'uhid', prefix: 'UH', current_value: 0 },
@@ -138,7 +138,7 @@ export default function CentreOnboarding({ onComplete }: { onComplete?: (centreI
       ]);
 
       // 6. Create default tariff entries
-      await sb()!.from('hmis_settings').insert([
+      await sb().from('hmis_settings').insert([
         { centre_id: cid, key: 'billing_currency', value: billing.currency },
         { centre_id: cid, key: 'billing_tax_type', value: billing.tax_type },
         { centre_id: cid, key: 'billing_tax_rate', value: billing.tax_rate },

@@ -42,19 +42,20 @@ function CathLabInner() {
 
   useEffect(() => {
     if (!sb() || !centreId) return;
-    sb()!.from('hmis_staff').select('id, full_name, specialisation').eq('staff_type', 'doctor').eq('is_active', true).order('full_name').then(({ data }: any) => setDoctors(data || []));
+    sb().from('hmis_staff').select('id, full_name, specialisation').eq('staff_type', 'doctor').eq('is_active', true).order('full_name').then(({ data }: any) => setDoctors(data || []));
   }, [centreId]);
 
   useEffect(() => {
     if (patSearch.length < 2 || !sb()) { setPatResults([]); return; }
     const t = setTimeout(async () => {
-      const { data } = await sb()!.from('hmis_patients').select('id, uhid, first_name, last_name, age_years, gender')
+      const { data } = await sb().from('hmis_patients').select('id, uhid, first_name, last_name, age_years, gender')
         .or(`uhid.ilike.%${patSearch}%,first_name.ilike.%${patSearch}%,last_name.ilike.%${patSearch}%`).limit(8);
       setPatResults(data || []);
     }, 300);
     return () => clearTimeout(t);
   }, [patSearch]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { cath.load(date); }, [date]);
 
   // Schedule form
@@ -107,6 +108,7 @@ function CathLabInner() {
   // Inventory form
   const [invForm, setInvForm] = useState({ item_type: 'des', brand: '', model: '', size: '', serial_number: '', lot_number: '', expiry_date: '', cost_price: '', mrp: '', vendor: '' });
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const cardiologists = useMemo(() => doctors.filter(d => d.specialisation?.toLowerCase().includes('cardio')), [doctors]);
 
   return (

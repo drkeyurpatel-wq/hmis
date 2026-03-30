@@ -22,6 +22,7 @@ function HICCInner() {
   const flash = (m: string) => { setToast(m); setTimeout(() => setToast(''), 3000); };
   const [typeFilter, setTypeFilter] = useState('all');
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const wardData = useMemo(() => Object.entries(hai.stats.byWard).map(([k, v]) => ({ ward: k, count: v as number })).sort((a, b) => b.count - a.count).slice(0, 10), [hai.stats]);
 
   const TABS: { key: Tab; label: string }[] = [

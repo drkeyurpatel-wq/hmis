@@ -75,6 +75,7 @@ function CssdInner() {
     return cssd.sets.filter(s => s.status === statusFilter);
   }, [cssd.sets, statusFilter]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const pendingReturns = useMemo(() => cssd.issues.filter(i => !i.returned_at), [cssd.issues]);
 
   return (

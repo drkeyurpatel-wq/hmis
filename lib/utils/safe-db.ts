@@ -41,7 +41,7 @@ export async function safeMutation<T>(
   // Log to audit trail if mutation succeeded and audit info provided
   if (result.ok && audit && sb()) {
     try {
-      await sb()!.from('hmis_audit_trail').insert({
+      await sb().from('hmis_audit_trail').insert({
         centre_id: audit.centreId,
         staff_id: audit.staffId,
         action: audit.action,
@@ -82,30 +82,30 @@ function friendlyError(msg: string): string {
 // Audit trail helpers for common actions
 export function auditCreate(centreId: string, staffId: string, entityType: string, entityId: string, details?: string) {
   if (!sb()) return;
-  sb()!.from('hmis_audit_trail').insert({ centre_id: centreId, staff_id: staffId, action: 'create', entity_type: entityType, entity_id: entityId, details, created_at: new Date().toISOString() }).then(() => {});
+  sb().from('hmis_audit_trail').insert({ centre_id: centreId, staff_id: staffId, action: 'create', entity_type: entityType, entity_id: entityId, details, created_at: new Date().toISOString() }).then(() => {});
 }
 
 export function auditUpdate(centreId: string, staffId: string, entityType: string, entityId: string, details?: string) {
   if (!sb()) return;
-  sb()!.from('hmis_audit_trail').insert({ centre_id: centreId, staff_id: staffId, action: 'update', entity_type: entityType, entity_id: entityId, details, created_at: new Date().toISOString() }).then(() => {});
+  sb().from('hmis_audit_trail').insert({ centre_id: centreId, staff_id: staffId, action: 'update', entity_type: entityType, entity_id: entityId, details, created_at: new Date().toISOString() }).then(() => {});
 }
 
 export function auditDelete(centreId: string, staffId: string, entityType: string, entityId: string, details?: string) {
   if (!sb()) return;
-  sb()!.from('hmis_audit_trail').insert({ centre_id: centreId, staff_id: staffId, action: 'delete', entity_type: entityType, entity_id: entityId, details, created_at: new Date().toISOString() }).then(() => {});
+  sb().from('hmis_audit_trail').insert({ centre_id: centreId, staff_id: staffId, action: 'delete', entity_type: entityType, entity_id: entityId, details, created_at: new Date().toISOString() }).then(() => {});
 }
 
 export function auditView(centreId: string, staffId: string, entityType: string, entityId: string) {
   if (!sb()) return;
-  sb()!.from('hmis_audit_trail').insert({ centre_id: centreId, staff_id: staffId, action: 'view', entity_type: entityType, entity_id: entityId, created_at: new Date().toISOString() }).then(() => {});
+  sb().from('hmis_audit_trail').insert({ centre_id: centreId, staff_id: staffId, action: 'view', entity_type: entityType, entity_id: entityId, created_at: new Date().toISOString() }).then(() => {});
 }
 
 export function auditPrint(centreId: string, staffId: string, entityType: string, entityId: string, details?: string) {
   if (!sb()) return;
-  sb()!.from('hmis_audit_trail').insert({ centre_id: centreId, staff_id: staffId, action: 'print', entity_type: entityType, entity_id: entityId, details, created_at: new Date().toISOString() }).then(() => {});
+  sb().from('hmis_audit_trail').insert({ centre_id: centreId, staff_id: staffId, action: 'print', entity_type: entityType, entity_id: entityId, details, created_at: new Date().toISOString() }).then(() => {});
 }
 
 export function auditExport(centreId: string, staffId: string, entityType: string, entityId: string, details?: string) {
   if (!sb()) return;
-  sb()!.from('hmis_audit_trail').insert({ centre_id: centreId, staff_id: staffId, action: 'export', entity_type: entityType, entity_id: entityId, details, created_at: new Date().toISOString() }).then(() => {});
+  sb().from('hmis_audit_trail').insert({ centre_id: centreId, staff_id: staffId, action: 'export', entity_type: entityType, entity_id: entityId, details, created_at: new Date().toISOString() }).then(() => {});
 }

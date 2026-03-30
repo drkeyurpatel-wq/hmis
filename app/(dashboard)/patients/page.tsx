@@ -62,13 +62,13 @@ export default function PatientsPage() {
     const monthStart = today.substring(0, 8) + '01';
 
     const [totalRes, todayRes, monthRes, admRes] = await Promise.all([
-      sb()!.from('hmis_patients').select('id', { count: 'exact', head: true }),
-      sb()!.from('hmis_patients').select('id', { count: 'exact', head: true }).gte('created_at', today),
-      sb()!.from('hmis_patients').select('id', { count: 'exact', head: true }).gte('created_at', monthStart),
-      sb()!.from('hmis_admissions').select('id', { count: 'exact', head: true }).eq('status', 'admitted'),
+      sb().from('hmis_patients').select('id', { count: 'exact', head: true }),
+      sb().from('hmis_patients').select('id', { count: 'exact', head: true }).gte('created_at', today),
+      sb().from('hmis_patients').select('id', { count: 'exact', head: true }).gte('created_at', monthStart),
+      sb().from('hmis_admissions').select('id', { count: 'exact', head: true }).eq('status', 'admitted'),
     ]);
 
-    const { data: ages } = await sb()!.from('hmis_patients').select('age_years').not('age_years', 'is', null).limit(500);
+    const { data: ages } = await sb().from('hmis_patients').select('age_years').not('age_years', 'is', null).limit(500);
     const avgAge = ages?.length ? Math.round(ages.reduce((s: number, p: any) => s + (p.age_years || 0), 0) / ages.length) : 0;
 
     setStats({
@@ -85,7 +85,7 @@ export default function PatientsPage() {
     if (!activeCentreId || !sb()) return;
     setLoading(true);
 
-    let query = sb()!.from('hmis_patients').select('*').order('created_at', { ascending: false }).limit(100);
+    let query = sb().from('hmis_patients').select('*').order('created_at', { ascending: false }).limit(100);
 
     if (filterActive === 'active') query = query.eq('is_active', true);
     else if (filterActive === 'inactive') query = query.eq('is_active', false);
@@ -107,10 +107,10 @@ export default function PatientsPage() {
 
     // Enrich with visit counts, billing, admission status
     const [visitRes, billRes, admRes, insRes] = await Promise.all([
-      sb()!.from('hmis_emr_encounters').select('patient_id, encounter_date').in('patient_id', ids).order('encounter_date', { ascending: false }),
-      sb()!.from('hmis_bills').select('patient_id, total_amount, paid_amount').in('patient_id', ids),
-      sb()!.from('hmis_admissions').select('patient_id').in('patient_id', ids).eq('status', 'admitted'),
-      sb()!.from('hmis_patient_insurance').select('patient_id').in('patient_id', ids).eq('status', 'active'),
+      sb().from('hmis_emr_encounters').select('patient_id, encounter_date').in('patient_id', ids).order('encounter_date', { ascending: false }),
+      sb().from('hmis_bills').select('patient_id, total_amount, paid_amount').in('patient_id', ids),
+      sb().from('hmis_admissions').select('patient_id').in('patient_id', ids).eq('status', 'admitted'),
+      sb().from('hmis_patient_insurance').select('patient_id').in('patient_id', ids).eq('status', 'active'),
     ]);
 
     const visitMap = new Map<string, { count: number; last: string }>();
@@ -168,8 +168,11 @@ export default function PatientsPage() {
     setDuplicates(Array.from(phoneMap.entries()).filter(([, v]) => v.length > 1).map(([k, v]) => ({ phone: k, patients: v })));
   }, [patients]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { const t = setTimeout(loadPatients, 300); return () => clearTimeout(t); }, [loadPatients]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { loadStats(); }, [loadStats]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { detectDuplicates(); }, [detectDuplicates]);
 
   const toggleSelect = (id: string) => setSelected(prev => {
@@ -212,10 +215,10 @@ export default function PatientsPage() {
       { table: 'hmis_charge_log', field: 'patient_id' },
     ];
     for (const t of tables) {
-      await sb()!.from(t.table).update({ [t.field]: keepId }).eq(t.field, mergeId);
+      await sb().from(t.table).update({ [t.field]: keepId }).eq(t.field, mergeId);
     }
     // Deactivate merged patient
-    await sb()!.from('hmis_patients').update({ is_active: false }).eq('id', mergeId);
+    await sb().from('hmis_patients').update({ is_active: false }).eq('id', mergeId);
     setMerging(false);
     flash('Patients merged successfully');
     loadPatients();

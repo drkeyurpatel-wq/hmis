@@ -45,7 +45,7 @@ export function useDutyRoster(centreId: string | null) {
   // Load shift definitions
   const loadShifts = useCallback(async () => {
     if (!centreId || !sb()) return;
-    const { data } = await sb()!.from('hmis_shift_definitions')
+    const { data } = await sb().from('hmis_shift_definitions')
       .select('*').eq('centre_id', centreId).eq('is_active', true).order('start_time');
     setShifts(data || []);
   }, [centreId]);
@@ -53,7 +53,7 @@ export function useDutyRoster(centreId: string | null) {
   // Load staffing requirements
   const loadRequirements = useCallback(async () => {
     if (!centreId || !sb()) return;
-    const { data } = await sb()!.from('hmis_staffing_requirements')
+    const { data } = await sb().from('hmis_staffing_requirements')
       .select('*, ward:hmis_wards!hmis_staffing_requirements_ward_id_fkey(name), shift:hmis_shift_definitions!hmis_staffing_requirements_shift_id_fkey(shift_name, shift_code)')
       .eq('centre_id', centreId).eq('is_active', true);
     setRequirements((data || []) as StaffingReq[]);
@@ -63,7 +63,7 @@ export function useDutyRoster(centreId: string | null) {
   const loadRoster = useCallback(async (dateFrom: string, dateTo: string) => {
     if (!centreId || !sb()) return;
     setLoading(true);
-    const { data } = await sb()!.from('hmis_duty_roster')
+    const { data } = await sb().from('hmis_duty_roster')
       .select('*, staff:hmis_staff!hmis_duty_roster_staff_id_fkey(full_name, staff_type, designation), ward:hmis_wards!hmis_duty_roster_ward_id_fkey(name), shift:hmis_shift_definitions!hmis_duty_roster_shift_id_fkey(shift_name, shift_code, color)')
       .eq('centre_id', centreId)
       .gte('roster_date', dateFrom)
@@ -77,7 +77,7 @@ export function useDutyRoster(centreId: string | null) {
   // Load swap requests
   const loadSwaps = useCallback(async () => {
     if (!centreId || !sb()) return;
-    const { data } = await sb()!.from('hmis_duty_swap_requests')
+    const { data } = await sb().from('hmis_duty_swap_requests')
       .select('*, requester:hmis_staff!hmis_duty_swap_requests_requester_id_fkey(full_name), target:hmis_staff!hmis_duty_swap_requests_target_id_fkey(full_name), approver:hmis_staff!hmis_duty_swap_requests_approved_by_fkey(full_name)')
       .eq('centre_id', centreId)
       .eq('status', 'pending')
@@ -91,7 +91,7 @@ export function useDutyRoster(centreId: string | null) {
     roster_date: string; shift_type: string; created_by: string; notes?: string;
   }) => {
     if (!centreId || !sb()) return;
-    await sb()!.from('hmis_duty_roster').upsert({
+    await sb().from('hmis_duty_roster').upsert({
       centre_id: centreId,
       staff_id: input.staff_id,
       ward_id: input.ward_id,
@@ -115,7 +115,7 @@ export function useDutyRoster(centreId: string | null) {
     // Check leaves
     const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
     const endDate = `${year}-${String(month).padStart(2, '0')}-${daysInMonth}`;
-    const { data: leaves } = await sb()!.from('hmis_doctor_leaves')
+    const { data: leaves } = await sb().from('hmis_doctor_leaves')
       .select('doctor_id, leave_date')
       .gte('leave_date', startDate)
       .lte('leave_date', endDate);
@@ -143,7 +143,7 @@ export function useDutyRoster(centreId: string | null) {
     }
     // Upsert in batches of 100
     for (let i = 0; i < rows.length; i += 100) {
-      await sb()!.from('hmis_duty_roster').upsert(rows.slice(i, i + 100), { onConflict: 'staff_id,roster_date' });
+      await sb().from('hmis_duty_roster').upsert(rows.slice(i, i + 100), { onConflict: 'staff_id,roster_date' });
     }
   }, [centreId, shifts]);
 
@@ -200,36 +200,37 @@ export function useDutyRoster(centreId: string | null) {
     swap_date: string; reason?: string;
   }) => {
     if (!centreId || !sb()) return;
-    await sb()!.from('hmis_duty_swap_requests').insert({ centre_id: centreId, ...input });
+    await sb().from('hmis_duty_swap_requests').insert({ centre_id: centreId, ...input });
   }, [centreId]);
 
   const approveSwap = useCallback(async (swapId: string, approverId: string) => {
     if (!sb()) return;
-    const { data: swap } = await sb()!.from('hmis_duty_swap_requests').select('*').eq('id', swapId).single();
+    const { data: swap } = await sb().from('hmis_duty_swap_requests').select('*').eq('id', swapId).single();
     if (!swap) return;
     // Swap the shift assignments
-    const { data: r1 } = await sb()!.from('hmis_duty_roster').select('ward_id, shift_id, shift_type').eq('id', swap.roster_id_requester).single();
-    const { data: r2 } = await sb()!.from('hmis_duty_roster').select('ward_id, shift_id, shift_type').eq('id', swap.roster_id_target).single();
+    const { data: r1 } = await sb().from('hmis_duty_roster').select('ward_id, shift_id, shift_type').eq('id', swap.roster_id_requester).single();
+    const { data: r2 } = await sb().from('hmis_duty_roster').select('ward_id, shift_id, shift_type').eq('id', swap.roster_id_target).single();
     if (r1 && r2) {
-      await sb()!.from('hmis_duty_roster').update({ ward_id: r2.ward_id, shift_id: r2.shift_id, shift_type: r2.shift_type, updated_at: new Date().toISOString() }).eq('id', swap.roster_id_requester);
-      await sb()!.from('hmis_duty_roster').update({ ward_id: r1.ward_id, shift_id: r1.shift_id, shift_type: r1.shift_type, updated_at: new Date().toISOString() }).eq('id', swap.roster_id_target);
+      await sb().from('hmis_duty_roster').update({ ward_id: r2.ward_id, shift_id: r2.shift_id, shift_type: r2.shift_type, updated_at: new Date().toISOString() }).eq('id', swap.roster_id_requester);
+      await sb().from('hmis_duty_roster').update({ ward_id: r1.ward_id, shift_id: r1.shift_id, shift_type: r1.shift_type, updated_at: new Date().toISOString() }).eq('id', swap.roster_id_target);
     }
-    await sb()!.from('hmis_duty_swap_requests').update({ status: 'approved', approved_by: approverId, approved_at: new Date().toISOString() }).eq('id', swapId);
+    await sb().from('hmis_duty_swap_requests').update({ status: 'approved', approved_by: approverId, approved_at: new Date().toISOString() }).eq('id', swapId);
   }, []);
 
   const rejectSwap = useCallback(async (swapId: string, approverId: string) => {
     if (!sb()) return;
-    await sb()!.from('hmis_duty_swap_requests').update({ status: 'rejected', approved_by: approverId, approved_at: new Date().toISOString() }).eq('id', swapId);
+    await sb().from('hmis_duty_swap_requests').update({ status: 'rejected', approved_by: approverId, approved_at: new Date().toISOString() }).eq('id', swapId);
   }, []);
 
   // Save staffing requirement
   const saveRequirement = useCallback(async (input: { ward_id: string; shift_id: string; staff_type: string; min_count: number }) => {
     if (!centreId || !sb()) return;
-    await sb()!.from('hmis_staffing_requirements').upsert({
+    await sb().from('hmis_staffing_requirements').upsert({
       centre_id: centreId, ...input, is_active: true,
     }, { onConflict: 'ward_id,shift_id,staff_type' });
   }, [centreId]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { loadShifts(); loadRequirements(); loadSwaps(); }, [loadShifts, loadRequirements, loadSwaps]);
 
   return {

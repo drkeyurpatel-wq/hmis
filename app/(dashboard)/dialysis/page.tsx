@@ -38,7 +38,7 @@ function DialysisInner() {
 
   useEffect(() => {
     if (!sb() || !centreId) return;
-    sb()!.from('hmis_staff').select('id, full_name, staff_type, specialisation').eq('is_active', true)
+    sb().from('hmis_staff').select('id, full_name, staff_type, specialisation').eq('is_active', true)
       .then(({ data }: any) => {
         setDoctors((data || []).filter((s: any) => s.staff_type === 'doctor'));
         setTechs((data || []).filter((s: any) => ['technician', 'nurse'].includes(s.staff_type)));
@@ -48,13 +48,14 @@ function DialysisInner() {
   useEffect(() => {
     if (patSearch.length < 2 || !sb()) { setPatResults([]); return; }
     const t = setTimeout(async () => {
-      const { data } = await sb()!.from('hmis_patients').select('id, uhid, first_name, last_name, age_years, gender')
+      const { data } = await sb().from('hmis_patients').select('id, uhid, first_name, last_name, age_years, gender')
         .or(`uhid.ilike.%${patSearch}%,first_name.ilike.%${patSearch}%,last_name.ilike.%${patSearch}%`).limit(8);
       setPatResults(data || []);
     }, 300);
     return () => clearTimeout(t);
   }, [patSearch]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { dial.load(date); }, [date]);
 
   // Schedule form

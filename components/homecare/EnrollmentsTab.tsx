@@ -23,7 +23,7 @@ export default function EnrollmentsTab({ enrollments, enroll, updateStatus, staf
   useEffect(() => {
     if (patSearch.length < 2 || !sb()) { setPatResults([]); return; }
     const t = setTimeout(async () => {
-      const { data } = await sb()!.from('hmis_patients').select('id, uhid, first_name, last_name, age_years, gender, phone_primary')
+      const { data } = await sb().from('hmis_patients').select('id, uhid, first_name, last_name, age_years, gender, phone_primary')
         .or(`uhid.ilike.%${patSearch}%,first_name.ilike.%${patSearch}%,phone_primary.ilike.%${patSearch}%`).eq('is_active', true).limit(5);
       setPatResults(data || []);
     }, 300);

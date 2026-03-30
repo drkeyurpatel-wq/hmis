@@ -1,11 +1,11 @@
 // lib/supabase/browser.ts
-// Shared browser-side Supabase singleton — replaces the per-module _sb / sb() pattern.
+// Shared browser-side Supabase singleton.
 //
 // Usage:
 //   import { sb } from '@/lib/supabase/browser';
-//   const { data } = await sb()!.from('table').select('*');
+//   const { data } = await sb().from('table').select('*');
 //
-// Safe during SSR/build: returns null when running server-side or if env vars are missing.
+// Never returns null — throws if client can't be created (caught by error boundary).
 
 import { createClient } from '@/lib/supabase/client';
 
@@ -15,16 +15,14 @@ let _instance: BrowserClient | null = null;
 
 /**
  * Returns a lazily-initialized browser Supabase client.
- * Returns null during SSR or when env vars are missing.
+ * Throws if called server-side or if env vars are missing.
  */
-export function sb(): BrowserClient | null {
-  if (typeof window === 'undefined') return null;
+export function sb(): BrowserClient {
+  if (typeof window === 'undefined') {
+    throw new Error('sb() called server-side — use createServerClient instead');
+  }
   if (!_instance) {
-    try {
-      _instance = createClient();
-    } catch {
-      return null;
-    }
+    _instance = createClient();
   }
   return _instance;
 }

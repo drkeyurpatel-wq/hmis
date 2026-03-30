@@ -53,7 +53,7 @@ export function useCommandCentre() {
   // Fetch centres list once
   useEffect(() => {
     if (!sb()) return;
-    sb()!.from('hmis_centres').select('id, name, code').eq('is_active', true).order('name')
+    sb().from('hmis_centres').select('id, name, code').eq('is_active', true).order('name')
       .then(({ data }: any) => setCentreList(data || []));
   }, []);
 
@@ -85,47 +85,47 @@ export function useCommandCentre() {
     // Try RPCs first, fall back to direct queries
     const [bedResult, opsResult, revResult, insResult] = await Promise.allSettled([
       // 1. Beds — try RPC, fallback to direct
-      Promise.resolve(sb()!.rpc('get_bed_census').then(({ data, error }: any) => {
+      Promise.resolve(sb().rpc('get_bed_census').then(({ data, error }: any) => {
         if (error) throw error;
         return data;
       })).catch(async () => {
         // Fallback: single query, group client-side
-        const { data } = await sb()!.from('hmis_beds')
+        const { data } = await sb().from('hmis_beds')
           .select('id, status, room:hmis_rooms!inner(ward:hmis_wards!inner(centre_id, type))');
         return data || [];
       }),
 
       // 2. Daily ops — try RPC, fallback to 3 parallel direct queries
-      Promise.resolve(sb()!.rpc('get_daily_ops_summary', { p_date: today }).then(({ data, error }: any) => {
+      Promise.resolve(sb().rpc('get_daily_ops_summary', { p_date: today }).then(({ data, error }: any) => {
         if (error) throw error;
         return { type: 'rpc', data };
       })).catch(async () => {
         const [opd, ipd, ot, lab] = await Promise.all([
-          sb()!.from('hmis_opd_visits').select('centre_id, status').gte('visit_date', today),
-          sb()!.from('hmis_admissions').select('centre_id, status, admission_date, actual_discharge'),
-          sb()!.from('hmis_ot_bookings').select('ot_room_id, status, is_emergency, is_robotic, ot_room:hmis_ot_rooms!inner(centre_id)').eq('scheduled_date', today),
-          sb()!.from('hmis_lab_orders').select('centre_id, status').gte('created_at', today + 'T00:00:00').in('status', ['ordered', 'collected', 'processing']),
+          sb().from('hmis_opd_visits').select('centre_id, status').gte('visit_date', today),
+          sb().from('hmis_admissions').select('centre_id, status, admission_date, actual_discharge'),
+          sb().from('hmis_ot_bookings').select('ot_room_id, status, is_emergency, is_robotic, ot_room:hmis_ot_rooms!inner(centre_id)').eq('scheduled_date', today),
+          sb().from('hmis_lab_orders').select('centre_id, status').gte('created_at', today + 'T00:00:00').in('status', ['ordered', 'collected', 'processing']),
         ]);
         return { type: 'fallback', opd: opd.data || [], ipd: ipd.data || [], ot: ot.data || [], lab: lab.data || [] };
       }),
 
       // 3. Revenue — try RPC, fallback to direct
-      Promise.resolve(sb()!.rpc('get_revenue_summary', { p_date: today }).then(({ data, error }: any) => {
+      Promise.resolve(sb().rpc('get_revenue_summary', { p_date: today }).then(({ data, error }: any) => {
         if (error) throw error;
         return { type: 'rpc', data };
       })).catch(async () => {
-        const { data } = await sb()!.from('hmis_bills')
+        const { data } = await sb().from('hmis_bills')
           .select('centre_id, gross_amount, net_amount, paid_amount, balance_amount, discount_amount, payor_type, status')
           .eq('bill_date', today).neq('status', 'cancelled');
         return { type: 'fallback', data: data || [] };
       }),
 
       // 4. Insurance pipeline — try RPC, fallback to direct
-      Promise.resolve(sb()!.rpc('get_insurance_pipeline').then(({ data, error }: any) => {
+      Promise.resolve(sb().rpc('get_insurance_pipeline').then(({ data, error }: any) => {
         if (error) throw error;
         return { type: 'rpc', data };
       })).catch(async () => {
-        const { data } = await sb()!.from('hmis_claims')
+        const { data } = await sb().from('hmis_claims')
           .select('centre_id, status, claimed_amount, approved_amount, settled_amount')
           .not('status', 'in', '(cancelled)');
         return { type: 'fallback', data: data || [] };
@@ -284,6 +284,7 @@ export function useCommandCentre() {
     loadingRef.current = false;
   }, [centreList]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { if (centreList.length) load(); }, [centreList, load]);
 
   // Auto-refresh every 3 minutes

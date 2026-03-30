@@ -50,7 +50,7 @@ export function usePatientJourney(patientId: string | null) {
 
     try {
       // 1. OPD Visits
-      const { data: opd } = await sb()!.from('hmis_opd_visits')
+      const { data: opd } = await sb().from('hmis_opd_visits')
         .select('id, token_number, chief_complaint, status, check_in_time, consultation_end, doctor:hmis_staff!hmis_opd_visits_doctor_id_fkey(full_name)')
         .eq('patient_id', patientId).order('check_in_time', { ascending: true }).limit(20);
 
@@ -63,7 +63,7 @@ export function usePatientJourney(patientId: string | null) {
       }
 
       // 2. EMR Encounters — diagnosis comes from JSONB, not separate column
-      const { data: emrs } = await sb()!.from('hmis_emr_encounters')
+      const { data: emrs } = await sb().from('hmis_emr_encounters')
         .select('id, encounter_date, status, primary_diagnosis_label, prescription_count, investigation_count, doctor:hmis_staff!hmis_emr_encounters_doctor_id_fkey(full_name)')
         .eq('patient_id', patientId).order('encounter_date', { ascending: true }).limit(20);
 
@@ -75,7 +75,7 @@ export function usePatientJourney(patientId: string | null) {
       }
 
       // 3. Lab Orders + Results
-      const { data: labs } = await sb()!.from('hmis_lab_orders')
+      const { data: labs } = await sb().from('hmis_lab_orders')
         .select('id, test_name, status, created_at, reported_at, doctor:hmis_staff!hmis_lab_orders_ordered_by_fkey(full_name)')
         .eq('patient_id', patientId).order('created_at', { ascending: true }).limit(30);
 
@@ -86,7 +86,7 @@ export function usePatientJourney(patientId: string | null) {
 
         if (lab.status === 'completed') {
           // Check for critical results
-          const { data: results } = await sb()!.from('hmis_lab_results')
+          const { data: results } = await sb().from('hmis_lab_results')
             .select('parameter_name, result_value, is_critical, is_abnormal')
             .eq('lab_order_id', lab.id).limit(10);
 
@@ -105,7 +105,7 @@ export function usePatientJourney(patientId: string | null) {
       }
 
       // 4. Radiology Orders (no findings/impression on order — just status)
-      const { data: rads } = await sb()!.from('hmis_radiology_orders')
+      const { data: rads } = await sb().from('hmis_radiology_orders')
         .select('id, test_name, status, modality, body_part, created_at, doctor:hmis_staff!hmis_radiology_orders_ordered_by_fkey(full_name)')
         .eq('patient_id', patientId).order('created_at', { ascending: true }).limit(20);
 
@@ -116,7 +116,7 @@ export function usePatientJourney(patientId: string | null) {
       }
 
       // 5. Admissions (discharge_date is actual_discharge in schema)
-      const { data: adms } = await sb()!.from('hmis_admissions')
+      const { data: adms } = await sb().from('hmis_admissions')
         .select('id, ipd_number, admission_date, actual_discharge, status, provisional_diagnosis, payor_type, doctor:hmis_staff!hmis_admissions_primary_doctor_id_fkey(full_name)')
         .eq('patient_id', patientId).order('admission_date', { ascending: true }).limit(10);
 
@@ -133,7 +133,7 @@ export function usePatientJourney(patientId: string | null) {
 
       // 6. Doctor Rounds (join through admission — no centre_id on rounds)
       if (admissionId) {
-        const { data: rounds } = await sb()!.from('hmis_doctor_rounds')
+        const { data: rounds } = await sb().from('hmis_doctor_rounds')
           .select('id, round_date, round_type, plan, doctor:hmis_staff!hmis_doctor_rounds_doctor_id_fkey(full_name)')
           .eq('admission_id', admissionId).order('round_date', { ascending: true }).limit(30);
 
@@ -146,7 +146,7 @@ export function usePatientJourney(patientId: string | null) {
 
       // 7. Vitals (for admitted patients — significant clinical data)
       if (admissionId) {
-        const { data: vitals } = await sb()!.from('hmis_vitals')
+        const { data: vitals } = await sb().from('hmis_vitals')
           .select('id, recorded_at, pulse, bp_systolic, bp_diastolic, temperature, spo2, resp_rate, recorder:hmis_staff!hmis_vitals_recorded_by_fkey(full_name)')
           .eq('patient_id', patientId)
           .order('recorded_at', { ascending: true }).limit(50);
@@ -172,7 +172,7 @@ export function usePatientJourney(patientId: string | null) {
 
       // 8. MAR — medications actually given
       if (admissionId) {
-        const { data: marRecords } = await sb()!.from('hmis_mar')
+        const { data: marRecords } = await sb().from('hmis_mar')
           .select('id, scheduled_time, administered_time, status, dose_given, medication_order:hmis_ipd_medication_orders!inner(drug_name, dose, route), nurse:hmis_staff!hmis_mar_administered_by_fkey(full_name)')
           .eq('admission_id', admissionId)
           .eq('status', 'given')
@@ -190,7 +190,7 @@ export function usePatientJourney(patientId: string | null) {
 
       // 9. Nursing Notes
       if (admissionId) {
-        const { data: notes } = await sb()!.from('hmis_nursing_notes')
+        const { data: notes } = await sb().from('hmis_nursing_notes')
           .select('id, note, shift, created_at, nurse:hmis_staff!hmis_nursing_notes_nurse_id_fkey(full_name)')
           .eq('admission_id', admissionId)
           .order('created_at', { ascending: true }).limit(30);
@@ -204,7 +204,7 @@ export function usePatientJourney(patientId: string | null) {
       }
 
       // 10. Bills
-      const { data: bills } = await sb()!.from('hmis_bills')
+      const { data: bills } = await sb().from('hmis_bills')
         .select('id, bill_number, bill_date, net_amount, status, created_at')
         .eq('patient_id', patientId).order('bill_date', { ascending: true }).limit(10);
 

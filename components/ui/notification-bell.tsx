@@ -46,13 +46,13 @@ export function NotificationBell() {
 
     try {
       const [labReady, rxPending, erActive, opdWaiting] = await Promise.all([
-        sb()!.from('hmis_lab_orders').select('id, test_name, patient:hmis_patients!inner(first_name, last_name), created_at')
+        sb().from('hmis_lab_orders').select('id, test_name, patient:hmis_patients!inner(first_name, last_name), created_at')
           .eq('centre_id', centreId).eq('status', 'completed').gte('created_at', ts).order('created_at', { ascending: false }).limit(5),
-        sb()!.from('hmis_pharmacy_dispensing').select('id, created_at, patient:hmis_patients!inner(first_name, last_name)')
+        sb().from('hmis_pharmacy_dispensing').select('id, created_at, patient:hmis_patients!inner(first_name, last_name)')
           .eq('centre_id', centreId).eq('status', 'pending').limit(5),
-        sb()!.from('hmis_er_visits').select('id, triage_category, patient:hmis_patients!inner(first_name, last_name), arrival_time')
+        sb().from('hmis_er_visits').select('id, triage_category, patient:hmis_patients!inner(first_name, last_name), arrival_time')
           .eq('centre_id', centreId).in('status', ['triaged', 'being_seen']).gte('arrival_time', ts).limit(5),
-        sb()!.from('hmis_opd_visits').select('id, token_number, created_at, patient:hmis_patients!inner(first_name, last_name)')
+        sb().from('hmis_opd_visits').select('id, token_number, created_at, patient:hmis_patients!inner(first_name, last_name)')
           .eq('centre_id', centreId).eq('status', 'waiting').gte('created_at', ts).limit(5),
       ]);
 
@@ -93,21 +93,24 @@ export function NotificationBell() {
     setUnread(items.filter(n => !n.read).length);
   }, [centreId]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { loadNotifications(); }, [loadNotifications]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { const t = setInterval(loadNotifications, 30000); return () => clearInterval(t); }, [loadNotifications]);
 
   // Realtime
   useEffect(() => {
     if (!centreId || !sb()) return;
-    const ch = sb()!.channel('notif-bell-' + centreId)
+    const ch = sb().channel('notif-bell-' + centreId)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'hmis_lab_orders', filter: `centre_id=eq.${centreId}` }, loadNotifications)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'hmis_er_visits', filter: `centre_id=eq.${centreId}` }, loadNotifications)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'hmis_pharmacy_dispensing', filter: `centre_id=eq.${centreId}` }, loadNotifications)
       .subscribe();
-    return () => { sb()!.removeChannel(ch); };
+    return () => { sb().removeChannel(ch); };
   }, [centreId, loadNotifications]);
 
   // Click outside
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     const handler = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); };
     document.addEventListener('mousedown', handler);

@@ -47,7 +47,7 @@ export default function OPDConsultationFlow({ visit, onDone, onFlash }: Props) {
     setSaving(true);
     const record: any = { patient_id: (visit.patient?.id || visit.patient_id), recorded_by: staff.id, recorded_at: new Date().toISOString() };
     Object.entries(vf).forEach(([k, v]) => { if (v) record[k] = parseFloat(v); });
-    await sb()!.from('hmis_vitals').insert(record);
+    await sb().from('hmis_vitals').insert(record);
     setSaving(false);
     setStep('consult');
   }, [vf, (visit.patient?.id || visit.patient_id), staff]);
@@ -56,14 +56,14 @@ export default function OPDConsultationFlow({ visit, onDone, onFlash }: Props) {
     if (!sb() || !staff) return;
     setSaving(true);
     // Save EMR encounter
-    await sb()!.from('hmis_emr_encounters').insert({
+    await sb().from('hmis_emr_encounters').insert({
       patient_id: (visit.patient?.id || visit.patient_id), doctor_id: staff.id, centre_id: activeCentreId,
       encounter_type: 'opd', chief_complaint: cf.chief_complaint, examination: cf.examination,
       assessment: cf.assessment, plan: cf.plan, encounter_date: new Date().toISOString().split('T')[0],
       opd_visit_id: visit.id,
     });
     // Update visit
-    await sb()!.from('hmis_opd_visits').update({ chief_complaint: cf.chief_complaint }).eq('id', visit.id);
+    await sb().from('hmis_opd_visits').update({ chief_complaint: cf.chief_complaint }).eq('id', visit.id);
     setSaving(false);
     setStep('rx');
   }, [cf, visit, staff, activeCentreId]);
@@ -78,7 +78,7 @@ export default function OPDConsultationFlow({ visit, onDone, onFlash }: Props) {
     if (!sb() || !staff) return;
     setSaving(true);
     if (rxLines.length > 0) {
-      await sb()!.from('hmis_prescriptions').insert(rxLines.map(rx => ({
+      await sb().from('hmis_prescriptions').insert(rxLines.map(rx => ({
         patient_id: (visit.patient?.id || visit.patient_id), prescribed_by: staff.id, centre_id: activeCentreId,
         drug_name: rx.drug, dose: rx.dose, route: rx.route, frequency: rx.frequency,
         duration: rx.duration, instructions: rx.instructions, status: 'active',
@@ -96,20 +96,20 @@ export default function OPDConsultationFlow({ visit, onDone, onFlash }: Props) {
     const validCharges = charges.filter(c => c.amount > 0);
     if (validCharges.length > 0) {
       const total = validCharges.reduce((s, c) => s + c.amount, 0);
-      const { data: billNum } = await sb()!.rpc('hmis_next_sequence', { p_centre_id: activeCentreId, p_type: 'bill' });
-      const { data: bill } = await sb()!.from('hmis_bills').insert({
+      const { data: billNum } = await sb().rpc('hmis_next_sequence', { p_centre_id: activeCentreId, p_type: 'bill' });
+      const { data: bill } = await sb().from('hmis_bills').insert({
         centre_id: activeCentreId, patient_id: (visit.patient?.id || visit.patient_id), bill_number: billNum || `B-${Date.now()}`,
         bill_type: 'opd', payor_type: 'self', gross_amount: total, net_amount: total, balance_amount: total,
         status: 'final', bill_date: new Date().toISOString().split('T')[0], created_by: staff.id,
       }).select('id').single();
       if (bill) {
-        await sb()!.from('hmis_bill_items').insert(validCharges.map(c => ({
+        await sb().from('hmis_bill_items').insert(validCharges.map(c => ({
           bill_id: bill.id, description: c.description, quantity: 1, unit_rate: c.amount, amount: c.amount, net_amount: c.amount,
         })));
       }
     }
     // Mark visit completed
-    await sb()!.from('hmis_opd_visits').update({ status: 'completed', completed_at: new Date().toISOString() }).eq('id', visit.id);
+    await sb().from('hmis_opd_visits').update({ status: 'completed', completed_at: new Date().toISOString() }).eq('id', visit.id);
     setSaving(false);
     setStep('done');
     onFlash('Consultation completed');

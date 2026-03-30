@@ -107,6 +107,7 @@ export function CommandPalette() {
     return () => document.removeEventListener('keydown', handler);
   }, []);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { if (open) setTimeout(() => inputRef.current?.focus(), 50); }, [open]);
 
   // Search patients + bills + beds + admissions + labs from DB
@@ -144,16 +145,16 @@ export function CommandPalette() {
       // Parallel DB searches
       const searchToken = query.trim();
       const [patRes, billRes, admRes, labRes] = await Promise.all([
-        sb()!.from('hmis_patients').select('id, uhid, first_name, last_name, age_years, gender, phone_primary')
+        sb().from('hmis_patients').select('id, uhid, first_name, last_name, age_years, gender, phone_primary')
           .or(`uhid.ilike.%${searchToken}%,first_name.ilike.%${searchToken}%,last_name.ilike.%${searchToken}%,phone_primary.ilike.%${searchToken}%`)
           .eq('is_active', true).limit(5),
-        sb()!.from('hmis_bills').select('id, bill_number, net_amount, patient:hmis_patients!inner(first_name, last_name)')
+        sb().from('hmis_bills').select('id, bill_number, net_amount, patient:hmis_patients!inner(first_name, last_name)')
           .or(`bill_number.ilike.%${searchToken}%`).limit(3),
-        sb()!.from('hmis_admissions').select('id, ipd_number, status, patient:hmis_patients!inner(id, first_name, last_name, uhid)')
+        sb().from('hmis_admissions').select('id, ipd_number, status, patient:hmis_patients!inner(id, first_name, last_name, uhid)')
           .or(`ipd_number.ilike.%${searchToken}%`)
           .in('status', ['active', 'discharge_initiated']).limit(3),
         // Search lab orders by patient name
-        sb()!.from('hmis_lab_orders').select('id, test_name, status, patient:hmis_patients!inner(id, first_name, last_name)')
+        sb().from('hmis_lab_orders').select('id, test_name, status, patient:hmis_patients!inner(id, first_name, last_name)')
           .eq('status', 'completed')
           .gte('created_at', new Date(Date.now() - 7 * 86400000).toISOString())
           .limit(3),

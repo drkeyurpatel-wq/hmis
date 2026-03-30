@@ -31,7 +31,7 @@ function VisitorInner() {
   React.useEffect(() => {
     if (patSearch.length < 2) { setPatResults([]); return; }
     const t = setTimeout(async () => {
-      const { data } = await sb()!.from('hmis_patients').select('id, uhid, first_name, last_name, age_years, gender')
+      const { data } = await sb().from('hmis_patients').select('id, uhid, first_name, last_name, age_years, gender')
         .or(`uhid.ilike.%${patSearch}%,first_name.ilike.%${patSearch}%`).eq('is_active', true).limit(5);
       setPatResults(data || []);
     }, 300);
@@ -44,7 +44,9 @@ function VisitorInner() {
     if (res.success) { flash('Visitor pass issued'); setShowNew(false); setSelPat(null); setForm({ visitor_name: '', visitor_phone: '', relation: 'relative', id_proof_type: 'aadhar', id_proof_number: '', pass_type: 'regular', ward: '', bed: '' }); } else { flash(res.error || 'Operation failed'); }
   };
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const activePasses = useMemo(() => vis.passes.filter(p => ['active', 'checked_in'].includes(p.status)), [vis.passes]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const historyPasses = useMemo(() => vis.passes.filter(p => ['checked_out', 'expired', 'revoked'].includes(p.status)), [vis.passes]);
 
   const filtered = useMemo(() => {

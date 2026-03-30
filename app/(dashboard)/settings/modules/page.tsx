@@ -26,12 +26,14 @@ function Inner() {
   const [toast, setToast] = useState('');
   const flash = (m: string) => { setToast(m); setTimeout(() => setToast(''), 3000); };
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!sb()) return;
-    sb()!.from('hmis_centres').select('id, name, code').eq('is_active', true).order('name')
+    sb().from('hmis_centres').select('id, name, code').eq('is_active', true).order('name')
       .then(({ data }) => setCentres(data || []));
   }, []);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { mcSelected.load(); }, [selectedCentre, mcSelected.load]);
 
   // Group modules
@@ -89,7 +91,7 @@ function Inner() {
       updated_at: new Date().toISOString(),
     }));
     for (let i = 0; i < configs.length; i += 20) {
-      await sb()!.from('hmis_module_config').upsert(configs.slice(i, i + 20), { onConflict: 'centre_id,module_key' });
+      await sb().from('hmis_module_config').upsert(configs.slice(i, i + 20), { onConflict: 'centre_id,module_key' });
     }
     flash(`Config copied to ${centres.find(c => c.id === copyTarget)?.name}`);
   };

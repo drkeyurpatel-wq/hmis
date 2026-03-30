@@ -42,12 +42,12 @@ export function useNursingStation(centreId: string | null, wardFilter?: string) 
     const today = now.toISOString().split('T')[0];
 
     // Load wards
-    const { data: wardData } = await sb()!.from('hmis_wards').select('id, name, type, floor')
+    const { data: wardData } = await sb().from('hmis_wards').select('id, name, type, floor')
       .eq('centre_id', centreId).eq('is_active', true).order('name');
     setWards(wardData || []);
 
     // Load all active admissions with beds
-    let q = sb()!.from('hmis_admissions')
+    let q = sb().from('hmis_admissions')
       .select(`id, ipd_number, admission_date, payor_type, status,
         patient:hmis_patients!inner(id, uhid, first_name, last_name),
         doctor:hmis_staff!hmis_admissions_primary_doctor_id_fkey(full_name),
@@ -63,12 +63,12 @@ export function useNursingStation(centreId: string | null, wardFilter?: string) 
     let labData: any[] = [];
 
     if (admIds.length > 0) {
-      const { data: mar } = await sb()!.from('hmis_mar')
+      const { data: mar } = await sb().from('hmis_mar')
         .select('admission_id, status, scheduled_time, medication_order:hmis_ipd_medication_orders(drug_name)')
         .in('admission_id', admIds).eq('scheduled_date', today);
       marData = mar || [];
 
-      const { data: labs } = await sb()!.from('hmis_lab_orders')
+      const { data: labs } = await sb().from('hmis_lab_orders')
         .select('id, patient_id, status')
         .in('patient_id', (admissions || []).map((a: any) => a.patient?.id))
         .in('status', ['ordered', 'sample_collected']);
@@ -158,17 +158,18 @@ export function useNursingStation(centreId: string | null, wardFilter?: string) 
     setLoading(false);
   }, [centreId, wardFilter]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { load(); }, [load]);
 
   // Real-time: auto-refresh when admissions/beds/MAR change
   useEffect(() => {
     if (!centreId || !sb()) return;
-    const ch = sb()!.channel('nursing-station-' + centreId)
+    const ch = sb().channel('nursing-station-' + centreId)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'hmis_admissions', filter: `centre_id=eq.${centreId}` }, () => load())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'hmis_mar' }, () => load())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'hmis_beds', filter: `centre_id=eq.${centreId}` }, () => load())
       .subscribe();
-    return () => { sb()!.removeChannel(ch); };
+    return () => { sb().removeChannel(ch); };
   }, [centreId, load]);
 
   const stats = useMemo(() => ({
@@ -214,7 +215,7 @@ export function useNursingVitals(patientId: string | null, admissionId: string |
   const load = useCallback(async () => {
     if (!patientId || !sb()) return;
     setLoading(true);
-    const { data } = await sb()!.from('hmis_vitals')
+    const { data } = await sb().from('hmis_vitals')
       .select('*, recorder:hmis_staff!hmis_vitals_recorded_by_fkey(full_name)')
       .eq('patient_id', patientId)
       .order('recorded_at', { ascending: false }).limit(20);
@@ -222,6 +223,7 @@ export function useNursingVitals(patientId: string | null, admissionId: string |
     setLoading(false);
   }, [patientId]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { load(); }, [load]);
 
   const record = useCallback(async (vitals: {
@@ -231,7 +233,7 @@ export function useNursingVitals(patientId: string | null, admissionId: string |
     urineOutput?: number;
   }, staffId: string) => {
     if (!patientId || !admissionId || !sb()) return null;
-    const { data, error } = await sb()!.from('hmis_vitals').insert({
+    const { data, error } = await sb().from('hmis_vitals').insert({
       patient_id: patientId, admission_id: admissionId, recorded_by: staffId,
       recorded_at: new Date().toISOString(),
       bp_systolic: vitals.bpSystolic ?? null, bp_diastolic: vitals.bpDiastolic ?? null,

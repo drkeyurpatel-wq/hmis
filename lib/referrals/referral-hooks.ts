@@ -37,25 +37,26 @@ export function useReferringDoctors() {
   const load = useCallback(async (search?: string) => {
     if (!sb()) return;
     setLoading(true);
-    let q = sb()!.from('hmis_referring_doctors').select('*').eq('is_active', true).order('name');
+    let q = sb().from('hmis_referring_doctors').select('*').eq('is_active', true).order('name');
     if (search) q = q.or(`name.ilike.%${search}%,hospital_name.ilike.%${search}%,phone.ilike.%${search}%`);
     const { data } = await q;
     setDoctors(data || []);
     setLoading(false);
   }, []);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { load(); }, [load]);
 
   const create = useCallback(async (data: Partial<ReferringDoctor>) => {
     if (!sb()) return { success: false };
-    const { error } = await sb()!.from('hmis_referring_doctors').insert(data);
+    const { error } = await sb().from('hmis_referring_doctors').insert(data);
     if (!error) load();
     return { success: !error, error: error?.message };
   }, [load]);
 
   const update = useCallback(async (id: string, data: Partial<ReferringDoctor>) => {
     if (!sb()) return { success: false };
-    const { error } = await sb()!.from('hmis_referring_doctors').update({ ...data, updated_at: new Date().toISOString() }).eq('id', id);
+    const { error } = await sb().from('hmis_referring_doctors').update({ ...data, updated_at: new Date().toISOString() }).eq('id', id);
     if (!error) load();
     return { success: !error, error: error?.message };
   }, [load]);
@@ -71,7 +72,7 @@ export function useReferrals(centreId: string | null) {
   const load = useCallback(async (filters?: { status?: string; type?: string; doctorId?: string; month?: string }) => {
     if (!centreId || !sb()) return;
     setLoading(true);
-    let q = sb()!.from('hmis_referrals')
+    let q = sb().from('hmis_referrals')
       .select(`*, patient:hmis_patients!inner(first_name, last_name, uhid),
         referred_doc:hmis_staff!hmis_referrals_referred_to_doctor_id_fkey(full_name),
         ref_doctor:hmis_referring_doctors(name, hospital_name, default_fee_type, default_fee_pct),
@@ -118,32 +119,33 @@ export function useReferrals(centreId: string | null) {
     setLoading(false);
   }, [centreId]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { load(); }, [load]);
 
   const create = useCallback(async (data: any) => {
     if (!centreId || !sb()) return { success: false };
-    const { error } = await sb()!.from('hmis_referrals').insert({ centre_id: centreId, ...data });
+    const { error } = await sb().from('hmis_referrals').insert({ centre_id: centreId, ...data });
     if (!error) load();
     return { success: !error, error: error?.message };
   }, [centreId, load]);
 
   const update = useCallback(async (id: string, updates: any) => {
     if (!sb()) return { success: false };
-    const { error } = await sb()!.from('hmis_referrals').update({ ...updates, updated_at: new Date().toISOString() }).eq('id', id);
+    const { error } = await sb().from('hmis_referrals').update({ ...updates, updated_at: new Date().toISOString() }).eq('id', id);
     if (!error) load();
     return { success: !error, error: error?.message };
   }, [load]);
 
   const calculateFee = useCallback(async (id: string) => {
     if (!sb()) return null;
-    const { data, error } = await sb()!.rpc('hmis_calculate_referral_fee', { p_referral_id: id });
+    const { data, error } = await sb().rpc('hmis_calculate_referral_fee', { p_referral_id: id });
     if (!error) load();
     return data;
   }, [load]);
 
   const markPaid = useCallback(async (id: string, payment: { mode: string; utr?: string; date: string; approved_by: string }) => {
     if (!sb()) return { success: false };
-    const { error } = await sb()!.from('hmis_referrals').update({
+    const { error } = await sb().from('hmis_referrals').update({
       fee_paid: true, payment_mode: payment.mode, payment_utr: payment.utr || null,
       payment_date: payment.date, fee_paid_date: payment.date,
       payment_approved_by: payment.approved_by,
@@ -155,7 +157,7 @@ export function useReferrals(centreId: string | null) {
 
   const linkAdmission = useCallback(async (referralId: string, admissionId: string) => {
     if (!sb()) return;
-    await sb()!.from('hmis_referrals').update({ admission_id: admissionId, status: 'admitted', updated_at: new Date().toISOString() }).eq('id', referralId);
+    await sb().from('hmis_referrals').update({ admission_id: admissionId, status: 'admitted', updated_at: new Date().toISOString() }).eq('id', referralId);
     load();
   }, [load]);
 

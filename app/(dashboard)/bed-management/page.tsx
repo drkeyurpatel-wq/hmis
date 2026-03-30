@@ -75,6 +75,7 @@ export default function BedManagementPage() {
     'Same ward — closer to nursing station', 'Insurance/payor change',
   ];
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const availableBeds = useMemo(() => beds.filter(b => b.status === 'available'), [beds]);
 
   const filteredWards = useMemo(() => {

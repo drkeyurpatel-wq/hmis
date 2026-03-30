@@ -16,16 +16,17 @@ export function useTestMaster() {
 
   const load = useCallback(async () => {
     if (!sb()) return;
-    const { data: t } = await sb()!.from('hmis_lab_test_master')
+    const { data: t } = await sb().from('hmis_lab_test_master')
       .select('*, parameters:hmis_lab_test_parameters(*, ref_ranges:hmis_lab_ref_ranges(*))')
       .eq('is_active', true).order('category').order('test_name');
     setTests(t || []);
-    const { data: p } = await sb()!.from('hmis_lab_profiles')
+    const { data: p } = await sb().from('hmis_lab_profiles')
       .select('*, tests:hmis_lab_profile_tests(test:hmis_lab_test_master(id, test_code, test_name))')
       .eq('is_active', true).order('profile_name');
     setProfiles(p || []);
   }, []);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { load(); }, [load]);
   return { tests, profiles, load };
 }
@@ -52,7 +53,7 @@ export function useLabWorklist(centreId: string | null) {
     if (!centreId || !sb()) return;
     setLoading(true);
     const dt = dateFilter || new Date().toISOString().split('T')[0];
-    let query = sb()!.from('hmis_lab_orders')
+    let query = sb().from('hmis_lab_orders')
       .select(`id, priority, status, clinical_info, created_at, tat_deadline, tat_met, reported_at, test_name,
         test:hmis_lab_test_master(test_code, test_name, category),
         patient:hmis_patients!inner(id, uhid, first_name, last_name, age_years, gender),
@@ -86,15 +87,16 @@ export function useLabWorklist(centreId: string | null) {
     setLoading(false);
   }, [centreId]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { load(); }, [load]);
 
   // Realtime
   useEffect(() => {
     if (!centreId || !sb()) return;
-    const ch = sb()!.channel('lab-worklist')
+    const ch = sb().channel('lab-worklist')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'hmis_lab_orders', filter: `centre_id=eq.${centreId}` }, () => load())
       .subscribe();
-    return () => { sb()!.removeChannel(ch); };
+    return () => { sb().removeChannel(ch); };
   }, [centreId, load]);
 
   return { orders, loading, stats, load };
@@ -114,17 +116,17 @@ export function useSamples(centreId: string | null) {
   const collectSample = useCallback(async (orderId: string, sampleType: string, staffId: string, testCode: string) => {
     if (!sb()) return null;
     const barcode = generateBarcode(testCode);
-    const { data: sample, error } = await sb()!.from('hmis_lab_samples').insert({
+    const { data: sample, error } = await sb().from('hmis_lab_samples').insert({
       lab_order_id: orderId, barcode, sample_type: sampleType,
       collected_by: staffId, collected_at: new Date().toISOString(),
       status: 'collected',
     }).select().single();
     if (!error) {
-      await sb()!.from('hmis_lab_orders').update({ status: 'sample_collected' }).eq('id', orderId);
+      await sb().from('hmis_lab_orders').update({ status: 'sample_collected' }).eq('id', orderId);
       // Log
-      if (sample) await sb()!.from('hmis_lab_sample_log').insert({ sample_id: sample.id, action: 'collected', performed_by: staffId, location: 'Collection counter' });
+      if (sample) await sb().from('hmis_lab_sample_log').insert({ sample_id: sample.id, action: 'collected', performed_by: staffId, location: 'Collection counter' });
       // Auto-post charge from tariff
-      const { data: order } = await sb()!.from('hmis_lab_orders')
+      const { data: order } = await sb().from('hmis_lab_orders')
         .select('centre_id, patient_id, admission_id, test:hmis_lab_test_master(test_name), patient:hmis_patients!inner(payor_type)')
         .eq('id', orderId).maybeSingle();
       if (order && (order.test as any)?.test_name) {
@@ -141,15 +143,15 @@ export function useSamples(centreId: string | null) {
 
   const receiveSample = useCallback(async (sampleId: string, staffId: string) => {
     if (!sb()) return;
-    await sb()!.from('hmis_lab_samples').update({ status: 'received', received_at: new Date().toISOString() }).eq('id', sampleId);
-    await sb()!.from('hmis_lab_sample_log').insert({ sample_id: sampleId, action: 'received', performed_by: staffId, location: 'Lab reception' });
+    await sb().from('hmis_lab_samples').update({ status: 'received', received_at: new Date().toISOString() }).eq('id', sampleId);
+    await sb().from('hmis_lab_sample_log').insert({ sample_id: sampleId, action: 'received', performed_by: staffId, location: 'Lab reception' });
   }, []);
 
   const rejectSample = useCallback(async (sampleId: string, orderId: string, reasonCode: string, staffId: string) => {
     if (!sb()) return;
-    await sb()!.from('hmis_lab_samples').update({ status: 'rejected' }).eq('id', sampleId);
-    await sb()!.from('hmis_lab_orders').update({ status: 'ordered' }).eq('id', orderId); // back to ordered for recollection
-    await sb()!.from('hmis_lab_sample_log').insert({ sample_id: sampleId, action: 'rejected', performed_by: staffId, notes: reasonCode });
+    await sb().from('hmis_lab_samples').update({ status: 'rejected' }).eq('id', sampleId);
+    await sb().from('hmis_lab_orders').update({ status: 'ordered' }).eq('id', orderId); // back to ordered for recollection
+    await sb().from('hmis_lab_sample_log').insert({ sample_id: sampleId, action: 'rejected', performed_by: staffId, notes: reasonCode });
   }, []);
 
   return { collectSample, receiveSample, rejectSample, generateBarcode };
@@ -168,7 +170,7 @@ export function useResultEntry(orderId: string | null) {
     if (!orderId || !sb()) return;
     setLoading(true);
     // Get order + test parameters
-    const { data: order } = await sb()!.from('hmis_lab_orders')
+    const { data: order } = await sb().from('hmis_lab_orders')
       .select('test_id, patient_id, test:hmis_lab_test_master(test_code, test_name, parameters:hmis_lab_test_parameters(*, ref_ranges:hmis_lab_ref_ranges(*)))')
       .eq('id', orderId).single();
     const ord = order as any;
@@ -176,11 +178,11 @@ export function useResultEntry(orderId: string | null) {
       setParameters(ord.test.parameters.sort((a: any, b: any) => a.sort_order - b.sort_order));
     }
     // Get existing results
-    const { data: res } = await sb()!.from('hmis_lab_results').select('*').eq('lab_order_id', orderId).order('created_at');
+    const { data: res } = await sb().from('hmis_lab_results').select('*').eq('lab_order_id', orderId).order('created_at');
     setResults(res || []);
     // Get previous results for delta check (last 3 results for same test, same patient)
     if (ord?.patient_id && ord?.test_id) {
-      const { data: prev } = await sb()!.from('hmis_lab_results')
+      const { data: prev } = await sb().from('hmis_lab_results')
         .select('parameter_name, result_value, created_at, lab_order:hmis_lab_orders!inner(test_id, patient_id)')
         .neq('lab_order_id', orderId).order('created_at', { ascending: false }).limit(50);
       setPreviousResults(prev || []);
@@ -188,6 +190,7 @@ export function useResultEntry(orderId: string | null) {
     setLoading(false);
   }, [orderId]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { load(); }, [load]);
 
   // Auto-validate a result value against reference ranges and critical values
@@ -232,13 +235,14 @@ export function useResultEntry(orderId: string | null) {
   }, [parameters, previousResults]);
 
   // Save results
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const saveResults = useCallback(async (resultEntries: { parameterId: string; parameterName: string; value: string; unit: string; isAbnormal: boolean; isCritical: boolean; deltaFlag: boolean; deltaPrevious: string | null; deltaPercent: number | null; remarks?: string }[], staffId: string) => {
     if (!orderId || !sb()) return;
     // Upsert results
     for (const entry of resultEntries) {
       const existing = results.find((r: any) => r.parameter_id === entry.parameterId || r.parameter_name === entry.parameterName);
       if (existing) {
-        await sb()!.from('hmis_lab_results').update({
+        await sb().from('hmis_lab_results').update({
           result_value: entry.value, unit: entry.unit,
           is_abnormal: entry.isAbnormal, is_critical: entry.isCritical,
           delta_flag: entry.deltaFlag, delta_previous: entry.deltaPrevious,
@@ -246,7 +250,7 @@ export function useResultEntry(orderId: string | null) {
           entered_by: staffId, entered_at: new Date().toISOString(),
         }).eq('id', existing.id);
       } else {
-        await sb()!.from('hmis_lab_results').insert({
+        await sb().from('hmis_lab_results').insert({
           lab_order_id: orderId, parameter_id: entry.parameterId,
           parameter_name: entry.parameterName, result_value: entry.value,
           unit: entry.unit, is_abnormal: entry.isAbnormal, is_critical: entry.isCritical,
@@ -259,17 +263,17 @@ export function useResultEntry(orderId: string | null) {
     // Check if all parameters have results → auto-complete
     const allDone = resultEntries.length >= parameters.filter((p: any) => p.is_reportable).length;
     if (allDone) {
-      await sb()!.from('hmis_lab_orders').update({ status: 'processing' }).eq('id', orderId);
+      await sb().from('hmis_lab_orders').update({ status: 'processing' }).eq('id', orderId);
     }
     // Create critical alerts
     const criticals = resultEntries.filter(e => e.isCritical);
     if (criticals.length > 0) {
       // Lookup order context for bridge
-      const { data: labOrd } = await sb()!.from('hmis_lab_orders')
+      const { data: labOrd } = await sb().from('hmis_lab_orders')
         .select('centre_id, patient_id, admission_id').eq('id', orderId).single();
 
       for (const c of criticals) {
-        await Promise.resolve(sb()!.from('hmis_lab_critical_alerts').insert({
+        await Promise.resolve(sb().from('hmis_lab_critical_alerts').insert({
           lab_order_id: orderId, result_id: results.find((r: any) => r.parameter_name === c.parameterName)?.id || orderId,
           parameter_name: c.parameterName, result_value: c.value,
           critical_type: parseFloat(c.value) < 0 ? 'low' : 'high', status: 'pending',
@@ -294,17 +298,17 @@ export function useResultEntry(orderId: string | null) {
   const verifyResults = useCallback(async (staffId: string) => {
     if (!orderId || !sb()) return;
     // Mark all results as validated
-    await sb()!.from('hmis_lab_results').update({ validated_by: staffId, validated_at: new Date().toISOString() }).eq('lab_order_id', orderId);
+    await sb().from('hmis_lab_results').update({ validated_by: staffId, validated_at: new Date().toISOString() }).eq('lab_order_id', orderId);
     // Mark order as completed
     const tatMet = await checkTAT(orderId);
-    await sb()!.from('hmis_lab_orders').update({
+    await sb().from('hmis_lab_orders').update({
       status: 'completed', reported_at: new Date().toISOString(), reported_by: staffId,
       verified_at: new Date().toISOString(), verified_by: staffId, tat_met: tatMet,
     }).eq('id', orderId);
     auditSign('', staffId, 'lab_result', orderId, `Lab results verified for order ${orderId}`);
 
     // BRIDGE: Update surgical planning if this patient has an active planning case
-    const { data: labOrd } = await sb()!.from('hmis_lab_orders')
+    const { data: labOrd } = await sb().from('hmis_lab_orders')
       .select('centre_id, patient_id, admission_id')
       .eq('id', orderId).single();
     if (labOrd) {
@@ -318,7 +322,7 @@ export function useResultEntry(orderId: string | null) {
       // BRIDGE: create critical alert if any results are critical
       const criticalResults = results.filter(r => r.is_critical);
       if (criticalResults.length > 0) {
-        const { data: testInfo } = await sb()!.from('hmis_lab_orders').select('test_name').eq('id', orderId).single();
+        const { data: testInfo } = await sb().from('hmis_lab_orders').select('test_name').eq('id', orderId).single();
         import('@/lib/bridge/clinical-event-bridge').then(({ onLabResultCritical }) =>
           onLabResultCritical({
             centreId: labOrd.centre_id, patientId: labOrd.patient_id,
@@ -331,7 +335,7 @@ export function useResultEntry(orderId: string | null) {
     }
 
     // Notify patient
-    const { data: orderInfo } = await sb()!.from('hmis_lab_orders')
+    const { data: orderInfo } = await sb().from('hmis_lab_orders')
       .select('test:hmis_lab_test_master(test_name), patient:hmis_patients!inner(phone_primary, first_name, last_name)')
       .eq('id', orderId).maybeSingle();
     const oi = orderInfo as any;
@@ -347,7 +351,7 @@ export function useResultEntry(orderId: string | null) {
 // TAT check helper
 async function checkTAT(orderId: string): Promise<boolean> {
   if (!sb()) return true;
-  const { data } = await sb()!.from('hmis_lab_orders').select('tat_deadline').eq('id', orderId).single();
+  const { data } = await sb().from('hmis_lab_orders').select('tat_deadline').eq('id', orderId).single();
   if (!data?.tat_deadline) return true;
   return new Date() <= new Date(data.tat_deadline);
 }
@@ -360,17 +364,18 @@ export function useCriticalAlerts(centreId: string | null) {
 
   const load = useCallback(async () => {
     if (!centreId || !sb()) return;
-    const { data } = await sb()!.from('hmis_lab_critical_alerts')
+    const { data } = await sb().from('hmis_lab_critical_alerts')
       .select('*, order:hmis_lab_orders!inner(centre_id, patient:hmis_patients!inner(first_name, last_name, uhid), test:hmis_lab_test_master!inner(test_name))')
       .in('status', ['pending', 'notified']).order('created_at', { ascending: false });
     setAlerts((data || []).filter((a: any) => a.order?.centre_id === centreId));
   }, [centreId]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { load(); }, [load]);
 
   const acknowledge = useCallback(async (alertId: string, doctorId: string, action: string) => {
     if (!sb()) return;
-    await sb()!.from('hmis_lab_critical_alerts').update({
+    await sb().from('hmis_lab_critical_alerts').update({
       status: 'acknowledged', acknowledged_at: new Date().toISOString(), action_taken: action,
     }).eq('id', alertId);
     load();
@@ -378,7 +383,7 @@ export function useCriticalAlerts(centreId: string | null) {
 
   const notify = useCallback(async (alertId: string, doctorId: string, staffId: string) => {
     if (!sb()) return;
-    await sb()!.from('hmis_lab_critical_alerts').update({
+    await sb().from('hmis_lab_critical_alerts').update({
       status: 'notified', notified_doctor_id: doctorId, notified_at: new Date().toISOString(), notified_by: staffId,
     }).eq('id', alertId);
     load();
@@ -395,22 +400,23 @@ export function useOutsourcedLab() {
 
   const load = useCallback(async () => {
     if (!sb()) return;
-    const { data } = await sb()!.from('hmis_lab_outsourced')
+    const { data } = await sb().from('hmis_lab_outsourced')
       .select('*, order:hmis_lab_orders!inner(test:hmis_lab_test_master!inner(test_name), patient:hmis_patients!inner(first_name, last_name, uhid))')
       .order('dispatch_date', { ascending: false }).limit(100);
     setOutsourced(data || []);
   }, []);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { load(); }, [load]);
 
   const dispatch = useCallback(async (orderId: string, labName: string, expectedReturn: string, cost?: number) => {
     if (!sb()) return;
-    await sb()!.from('hmis_lab_outsourced').insert({
+    await sb().from('hmis_lab_outsourced').insert({
       lab_order_id: orderId, external_lab_name: labName,
       dispatch_date: new Date().toISOString().split('T')[0],
       expected_return: expectedReturn, cost, status: 'dispatched',
     });
-    await sb()!.from('hmis_lab_orders').update({ status: 'processing' }).eq('id', orderId);
+    await sb().from('hmis_lab_orders').update({ status: 'processing' }).eq('id', orderId);
     load();
   }, [load]);
 
@@ -418,7 +424,7 @@ export function useOutsourcedLab() {
     if (!sb()) return;
     const updates: any = { status };
     if (status === 'received_back') updates.actual_return = new Date().toISOString().split('T')[0];
-    await sb()!.from('hmis_lab_outsourced').update(updates).eq('id', id);
+    await sb().from('hmis_lab_outsourced').update(updates).eq('id', id);
     load();
   }, [load]);
 

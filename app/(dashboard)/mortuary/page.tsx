@@ -41,7 +41,7 @@ function MortuaryInner() {
   useEffect(() => {
     if (!form.patientSearch || form.patientSearch.length < 2 || !sb()) { setPatientResults([]); return; }
     const timer = setTimeout(async () => {
-      const { data } = await sb()!.from('hmis_patients')
+      const { data } = await sb().from('hmis_patients')
         .select('id, uhid, first_name, last_name, age_years, gender')
         .or(`uhid.ilike.%${form.patientSearch}%,first_name.ilike.%${form.patientSearch}%,last_name.ilike.%${form.patientSearch}%`)
         .limit(5);

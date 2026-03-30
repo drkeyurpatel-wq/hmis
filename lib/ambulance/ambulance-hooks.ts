@@ -12,8 +12,8 @@ export function useAmbulances(centreId: string | null) {
     if (!centreId || !sb()) return;
     setLoading(true);
     const [v, r] = await Promise.all([
-      sb()!.from('hmis_ambulances').select('*').eq('centre_id', centreId).eq('is_active', true).order('vehicle_number'),
-      sb()!.from('hmis_transport_requests')
+      sb().from('hmis_ambulances').select('*').eq('centre_id', centreId).eq('is_active', true).order('vehicle_number'),
+      sb().from('hmis_transport_requests')
         .select('*, patient:hmis_patients(first_name, last_name, uhid), ambulance:hmis_ambulances(vehicle_number, type), requester:hmis_staff!hmis_transport_requests_requested_by_fkey(full_name)')
         .eq('centre_id', centreId).order('requested_at', { ascending: false }).limit(100),
     ]);
@@ -21,11 +21,12 @@ export function useAmbulances(centreId: string | null) {
     setRequests(r.data || []);
     setLoading(false);
   }, [centreId]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { load(); }, [load]);
 
   const addVehicle = useCallback(async (data: any) => {
     if (!centreId || !sb()) return { success: false, error: "Not initialized" };
-    const { error } = await sb()!.from('hmis_ambulances').insert({ centre_id: centreId, ...data });
+    const { error } = await sb().from('hmis_ambulances').insert({ centre_id: centreId, ...data });
     if (!error) load();
     return { success: !error, error: error?.message };
   }, [centreId, load]);
@@ -33,7 +34,7 @@ export function useAmbulances(centreId: string | null) {
   const createRequest = useCallback(async (data: any, staffId: string) => {
     if (!centreId || !sb()) return { success: false, error: "Not initialized" };
     const num = `TRQ-${Date.now().toString(36).toUpperCase()}`;
-    const { error } = await sb()!.from('hmis_transport_requests').insert({ centre_id: centreId, request_number: num, requested_by: staffId, ...data });
+    const { error } = await sb().from('hmis_transport_requests').insert({ centre_id: centreId, request_number: num, requested_by: staffId, ...data });
     if (!error) load();
     return { success: !error, error: error?.message };
   }, [centreId, load]);
@@ -41,11 +42,11 @@ export function useAmbulances(centreId: string | null) {
   const dispatch = useCallback(async (requestId: string, ambulanceId: string) => {
     if (!sb()) return;
     const amb = vehicles.find(v => v.id === ambulanceId);
-    await sb()!.from('hmis_transport_requests').update({
+    await sb().from('hmis_transport_requests').update({
       ambulance_id: ambulanceId, status: 'dispatched', dispatched_at: new Date().toISOString(),
       driver_name: amb?.driver_name || null, emt_name: amb?.emt_name || null,
     }).eq('id', requestId);
-    await sb()!.from('hmis_ambulances').update({ status: 'on_trip' }).eq('id', ambulanceId);
+    await sb().from('hmis_ambulances').update({ status: 'on_trip' }).eq('id', ambulanceId);
     load();
   }, [vehicles, load]);
 
@@ -62,14 +63,14 @@ export function useAmbulances(centreId: string | null) {
       updates.completed_at = new Date().toISOString();
       const req = requests.find(r => r.id === id);
       if (req?.requested_at) updates.total_trip_time_min = Math.round((Date.now() - new Date(req.requested_at).getTime()) / 60000);
-      if (req?.ambulance_id) await sb()!.from('hmis_ambulances').update({ status: 'available' }).eq('id', req.ambulance_id);
+      if (req?.ambulance_id) await sb().from('hmis_ambulances').update({ status: 'available' }).eq('id', req.ambulance_id);
     }
     if (status === 'cancelled') {
       updates.cancelled_at = new Date().toISOString();
       const req = requests.find(r => r.id === id);
-      if (req?.ambulance_id) await sb()!.from('hmis_ambulances').update({ status: 'available' }).eq('id', req.ambulance_id);
+      if (req?.ambulance_id) await sb().from('hmis_ambulances').update({ status: 'available' }).eq('id', req.ambulance_id);
     }
-    await sb()!.from('hmis_transport_requests').update(updates).eq('id', id);
+    await sb().from('hmis_transport_requests').update(updates).eq('id', id);
     load();
   }, [requests, load]);
 

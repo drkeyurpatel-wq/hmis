@@ -41,17 +41,18 @@ function Inner() {
 
   useEffect(() => {
     if (!centreId || !sb()) return;
-    sb()!.from('hmis_staff').select('id, full_name').eq('is_active', true).order('full_name').then(({ data }) => setStaffList(data || []));
-    sb()!.from('hmis_wards').select('id, name').eq('centre_id', centreId).order('name').then(({ data }) => setWards(data || []));
+    sb().from('hmis_staff').select('id, full_name').eq('is_active', true).order('full_name').then(({ data }) => setStaffList(data || []));
+    sb().from('hmis_wards').select('id, name').eq('centre_id', centreId).order('name').then(({ data }) => setWards(data || []));
   }, [centreId]);
 
   // Tick every 15s for live elapsed
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { const iv = setInterval(() => setTick(t => t + 1), 15000); return () => clearInterval(iv); }, []);
 
   // Load beds that are "discharge_initiated" for initiate tab
   const loadDischargeBeds = useCallback(async () => {
     if (!centreId || !sb()) return;
-    const { data } = await sb()!.from('hmis_admissions')
+    const { data } = await sb().from('hmis_admissions')
       .select('id, ipd_number, bed_id, patient:hmis_patients!inner(first_name, last_name, uhid), bed:hmis_beds!inner(bed_number, room:hmis_rooms(name, ward:hmis_wards(id, name)))')
       .eq('centre_id', centreId)
       .in('status', ['discharged', 'discharge_initiated'])
@@ -80,7 +81,7 @@ function Inner() {
   useEffect(() => {
     if (wf.patient_search.length < 2 || !sb()) { setPatientResults([]); return; }
     const t = setTimeout(async () => {
-      const { data } = await sb()!.from('hmis_patients')
+      const { data } = await sb().from('hmis_patients')
         .select('id, uhid, first_name, last_name')
         .or(`uhid.ilike.%${wf.patient_search}%,first_name.ilike.%${wf.patient_search}%,last_name.ilike.%${wf.patient_search}%`)
         .limit(5);

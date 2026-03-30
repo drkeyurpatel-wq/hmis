@@ -69,6 +69,7 @@ export default function DashboardLayout({
   }, [setStaff, setCentres, setEnabledModules]);
 
   // Register service worker for offline support
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { registerServiceWorker(); }, []);
 
   // Online/offline status

@@ -63,7 +63,7 @@ export default function PatientRegistrationPage() {
     setSaving(true);
     setError('');
     try {
-      const supabase = sb()!;
+      const supabase = sb();
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { setError('Not logged in'); setSaving(false); return; }
       const { data: staff } = await supabase.from('hmis_staff').select('primary_centre_id').eq('auth_user_id', user.id).single();

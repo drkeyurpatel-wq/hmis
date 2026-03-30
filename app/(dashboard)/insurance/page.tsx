@@ -40,27 +40,28 @@ function InsuranceInner() {
     if (!centreId || !sb()) return;
     setLoading(true);
     const [pa, cl] = await Promise.all([
-      sb()!.from('hmis_pre_auth_requests').select('*, admission:hmis_admissions!inner(id, ipd_number, patient:hmis_patients!inner(first_name, last_name, uhid)), insurance:hmis_patient_insurance(policy_number, insurer_name, tpa_name, scheme)').order('created_at', { ascending: false }).limit(100),
-      sb()!.from('hmis_claims').select('*, bill:hmis_bills(bill_number, net_amount, patient:hmis_patients!inner(first_name, last_name, uhid)), preauth:hmis_pre_auth_requests(pre_auth_number, approved_amount)').order('created_at', { ascending: false }).limit(100),
+      sb().from('hmis_pre_auth_requests').select('*, admission:hmis_admissions!inner(id, ipd_number, patient:hmis_patients!inner(first_name, last_name, uhid)), insurance:hmis_patient_insurance(policy_number, insurer_name, tpa_name, scheme)').order('created_at', { ascending: false }).limit(100),
+      sb().from('hmis_claims').select('*, bill:hmis_bills(bill_number, net_amount, patient:hmis_patients!inner(first_name, last_name, uhid)), preauth:hmis_pre_auth_requests(pre_auth_number, approved_amount)').order('created_at', { ascending: false }).limit(100),
     ]);
     setPreAuths(pa.data || []);
     setClaims(cl.data || []);
     setLoading(false);
   }, [centreId]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { load(); }, [load]);
 
   // Load active admissions for new pre-auth
   useEffect(() => {
     if (!centreId || !sb()) return;
-    sb()!.from('hmis_admissions').select('id, ipd_number, patient:hmis_patients!inner(first_name, last_name, uhid), insurance:hmis_patient_insurance(id, policy_number, insurer_name)')
+    sb().from('hmis_admissions').select('id, ipd_number, patient:hmis_patients!inner(first_name, last_name, uhid), insurance:hmis_patient_insurance(id, policy_number, insurer_name)')
       .eq('centre_id', centreId).eq('status', 'active').order('admission_date', { ascending: false })
       .then(({ data }: any) => setAdmissions(data || []));
   }, [centreId]);
 
   const submitPreAuth = async () => {
     if (!newPA.admissionId || !newPA.amount) { flash('Select admission and enter amount'); return; }
-    await sb()!.from('hmis_pre_auth_requests').insert({
+    await sb().from('hmis_pre_auth_requests').insert({
       admission_id: newPA.admissionId,
       patient_insurance_id: newPA.insuranceId || null,
       requested_amount: parseFloat(newPA.amount),
@@ -74,13 +75,13 @@ function InsuranceInner() {
 
   const updatePreAuth = async (id: string, status: string, extra: any = {}) => {
     const upd: any = { status, responded_at: new Date().toISOString(), ...extra };
-    await sb()!.from('hmis_pre_auth_requests').update(upd).eq('id', id);
+    await sb().from('hmis_pre_auth_requests').update(upd).eq('id', id);
     flash(`Status updated to ${status}`); load();
     if (detail?.id === id) setDetail({ ...detail, ...upd });
   };
 
   const submitClaim = async (preAuthId: string, billId: string, amount: number) => {
-    await sb()!.from('hmis_claims').insert({
+    await sb().from('hmis_claims').insert({
       pre_auth_id: preAuthId, bill_id: billId,
       claimed_amount: amount, claim_type: 'cashless',
       claim_number: `CLM-${Date.now()}`, status: 'submitted',
@@ -89,14 +90,14 @@ function InsuranceInner() {
   };
 
   const updateClaim = async (id: string, updates: any) => {
-    await sb()!.from('hmis_claims').update(updates).eq('id', id);
+    await sb().from('hmis_claims').update(updates).eq('id', id);
     flash('Claim updated'); load();
   };
 
   const openDetail = async (pa: any) => {
     setDetail(pa);
     // Load documents
-    const { data: docs } = await sb()!.from('hmis_insurance_documents')
+    const { data: docs } = await sb().from('hmis_insurance_documents')
       .select('*').eq('pre_auth_id', pa.id).order('uploaded_at', { ascending: false });
     setDocuments(docs || []);
     setView('detail');

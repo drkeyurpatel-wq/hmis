@@ -80,7 +80,7 @@ export function useShiftHandover(centreId: string | null) {
       // 1. CRITICAL — clinical alerts (graceful if table doesn't exist)
       const critItems: HandoverItem[] = [];
       try {
-        const { data: alerts } = await sb()!.from('hmis_clinical_alerts')
+        const { data: alerts } = await sb().from('hmis_clinical_alerts')
           .select('id, patient_id, title, description, severity, patient:hmis_patients!inner(first_name, last_name)')
           .eq('centre_id', centreId).eq('status', 'active')
           .in('severity', ['critical', 'emergency']).limit(20);
@@ -93,13 +93,13 @@ export function useShiftHandover(centreId: string | null) {
       } catch (e: any) { console.error('[HMIS Handover] Table check:', e?.message || e); }
 
       // Also check critical labs from this shift
-      const { data: critLabs } = await sb()!.from('hmis_lab_orders')
+      const { data: critLabs } = await sb().from('hmis_lab_orders')
         .select('id, test_name, patient:hmis_patients!inner(first_name, last_name, id)')
         .eq('centre_id', centreId).eq('status', 'completed')
         .gte('created_at', shiftStart).lte('created_at', shiftEnd).limit(50);
 
       for (const lab of critLabs || []) {
-        const { data: results } = await sb()!.from('hmis_lab_results')
+        const { data: results } = await sb().from('hmis_lab_results')
           .select('parameter_name, result_value, is_critical')
           .eq('lab_order_id', lab.id).eq('is_critical', true).limit(5);
         if (results && results.length > 0) {
@@ -116,7 +116,7 @@ export function useShiftHandover(centreId: string | null) {
       }
 
       // 2. NEW ADMISSIONS during shift
-      const { data: newAdmissions } = await sb()!.from('hmis_admissions')
+      const { data: newAdmissions } = await sb().from('hmis_admissions')
         .select('id, ipd_number, admission_date, provisional_diagnosis, payor_type, patient:hmis_patients!inner(first_name, last_name, age_years, gender), bed:hmis_beds(bed_number), doctor:hmis_staff!hmis_admissions_primary_doctor_id_fkey(full_name)')
         .eq('centre_id', centreId)
         .gte('admission_date', shiftStart).lte('admission_date', shiftEnd)
@@ -137,7 +137,7 @@ export function useShiftHandover(centreId: string | null) {
       if (admItems.length > 0) sections.push({ title: 'NEW ADMISSIONS', severity: 'warning', emoji: '', items: admItems });
 
       // 3. DISCHARGES during shift (actual_discharge, not discharge_date)
-      const { data: discharges } = await sb()!.from('hmis_admissions')
+      const { data: discharges } = await sb().from('hmis_admissions')
         .select('id, ipd_number, actual_discharge, patient:hmis_patients!inner(first_name, last_name)')
         .eq('centre_id', centreId).eq('status', 'discharged')
         .gte('actual_discharge', shiftStart).lte('actual_discharge', shiftEnd).limit(20);
@@ -152,7 +152,7 @@ export function useShiftHandover(centreId: string | null) {
       if (dischItems.length > 0) sections.push({ title: 'DISCHARGES', severity: 'info', emoji: '🚪', items: dischItems });
 
       // 4. MEDICATION CHANGES — join through admission for centre (end_date, not stop_date)
-      const { data: medOrders } = await sb()!.from('hmis_ipd_medication_orders')
+      const { data: medOrders } = await sb().from('hmis_ipd_medication_orders')
         .select('id, drug_name, dose, route, frequency, status, start_date, end_date, admission:hmis_admissions!inner(id, centre_id, patient:hmis_patients!inner(first_name, last_name))')
         .gte('start_date', shiftStart)
         .limit(50);
@@ -173,7 +173,7 @@ export function useShiftHandover(centreId: string | null) {
       if (medItems.length > 0) sections.push({ title: 'MEDICATION CHANGES', severity: 'info', emoji: '', items: medItems.slice(0, 15) });
 
       // 5. DOCTOR ROUNDS — join through admission for centre
-      const { data: rounds } = await sb()!.from('hmis_doctor_rounds')
+      const { data: rounds } = await sb().from('hmis_doctor_rounds')
         .select('id, round_type, plan, round_date, admission:hmis_admissions!inner(id, centre_id, patient:hmis_patients!inner(first_name, last_name)), doctor:hmis_staff!hmis_doctor_rounds_doctor_id_fkey(full_name)')
         .gte('round_date', shiftStart).lte('round_date', shiftEnd)
         .order('round_date').limit(30);
@@ -195,7 +195,7 @@ export function useShiftHandover(centreId: string | null) {
       // 6. PENDING FOR NEXT SHIFT
       const pendingItems: HandoverItem[] = [];
 
-      const { data: pendDisch } = await sb()!.from('hmis_admissions')
+      const { data: pendDisch } = await sb().from('hmis_admissions')
         .select('id, ipd_number, patient:hmis_patients!inner(first_name, last_name)')
         .eq('centre_id', centreId).eq('status', 'discharge_initiated').limit(10);
       for (const pd of pendDisch || []) {
@@ -205,7 +205,7 @@ export function useShiftHandover(centreId: string | null) {
         pendingCount++;
       }
 
-      const { data: pendLabs } = await sb()!.from('hmis_lab_orders')
+      const { data: pendLabs } = await sb().from('hmis_lab_orders')
         .select('test_name, patient:hmis_patients!inner(first_name, last_name)')
         .eq('centre_id', centreId).in('status', ['ordered', 'sample_collected', 'processing'])
         .gte('created_at', new Date(Date.now() - 48 * 3600000).toISOString()).limit(10);
@@ -218,21 +218,21 @@ export function useShiftHandover(centreId: string | null) {
       if (pendingItems.length > 0) sections.push({ title: 'PENDING FOR NEXT SHIFT', severity: 'warning', emoji: '📌', items: pendingItems });
 
       // 7. BED SNAPSHOT
-      const { data: beds } = await sb()!.from('hmis_beds')
+      const { data: beds } = await sb().from('hmis_beds')
         .select('status, room:hmis_rooms!inner(ward:hmis_wards!inner(centre_id))')
         .limit(500);
       const centreBeds = (beds || []).filter((b: any) => b.room?.ward?.centre_id === centreId);
       const occupied = centreBeds.filter((b: any) => b.status === 'occupied').length;
       const available = centreBeds.filter((b: any) => b.status === 'available').length;
 
-      const { count: totalAdmitted } = await sb()!.from('hmis_admissions')
+      const { count: totalAdmitted } = await sb().from('hmis_admissions')
         .select('id', { count: 'exact', head: true })
         .eq('centre_id', centreId).eq('status', 'active');
 
       sections.push({ title: 'BED OCCUPANCY SNAPSHOT', severity: 'normal', icon: 'bed-double',
         items: [{ patientName: '', detail: `${occupied}/${centreBeds.length} beds occupied · ${available} available · ${totalAdmitted || 0} patients admitted` }] });
 
-      const { data: centre } = await sb()!.from('hmis_centres').select('name').eq('id', centreId).single();
+      const { data: centre } = await sb().from('hmis_centres').select('name').eq('id', centreId).single();
 
       const reportData = {
         centreId, centreName: centre?.name || 'Health1', shiftType,
@@ -246,7 +246,7 @@ export function useShiftHandover(centreId: string | null) {
 
       // PERSIST to DB so incoming shift can see it
       try {
-        await sb()!.from('hmis_shift_handovers').insert({
+        await sb().from('hmis_shift_handovers').insert({
           centre_id: centreId,
           shift_type: shiftType,
           shift_date: targetDate,
@@ -277,7 +277,7 @@ export function useHandoverHistory(centreId: string | null) {
     setLoading(true);
     try {
       const since = new Date(Date.now() - days * 86400000).toISOString().split('T')[0];
-      const { data } = await sb()!.from('hmis_shift_handovers')
+      const { data } = await sb().from('hmis_shift_handovers')
         .select('*')
         .eq('centre_id', centreId)
         .gte('shift_date', since)
@@ -291,7 +291,7 @@ export function useHandoverHistory(centreId: string | null) {
 
   const acknowledge = useCallback(async (handoverId: string, staffId: string, staffName: string) => {
     if (!sb()) return;
-    await sb()!.from('hmis_shift_handovers').update({
+    await sb().from('hmis_shift_handovers').update({
       acknowledged_by: staffId,
       acknowledged_by_name: staffName,
       acknowledged_at: new Date().toISOString(),

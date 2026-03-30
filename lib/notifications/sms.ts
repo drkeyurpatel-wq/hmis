@@ -14,7 +14,7 @@ interface MSG91Config { authKey: string; senderId: string; }
 
 async function getConfig(): Promise<MSG91Config | null> {
   if (sb()) {
-    const { data } = await sb()!.from('hmis_integration_config').select('config_json')
+    const { data } = await sb().from('hmis_integration_config').select('config_json')
       .eq('provider', 'msg91').eq('is_active', true).maybeSingle();
     if (data?.config_json?.auth_key && data?.config_json?.sender_id) {
       return { authKey: data.config_json.auth_key, senderId: data.config_json.sender_id };

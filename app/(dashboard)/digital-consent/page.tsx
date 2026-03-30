@@ -82,14 +82,14 @@ function Inner() {
   const [staffList, setStaffList] = useState<{ id: string; full_name: string }[]>([]);
   useEffect(() => {
     if (!centreId || !sb()) return;
-    sb()!.from('hmis_staff').select('id, full_name').eq('is_active', true).order('full_name').then(({ data }) => setStaffList(data || []));
+    sb().from('hmis_staff').select('id, full_name').eq('is_active', true).order('full_name').then(({ data }) => setStaffList(data || []));
   }, [centreId]);
 
   // Patient search
   useEffect(() => {
     if (nf.patient_search.length < 2 || !sb()) { setPatientResults([]); return; }
     const t = setTimeout(async () => {
-      const { data } = await sb()!.from('hmis_patients')
+      const { data } = await sb().from('hmis_patients')
         .select('id, uhid, first_name, last_name')
         .or(`uhid.ilike.%${nf.patient_search}%,first_name.ilike.%${nf.patient_search}%,last_name.ilike.%${nf.patient_search}%`)
         .limit(5);

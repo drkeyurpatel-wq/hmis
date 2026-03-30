@@ -44,7 +44,7 @@ export default function AdmissionWizard({ onDone, onFlash, preselectedPatientId 
   useEffect(() => {
     if (patSearch.length < 2 || !sb()) { setPatResults([]); return; }
     const t = setTimeout(async () => {
-      const { data } = await sb()!.from('hmis_patients')
+      const { data } = await sb().from('hmis_patients')
         .select('id, uhid, first_name, last_name, age_years, gender, phone_primary, blood_group')
         .or(`uhid.ilike.%${patSearch}%,first_name.ilike.%${patSearch}%,phone_primary.ilike.%${patSearch}%`)
         .eq('is_active', true).limit(8);
@@ -56,20 +56,20 @@ export default function AdmissionWizard({ onDone, onFlash, preselectedPatientId 
   // Preselected patient
   useEffect(() => {
     if (!preselectedPatientId || !sb()) return;
-    sb()!.from('hmis_patients').select('*').eq('id', preselectedPatientId).single().then(({ data }) => { if (data) setPatient(data); });
+    sb().from('hmis_patients').select('*').eq('id', preselectedPatientId).single().then(({ data }) => { if (data) setPatient(data); });
   }, [preselectedPatientId]);
 
   // Load wards + doctors
   useEffect(() => {
     if (!centreId || !sb()) return;
-    sb()!.from('hmis_wards').select('id, name, type, floor').eq('centre_id', centreId).eq('is_active', true).order('name').then(({ data }) => setWards(data || []));
-    sb()!.from('hmis_staff').select('id, full_name, staff_type').eq('is_active', true).in('staff_type', ['doctor', 'consultant']).order('full_name').then(({ data }) => setDoctors(data || []));
+    sb().from('hmis_wards').select('id, name, type, floor').eq('centre_id', centreId).eq('is_active', true).order('name').then(({ data }) => setWards(data || []));
+    sb().from('hmis_staff').select('id, full_name, staff_type').eq('is_active', true).in('staff_type', ['doctor', 'consultant']).order('full_name').then(({ data }) => setDoctors(data || []));
   }, [centreId]);
 
   // Load beds for selected ward
   useEffect(() => {
     if (!selectedWard || !sb()) { setBeds([]); return; }
-    sb()!.from('hmis_beds').select('id, bed_number, status, room:hmis_rooms!inner(room_number, ward_id)')
+    sb().from('hmis_beds').select('id, bed_number, status, room:hmis_rooms!inner(room_number, ward_id)')
       .eq('room.ward_id', selectedWard).eq('is_active', true).order('bed_number')
       .then(({ data }) => setBeds(data || []));
   }, [selectedWard]);
@@ -77,8 +77,8 @@ export default function AdmissionWizard({ onDone, onFlash, preselectedPatientId 
   const handleAdmit = useCallback(async () => {
     if (!sb() || !staff || !patient) return;
     setSaving(true);
-    const { data: ipdNum } = await sb()!.rpc('hmis_next_sequence', { p_centre_id: centreId, p_type: 'ipd' });
-    const { data: admission, error } = await sb()!.from('hmis_admissions').insert({
+    const { data: ipdNum } = await sb().rpc('hmis_next_sequence', { p_centre_id: centreId, p_type: 'ipd' });
+    const { data: admission, error } = await sb().from('hmis_admissions').insert({
       centre_id: centreId, patient_id: patient.id, ipd_number: ipdNum || `IPD-${Date.now()}`,
       admitting_doctor_id: admittingDoctor || primaryDoctor, primary_doctor_id: primaryDoctor,
       bed_id: selectedBed || null, admission_type: admissionType, payor_type: payorType,
@@ -91,7 +91,7 @@ export default function AdmissionWizard({ onDone, onFlash, preselectedPatientId 
 
     // Mark bed occupied
     if (selectedBed) {
-      await sb()!.from('hmis_beds').update({ status: 'occupied', current_admission_id: admission?.id }).eq('id', selectedBed);
+      await sb().from('hmis_beds').update({ status: 'occupied', current_admission_id: admission?.id }).eq('id', selectedBed);
     }
 
     // Auto-create diet order

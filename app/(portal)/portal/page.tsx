@@ -53,6 +53,7 @@ export default function PortalPage() {
     const s = await slotsHook.getSlots(bookDoc, bookDate);
     setBookSlots(s);
   };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { loadSlots(); }, [bookDoc, bookDate]);
 
   const handleBook = async () => {

@@ -50,7 +50,7 @@ export function useEquipmentLifecycle(centreId: string | null) {
   const loadEquipment = useCallback(async () => {
     if (!centreId || !sb()) return;
     setLoading(true);
-    const { data } = await sb()!.from('hmis_equipment')
+    const { data } = await sb().from('hmis_equipment')
       .select('*').eq('centre_id', centreId).eq('is_active', true).order('name');
     setEquipment((data || []) as Equipment[]);
     setLoading(false);
@@ -58,7 +58,7 @@ export function useEquipmentLifecycle(centreId: string | null) {
 
   const loadMaintenance = useCallback(async (equipmentId?: string) => {
     if (!centreId || !sb()) return;
-    let q = sb()!.from('hmis_equipment_maintenance')
+    let q = sb().from('hmis_equipment_maintenance')
       .select('*, reporter:hmis_staff!hmis_equipment_maintenance_reported_by_fkey(full_name), equipment:hmis_equipment!hmis_equipment_maintenance_equipment_id_fkey(name, category, location)')
       .eq('centre_id', centreId)
       .order('reported_at', { ascending: false }).limit(200);
@@ -69,7 +69,7 @@ export function useEquipmentLifecycle(centreId: string | null) {
 
   const loadCalibrations = useCallback(async (equipmentId?: string) => {
     if (!centreId || !sb()) return;
-    let q = sb()!.from('hmis_equipment_calibration')
+    let q = sb().from('hmis_equipment_calibration')
       .select('*').eq('centre_id', centreId).order('calibration_date', { ascending: false }).limit(100);
     if (equipmentId) q = q.eq('equipment_id', equipmentId);
     const { data } = await q;
@@ -83,10 +83,10 @@ export function useEquipmentLifecycle(centreId: string | null) {
   }) => {
     if (!centreId || !sb()) return null;
     // Get equipment AMC info
-    const { data: eq } = await sb()!.from('hmis_equipment')
+    const { data: eq } = await sb().from('hmis_equipment')
       .select('amc_vendor, amc_sla_hours').eq('id', input.equipment_id).single();
 
-    const { data, error } = await sb()!.from('hmis_equipment_maintenance').insert({
+    const { data, error } = await sb().from('hmis_equipment_maintenance').insert({
       equipment_id: input.equipment_id, centre_id: centreId, type: 'breakdown',
       reported_by: input.reported_by, issue_description: input.issue_description,
       priority: input.severity === 'critical' ? 'critical' : input.severity === 'high' ? 'high' : 'medium',
@@ -99,10 +99,10 @@ export function useEquipmentLifecycle(centreId: string | null) {
 
     // Set equipment status to out_of_order
     if (!error) {
-      await sb()!.from('hmis_equipment').update({ status: 'maintenance' }).eq('id', input.equipment_id);
+      await sb().from('hmis_equipment').update({ status: 'maintenance' }).eq('id', input.equipment_id);
 
       // BRIDGE: Flag affected OT bookings + notify management
-      const { data: eqInfo } = await sb()!.from('hmis_equipment')
+      const { data: eqInfo } = await sb().from('hmis_equipment')
         .select('name, location').eq('id', input.equipment_id).single();
       if (eqInfo && centreId) {
         import('@/lib/bridge/module-events').then(({ onEquipmentBreakdown }) =>
@@ -123,26 +123,26 @@ export function useEquipmentLifecycle(centreId: string | null) {
   }) => {
     if (!sb()) return;
     const now = new Date().toISOString();
-    const { data: m } = await sb()!.from('hmis_equipment_maintenance')
+    const { data: m } = await sb().from('hmis_equipment_maintenance')
       .select('equipment_id, reported_at, sla_target_hours').eq('id', maintenanceId).single();
     if (!m) return;
 
     const hoursElapsed = (Date.now() - new Date(m.reported_at).getTime()) / 3600000;
     const slaMet = m.sla_target_hours ? hoursElapsed <= m.sla_target_hours : true;
 
-    await sb()!.from('hmis_equipment_maintenance').update({
+    await sb().from('hmis_equipment_maintenance').update({
       completed_at: now, resolution: input.resolution, status: 'completed',
       cost: input.cost || 0, parts_used: input.parts_used || [],
       downtime_hours: Math.round(hoursElapsed * 100) / 100, sla_met: slaMet,
     }).eq('id', maintenanceId);
 
     // Update equipment: restore status, accumulate costs/downtime
-    const { data: eq } = await sb()!.from('hmis_equipment')
+    const { data: eq } = await sb().from('hmis_equipment')
       .select('total_repair_cost, total_downtime_hours').eq('id', m.equipment_id).single();
     if (eq) {
       const newCost = (eq.total_repair_cost || 0) + (input.cost || 0);
       const newDowntime = (eq.total_downtime_hours || 0) + hoursElapsed;
-      await sb()!.from('hmis_equipment').update({
+      await sb().from('hmis_equipment').update({
         status: 'active', total_repair_cost: Math.round(newCost * 100) / 100,
         total_downtime_hours: Math.round(newDowntime * 100) / 100,
       }).eq('id', m.equipment_id);
@@ -156,13 +156,13 @@ export function useEquipmentLifecycle(centreId: string | null) {
     deviation_notes?: string; cost?: number;
   }) => {
     if (!centreId || !sb()) return;
-    const { data: eq } = await sb()!.from('hmis_equipment')
+    const { data: eq } = await sb().from('hmis_equipment')
       .select('calibration_frequency_days').eq('id', input.equipment_id).single();
     const freqDays = eq?.calibration_frequency_days || 365;
     const nextDue = new Date(input.calibration_date);
     nextDue.setDate(nextDue.getDate() + freqDays);
 
-    await sb()!.from('hmis_equipment_calibration').insert({
+    await sb().from('hmis_equipment_calibration').insert({
       equipment_id: input.equipment_id, centre_id: centreId,
       calibration_date: input.calibration_date,
       next_due_date: nextDue.toISOString().split('T')[0],
@@ -172,7 +172,7 @@ export function useEquipmentLifecycle(centreId: string | null) {
     });
 
     // Update equipment
-    await sb()!.from('hmis_equipment').update({
+    await sb().from('hmis_equipment').update({
       last_calibration_date: input.calibration_date,
       next_calibration_date: nextDue.toISOString().split('T')[0],
     }).eq('id', input.equipment_id);
@@ -209,6 +209,7 @@ export function useEquipmentLifecycle(centreId: string | null) {
     return { purchase, totalAmc, repairs, total: purchase + totalAmc + repairs };
   }, []);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { loadEquipment(); loadMaintenance(); loadCalibrations(); }, [loadEquipment, loadMaintenance, loadCalibrations]);
 
   return {

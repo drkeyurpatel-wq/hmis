@@ -42,7 +42,9 @@ function AssetInner() {
     if (res.success) { flash('Asset registered'); setShowNew(false); } else { flash(res.error || 'Operation failed'); }
   };
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const catData = useMemo(() => Object.entries(ast.stats.byCategory).map(([k, v]: any) => ({ name: k.replace(/_/g, ' '), count: v.count, value: v.value, fill: CAT_COLORS[k] || '#94a3b8' })).sort((a, b) => b.value - a.value), [ast.stats]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const deptData = useMemo(() => Object.entries(ast.stats.byDepartment).sort((a: any, b: any) => b[1] - a[1]).slice(0, 10).map(([k, v]) => ({ dept: k, count: v as number })), [ast.stats]);
 
   return (

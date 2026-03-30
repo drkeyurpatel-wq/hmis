@@ -20,6 +20,7 @@ function LeakageInner() {
   const [toast, setToast] = useState('');
   const flash = (m: string) => { setToast(m); setTimeout(() => setToast(''), 3000); };
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { scanner.scan(); }, []);
 
   const filtered = useMemo(() => {

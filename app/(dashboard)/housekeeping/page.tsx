@@ -49,7 +49,7 @@ function HousekeepingInner() {
   const [dischargeBeds, setDischargeBeds] = useState<any[]>([]);
   useEffect(() => {
     if (!centreId || !sb()) return;
-    sb()!.from('hmis_beds')
+    sb().from('hmis_beds')
       .select('id, bed_number, room:hmis_rooms(name, ward:hmis_wards(name))')
       .eq('status', 'housekeeping')
       .then(({ data }: any) => setDischargeBeds(data || []));

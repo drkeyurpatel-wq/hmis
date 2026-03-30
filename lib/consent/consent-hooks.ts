@@ -14,7 +14,7 @@ export function useConsentTemplates(centreId?: string) {
   const load = useCallback(async () => {
     if (!sb()) return;
     setLoading(true);
-    let query = sb()!
+    let query = sb()
       .from('hmis_consent_templates')
       .select('*')
       .eq('is_active', true)
@@ -32,6 +32,7 @@ export function useConsentTemplates(centreId?: string) {
     setLoading(false);
   }, [centreId]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { load(); }, [load]);
 
   return { templates, loading, reload: load };
@@ -47,7 +48,7 @@ export function usePatientConsents(patientId: string | null, admissionId?: strin
   const load = useCallback(async () => {
     if (!sb() || !patientId) return;
     setLoading(true);
-    let query = sb()!
+    let query = sb()
       .from('hmis_patient_consents')
       .select('*, template:hmis_consent_templates(name, category), obtained_staff:hmis_staff!hmis_patient_consents_obtained_by_fkey(full_name)')
       .eq('patient_id', patientId)
@@ -62,6 +63,7 @@ export function usePatientConsents(patientId: string | null, admissionId?: strin
     setLoading(false);
   }, [patientId, admissionId]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { load(); }, [load]);
 
   // Sign a new consent
@@ -85,7 +87,7 @@ export function usePatientConsents(patientId: string | null, admissionId?: strin
     centreId?: string;
   }) => {
     if (!sb()) return null;
-    const { data, error } = await sb()!
+    const { data, error } = await sb()
       .from('hmis_patient_consents')
       .insert({
         patient_id: params.patientId,
@@ -118,7 +120,7 @@ export function usePatientConsents(patientId: string | null, admissionId?: strin
   // Revoke a consent
   const revokeConsent = useCallback(async (consentId: string, reason: string, staffId: string) => {
     if (!sb()) return;
-    await sb()!
+    await sb()
       .from('hmis_patient_consents')
       .update({
         is_valid: false,

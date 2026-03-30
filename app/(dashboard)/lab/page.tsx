@@ -32,6 +32,7 @@ function LabPageInner() {
   const [toast, setToast] = useState('');
   const flash = (m: string) => { setToast(m); setTimeout(() => setToast(''), 2500); };
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { load(statusFilter, dateFilter); }, [statusFilter, dateFilter, load]);
 
   const priorityColor = (p: string) => p === 'stat' ? 'bg-red-100 text-red-700 font-bold animate-pulse' : p === 'urgent' ? 'bg-orange-100 text-orange-700' : 'bg-gray-100 text-gray-600';

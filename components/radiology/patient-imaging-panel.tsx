@@ -201,6 +201,7 @@ export default function PatientImagingPanel({ patientId, admissionId, compact = 
     return s;
   }, [studies, admissionId, modalityFilter]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const modalities = useMemo(() => [...new Set(studies.map(s => s.modality))].sort(), [studies]);
 
   if (loading) return <div className="animate-pulse"><div className="h-6 bg-gray-200 rounded w-32 mb-3" /><div className="space-y-2">{[1, 2, 3].map(i => <div key={i} className="h-12 bg-gray-100 rounded" />)}</div></div>;

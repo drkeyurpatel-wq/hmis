@@ -12,7 +12,7 @@ export function useOTSchedule(centreId: string | null) {
 
   const loadRooms = useCallback(async () => {
     if (!centreId || !sb()) return;
-    const { data } = await sb()!.from('hmis_ot_rooms').select('*').eq('centre_id', centreId).eq('is_active', true).order('name');
+    const { data } = await sb().from('hmis_ot_rooms').select('*').eq('centre_id', centreId).eq('is_active', true).order('name');
     setRooms(data || []);
   }, [centreId]);
 
@@ -20,7 +20,7 @@ export function useOTSchedule(centreId: string | null) {
     if (!centreId || !sb()) return;
     setLoading(true);
     const d = date || new Date().toISOString().split('T')[0];
-    const { data } = await sb()!.from('hmis_ot_bookings')
+    const { data } = await sb().from('hmis_ot_bookings')
       .select(`*, patient:hmis_admissions!inner(ipd_number, patient:hmis_patients!inner(first_name, last_name, uhid, age_years, gender)),
         surgeon:hmis_staff!hmis_ot_bookings_surgeon_id_fkey(full_name),
         anaesthetist:hmis_staff!hmis_ot_bookings_anaesthetist_id_fkey(full_name),
@@ -31,6 +31,7 @@ export function useOTSchedule(centreId: string | null) {
     setLoading(false);
   }, [centreId]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { loadRooms(); loadBookings(); }, [loadRooms, loadBookings]);
 
   const create = useCallback(async (data: any): Promise<{ success: boolean; error?: string; booking?: any }> => {
@@ -51,7 +52,7 @@ export function useOTSchedule(centreId: string | null) {
 
     // ---- ROOM CONFLICT CHECK ----
     // Fetch all non-cancelled bookings in the same room on the same date
-    const { data: existingBookings } = await sb()!.from('hmis_ot_bookings')
+    const { data: existingBookings } = await sb().from('hmis_ot_bookings')
       .select('id, scheduled_start, estimated_duration_min, procedure_name, status')
       .eq('ot_room_id', data.ot_room_id)
       .eq('scheduled_date', data.scheduled_date)
@@ -71,7 +72,7 @@ export function useOTSchedule(centreId: string | null) {
     }
 
     // ---- SURGEON CONFLICT CHECK ----
-    const { data: surgeonBookings } = await sb()!.from('hmis_ot_bookings')
+    const { data: surgeonBookings } = await sb().from('hmis_ot_bookings')
       .select('id, scheduled_start, estimated_duration_min, procedure_name, ot_room:hmis_ot_rooms(name)')
       .eq('surgeon_id', data.surgeon_id)
       .eq('scheduled_date', data.scheduled_date)
@@ -90,7 +91,7 @@ export function useOTSchedule(centreId: string | null) {
 
     // ---- ANAESTHETIST CONFLICT CHECK ----
     if (data.anaesthetist_id) {
-      const { data: anaesBookings } = await sb()!.from('hmis_ot_bookings')
+      const { data: anaesBookings } = await sb().from('hmis_ot_bookings')
         .select('id, scheduled_start, estimated_duration_min, procedure_name, ot_room:hmis_ot_rooms(name)')
         .eq('anaesthetist_id', data.anaesthetist_id)
         .eq('scheduled_date', data.scheduled_date)
@@ -109,12 +110,12 @@ export function useOTSchedule(centreId: string | null) {
     }
 
     // ---- CREATE ----
-    const { data: result, error } = await sb()!.from('hmis_ot_bookings').insert(data).select().single();
+    const { data: result, error } = await sb().from('hmis_ot_bookings').insert(data).select().single();
     if (error) return { success: false, error: error.message };
 
     // BRIDGE: Auto-create surgical planning case
     if (result && data.admission_id) {
-      const { data: adm } = await sb()!.from('hmis_admissions').select('centre_id, patient_id').eq('id', data.admission_id).single();
+      const { data: adm } = await sb().from('hmis_admissions').select('centre_id, patient_id').eq('id', data.admission_id).single();
       if (adm) {
         import('@/lib/bridge/module-events').then(({ onOTBookingCreated }) =>
           onOTBookingCreated({
@@ -136,11 +137,11 @@ export function useOTSchedule(centreId: string | null) {
     const update: any = { status, updated_at: new Date().toISOString(), ...extra };
     if (status === 'in_progress' && !extra?.actual_start) update.actual_start = new Date().toISOString();
     if (status === 'completed' && !extra?.actual_end) update.actual_end = new Date().toISOString();
-    await sb()!.from('hmis_ot_bookings').update(update).eq('id', id);
+    await sb().from('hmis_ot_bookings').update(update).eq('id', id);
 
     // BRIDGE: OT completed → auto-post charges + mark planning done
     if (status === 'completed') {
-      const { data: bk } = await sb()!.from('hmis_ot_bookings')
+      const { data: bk } = await sb().from('hmis_ot_bookings')
         .select('admission_id, procedure_name, surgeon_charges, anaesthetist_charges, total_ot_charges, admission:hmis_admissions!inner(centre_id, patient_id)')
         .eq('id', id).single();
       if (bk) {
@@ -161,7 +162,7 @@ export function useOTSchedule(centreId: string | null) {
 
   const cancel = useCallback(async (id: string, reason: string) => {
     if (!sb()) return;
-    await sb()!.from('hmis_ot_bookings').update({ status: 'cancelled', cancel_reason: reason, updated_at: new Date().toISOString() }).eq('id', id);
+    await sb().from('hmis_ot_bookings').update({ status: 'cancelled', cancel_reason: reason, updated_at: new Date().toISOString() }).eq('id', id);
     loadBookings();
   }, [loadBookings]);
 
@@ -199,10 +200,11 @@ export function useOTNotes(bookingId: string | null) {
 
   const load = useCallback(async () => {
     if (!bookingId || !sb()) return;
-    const { data } = await sb()!.from('hmis_ot_notes').select('*, author:hmis_staff(full_name)').eq('ot_booking_id', bookingId).order('created_at');
+    const { data } = await sb().from('hmis_ot_notes').select('*, author:hmis_staff(full_name)').eq('ot_booking_id', bookingId).order('created_at');
     setNotes(data || []);
   }, [bookingId]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { load(); }, [load]);
 
   const save = useCallback(async (data: any) => {
@@ -210,9 +212,9 @@ export function useOTNotes(bookingId: string | null) {
     // Upsert: check if note of this type exists
     const existing = notes.find(n => n.note_type === data.note_type);
     if (existing) {
-      await sb()!.from('hmis_ot_notes').update({ ...data, updated_at: new Date().toISOString() }).eq('id', existing.id);
+      await sb().from('hmis_ot_notes').update({ ...data, updated_at: new Date().toISOString() }).eq('id', existing.id);
     } else {
-      await sb()!.from('hmis_ot_notes').insert({ ...data, ot_booking_id: bookingId });
+      await sb().from('hmis_ot_notes').insert({ ...data, ot_booking_id: bookingId });
     }
     load();
   }, [bookingId, notes, load]);
@@ -232,18 +234,19 @@ export function useSurgeryNote(bookingId: string | null) {
 
   const load = useCallback(async () => {
     if (!bookingId || !sb()) return;
-    const { data } = await sb()!.from('hmis_surgery_notes').select('*, surgeon:hmis_staff(full_name)').eq('ot_booking_id', bookingId).single();
+    const { data } = await sb().from('hmis_surgery_notes').select('*, surgeon:hmis_staff(full_name)').eq('ot_booking_id', bookingId).single();
     setNote(data);
   }, [bookingId]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { load(); }, [load]);
 
   const save = useCallback(async (data: any) => {
     if (!bookingId || !sb()) return;
     if (note) {
-      await sb()!.from('hmis_surgery_notes').update(data).eq('id', note.id);
+      await sb().from('hmis_surgery_notes').update(data).eq('id', note.id);
     } else {
-      await sb()!.from('hmis_surgery_notes').insert({ ...data, ot_booking_id: bookingId });
+      await sb().from('hmis_surgery_notes').insert({ ...data, ot_booking_id: bookingId });
     }
     load();
   }, [bookingId, note, load]);
@@ -259,7 +262,7 @@ export function useOTUtilization(centreId: string | null) {
 
   const loadRange = useCallback(async (from: string, to: string) => {
     if (!centreId || !sb()) return;
-    const { data } = await sb()!.from('hmis_ot_bookings')
+    const { data } = await sb().from('hmis_ot_bookings')
       .select('id, ot_room_id, scheduled_date, scheduled_start, estimated_duration_min, actual_start, actual_end, status, is_emergency, is_robotic, ot_room:hmis_ot_rooms(name)')
       .eq('ot_room.centre_id', centreId).gte('scheduled_date', from).lte('scheduled_date', to);
     setDailyData(data || []);

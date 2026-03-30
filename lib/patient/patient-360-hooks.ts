@@ -71,12 +71,12 @@ export function usePatient360(patientId: string | null, centreId: string | null)
 
     // 1. Patient demographics + allergies (parallel)
     const [patientRes, allergyRes] = await Promise.all([
-      sb()!.from('hmis_patients').select('*').eq('id', patientId).single(),
-      sb()!.from('hmis_patient_allergies').select('*').eq('patient_id', patientId).eq('is_active', true),
+      sb().from('hmis_patients').select('*').eq('id', patientId).single(),
+      sb().from('hmis_patient_allergies').select('*').eq('patient_id', patientId).eq('is_active', true),
     ]);
 
     // 2. Active admission
-    const { data: adm } = await sb()!.from('hmis_admissions')
+    const { data: adm } = await sb().from('hmis_admissions')
       .select(`*, 
         bed:hmis_beds(id, bed_number, status, room:hmis_rooms(id, room_number, ward:hmis_wards(id, name, type, floor))),
         primary_doctor:hmis_staff!hmis_admissions_primary_doctor_id_fkey(id, full_name, staff_type),
@@ -99,44 +99,44 @@ export function usePatient360(patientId: string | null, centreId: string | null)
     if (isAdmitted && admissionId) {
       const [vitalsRes, vitalsHistRes, medsRes, marRes, labRes, radRes, ordersRes, dietRes, planRes, otRes] = await Promise.all([
         // Latest vitals
-        sb()!.from('hmis_vitals').select('*')
+        sb().from('hmis_vitals').select('*')
           .eq('patient_id', patientId).order('recorded_at', { ascending: false }).limit(1).maybeSingle(),
         // Vitals trend (last 10)
-        sb()!.from('hmis_vitals').select('heart_rate, systolic_bp, diastolic_bp, temperature, spo2, respiratory_rate, recorded_at')
+        sb().from('hmis_vitals').select('heart_rate, systolic_bp, diastolic_bp, temperature, spo2, respiratory_rate, recorded_at')
           .eq('patient_id', patientId).order('recorded_at', { ascending: false }).limit(10),
         // Active medication orders
-        sb()!.from('hmis_ipd_medication_orders').select('*')
+        sb().from('hmis_ipd_medication_orders').select('*')
           .eq('admission_id', admissionId).eq('status', 'active').order('created_at', { ascending: false }),
         // MAR — next due
-        sb()!.from('hmis_mar').select('*')
+        sb().from('hmis_mar').select('*')
           .eq('admission_id', admissionId).in('status', ['due', 'overdue'])
           .order('scheduled_time', { ascending: true }).limit(20),
         // Pending lab orders
-        sb()!.from('hmis_lab_orders')
+        sb().from('hmis_lab_orders')
           .select('id, test_name, status, priority, created_at, test:hmis_lab_test_master(test_name, test_code)')
           .eq('patient_id', patientId).eq('centre_id', centreId)
           .in('status', ['ordered', 'sample_collected', 'processing'])
           .order('created_at', { ascending: false }),
         // Pending radiology orders
-        sb()!.from('hmis_radiology_orders')
+        sb().from('hmis_radiology_orders')
           .select('id, test_name, modality, status, priority, created_at')
           .eq('patient_id', patientId).eq('centre_id', centreId)
           .in('status', ['ordered', 'scheduled', 'in_progress'])
           .order('created_at', { ascending: false }),
         // Active CPOE orders
-        sb()!.from('hmis_orders').select('*')
+        sb().from('hmis_orders').select('*')
           .eq('patient_id', patientId).eq('status', 'active')
           .order('created_at', { ascending: false }).limit(20),
         // Diet order
-        sb()!.from('hmis_diet_orders').select('*')
+        sb().from('hmis_diet_orders').select('*')
           .eq('patient_id', patientId).eq('centre_id', centreId).eq('status', 'active')
           .order('created_at', { ascending: false }).limit(1).maybeSingle(),
         // Surgical planning
-        sb()!.from('hmis_surgical_planning').select('*')
+        sb().from('hmis_surgical_planning').select('*')
           .eq('patient_id', patientId).eq('centre_id', centreId).in('status', ['pending', 'ready', 'in_progress'])
           .order('created_at', { ascending: false }).limit(1).maybeSingle(),
         // OT bookings
-        sb()!.from('hmis_ot_bookings').select('*, ot_room:hmis_ot_rooms(name)')
+        sb().from('hmis_ot_bookings').select('*, ot_room:hmis_ot_rooms(name)')
           .eq('admission_id', admissionId).in('status', ['scheduled', 'in_progress'])
           .order('scheduled_date', { ascending: true }),
       ]);
@@ -155,21 +155,21 @@ export function usePatient360(patientId: string | null, centreId: string | null)
 
     // 4. Results + notes + alerts (parallel, for all patients)
     const [labResultsRes, criticalRes, radReportsRes, notesRes] = await Promise.all([
-      sb()!.from('hmis_lab_orders')
+      sb().from('hmis_lab_orders')
         .select('id, test_name, status, created_at, results:hmis_lab_results(parameter_name, result_value, unit, is_abnormal, is_critical, ref_range_min, ref_range_max)')
         .eq('patient_id', patientId).eq('centre_id', centreId)
         .in('status', ['reported', 'verified'])
         .gte('created_at', h48ago)
         .order('created_at', { ascending: false }).limit(20),
-      sb()!.from('hmis_lab_critical_alerts').select('*')
+      sb().from('hmis_lab_critical_alerts').select('*')
         .eq('patient_id', patientId).eq('status', 'pending')
         .order('created_at', { ascending: false }),
-      sb()!.from('hmis_radiology_reports')
+      sb().from('hmis_radiology_reports')
         .select('*, order:hmis_radiology_orders!inner(test_name, modality, patient_id)')
         .eq('order.patient_id', patientId)
         .gte('created_at', h48ago)
         .order('created_at', { ascending: false }).limit(10),
-      sb()!.from('hmis_emr_encounters')
+      sb().from('hmis_emr_encounters')
         .select('id, encounter_type, chief_complaint, assessment, plan, created_at, doctor:hmis_staff!hmis_emr_encounters_doctor_id_fkey(full_name)')
         .eq('patient_id', patientId)
         .gte('created_at', h24ago)
@@ -177,11 +177,11 @@ export function usePatient360(patientId: string | null, centreId: string | null)
     ]);
 
     // 5. Billing summary
-    const { data: billData } = await sb()!.from('hmis_bills')
+    const { data: billData } = await sb().from('hmis_bills')
       .select('net_amount, paid_amount, balance_amount, payor_type')
       .eq('patient_id', patientId).eq('centre_id', centreId)
       .neq('status', 'cancelled');
-    const { data: advData } = await sb()!.from('hmis_advances')
+    const { data: advData } = await sb().from('hmis_advances')
       .select('amount, used_amount')
       .eq('patient_id', patientId);
 
@@ -233,6 +233,7 @@ export function usePatient360(patientId: string | null, centreId: string | null)
     setLastRefresh(now.toISOString());
   }, [patientId, centreId]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { load(); }, [load]);
 
   // Auto-refresh every 60s for admitted patients

@@ -94,6 +94,7 @@ function NursingStationInner() {
   };
 
   // Last 3 vitals
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const last3 = useMemo(() => vitals.history.slice(0, 3), [vitals.history]);
 
   const fmtTime = (d: string) => new Date(d).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });

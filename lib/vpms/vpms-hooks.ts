@@ -38,6 +38,7 @@ export function useVPMS(centreCode?: string) {
     setLoading(false);
   }, [centreCode]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { load(); }, [load]);
 
   return { data, loading, error, refresh: load };
@@ -59,6 +60,7 @@ export function useVPMSOverdue(centreCode?: string) {
     setLoading(false);
   }, [centreCode]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { load(); }, [load]);
   return { overdue, loading, refresh: load };
 }
@@ -81,6 +83,7 @@ export function useVPMSVendorPayables(centreCode?: string) {
     setLoading(false);
   }, [centreCode]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { load(); }, [load]);
   return { vendors, totalPayable, loading, refresh: load };
 }

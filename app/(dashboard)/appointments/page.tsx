@@ -39,8 +39,8 @@ function AppointmentsInner() {
   const [departments, setDepartments] = useState<any[]>([]);
   useEffect(() => {
     if (!sb() || !centreId) return;
-    sb()!.from('hmis_staff').select('id, full_name, specialisation').eq('staff_type', 'doctor').eq('is_active', true).order('full_name').then(({ data }: any) => setDoctors(data || []));
-    sb()!.from('hmis_departments').select('id, name, type').eq('centre_id', centreId).order('name').then(({ data }: any) => setDepartments(data || []));
+    sb().from('hmis_staff').select('id, full_name, specialisation').eq('staff_type', 'doctor').eq('is_active', true).order('full_name').then(({ data }: any) => setDoctors(data || []));
+    sb().from('hmis_departments').select('id, name, type').eq('centre_id', centreId).order('name').then(({ data }: any) => setDepartments(data || []));
   }, [centreId]);
 
   // Booking form
@@ -85,13 +85,14 @@ function AppointmentsInner() {
   }, [doctors, bookDept, scheds.schedules]);
 
   // Load on filters
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { appts.load({ date, doctorId: doctorFilter === 'all' ? undefined : doctorFilter, deptId: deptFilter === 'all' ? undefined : deptFilter }); }, [date, doctorFilter, deptFilter]);
 
   // Patient search
   useEffect(() => {
     if (patientSearch.length < 2 || !sb()) { setPatientResults([]); return; }
     const t = setTimeout(async () => {
-      const { data } = await sb()!.from('hmis_patients')
+      const { data } = await sb().from('hmis_patients')
         .select('id, uhid, first_name, last_name, phone_primary, age_years, gender')
         .or(`uhid.ilike.%${patientSearch}%,first_name.ilike.%${patientSearch}%,last_name.ilike.%${patientSearch}%,phone_primary.ilike.%${patientSearch}%`)
         .limit(8);

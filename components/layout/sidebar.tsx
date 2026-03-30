@@ -187,7 +187,7 @@ export function Sidebar({ mobileOpen, onMobileClose }: { mobileOpen?: boolean; o
     if (typeof window !== 'undefined') {
       const { sb } = await import('@/lib/supabase/browser');
       if (sb()) {
-        const { data } = await sb()!.from('hmis_module_config')
+        const { data } = await sb().from('hmis_module_config')
           .select('module_key').eq('centre_id', centreId).eq('is_enabled', true);
         setEnabledModules(new Set((data || []).map((m: any) => m.module_key)));
       }

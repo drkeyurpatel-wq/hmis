@@ -20,7 +20,7 @@ export default function HospitalSetup({ centreId, flash }: Props) {
   useEffect(() => {
     if (!centreId || !sb()) return;
     setLoading(true);
-    sb()!.from('hmis_centres').select('name, address_line1, address_line2, city, state, pincode, phone, email, website, gstin, registration_number, logo_url, hfr_id')
+    sb().from('hmis_centres').select('name, address_line1, address_line2, city, state, pincode, phone, email, website, gstin, registration_number, logo_url, hfr_id')
       .eq('id', centreId).single().then(({ data }: any) => {
         if (data) setForm({ name: data.name || '', address_line1: data.address_line1 || '', address_line2: data.address_line2 || '', city: data.city || '', state: data.state || '', pincode: data.pincode || '', phone: data.phone || '', email: data.email || '', website: data.website || '', gstin: data.gstin || '', registration_number: data.registration_number || '', logo_url: data.logo_url || '', hfr_id: data.hfr_id || '' });
         setLoading(false);
@@ -30,7 +30,7 @@ export default function HospitalSetup({ centreId, flash }: Props) {
   const save = async () => {
     if (!centreId || !sb()) return;
     setSaving(true);
-    const { error } = await sb()!.from('hmis_centres').update(form).eq('id', centreId);
+    const { error } = await sb().from('hmis_centres').update(form).eq('id', centreId);
     setSaving(false);
     flash(error ? `Error: ${error.message}` : 'Hospital details saved');
   };

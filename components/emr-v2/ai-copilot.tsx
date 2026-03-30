@@ -153,6 +153,7 @@ export default function AICopilot({
 
   // Portal mount — ensures we render to document.body so fixed positioning isn't clipped
   const [mounted, setMounted] = useState(false);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { setMounted(true); }, []);
   if (!mounted || !isOpen) return null;
 

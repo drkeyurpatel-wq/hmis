@@ -32,11 +32,11 @@ function WardBoardInner() {
     setLoading(true);
 
     // Load wards
-    const { data: wardData } = await sb()!.from('hmis_wards').select('id, name, type, floor').eq('centre_id', centreId).eq('is_active', true).order('name');
+    const { data: wardData } = await sb().from('hmis_wards').select('id, name, type, floor').eq('centre_id', centreId).eq('is_active', true).order('name');
     setWards(wardData || []);
 
     // Load all beds with rooms and wards
-    let bedQ = sb()!.from('hmis_beds')
+    let bedQ = sb().from('hmis_beds')
       .select('id, bed_number, status, current_admission_id, room:hmis_rooms!inner(room_number, ward:hmis_wards!inner(id, name, type, floor))')
       .eq('is_active', true).eq('room.ward.centre_id', centreId);
     if (selectedWard !== 'all') bedQ = bedQ.eq('room.ward.id', selectedWard);
@@ -46,7 +46,7 @@ function WardBoardInner() {
     const admissionIds = (bedData || []).filter((b: any) => b.current_admission_id).map((b: any) => b.current_admission_id);
     let admissionMap: Record<string, any> = {};
     if (admissionIds.length > 0) {
-      const { data: adms } = await sb()!.from('hmis_admissions')
+      const { data: adms } = await sb().from('hmis_admissions')
         .select('id, ipd_number, admission_date, payor_type, provisional_diagnosis, patient:hmis_patients!inner(id, first_name, last_name, uhid, age_years, gender), doctor:hmis_staff!hmis_admissions_primary_doctor_id_fkey(full_name)')
         .in('id', admissionIds);
       for (const a of adms || []) admissionMap[a.id] = a;
@@ -56,7 +56,7 @@ function WardBoardInner() {
     const patientIds = Object.values(admissionMap).map((a: any) => (a.patient as any)?.id).filter(Boolean);
     let vitalsMap: Record<string, any> = {};
     if (patientIds.length > 0) {
-      const { data: vitals } = await sb()!.from('hmis_vitals')
+      const { data: vitals } = await sb().from('hmis_vitals')
         .select('patient_id, heart_rate, systolic_bp, diastolic_bp, spo2, temperature, recorded_at')
         .in('patient_id', patientIds).order('recorded_at', { ascending: false });
       // Keep only latest per patient
@@ -68,7 +68,7 @@ function WardBoardInner() {
     // Get MAR due counts per admission
     let medsDueMap: Record<string, number> = {};
     if (admissionIds.length > 0) {
-      const { data: mar } = await sb()!.from('hmis_mar').select('admission_id')
+      const { data: mar } = await sb().from('hmis_mar').select('admission_id')
         .in('admission_id', admissionIds).in('status', ['due', 'overdue']);
       for (const m of mar || []) medsDueMap[m.admission_id] = (medsDueMap[m.admission_id] || 0) + 1;
     }
@@ -106,8 +106,10 @@ function WardBoardInner() {
     setLastRefresh(new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }));
   }, [centreId, selectedWard]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { load(); }, [load]);
   // Auto-refresh every 30s
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { const i = setInterval(load, 30000); return () => clearInterval(i); }, [load]);
 
   const vitalsAgo = (d: string) => {
