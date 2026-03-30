@@ -1,9 +1,6 @@
--- ═══════════════════════════════════════════════════════════════
 -- PRE-MIGRATION FIX: Add missing columns to existing tables
--- Run BEFORE RUN_ALL_MIGRATIONS.sql and PHASE2_COMPLETE.sql
--- Each column is a separate ALTER TABLE — no comma issues
--- Safe to re-run unlimited times
--- ═══════════════════════════════════════════════════════════════
+-- Each column = separate ALTER TABLE. Safe to re-run.
+
 
 -- hmis_centres
 ALTER TABLE IF EXISTS hmis_centres ADD COLUMN IF NOT EXISTS code varchar(10);
@@ -155,6 +152,7 @@ ALTER TABLE IF EXISTS hmis_bills ADD COLUMN IF NOT EXISTS balance_amount decimal
 ALTER TABLE IF EXISTS hmis_bills ADD COLUMN IF NOT EXISTS status varchar(20) NOT NULL DEFAULT 'draft';
 ALTER TABLE IF EXISTS hmis_bills ADD COLUMN IF NOT EXISTS bill_date date;
 ALTER TABLE IF EXISTS hmis_bills ADD COLUMN IF NOT EXISTS due_date date;
+ALTER TABLE IF EXISTS hmis_bills ADD COLUMN IF NOT EXISTS created_by uuid;
 ALTER TABLE IF EXISTS hmis_bills ADD COLUMN IF NOT EXISTS approved_by uuid;
 
 -- hmis_bill_items
@@ -217,12 +215,13 @@ ALTER TABLE IF EXISTS hmis_packages ADD COLUMN IF NOT EXISTS name varchar(200);
 ALTER TABLE IF EXISTS hmis_packages ADD COLUMN IF NOT EXISTS description text;
 ALTER TABLE IF EXISTS hmis_packages ADD COLUMN IF NOT EXISTS room_category varchar(20) DEFAULT 'economy';
 ALTER TABLE IF EXISTS hmis_packages ADD COLUMN IF NOT EXISTS expected_los int DEFAULT 3;
-ALTER TABLE IF EXISTS hmis_packages ADD COLUMN IF NOT EXISTS items jsonb NOT NULL DEFAULT '[]';
+ALTER TABLE IF EXISTS hmis_packages ADD COLUMN IF NOT EXISTS items jsonb;
 ALTER TABLE IF EXISTS hmis_packages ADD COLUMN IF NOT EXISTS gross_amount decimal(12,2) NOT NULL DEFAULT 0;
 ALTER TABLE IF EXISTS hmis_packages ADD COLUMN IF NOT EXISTS discount_amount decimal(12,2) NOT NULL DEFAULT 0;
 ALTER TABLE IF EXISTS hmis_packages ADD COLUMN IF NOT EXISTS discount_percentage decimal(5,2) DEFAULT 0;
 ALTER TABLE IF EXISTS hmis_packages ADD COLUMN IF NOT EXISTS net_amount decimal(12,2) NOT NULL DEFAULT 0;
 ALTER TABLE IF EXISTS hmis_packages ADD COLUMN IF NOT EXISTS is_active boolean NOT NULL DEFAULT true;
+ALTER TABLE IF EXISTS hmis_packages ADD COLUMN IF NOT EXISTS created_by uuid;
 
 -- hmis_dialysis_machines
 ALTER TABLE IF EXISTS hmis_dialysis_machines ADD COLUMN IF NOT EXISTS centre_id uuid;
@@ -279,8 +278,8 @@ ALTER TABLE IF EXISTS hmis_cathlab_procedures ADD COLUMN IF NOT EXISTS indicatio
 ALTER TABLE IF EXISTS hmis_cathlab_procedures ADD COLUMN IF NOT EXISTS access_site varchar(20);
 ALTER TABLE IF EXISTS hmis_cathlab_procedures ADD COLUMN IF NOT EXISTS cag_findings text;
 ALTER TABLE IF EXISTS hmis_cathlab_procedures ADD COLUMN IF NOT EXISTS vessels_involved text[];
-ALTER TABLE IF EXISTS hmis_cathlab_procedures ADD COLUMN IF NOT EXISTS stents_placed jsonb DEFAULT '[]';
-ALTER TABLE IF EXISTS hmis_cathlab_procedures ADD COLUMN IF NOT EXISTS balloon_used jsonb DEFAULT '[]';
+ALTER TABLE IF EXISTS hmis_cathlab_procedures ADD COLUMN IF NOT EXISTS stents_placed jsonb;
+ALTER TABLE IF EXISTS hmis_cathlab_procedures ADD COLUMN IF NOT EXISTS balloon_used jsonb;
 ALTER TABLE IF EXISTS hmis_cathlab_procedures ADD COLUMN IF NOT EXISTS implant_details jsonb DEFAULT '{}';
 ALTER TABLE IF EXISTS hmis_cathlab_procedures ADD COLUMN IF NOT EXISTS fluoroscopy_time_min decimal(5,1);
 ALTER TABLE IF EXISTS hmis_cathlab_procedures ADD COLUMN IF NOT EXISTS radiation_dose_mgy decimal(8,1);
@@ -314,7 +313,7 @@ ALTER TABLE IF EXISTS hmis_endoscopy_procedures ADD COLUMN IF NOT EXISTS nurse_i
 ALTER TABLE IF EXISTS hmis_endoscopy_procedures ADD COLUMN IF NOT EXISTS start_time timestamp with time zone;
 ALTER TABLE IF EXISTS hmis_endoscopy_procedures ADD COLUMN IF NOT EXISTS end_time timestamp with time zone;
 ALTER TABLE IF EXISTS hmis_endoscopy_procedures ADD COLUMN IF NOT EXISTS status varchar(20) DEFAULT 'scheduled';
-ALTER TABLE IF EXISTS hmis_endoscopy_procedures ADD COLUMN IF NOT EXISTS images jsonb DEFAULT '[]';
+ALTER TABLE IF EXISTS hmis_endoscopy_procedures ADD COLUMN IF NOT EXISTS images jsonb;
 ALTER TABLE IF EXISTS hmis_endoscopy_procedures ADD COLUMN IF NOT EXISTS report text;
 ALTER TABLE IF EXISTS hmis_endoscopy_procedures ADD COLUMN IF NOT EXISTS billing_done boolean DEFAULT false;
 
@@ -336,7 +335,7 @@ ALTER TABLE IF EXISTS hmis_cssd_instrument_sets ADD COLUMN IF NOT EXISTS centre_
 ALTER TABLE IF EXISTS hmis_cssd_instrument_sets ADD COLUMN IF NOT EXISTS set_name varchar(200);
 ALTER TABLE IF EXISTS hmis_cssd_instrument_sets ADD COLUMN IF NOT EXISTS set_code varchar(50);
 ALTER TABLE IF EXISTS hmis_cssd_instrument_sets ADD COLUMN IF NOT EXISTS department varchar(100);
-ALTER TABLE IF EXISTS hmis_cssd_instrument_sets ADD COLUMN IF NOT EXISTS instruments jsonb NOT NULL DEFAULT '[]';
+ALTER TABLE IF EXISTS hmis_cssd_instrument_sets ADD COLUMN IF NOT EXISTS instruments jsonb;
 ALTER TABLE IF EXISTS hmis_cssd_instrument_sets ADD COLUMN IF NOT EXISTS total_instruments integer DEFAULT 0;
 ALTER TABLE IF EXISTS hmis_cssd_instrument_sets ADD COLUMN IF NOT EXISTS status varchar(20) DEFAULT 'available';
 ALTER TABLE IF EXISTS hmis_cssd_instrument_sets ADD COLUMN IF NOT EXISTS last_sterilized_at timestamp with time zone;
@@ -348,7 +347,7 @@ ALTER TABLE IF EXISTS hmis_cssd_cycles ADD COLUMN IF NOT EXISTS centre_id uuid;
 ALTER TABLE IF EXISTS hmis_cssd_cycles ADD COLUMN IF NOT EXISTS autoclave_number varchar(50);
 ALTER TABLE IF EXISTS hmis_cssd_cycles ADD COLUMN IF NOT EXISTS cycle_number varchar(50);
 ALTER TABLE IF EXISTS hmis_cssd_cycles ADD COLUMN IF NOT EXISTS cycle_type varchar(20);
-ALTER TABLE IF EXISTS hmis_cssd_cycles ADD COLUMN IF NOT EXISTS load_items jsonb NOT NULL DEFAULT '[]';
+ALTER TABLE IF EXISTS hmis_cssd_cycles ADD COLUMN IF NOT EXISTS load_items jsonb;
 ALTER TABLE IF EXISTS hmis_cssd_cycles ADD COLUMN IF NOT EXISTS temperature decimal(5,1);
 ALTER TABLE IF EXISTS hmis_cssd_cycles ADD COLUMN IF NOT EXISTS pressure decimal(5,2);
 ALTER TABLE IF EXISTS hmis_cssd_cycles ADD COLUMN IF NOT EXISTS duration_minutes integer;
@@ -370,7 +369,7 @@ ALTER TABLE IF EXISTS hmis_cssd_issue_return ADD COLUMN IF NOT EXISTS issued_at 
 ALTER TABLE IF EXISTS hmis_cssd_issue_return ADD COLUMN IF NOT EXISTS returned_at timestamp with time zone;
 ALTER TABLE IF EXISTS hmis_cssd_issue_return ADD COLUMN IF NOT EXISTS returned_by uuid;
 ALTER TABLE IF EXISTS hmis_cssd_issue_return ADD COLUMN IF NOT EXISTS condition_on_return varchar(20);
-ALTER TABLE IF EXISTS hmis_cssd_issue_return ADD COLUMN IF NOT EXISTS missing_items jsonb DEFAULT '[]';
+ALTER TABLE IF EXISTS hmis_cssd_issue_return ADD COLUMN IF NOT EXISTS missing_items jsonb;
 ALTER TABLE IF EXISTS hmis_cssd_issue_return ADD COLUMN IF NOT EXISTS notes text;
 
 -- hmis_diet_orders
@@ -671,7 +670,7 @@ ALTER TABLE IF EXISTS hmis_daily_menu ADD COLUMN IF NOT EXISTS menu_date date;
 ALTER TABLE IF EXISTS hmis_daily_menu ADD COLUMN IF NOT EXISTS meal_type varchar(20);
 ALTER TABLE IF EXISTS hmis_daily_menu ADD COLUMN IF NOT EXISTS diet_type varchar(30) NOT NULL DEFAULT 'regular';
 ALTER TABLE IF EXISTS hmis_daily_menu ADD COLUMN IF NOT EXISTS food_type varchar(10) NOT NULL DEFAULT 'veg';
-ALTER TABLE IF EXISTS hmis_daily_menu ADD COLUMN IF NOT EXISTS items jsonb NOT NULL DEFAULT '[]';
+ALTER TABLE IF EXISTS hmis_daily_menu ADD COLUMN IF NOT EXISTS items jsonb;
 ALTER TABLE IF EXISTS hmis_daily_menu ADD COLUMN IF NOT EXISTS prepared_by uuid;
 ALTER TABLE IF EXISTS hmis_daily_menu ADD COLUMN IF NOT EXISTS is_published boolean DEFAULT false;
 
@@ -745,7 +744,7 @@ ALTER TABLE IF EXISTS hmis_physio_prevention_programs ADD COLUMN IF NOT EXISTS t
 ALTER TABLE IF EXISTS hmis_physio_prevention_programs ADD COLUMN IF NOT EXISTS sport varchar(50);
 ALTER TABLE IF EXISTS hmis_physio_prevention_programs ADD COLUMN IF NOT EXISTS duration_weeks int DEFAULT 8;
 ALTER TABLE IF EXISTS hmis_physio_prevention_programs ADD COLUMN IF NOT EXISTS sessions_per_week int DEFAULT 3;
-ALTER TABLE IF EXISTS hmis_physio_prevention_programs ADD COLUMN IF NOT EXISTS exercises jsonb NOT NULL DEFAULT '[]';
+ALTER TABLE IF EXISTS hmis_physio_prevention_programs ADD COLUMN IF NOT EXISTS exercises jsonb;
 ALTER TABLE IF EXISTS hmis_physio_prevention_programs ADD COLUMN IF NOT EXISTS screening_protocol jsonb DEFAULT '{}';
 ALTER TABLE IF EXISTS hmis_physio_prevention_programs ADD COLUMN IF NOT EXISTS evidence_reference text;
 ALTER TABLE IF EXISTS hmis_physio_prevention_programs ADD COLUMN IF NOT EXISTS is_active boolean DEFAULT true;
@@ -771,7 +770,7 @@ ALTER TABLE IF EXISTS hmis_package_utilization ADD COLUMN IF NOT EXISTS actual_o
 ALTER TABLE IF EXISTS hmis_package_utilization ADD COLUMN IF NOT EXISTS actual_total decimal(12,2) DEFAULT 0;
 ALTER TABLE IF EXISTS hmis_package_utilization ADD COLUMN IF NOT EXISTS variance decimal(12,2) DEFAULT 0;
 ALTER TABLE IF EXISTS hmis_package_utilization ADD COLUMN IF NOT EXISTS variance_pct decimal(5,2) DEFAULT 0;
-ALTER TABLE IF EXISTS hmis_package_utilization ADD COLUMN IF NOT EXISTS over_package_items jsonb DEFAULT '[]';
+ALTER TABLE IF EXISTS hmis_package_utilization ADD COLUMN IF NOT EXISTS over_package_items jsonb;
 ALTER TABLE IF EXISTS hmis_package_utilization ADD COLUMN IF NOT EXISTS over_package_amount decimal(12,2) DEFAULT 0;
 ALTER TABLE IF EXISTS hmis_package_utilization ADD COLUMN IF NOT EXISTS expected_los int;
 ALTER TABLE IF EXISTS hmis_package_utilization ADD COLUMN IF NOT EXISTS actual_los int;
@@ -828,12 +827,12 @@ ALTER TABLE IF EXISTS hmis_shift_handovers ADD COLUMN IF NOT EXISTS ward_id uuid
 ALTER TABLE IF EXISTS hmis_shift_handovers ADD COLUMN IF NOT EXISTS outgoing_staff_id uuid;
 ALTER TABLE IF EXISTS hmis_shift_handovers ADD COLUMN IF NOT EXISTS incoming_staff_id uuid;
 ALTER TABLE IF EXISTS hmis_shift_handovers ADD COLUMN IF NOT EXISTS census jsonb DEFAULT '{}';
-ALTER TABLE IF EXISTS hmis_shift_handovers ADD COLUMN IF NOT EXISTS critical_patients jsonb DEFAULT '[]';
-ALTER TABLE IF EXISTS hmis_shift_handovers ADD COLUMN IF NOT EXISTS pending_labs jsonb DEFAULT '[]';
-ALTER TABLE IF EXISTS hmis_shift_handovers ADD COLUMN IF NOT EXISTS pending_meds jsonb DEFAULT '[]';
-ALTER TABLE IF EXISTS hmis_shift_handovers ADD COLUMN IF NOT EXISTS pending_procedures jsonb DEFAULT '[]';
-ALTER TABLE IF EXISTS hmis_shift_handovers ADD COLUMN IF NOT EXISTS pending_discharges jsonb DEFAULT '[]';
-ALTER TABLE IF EXISTS hmis_shift_handovers ADD COLUMN IF NOT EXISTS pending_consults jsonb DEFAULT '[]';
+ALTER TABLE IF EXISTS hmis_shift_handovers ADD COLUMN IF NOT EXISTS critical_patients jsonb;
+ALTER TABLE IF EXISTS hmis_shift_handovers ADD COLUMN IF NOT EXISTS pending_labs jsonb;
+ALTER TABLE IF EXISTS hmis_shift_handovers ADD COLUMN IF NOT EXISTS pending_meds jsonb;
+ALTER TABLE IF EXISTS hmis_shift_handovers ADD COLUMN IF NOT EXISTS pending_procedures jsonb;
+ALTER TABLE IF EXISTS hmis_shift_handovers ADD COLUMN IF NOT EXISTS pending_discharges jsonb;
+ALTER TABLE IF EXISTS hmis_shift_handovers ADD COLUMN IF NOT EXISTS pending_consults jsonb;
 ALTER TABLE IF EXISTS hmis_shift_handovers ADD COLUMN IF NOT EXISTS alerts text[] DEFAULT '{}';
 ALTER TABLE IF EXISTS hmis_shift_handovers ADD COLUMN IF NOT EXISTS general_notes text;
 ALTER TABLE IF EXISTS hmis_shift_handovers ADD COLUMN IF NOT EXISTS acknowledged boolean DEFAULT false;
@@ -862,7 +861,7 @@ ALTER TABLE IF EXISTS hmis_bed_turnover ADD COLUMN IF NOT EXISTS hk_task_id UUID
 ALTER TABLE IF EXISTS hmis_bed_turnover ADD COLUMN IF NOT EXISTS hk_assigned_to UUID;
 ALTER TABLE IF EXISTS hmis_bed_turnover ADD COLUMN IF NOT EXISTS hk_started_at TIMESTAMPTZ;
 ALTER TABLE IF EXISTS hmis_bed_turnover ADD COLUMN IF NOT EXISTS hk_completed_at TIMESTAMPTZ;
-ALTER TABLE IF EXISTS hmis_bed_turnover ADD COLUMN IF NOT EXISTS hk_checklist JSONB DEFAULT '[;
+ALTER TABLE IF EXISTS hmis_bed_turnover ADD COLUMN IF NOT EXISTS hk_checklist JSONB;
 ALTER TABLE IF EXISTS hmis_bed_turnover ADD COLUMN IF NOT EXISTS inspected_by UUID;
 ALTER TABLE IF EXISTS hmis_bed_turnover ADD COLUMN IF NOT EXISTS inspected_at TIMESTAMPTZ;
 ALTER TABLE IF EXISTS hmis_bed_turnover ADD COLUMN IF NOT EXISTS inspection_passed BOOLEAN;
@@ -920,15 +919,23 @@ ALTER TABLE IF EXISTS hmis_consent_templates ADD COLUMN IF NOT EXISTS is_current
 ALTER TABLE IF EXISTS hmis_consent_templates ADD COLUMN IF NOT EXISTS content_en TEXT;
 ALTER TABLE IF EXISTS hmis_consent_templates ADD COLUMN IF NOT EXISTS content_hi TEXT;
 ALTER TABLE IF EXISTS hmis_consent_templates ADD COLUMN IF NOT EXISTS content_gu TEXT;
-ALTER TABLE IF EXISTS hmis_consent_templates ADD COLUMN IF NOT EXISTS risks_en TEXT, risks_hi TEXT, risks_gu TEXT;
-ALTER TABLE IF EXISTS hmis_consent_templates ADD COLUMN IF NOT EXISTS benefits_en TEXT, benefits_hi TEXT, benefits_gu TEXT;
+ALTER TABLE IF EXISTS hmis_consent_templates ADD COLUMN IF NOT EXISTS risks_en TEXT;
+ALTER TABLE IF EXISTS hmis_consent_templates ADD COLUMN IF NOT EXISTS risks_hi TEXT;
+ALTER TABLE IF EXISTS hmis_consent_templates ADD COLUMN IF NOT EXISTS risks_gu TEXT;
+ALTER TABLE IF EXISTS hmis_consent_templates ADD COLUMN IF NOT EXISTS benefits_en TEXT;
+ALTER TABLE IF EXISTS hmis_consent_templates ADD COLUMN IF NOT EXISTS benefits_hi TEXT;
+ALTER TABLE IF EXISTS hmis_consent_templates ADD COLUMN IF NOT EXISTS benefits_gu TEXT;
+ALTER TABLE IF EXISTS hmis_consent_templates ADD COLUMN IF NOT EXISTS alternatives_en TEXT;
+ALTER TABLE IF EXISTS hmis_consent_templates ADD COLUMN IF NOT EXISTS alternatives_hi TEXT;
+ALTER TABLE IF EXISTS hmis_consent_templates ADD COLUMN IF NOT EXISTS alternatives_gu TEXT;
 ALTER TABLE IF EXISTS hmis_consent_templates ADD COLUMN IF NOT EXISTS requires_witness BOOLEAN DEFAULT true;
 ALTER TABLE IF EXISTS hmis_consent_templates ADD COLUMN IF NOT EXISTS requires_interpreter BOOLEAN DEFAULT false;
-ALTER TABLE IF EXISTS hmis_consent_templates ADD COLUMN IF NOT EXISTS mandatory_checklist JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE IF EXISTS hmis_consent_templates ADD COLUMN IF NOT EXISTS mandatory_checklist JSONB;
 ALTER TABLE IF EXISTS hmis_consent_templates ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT true;
+ALTER TABLE IF EXISTS hmis_consent_templates ADD COLUMN IF NOT EXISTS created_by UUID;
 
 -- hmis_consent_audit
-ALTER TABLE IF EXISTS hmis_consent_audit ADD COLUMN IF NOT EXISTS consent_id UUID ON DELETE CASCADE;
+ALTER TABLE IF EXISTS hmis_consent_audit ADD COLUMN IF NOT EXISTS consent_id UUID;
 ALTER TABLE IF EXISTS hmis_consent_audit ADD COLUMN IF NOT EXISTS centre_id UUID;
 ALTER TABLE IF EXISTS hmis_consent_audit ADD COLUMN IF NOT EXISTS action VARCHAR(50);
 ALTER TABLE IF EXISTS hmis_consent_audit ADD COLUMN IF NOT EXISTS performed_by UUID;
@@ -948,7 +955,7 @@ ALTER TABLE IF EXISTS hmis_cost_centres ADD COLUMN IF NOT EXISTS is_active   BOO
 
 -- hmis_cost_centre_maps
 ALTER TABLE IF EXISTS hmis_cost_centre_maps ADD COLUMN IF NOT EXISTS centre_id       UUID;
-ALTER TABLE IF EXISTS hmis_cost_centre_maps ADD COLUMN IF NOT EXISTS cost_centre_id  UUID ON DELETE CASCADE;
+ALTER TABLE IF EXISTS hmis_cost_centre_maps ADD COLUMN IF NOT EXISTS cost_centre_id  UUID;
 ALTER TABLE IF EXISTS hmis_cost_centre_maps ADD COLUMN IF NOT EXISTS match_type      VARCHAR(20);
 ALTER TABLE IF EXISTS hmis_cost_centre_maps ADD COLUMN IF NOT EXISTS match_value     VARCHAR(100);
 ALTER TABLE IF EXISTS hmis_cost_centre_maps ADD COLUMN IF NOT EXISTS priority        INT DEFAULT 0;
@@ -963,6 +970,7 @@ ALTER TABLE IF EXISTS hmis_cost_centre_expenses ADD COLUMN IF NOT EXISTS descrip
 ALTER TABLE IF EXISTS hmis_cost_centre_expenses ADD COLUMN IF NOT EXISTS amount          DECIMAL(14,2);
 ALTER TABLE IF EXISTS hmis_cost_centre_expenses ADD COLUMN IF NOT EXISTS vendor          VARCHAR(200);
 ALTER TABLE IF EXISTS hmis_cost_centre_expenses ADD COLUMN IF NOT EXISTS reference_number VARCHAR(50);
+ALTER TABLE IF EXISTS hmis_cost_centre_expenses ADD COLUMN IF NOT EXISTS created_by      UUID;
 
 -- hmis_shift_definitions
 ALTER TABLE IF EXISTS hmis_shift_definitions ADD COLUMN IF NOT EXISTS centre_id UUID;
@@ -993,6 +1001,7 @@ ALTER TABLE IF EXISTS hmis_duty_roster ADD COLUMN IF NOT EXISTS actual_start TIM
 ALTER TABLE IF EXISTS hmis_duty_roster ADD COLUMN IF NOT EXISTS actual_end TIMESTAMPTZ;
 ALTER TABLE IF EXISTS hmis_duty_roster ADD COLUMN IF NOT EXISTS overtime_minutes INT DEFAULT 0;
 ALTER TABLE IF EXISTS hmis_duty_roster ADD COLUMN IF NOT EXISTS notes TEXT;
+ALTER TABLE IF EXISTS hmis_duty_roster ADD COLUMN IF NOT EXISTS created_by UUID;
 
 -- hmis_duty_swap_requests
 ALTER TABLE IF EXISTS hmis_duty_swap_requests ADD COLUMN IF NOT EXISTS centre_id UUID;
@@ -1007,7 +1016,7 @@ ALTER TABLE IF EXISTS hmis_duty_swap_requests ADD COLUMN IF NOT EXISTS approved_
 ALTER TABLE IF EXISTS hmis_duty_swap_requests ADD COLUMN IF NOT EXISTS approved_at TIMESTAMPTZ;
 
 -- hmis_equipment_calibration
-ALTER TABLE IF EXISTS hmis_equipment_calibration ADD COLUMN IF NOT EXISTS equipment_id UUID ON DELETE CASCADE;
+ALTER TABLE IF EXISTS hmis_equipment_calibration ADD COLUMN IF NOT EXISTS equipment_id UUID;
 ALTER TABLE IF EXISTS hmis_equipment_calibration ADD COLUMN IF NOT EXISTS centre_id UUID;
 ALTER TABLE IF EXISTS hmis_equipment_calibration ADD COLUMN IF NOT EXISTS calibration_date DATE;
 ALTER TABLE IF EXISTS hmis_equipment_calibration ADD COLUMN IF NOT EXISTS next_due_date DATE;
@@ -1019,7 +1028,7 @@ ALTER TABLE IF EXISTS hmis_equipment_calibration ADD COLUMN IF NOT EXISTS deviat
 ALTER TABLE IF EXISTS hmis_equipment_calibration ADD COLUMN IF NOT EXISTS cost NUMERIC(10,2) DEFAULT 0;
 
 -- hmis_equipment
-ALTER TABLE IF EXISTS hmis_equipment ADD COLUMN IF NOT EXISTS centre_id       uuid ON DELETE CASCADE;
+ALTER TABLE IF EXISTS hmis_equipment ADD COLUMN IF NOT EXISTS centre_id       uuid;
 ALTER TABLE IF EXISTS hmis_equipment ADD COLUMN IF NOT EXISTS name            text;
 ALTER TABLE IF EXISTS hmis_equipment ADD COLUMN IF NOT EXISTS category        text;
 ALTER TABLE IF EXISTS hmis_equipment ADD COLUMN IF NOT EXISTS brand           text;
@@ -1041,8 +1050,8 @@ ALTER TABLE IF EXISTS hmis_equipment ADD COLUMN IF NOT EXISTS notes           te
 ALTER TABLE IF EXISTS hmis_equipment ADD COLUMN IF NOT EXISTS is_active       boolean DEFAULT true;
 
 -- hmis_equipment_maintenance
-ALTER TABLE IF EXISTS hmis_equipment_maintenance ADD COLUMN IF NOT EXISTS equipment_id      uuid ON DELETE CASCADE;
-ALTER TABLE IF EXISTS hmis_equipment_maintenance ADD COLUMN IF NOT EXISTS centre_id         uuid ON DELETE CASCADE;
+ALTER TABLE IF EXISTS hmis_equipment_maintenance ADD COLUMN IF NOT EXISTS equipment_id      uuid;
+ALTER TABLE IF EXISTS hmis_equipment_maintenance ADD COLUMN IF NOT EXISTS centre_id         uuid;
 ALTER TABLE IF EXISTS hmis_equipment_maintenance ADD COLUMN IF NOT EXISTS type              text;
 ALTER TABLE IF EXISTS hmis_equipment_maintenance ADD COLUMN IF NOT EXISTS reported_by       uuid;
 ALTER TABLE IF EXISTS hmis_equipment_maintenance ADD COLUMN IF NOT EXISTS reported_at       timestamptz DEFAULT now();
@@ -1052,14 +1061,14 @@ ALTER TABLE IF EXISTS hmis_equipment_maintenance ADD COLUMN IF NOT EXISTS assign
 ALTER TABLE IF EXISTS hmis_equipment_maintenance ADD COLUMN IF NOT EXISTS started_at        timestamptz;
 ALTER TABLE IF EXISTS hmis_equipment_maintenance ADD COLUMN IF NOT EXISTS completed_at      timestamptz;
 ALTER TABLE IF EXISTS hmis_equipment_maintenance ADD COLUMN IF NOT EXISTS resolution        text;
-ALTER TABLE IF EXISTS hmis_equipment_maintenance ADD COLUMN IF NOT EXISTS parts_used        jsonb DEFAULT '[]'::jsonb;
+ALTER TABLE IF EXISTS hmis_equipment_maintenance ADD COLUMN IF NOT EXISTS parts_used        jsonb;
 ALTER TABLE IF EXISTS hmis_equipment_maintenance ADD COLUMN IF NOT EXISTS cost              numeric(10,2) DEFAULT 0;
 ALTER TABLE IF EXISTS hmis_equipment_maintenance ADD COLUMN IF NOT EXISTS downtime_hours    numeric(8,2) DEFAULT 0;
 ALTER TABLE IF EXISTS hmis_equipment_maintenance ADD COLUMN IF NOT EXISTS status            text NOT NULL DEFAULT 'open';
 
 -- hmis_equipment_pm_schedule
-ALTER TABLE IF EXISTS hmis_equipment_pm_schedule ADD COLUMN IF NOT EXISTS equipment_id  uuid ON DELETE CASCADE;
-ALTER TABLE IF EXISTS hmis_equipment_pm_schedule ADD COLUMN IF NOT EXISTS centre_id     uuid ON DELETE CASCADE;
+ALTER TABLE IF EXISTS hmis_equipment_pm_schedule ADD COLUMN IF NOT EXISTS equipment_id  uuid;
+ALTER TABLE IF EXISTS hmis_equipment_pm_schedule ADD COLUMN IF NOT EXISTS centre_id     uuid;
 ALTER TABLE IF EXISTS hmis_equipment_pm_schedule ADD COLUMN IF NOT EXISTS frequency     text;
 ALTER TABLE IF EXISTS hmis_equipment_pm_schedule ADD COLUMN IF NOT EXISTS last_done     date;
 ALTER TABLE IF EXISTS hmis_equipment_pm_schedule ADD COLUMN IF NOT EXISTS next_due      date;
@@ -1067,7 +1076,7 @@ ALTER TABLE IF EXISTS hmis_equipment_pm_schedule ADD COLUMN IF NOT EXISTS assign
 ALTER TABLE IF EXISTS hmis_equipment_pm_schedule ADD COLUMN IF NOT EXISTS is_active     boolean DEFAULT true;
 
 -- hmis_housekeeping_tasks
-ALTER TABLE IF EXISTS hmis_housekeeping_tasks ADD COLUMN IF NOT EXISTS centre_id       uuid ON DELETE CASCADE;
+ALTER TABLE IF EXISTS hmis_housekeeping_tasks ADD COLUMN IF NOT EXISTS centre_id       uuid;
 ALTER TABLE IF EXISTS hmis_housekeeping_tasks ADD COLUMN IF NOT EXISTS task_type       text;
 ALTER TABLE IF EXISTS hmis_housekeeping_tasks ADD COLUMN IF NOT EXISTS area_type       text;
 ALTER TABLE IF EXISTS hmis_housekeeping_tasks ADD COLUMN IF NOT EXISTS area_name       text;
@@ -1087,7 +1096,7 @@ ALTER TABLE IF EXISTS hmis_housekeeping_tasks ADD COLUMN IF NOT EXISTS infection
 ALTER TABLE IF EXISTS hmis_housekeeping_tasks ADD COLUMN IF NOT EXISTS notes           text;
 
 -- hmis_housekeeping_schedules
-ALTER TABLE IF EXISTS hmis_housekeeping_schedules ADD COLUMN IF NOT EXISTS centre_id     uuid ON DELETE CASCADE;
+ALTER TABLE IF EXISTS hmis_housekeeping_schedules ADD COLUMN IF NOT EXISTS centre_id     uuid;
 ALTER TABLE IF EXISTS hmis_housekeeping_schedules ADD COLUMN IF NOT EXISTS area_name     text;
 ALTER TABLE IF EXISTS hmis_housekeeping_schedules ADD COLUMN IF NOT EXISTS area_type     text;
 ALTER TABLE IF EXISTS hmis_housekeeping_schedules ADD COLUMN IF NOT EXISTS frequency     text;
@@ -1096,7 +1105,7 @@ ALTER TABLE IF EXISTS hmis_housekeeping_schedules ADD COLUMN IF NOT EXISTS assig
 ALTER TABLE IF EXISTS hmis_housekeeping_schedules ADD COLUMN IF NOT EXISTS is_active     boolean DEFAULT true;
 
 -- hmis_linen_inventory
-ALTER TABLE IF EXISTS hmis_linen_inventory ADD COLUMN IF NOT EXISTS centre_id       uuid ON DELETE CASCADE;
+ALTER TABLE IF EXISTS hmis_linen_inventory ADD COLUMN IF NOT EXISTS centre_id       uuid;
 ALTER TABLE IF EXISTS hmis_linen_inventory ADD COLUMN IF NOT EXISTS item_type       text;
 ALTER TABLE IF EXISTS hmis_linen_inventory ADD COLUMN IF NOT EXISTS total_qty       integer NOT NULL DEFAULT 0;
 ALTER TABLE IF EXISTS hmis_linen_inventory ADD COLUMN IF NOT EXISTS in_circulation  integer NOT NULL DEFAULT 0;
@@ -1106,7 +1115,7 @@ ALTER TABLE IF EXISTS hmis_linen_inventory ADD COLUMN IF NOT EXISTS ward        
 ALTER TABLE IF EXISTS hmis_linen_inventory ADD COLUMN IF NOT EXISTS par_level       integer DEFAULT 0;
 
 -- hmis_linen_exchange
-ALTER TABLE IF EXISTS hmis_linen_exchange ADD COLUMN IF NOT EXISTS centre_id       uuid ON DELETE CASCADE;
+ALTER TABLE IF EXISTS hmis_linen_exchange ADD COLUMN IF NOT EXISTS centre_id       uuid;
 ALTER TABLE IF EXISTS hmis_linen_exchange ADD COLUMN IF NOT EXISTS ward            varchar(100);
 ALTER TABLE IF EXISTS hmis_linen_exchange ADD COLUMN IF NOT EXISTS item_type       text;
 ALTER TABLE IF EXISTS hmis_linen_exchange ADD COLUMN IF NOT EXISTS exchange_date   date NOT NULL DEFAULT CURRENT_DATE;
@@ -1118,7 +1127,7 @@ ALTER TABLE IF EXISTS hmis_linen_exchange ADD COLUMN IF NOT EXISTS exchanged_by 
 ALTER TABLE IF EXISTS hmis_linen_exchange ADD COLUMN IF NOT EXISTS notes           text;
 
 -- hmis_mortuary
-ALTER TABLE IF EXISTS hmis_mortuary ADD COLUMN IF NOT EXISTS centre_id               uuid ON DELETE CASCADE;
+ALTER TABLE IF EXISTS hmis_mortuary ADD COLUMN IF NOT EXISTS centre_id               uuid;
 ALTER TABLE IF EXISTS hmis_mortuary ADD COLUMN IF NOT EXISTS patient_id              uuid;
 ALTER TABLE IF EXISTS hmis_mortuary ADD COLUMN IF NOT EXISTS admission_id            uuid;
 ALTER TABLE IF EXISTS hmis_mortuary ADD COLUMN IF NOT EXISTS death_certificate_number varchar(50);
@@ -1147,6 +1156,7 @@ ALTER TABLE IF EXISTS hmis_patient_consents ADD COLUMN IF NOT EXISTS consent_typ
 ALTER TABLE IF EXISTS hmis_patient_consents ADD COLUMN IF NOT EXISTS procedure_name    text;
 ALTER TABLE IF EXISTS hmis_patient_consents ADD COLUMN IF NOT EXISTS consent_html      text;
 ALTER TABLE IF EXISTS hmis_patient_consents ADD COLUMN IF NOT EXISTS risks_explained   text;
+ALTER TABLE IF EXISTS hmis_patient_consents ADD COLUMN IF NOT EXISTS alternatives_explained text;
 ALTER TABLE IF EXISTS hmis_patient_consents ADD COLUMN IF NOT EXISTS signature_data    text;
 ALTER TABLE IF EXISTS hmis_patient_consents ADD COLUMN IF NOT EXISTS witnessed_by      uuid;
 ALTER TABLE IF EXISTS hmis_patient_consents ADD COLUMN IF NOT EXISTS witness_name      text;
@@ -1166,7 +1176,7 @@ ALTER TABLE IF EXISTS hmis_patient_consents ADD COLUMN IF NOT EXISTS centre_id  
 -- hmis_prescription_refill_requests
 ALTER TABLE IF EXISTS hmis_prescription_refill_requests ADD COLUMN IF NOT EXISTS patient_id        uuid;
 ALTER TABLE IF EXISTS hmis_prescription_refill_requests ADD COLUMN IF NOT EXISTS encounter_id      uuid;
-ALTER TABLE IF EXISTS hmis_prescription_refill_requests ADD COLUMN IF NOT EXISTS prescription_data jsonb NOT NULL DEFAULT '[]'::jsonb;
+ALTER TABLE IF EXISTS hmis_prescription_refill_requests ADD COLUMN IF NOT EXISTS prescription_data jsonb;
 ALTER TABLE IF EXISTS hmis_prescription_refill_requests ADD COLUMN IF NOT EXISTS status            text NOT NULL DEFAULT 'pending';
 ALTER TABLE IF EXISTS hmis_prescription_refill_requests ADD COLUMN IF NOT EXISTS notes             text;
 ALTER TABLE IF EXISTS hmis_prescription_refill_requests ADD COLUMN IF NOT EXISTS requested_at      timestamptz DEFAULT now();
@@ -1206,9 +1216,10 @@ ALTER TABLE IF EXISTS hmis_surgical_planning ADD COLUMN IF NOT EXISTS readiness_
 ALTER TABLE IF EXISTS hmis_surgical_planning ADD COLUMN IF NOT EXISTS notes TEXT;
 ALTER TABLE IF EXISTS hmis_surgical_planning ADD COLUMN IF NOT EXISTS cleared_by UUID;
 ALTER TABLE IF EXISTS hmis_surgical_planning ADD COLUMN IF NOT EXISTS cleared_at TIMESTAMPTZ;
+ALTER TABLE IF EXISTS hmis_surgical_planning ADD COLUMN IF NOT EXISTS created_by UUID;
 
 -- hmis_surgical_checklist_items
-ALTER TABLE IF EXISTS hmis_surgical_checklist_items ADD COLUMN IF NOT EXISTS planning_id UUID ON DELETE CASCADE;
+ALTER TABLE IF EXISTS hmis_surgical_checklist_items ADD COLUMN IF NOT EXISTS planning_id UUID;
 ALTER TABLE IF EXISTS hmis_surgical_checklist_items ADD COLUMN IF NOT EXISTS centre_id UUID;
 ALTER TABLE IF EXISTS hmis_surgical_checklist_items ADD COLUMN IF NOT EXISTS category VARCHAR(50);
 ALTER TABLE IF EXISTS hmis_surgical_checklist_items ADD COLUMN IF NOT EXISTS item_name VARCHAR(300);
@@ -1236,6 +1247,7 @@ ALTER TABLE IF EXISTS hmis_px_tokens ADD COLUMN IF NOT EXISTS bed_id UUID;
 ALTER TABLE IF EXISTS hmis_px_tokens ADD COLUMN IF NOT EXISTS ward_id UUID;
 ALTER TABLE IF EXISTS hmis_px_tokens ADD COLUMN IF NOT EXISTS is_active BOOLEAN NOT NULL DEFAULT true;
 ALTER TABLE IF EXISTS hmis_px_tokens ADD COLUMN IF NOT EXISTS expired_at TIMESTAMPTZ;
+ALTER TABLE IF EXISTS hmis_px_tokens ADD COLUMN IF NOT EXISTS created_by UUID;
 
 -- hmis_px_food_menu
 ALTER TABLE IF EXISTS hmis_px_food_menu ADD COLUMN IF NOT EXISTS centre_id UUID;
@@ -1259,7 +1271,7 @@ ALTER TABLE IF EXISTS hmis_px_food_orders ADD COLUMN IF NOT EXISTS admission_id 
 ALTER TABLE IF EXISTS hmis_px_food_orders ADD COLUMN IF NOT EXISTS bed_label VARCHAR(50);
 ALTER TABLE IF EXISTS hmis_px_food_orders ADD COLUMN IF NOT EXISTS ward_name VARCHAR(100);
 ALTER TABLE IF EXISTS hmis_px_food_orders ADD COLUMN IF NOT EXISTS patient_name VARCHAR(200);
-ALTER TABLE IF EXISTS hmis_px_food_orders ADD COLUMN IF NOT EXISTS items JSONB NOT NULL DEFAULT '[]';
+ALTER TABLE IF EXISTS hmis_px_food_orders ADD COLUMN IF NOT EXISTS items JSONB;
 ALTER TABLE IF EXISTS hmis_px_food_orders ADD COLUMN IF NOT EXISTS item_count INT GENERATED ALWAYS AS (jsonb_array_length(items)) STORED;
 ALTER TABLE IF EXISTS hmis_px_food_orders ADD COLUMN IF NOT EXISTS total_amount NUMERIC(10,2) NOT NULL DEFAULT 0;
 ALTER TABLE IF EXISTS hmis_px_food_orders ADD COLUMN IF NOT EXISTS nurse_id UUID;
@@ -1340,7 +1352,7 @@ ALTER TABLE IF EXISTS hmis_abdm_config ADD COLUMN IF NOT EXISTS hip_id varchar(5
 ALTER TABLE IF EXISTS hmis_abdm_config ADD COLUMN IF NOT EXISTS hip_name varchar(200);
 ALTER TABLE IF EXISTS hmis_abdm_config ADD COLUMN IF NOT EXISTS callback_url text;
 ALTER TABLE IF EXISTS hmis_abdm_config ADD COLUMN IF NOT EXISTS is_active boolean NOT NULL DEFAULT true;
-ALTER TABLE IF EXISTS hmis_abdm_config ADD COLUMN IF NOT EXISTS features jsonb DEFAULT '{"abha_creation":true,"abha_verification":true,"scan_share":true,"hie_cm":true}'::jsonb;
+ALTER TABLE IF EXISTS hmis_abdm_config ADD COLUMN IF NOT EXISTS features jsonb DEFAULT '{"abha_creation":true;
 ALTER TABLE IF EXISTS hmis_abdm_config ADD COLUMN IF NOT EXISTS last_token_at timestamptz;
 
 -- hmis_abdm_link_requests
@@ -1428,7 +1440,7 @@ ALTER TABLE IF EXISTS hmis_cdss_overrides ADD COLUMN IF NOT EXISTS interacting_d
 ALTER TABLE IF EXISTS hmis_cdss_overrides ADD COLUMN IF NOT EXISTS override_reason text;
 
 -- hmis_notification_preferences
-ALTER TABLE IF EXISTS hmis_notification_preferences ADD COLUMN IF NOT EXISTS centre_id     uuid ON DELETE CASCADE;
+ALTER TABLE IF EXISTS hmis_notification_preferences ADD COLUMN IF NOT EXISTS centre_id     uuid;
 ALTER TABLE IF EXISTS hmis_notification_preferences ADD COLUMN IF NOT EXISTS event_type    text;
 ALTER TABLE IF EXISTS hmis_notification_preferences ADD COLUMN IF NOT EXISTS channel       text NOT NULL DEFAULT 'whatsapp';
 ALTER TABLE IF EXISTS hmis_notification_preferences ADD COLUMN IF NOT EXISTS is_enabled    boolean NOT NULL DEFAULT true;
@@ -1450,7 +1462,7 @@ ALTER TABLE IF EXISTS hmis_integration_config ADD COLUMN IF NOT EXISTS is_active
 ALTER TABLE IF EXISTS hmis_integration_config ADD COLUMN IF NOT EXISTS centre_id   uuid;
 
 -- hmis_report_subscriptions
-ALTER TABLE IF EXISTS hmis_report_subscriptions ADD COLUMN IF NOT EXISTS centre_id   uuid ON DELETE CASCADE;
+ALTER TABLE IF EXISTS hmis_report_subscriptions ADD COLUMN IF NOT EXISTS centre_id   uuid;
 ALTER TABLE IF EXISTS hmis_report_subscriptions ADD COLUMN IF NOT EXISTS email       text;
 ALTER TABLE IF EXISTS hmis_report_subscriptions ADD COLUMN IF NOT EXISTS report_type text NOT NULL DEFAULT 'daily_summary';
 ALTER TABLE IF EXISTS hmis_report_subscriptions ADD COLUMN IF NOT EXISTS frequency   text NOT NULL DEFAULT 'daily';
