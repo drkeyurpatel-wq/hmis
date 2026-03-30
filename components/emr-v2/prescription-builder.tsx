@@ -162,31 +162,30 @@ export default function PrescriptionBuilder({ prescriptions, onChange, allergies
   }, [prescriptions, allergies]);
 
   const selectDrug = (med: any) => {
-    const medGeneric = med.generic || med.name;
-    const newAlerts = runCDSSChecks(med.name, medGeneric, med.defaultDose || '', med.route || 'Oral', med.defaultFrequency || 'OD (once daily)');
+    const drugName = med.brand || med.name || med.generic;
+    const medGeneric = med.generic || drugName;
+    const newAlerts = runCDSSChecks(drugName, medGeneric, med.defaultDose || '', med.defaultRoute || med.route || 'Oral', med.defaultFrequency || 'OD (once daily)');
 
     // Block selection ONLY if there's a critical allergy that hasn't been overridden
     const criticalAllergy = newAlerts.find(a => a.type === 'allergy' && a.severity === 'critical');
     if (criticalAllergy) {
       setAlerts(newAlerts);
-      // Don't auto-fill form — show alerts first, let doctor override
       onFlash('Allergy conflict detected — review alert below');
-      // Still set the form so doctor can override and add
       setForm(f => ({
-        ...f, drug: med.name, generic: medGeneric,
-        dose: med.defaultDose || '', route: med.route || 'Oral',
-        frequency: med.defaultFrequency || 'OD (once daily)',
-        category: med.category || '',
+        ...f, drug: drugName, generic: medGeneric,
+        dose: med.defaultDose || med.strength || '', route: med.defaultRoute || med.route || 'Oral',
+        frequency: med.defaultFrequency || 'OD (once daily)', duration: med.defaultDuration || '5 days',
+        instructions: med.defaultInstructions || '', category: med.category || '',
       }));
       setSearch('');
       return;
     }
 
     setForm(f => ({
-      ...f, drug: med.name, generic: medGeneric,
-      dose: med.defaultDose || '', route: med.route || 'Oral',
-      frequency: med.defaultFrequency || 'OD (once daily)',
-      category: med.category || '',
+      ...f, drug: drugName, generic: medGeneric,
+      dose: med.defaultDose || med.strength || '', route: med.defaultRoute || med.route || 'Oral',
+      frequency: med.defaultFrequency || 'OD (once daily)', duration: med.defaultDuration || '5 days',
+      instructions: med.defaultInstructions || '', category: med.category || '',
     }));
     setSearch('');
     setAlerts(newAlerts);
@@ -337,9 +336,10 @@ export default function PrescriptionBuilder({ prescriptions, onChange, allergies
               {results.length > 0 && <div className="absolute top-full left-0 right-0 mt-1 bg-white border rounded-lg shadow-lg z-10 max-h-52 overflow-y-auto">
                 {results.map((med: any, i: number) => (
                   <button key={i} onClick={() => selectDrug(med)} className="w-full text-left px-3 py-2 hover:bg-blue-50 border-b text-xs">
-                    <span className="font-medium">{med.name}</span>
+                    <span className="font-medium">{med.brand || med.name || med.generic}</span>
                     {med.generic && <span className="text-gray-400 ml-1">({med.generic})</span>}
-                    {med.defaultDose && <span className="text-blue-600 ml-2">{med.defaultDose}</span>}
+                    {med.strength && <span className="text-blue-600 ml-1">{med.strength}</span>}
+                    {med.defaultDose && <span className="text-teal-600 ml-1">{med.defaultDose}</span>}
                     {med.category && <span className="text-[9px] bg-gray-100 text-gray-500 px-1 ml-1 rounded">{med.category}</span>}
                   </button>
                 ))}
