@@ -167,6 +167,7 @@ export function useEncounters(patientId: string | null) {
     const payload = {
       centre_id: meta.centreId, patient_id: patientId, doctor_id: meta.doctorId,
       opd_visit_id: meta.opdVisitId || null, encounter_type: meta.encounterType || 'opd',
+      encounter_date: new Date().toISOString(),
       vitals: data.vitals, complaints: data.complaints, exam_findings: data.examFindings,
       diagnoses: data.diagnoses, investigations: data.investigations, prescriptions: data.prescriptions,
       advice: data.advice, follow_up: data.followUp, referral: data.referral,

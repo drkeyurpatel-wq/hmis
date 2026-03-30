@@ -131,10 +131,10 @@ function EMRInner() {
     };
 
     const result = await emr.saveEncounter(encounterData as any);
-    if (result.data) {
+    if (result.success) {
       // On sign (final save), create real orders in downstream modules
       if (sign && sb() && centreId) {
-        const encounterId = result.data?.id || null;
+        const encounterId = result.id || null;
         const clinicalIndication = diagnoses.map(d => d.name).join(', ');
 
         // Create lab orders — resolve test_id from hmis_lab_test_master so worklist picks them up
@@ -232,34 +232,37 @@ function EMRInner() {
         if (parts.length > 0) flash(`Signed + ${parts.join(' + ')} orders created`);
       }
 
-      flash(sign ? 'Encounter signed & saved' : (result.error ? 'Error saving' : 'Encounter saved'));
+      flash(sign ? 'Encounter signed & saved' : (result.offline ? 'Saved offline — will sync' : 'Encounter saved'));
       if (sign) {
         // Auto-complete OPD visit if opened from queue
         // Sign the encounter (change status to 'signed')
-        if (encounterId) {
-          await sb().from('hmis_emr_encounters').update({
+        const signEncId = encounterId || emr.activeEncounterId;
+        if (signEncId) {
+          const { error: signErr } = await sb().from('hmis_emr_encounters').update({
             status: 'signed', signed_at: new Date().toISOString(),
-          }).eq('id', encounterId);
+          }).eq('id', signEncId);
+          if (signErr) console.error('Sign encounter failed:', signErr);
         }
 
         // Complete the OPD visit — find by patient + today if no visit param
-        const visitToComplete = opdVisitId || null;
-        if (visitToComplete) {
-          await sb().from('hmis_opd_visits').update({
+        if (opdVisitId) {
+          const { error: opdErr } = await sb().from('hmis_opd_visits').update({
             status: 'completed', consultation_end: new Date().toISOString(),
-          }).eq('id', visitToComplete);
+          }).eq('id', opdVisitId);
+          if (opdErr) console.error('OPD complete failed:', opdErr);
         } else {
           // Auto-find active OPD visit for this patient today
-          const today = new Date().toISOString().split('T')[0];
+          const todayStr = new Date().toISOString().split('T')[0];
           const { data: activeVisit } = await sb().from('hmis_opd_visits')
             .select('id').eq('patient_id', patient.id).eq('centre_id', centreId)
             .in('status', ['waiting', 'with_doctor', 'checked_in'])
-            .gte('created_at', today + 'T00:00:00')
+            .gte('created_at', todayStr + 'T00:00:00')
             .order('created_at', { ascending: false }).limit(1).maybeSingle();
           if (activeVisit) {
-            await sb().from('hmis_opd_visits').update({
+            const { error: autoOpdErr } = await sb().from('hmis_opd_visits').update({
               status: 'completed', consultation_end: new Date().toISOString(),
             }).eq('id', activeVisit.id);
+            if (autoOpdErr) console.error('Auto OPD complete failed:', autoOpdErr);
           }
         }
 
