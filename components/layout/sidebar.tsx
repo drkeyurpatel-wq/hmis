@@ -224,17 +224,7 @@ export function Sidebar({ mobileOpen, onMobileClose }: { mobileOpen?: boolean; o
           ) : (
             <>
               <Link href="/" className="flex items-center gap-2">
-                <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-                  <rect x="8" y="0" width="12" height="28" rx="2" fill="#E8B931"/>
-                  <rect x="0" y="8" width="28" height="12" rx="2" fill="#E8B931"/>
-                  <rect x="9" y="1" width="10" height="26" rx="1.5" fill="#D42B2C"/>
-                  <rect x="1" y="9" width="26" height="10" rx="1.5" fill="#2A9D8F"/>
-                  <rect x="9" y="9" width="10" height="10" fill="#1B3A5C"/>
-                </svg>
-                <div>
-                  <span className="text-sm font-bold text-[#1B3A5C] tracking-wide">HEALTH1</span>
-                  <span className="text-[9px] text-gray-400 block -mt-0.5">HMIS</span>
-                </div>
+                <img src="/images/health1-logo.svg" alt="Health1" className="h-8 w-auto" />
               </Link>
               <button onClick={() => setCollapsed(true)} className="text-gray-300 hover:text-gray-500 transition-colors cursor-pointer">
                 <PanelLeftClose size={16} />
