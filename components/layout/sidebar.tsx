@@ -134,7 +134,7 @@ export function Sidebar({ mobileOpen, onMobileClose }: { mobileOpen?: boolean; o
         </div>
 
         {/* Centre selector */}
-        {!collapsed && centres.length > 1 && (
+        {!collapsed && (
           <div className="px-3 py-2 relative">
             <button onClick={() => setCentreOpen(!centreOpen)}
               className="w-full flex items-center gap-2 px-2.5 py-2 rounded-lg bg-white/[0.05] hover:bg-white/[0.08] transition-colors text-left cursor-pointer">
