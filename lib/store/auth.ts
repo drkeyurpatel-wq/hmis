@@ -48,12 +48,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     if (!activeCentre) return false;
     // super_admin has all permissions
     if (activeCentre.role?.name === 'super_admin') return true;
-    // Check role_permissions
-    return (
-      activeCentre.role?.permissions?.some(
-        (p: { module: string; action: string }) =>
-          p.module === module && p.action === action
-      ) ?? false
+    // Check role_permissions — permissions may be {} or [] depending on DB state
+    const perms = activeCentre.role?.permissions;
+    if (!Array.isArray(perms)) return false;
+    return perms.some(
+      (p: { module: string; action: string }) =>
+        p.module === module && p.action === action
     );
   },
 
