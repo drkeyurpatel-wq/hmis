@@ -131,10 +131,10 @@ function EMRInner() {
     };
 
     const result = await emr.saveEncounter(encounterData as any);
-    if (result.success) {
+    if (result.data) {
       // On sign (final save), create real orders in downstream modules
       if (sign && sb() && centreId) {
-        const encounterId = result.id || null;
+        const encounterId = result.data?.id || null;
         const clinicalIndication = diagnoses.map(d => d.name).join(', ');
 
         // Create lab orders — resolve test_id from hmis_lab_test_master so worklist picks them up
@@ -232,14 +232,35 @@ function EMRInner() {
         if (parts.length > 0) flash(`Signed + ${parts.join(' + ')} orders created`);
       }
 
-      flash(sign ? 'Encounter signed & saved' : (result.offline ? 'Saved offline — will sync' : 'Encounter saved'));
+      flash(sign ? 'Encounter signed & saved' : (result.error ? 'Error saving' : 'Encounter saved'));
       if (sign) {
         // Auto-complete OPD visit if opened from queue
-        if (opdVisitId && sb()) {
+        // Sign the encounter (change status to 'signed')
+        if (encounterId) {
+          await sb().from('hmis_emr_encounters').update({
+            status: 'signed', signed_at: new Date().toISOString(),
+          }).eq('id', encounterId);
+        }
+
+        // Complete the OPD visit — find by patient + today if no visit param
+        const visitToComplete = opdVisitId || null;
+        if (visitToComplete) {
           await sb().from('hmis_opd_visits').update({
-            status: 'completed',
-            consultation_end: new Date().toISOString(),
-          }).eq('id', opdVisitId);
+            status: 'completed', consultation_end: new Date().toISOString(),
+          }).eq('id', visitToComplete);
+        } else {
+          // Auto-find active OPD visit for this patient today
+          const today = new Date().toISOString().split('T')[0];
+          const { data: activeVisit } = await sb().from('hmis_opd_visits')
+            .select('id').eq('patient_id', patient.id).eq('centre_id', centreId)
+            .in('status', ['waiting', 'with_doctor', 'checked_in'])
+            .gte('created_at', today + 'T00:00:00')
+            .order('created_at', { ascending: false }).limit(1).maybeSingle();
+          if (activeVisit) {
+            await sb().from('hmis_opd_visits').update({
+              status: 'completed', consultation_end: new Date().toISOString(),
+            }).eq('id', activeVisit.id);
+          }
         }
 
         // Reset for next patient
