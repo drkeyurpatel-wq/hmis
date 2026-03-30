@@ -49,7 +49,7 @@ function EMRInner() {
   const staffId = staff?.id || '';
   const centreId = activeCentreId || '';
 
-  const [step, setStep] = useState<Step>('vitals');
+  // Single page — no step state needed
   const [patient, setPatient] = useState<Patient>({ id: '', name: '', age: '--', gender: '--', uhid: 'H1-00000', phone: '', allergies: [], bloodGroup: '' });
   const [showSearch, setShowSearch] = useState(!preselectedPatient);
   const [searchQ, setSearchQ] = useState('');
@@ -103,7 +103,7 @@ function EMRInner() {
     setAdvice('');
     setFollowUpDate('');
     setReferral({ department: '', doctor: '', reason: '', urgency: 'routine' });
-    setStep('vitals'); // Reset to first step
+    // Reset scroll to top
 
     setPatient({
       id: pt.id, name: `${pt.first_name} ${pt.last_name || ''}`.trim(), age: pt.age_years?.toString() || '--',
@@ -247,7 +247,7 @@ function EMRInner() {
         setVitals({ systolic: '', diastolic: '', heartRate: '', spo2: '', temperature: '', weight: '', height: '', respiratoryRate: '', isAlert: true, onO2: false });
         setComplaints([]); setExamFindings({}); setDiagnoses([]); setPrescriptions([]); setInvestigations([]);
         setAdvice(''); setFollowUpDate('');
-        setStep('vitals'); setShowSearch(true);
+        setShowSearch(true);
 
         // Navigate back to OPD queue if came from there
         if (opdVisitId) {
@@ -259,9 +259,9 @@ function EMRInner() {
   };
 
   // Step navigation
-  const stepIdx = STEPS.findIndex(s => s.key === step);
-  const nextStep = () => { if (stepIdx < STEPS.length - 1) setStep(STEPS[stepIdx + 1].key); };
-  const prevStep = () => { if (stepIdx > 0) setStep(STEPS[stepIdx - 1].key); };
+  const stepIdx = 0; // Single page layout
+
+
 
   // Filled indicators
   const filled = {
@@ -321,25 +321,22 @@ function EMRInner() {
         </div>
       )}
 
-      {/* Main layout: step rail + content + sidebar */}
+      {/* Main layout: content + sidebar */}
       <div className="flex gap-3">
-        {/* Step rail (left) */}
-        <div className="w-14 flex-shrink-0 space-y-1">
-          {STEPS.map((s, i) => (
-            <button key={s.key} onClick={() => setStep(s.key)}
-              className={`w-full py-2 rounded-lg text-center relative ${step === s.key ? 'bg-teal-600 text-white' : filled[s.key] ? 'bg-green-100 text-green-700 border border-green-300' : 'bg-gray-50 text-gray-400 border'}`}>
-              <div className="text-[10px] font-bold">{s.short}</div>
-              {filled[s.key] && step !== s.key && <div className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-green-500 rounded-full" />}
-            </button>
-          ))}
-        </div>
-
-        {/* Content area */}
-        <div className="flex-1 min-w-0">
-          {/* Step header */}
-          <div className="flex items-center justify-between mb-2">
-            <h2 className="text-sm font-bold text-gray-700">{STEPS[stepIdx].label}</h2>
-            <div className="flex gap-1">
+        {/* Content area — single page scroll */}
+        <div className="flex-1 min-w-0 space-y-4">
+          {/* Quick nav + right panel toggles */}
+          <div className="sticky top-14 z-10 bg-gray-50/95 backdrop-blur-sm py-2 -mx-1 px-1 flex items-center justify-between">
+            <div className="flex gap-1 overflow-x-auto">
+              {STEPS.map(s => (
+                <a key={s.key} href={`#section-${s.key}`}
+                  className={`px-2.5 py-1.5 text-[10px] font-bold rounded-lg whitespace-nowrap transition-colors ${filled[s.key] ? 'bg-green-100 text-green-700 border border-green-300' : 'bg-white text-gray-400 border border-gray-200 hover:bg-gray-50'}`}>
+                  {s.short}
+                  {filled[s.key] && <span className="ml-1 text-green-500">✓</span>}
+                </a>
+              ))}
+            </div>
+            <div className="flex gap-1 shrink-0 ml-2">
               {patient.id && <button onClick={() => setShowHistory(!showHistory)} className={`px-2 py-1 text-[10px] rounded border ${showHistory ? 'bg-teal-600 text-white' : 'bg-white'}`}>History</button>}
               {patient.id && <button onClick={() => setShowImaging(!showImaging)} className={`px-2 py-1 text-[10px] rounded border ${showImaging ? 'bg-teal-600 text-white' : 'bg-white'}`}>Imaging</button>}
               {patient.id && <button onClick={() => setShowLab(!showLab)} className={`px-2 py-1 text-[10px] rounded border ${showLab ? 'bg-teal-600 text-white' : 'bg-white'}`}>Lab</button>}
@@ -347,17 +344,37 @@ function EMRInner() {
             </div>
           </div>
 
-          {/* Step content */}
-          {step === 'vitals' && <VitalsPanel vitals={vitals} onChange={setVitals} />}
-          {step === 'complaints' && <SmartComplaintBuilder complaints={complaints} setComplaints={setComplaints} />}
-          {step === 'exam' && <SmartExamBuilder findings={examFindings} setFindings={setExamFindings} />}
-          {step === 'diagnosis' && <DiagnosisBuilder diagnoses={diagnoses} onChange={setDiagnoses} />}
-          {step === 'rx' && <PrescriptionBuilder prescriptions={prescriptions} onChange={setPrescriptions} allergies={patient.allergies} patientId={patient.id} staffId={staffId} centreId={centreId} onFlash={flash} />}
-          {step === 'investigations' && <InvestigationPanel investigations={investigations} onChange={setInvestigations} />}
+          {/* All sections — vertical scroll */}
+          <div id="section-vitals"><VitalsPanel vitals={vitals} onChange={setVitals} /></div>
 
-          {step === 'followup' && (
+          <div id="section-complaints" className="pt-1">
+            <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Chief Complaints</h3>
+            <SmartComplaintBuilder complaints={complaints} setComplaints={setComplaints} />
+          </div>
+
+          <div id="section-exam" className="pt-1">
+            <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Examination</h3>
+            <SmartExamBuilder findings={examFindings} setFindings={setExamFindings} />
+          </div>
+
+          <div id="section-diagnosis" className="pt-1">
+            <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Diagnosis</h3>
+            <DiagnosisBuilder diagnoses={diagnoses} onChange={setDiagnoses} />
+          </div>
+
+          <div id="section-rx" className="pt-1">
+            <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Prescription</h3>
+            <PrescriptionBuilder prescriptions={prescriptions} onChange={setPrescriptions} allergies={patient.allergies} patientId={patient.id} staffId={staffId} centreId={centreId} onFlash={flash} />
+          </div>
+
+          <div id="section-investigations" className="pt-1">
+            <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Investigations</h3>
+            <InvestigationPanel investigations={investigations} onChange={setInvestigations} />
+          </div>
+
+          <div id="section-followup" className="pt-1">
+            <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Follow-up & Advice</h3>
             <div className="bg-white rounded-xl border p-4 space-y-3">
-              <h3 className="font-bold text-sm">Follow-up & Advice</h3>
               <div className="grid grid-cols-2 gap-3">
                 <div><label className="text-xs text-gray-500">Follow-up Date</label>
                   <input type="date" value={followUpDate} onChange={e => setFollowUpDate(e.target.value)} className="w-full px-3 py-2 border rounded-lg text-sm" />
@@ -381,11 +398,11 @@ function EMRInner() {
                 ))}</div>
               </div>
             </div>
-          )}
+          </div>
 
-          {step === 'review' && (
+          <div id="section-review" className="pt-1">
+            <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Review & Sign</h3>
             <div className="bg-white rounded-xl border p-5 space-y-4">
-              <h3 className="font-bold text-sm">Review & Sign</h3>
               {/* Summary */}
               <div className="grid grid-cols-2 gap-3 text-xs">
                 <div className="bg-gray-50 rounded-lg p-3">
@@ -471,13 +488,6 @@ function EMRInner() {
                 }} className="px-4 py-2.5 bg-teal-600 text-white text-sm rounded-lg">Print Summary</button>
               </div>
             </div>
-          )}
-
-          {/* Step navigation */}
-          <div className="flex items-center justify-between mt-3">
-            <button onClick={prevStep} disabled={stepIdx === 0} className="px-4 py-2 bg-gray-100 text-sm rounded-lg disabled:opacity-30">← Previous</button>
-            <div className="text-[10px] text-gray-400">Step {stepIdx + 1} of {STEPS.length}</div>
-            <button onClick={nextStep} disabled={stepIdx === STEPS.length - 1} className="px-4 py-2 bg-teal-600 text-white text-sm rounded-lg disabled:opacity-30">Next →</button>
           </div>
         </div>
 
