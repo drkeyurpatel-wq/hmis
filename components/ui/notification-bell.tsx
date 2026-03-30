@@ -45,7 +45,7 @@ export function NotificationBell() {
     const items: Notification[] = [];
 
     try {
-      const [labReady, rxPending, erActive, opdWaiting] = await Promise.all([
+      const [labReady, rxPending, erActive, opdWaiting, critAlerts] = await Promise.all([
         sb().from('hmis_lab_orders').select('id, test_name, patient:hmis_patients!inner(first_name, last_name), created_at')
           .eq('centre_id', centreId).eq('status', 'completed').gte('created_at', ts).order('created_at', { ascending: false }).limit(5),
         sb().from('hmis_pharmacy_dispensing').select('id, created_at, patient:hmis_patients!inner(first_name, last_name)')
@@ -54,6 +54,8 @@ export function NotificationBell() {
           .eq('centre_id', centreId).in('status', ['triaged', 'being_seen']).gte('arrival_time', ts).limit(5),
         sb().from('hmis_opd_visits').select('id, token_number, created_at, patient:hmis_patients!inner(first_name, last_name)')
           .eq('centre_id', centreId).eq('status', 'waiting').gte('created_at', ts).limit(5),
+        sb().from('hmis_clinical_alerts').select('id, severity, title, message, patient:hmis_patients!inner(first_name, last_name), created_at')
+          .eq('centre_id', centreId).eq('status', 'active').in('severity', ['critical', 'high']).order('created_at', { ascending: false }).limit(5),
       ]);
 
       (labReady.data || []).forEach((l: any) => items.push({
@@ -86,6 +88,13 @@ export function NotificationBell() {
           time: new Date(o.created_at), read: false,
         });
       });
+
+      (critAlerts.data || []).forEach((a: any) => items.push({
+        id: `alert-${a.id}`, type: 'critical', title: `${(a.severity || '').toUpperCase()}: ${a.title || 'Clinical Alert'}`,
+        message: `${a.patient?.first_name} ${a.patient?.last_name} — ${a.message || ''}`,
+        href: '/nursing-station', icon: AlertTriangle, color: 'text-red-600 bg-red-50',
+        time: new Date(a.created_at), read: false,
+      }));
     } catch (e) { console.error(e); }
 
     items.sort((a, b) => b.time.getTime() - a.time.getTime());

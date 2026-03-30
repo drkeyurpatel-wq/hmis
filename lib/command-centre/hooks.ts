@@ -368,3 +368,119 @@ export function useCommandCentre() {
 
   return { centres, totals, loading, errors, lastRefresh, alerts, refresh: load };
 }
+
+// ============================================================
+// Revenue Trend — last 7 days
+// ============================================================
+export interface DailyRevenue {
+  date: string;
+  label: string;
+  gross: number;
+  net: number;
+  collected: number;
+  opd_count: number;
+  admissions: number;
+  discharges: number;
+  lab_orders: number;
+}
+
+export function useRevenueTrend(centreId?: string) {
+  const [data, setData] = useState<DailyRevenue[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const days: DailyRevenue[] = [];
+        const now = new Date();
+
+        for (let i = 6; i >= 0; i--) {
+          const d = new Date(now);
+          d.setDate(d.getDate() - i);
+          const dateStr = d.toISOString().slice(0, 10);
+          const dayLabel = d.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric' });
+          const start = dateStr + 'T00:00:00';
+          const end = dateStr + 'T23:59:59';
+
+          let billQ = sb().from('hmis_bills').select('gross_amount, net_amount').gte('bill_date', start).lte('bill_date', end).eq('status', 'final');
+          let payQ = sb().from('hmis_payments').select('amount').gte('payment_date', start).lte('payment_date', end);
+          let opdQ = sb().from('hmis_opd_visits').select('id', { count: 'exact', head: true }).gte('visit_date', start).lte('visit_date', end);
+          let admQ = sb().from('hmis_admissions').select('id', { count: 'exact', head: true }).gte('admission_date', start).lte('admission_date', end);
+          let disQ = sb().from('hmis_admissions').select('id', { count: 'exact', head: true }).gte('discharge_date', start).lte('discharge_date', end);
+          let labQ = sb().from('hmis_lab_orders').select('id', { count: 'exact', head: true }).gte('order_date', start).lte('order_date', end);
+
+          if (centreId) {
+            billQ = billQ.eq('centre_id', centreId);
+            payQ = payQ.eq('centre_id', centreId);
+            opdQ = opdQ.eq('centre_id', centreId);
+            admQ = admQ.eq('centre_id', centreId);
+            disQ = disQ.eq('centre_id', centreId);
+            labQ = labQ.eq('centre_id', centreId);
+          }
+
+          const [bills, pays, opd, adm, dis, lab] = await Promise.all([
+            billQ, payQ, opdQ, admQ, disQ, labQ,
+          ]);
+
+          const gross = (bills.data || []).reduce((s: number, b: any) => s + (parseFloat(b.gross_amount) || 0), 0);
+          const net = (bills.data || []).reduce((s: number, b: any) => s + (parseFloat(b.net_amount) || 0), 0);
+          const collected = (pays.data || []).reduce((s: number, p: any) => s + (parseFloat(p.amount) || 0), 0);
+
+          days.push({
+            date: dateStr, label: dayLabel, gross, net, collected,
+            opd_count: opd.count || 0, admissions: adm.count || 0,
+            discharges: dis.count || 0, lab_orders: lab.count || 0,
+          });
+        }
+
+        setData(days);
+      } catch (e) { console.error(e); }
+      setLoading(false);
+    };
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [centreId]);
+
+  return { data, loading };
+}
+
+// ============================================================
+// Department-wise OPD distribution
+// ============================================================
+export interface DeptOPD {
+  department: string;
+  count: number;
+}
+
+export function useDeptDistribution(centreId?: string) {
+  const [data, setData] = useState<DeptOPD[]>([]);
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const today = new Date().toISOString().slice(0, 10);
+        let q = sb().from('hmis_opd_visits')
+          .select('department:hmis_departments(name)')
+          .gte('visit_date', today)
+          .lte('visit_date', today + 'T23:59:59');
+        if (centreId) q = q.eq('centre_id', centreId);
+        const { data: visits } = await q;
+
+        const counts: Record<string, number> = {};
+        for (const v of (visits || [])) {
+          const dept = (v as any)?.department?.name || 'Unknown';
+          counts[dept] = (counts[dept] || 0) + 1;
+        }
+
+        setData(Object.entries(counts)
+          .map(([department, count]) => ({ department, count }))
+          .sort((a, b) => b.count - a.count)
+          .slice(0, 10));
+      } catch (e) { console.error(e); }
+    };
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [centreId]);
+
+  return data;
+}
