@@ -51,7 +51,7 @@ export async function safeMutation<T>(
         ip_address: null, // Could be populated from request headers
         created_at: new Date().toISOString(),
       });
-    } catch {} // Audit failure should never block the primary operation
+    } catch (e) { console.error(e); } // Audit failure should never block the primary operation
   }
 
   return result;

@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
       medpayConnected = true;
       medpayDoctorCount = dc || 0;
       medpayRowCount = rc || 0;
-    } catch {}
+    } catch (e) { console.error(e); }
   }
 
   return NextResponse.json({

@@ -98,7 +98,7 @@ export default function AdmissionWizard({ onDone, onFlash, preselectedPatientId 
     try {
       const { onAdmissionCreated } = await import('@/lib/bridge/module-events');
       await onAdmissionCreated({ centreId, admissionId: admission!.id, patientId: patient.id, staffId: staff.id });
-    } catch {}
+    } catch (e) { console.error(e); }
 
     setSaving(false);
     onFlash(`Admitted: ${patient.first_name} — ${admission?.ipd_number}`);

@@ -86,7 +86,7 @@ export function NotificationBell() {
           time: new Date(o.created_at), read: false,
         });
       });
-    } catch {}
+    } catch (e) { console.error(e); }
 
     items.sort((a, b) => b.time.getTime() - a.time.getTime());
     setNotifications(items);

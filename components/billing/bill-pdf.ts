@@ -1,6 +1,7 @@
 // components/billing/bill-pdf.ts
 // Print functions — opens new window with formatted HTML for printing
 import { LOGO_SVG, LOGO_ASPECT } from '@/lib/config/logo';
+import { HOSPITAL } from '@/lib/config/hospital';
 
 const fmt = (n: number) => Math.round(parseFloat(String(n)) || 0).toLocaleString('en-IN');
 
@@ -22,7 +23,7 @@ function printHeader(hospital: any, rightContent: string): string {
   return `<div class="header"><div class="header-left">
     <img src="${LOGO_SVG}" class="logo-img" alt="Health1" />
     <div class="hospital-text">
-      <div>${hospital?.address || 'Nr. Shilaj Circle, S.P. Ring Road, Ahmedabad - 380058'}</div>
+      <div>${hospital?.address || HOSPITAL.address}</div>
       ${hospital?.gstin ? `<div>GSTIN: ${hospital.gstin} ${hospital?.cin ? '| CIN: ' + hospital.cin : ''}</div>` : ''}
       ${hospital?.phone ? `<div>Ph: ${hospital.phone}</div>` : ''}
     </div>

@@ -1,9 +1,6 @@
 'use client';
 import React, { useState } from 'react';
-import { createClient } from '@/lib/supabase/client';
-
-let _sb: any = null;
-function sb() { if (typeof window === 'undefined') return null as any; if (!_sb) { try { _sb = createClient(); } catch { return null; } } return _sb; }
+import { sb } from '@/lib/supabase/browser';
 
 const STEPS = ['Hospital info', 'Departments', 'Wards & beds', 'Staff', 'Billing', 'Go live'];
 

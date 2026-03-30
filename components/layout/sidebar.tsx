@@ -348,7 +348,7 @@ export function Sidebar({ mobileOpen, onMobileClose }: { mobileOpen?: boolean; o
               </div>
               <button onClick={async () => {
                 if (!confirm('Sign out?')) return;
-                try { const { createClient: cc } = await import('@/lib/supabase/client'); await cc().auth.signOut(); } catch {}
+                try { const { createClient: cc } = await import('@/lib/supabase/client'); await cc().auth.signOut(); } catch (e) { console.error(e); }
                 window.location.href = '/auth/login';
               }} className="text-gray-400 hover:text-red-500 transition-colors cursor-pointer"><LogOut size={14} /></button>
             </div>
@@ -363,7 +363,7 @@ export function Sidebar({ mobileOpen, onMobileClose }: { mobileOpen?: boolean; o
               </div>
               <button onClick={async () => {
                 if (!confirm('Sign out of HMIS?')) return;
-                try { const { createClient: cc } = await import('@/lib/supabase/client'); await cc().auth.signOut(); } catch {}
+                try { const { createClient: cc } = await import('@/lib/supabase/client'); await cc().auth.signOut(); } catch (e) { console.error(e); }
                 window.location.href = '/auth/login';
               }} className="text-gray-400 hover:text-red-500 transition-colors p-1 cursor-pointer" title="Sign out">
                 <LogOut size={14} />

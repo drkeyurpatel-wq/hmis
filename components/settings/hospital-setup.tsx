@@ -79,7 +79,7 @@ export default function HospitalSetup({ centreId, flash }: Props) {
         <div><label className="text-[10px] text-gray-500 font-medium">Logo URL</label>
           <input value={form.logo_url} onChange={e => set('logo_url', e.target.value)} className="w-full px-3 py-2 border rounded-lg text-sm" placeholder="https://..." /></div>
         <div><label className="text-[10px] text-gray-500 font-medium">HFR ID (ABDM)</label>
-          <input value={form.hfr_id} onChange={e => set('hfr_id', e.target.value)} className="w-full px-3 py-2 border rounded-lg text-sm" placeholder="IN2410013685" /></div>
+          <input value={form.hfr_id} onChange={e => set('hfr_id', e.target.value)} className="w-full px-3 py-2 border rounded-lg text-sm" placeholder="e.g. IN2410013685" /></div>
       </div>
 
       {form.logo_url && <div className="flex items-center gap-3">

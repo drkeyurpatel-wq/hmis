@@ -29,7 +29,7 @@ export function mapPayorToSponsor(payorType: string, insurerName?: string): stri
 
 // ── Centre Mapping ──
 const CENTRE_NAMES: Record<string, string> = {
-  'c0000001-0000-0000-0000-000000000001': 'Shilaj',
+  'c0000001-0000-0000-0000-000000000001': 'Shilaj', // TODO: move to hmis_centres lookup
   'c0000001-0000-0000-0000-000000000002': 'Vastral',
   'c0000001-0000-0000-0000-000000000003': 'Modasa',
   'c0000001-0000-0000-0000-000000000004': 'Gandhinagar',

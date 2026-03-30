@@ -36,14 +36,15 @@ interface HistoReportData {
 }
 
 import { LOGO_SVG } from '@/lib/config/logo';
+import { HOSPITAL } from '@/lib/config/hospital';
 
 const HEADER = (centreName?: string, centreAddress?: string) => `
 <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid #1e40af;padding-bottom:10px;margin-bottom:12px">
   <div style="display:flex;align-items:center;gap:12px">
     <img src="${LOGO_SVG}" style="width:150px;height:auto" alt="Health1" />
     <div>
-      <div style="font-size:9px;color:#666;line-height:1.4">${centreAddress || 'Nr. Shilaj Circle, S.P. Ring Road, Ahmedabad - 380058'}</div>
-      <div style="font-size:8px;color:#666">NABL Accredited | HFR: IN2410013685</div>
+      <div style="font-size:9px;color:#666;line-height:1.4">${centreAddress || HOSPITAL.address}</div>
+      <div style="font-size:8px;color:#666">NABL Accredited | HFR: ${HOSPITAL.hfrId}</div>
     </div>
   </div>
   <div style="text-align:right;font-size:9px;color:#666">
@@ -204,7 +205,7 @@ export function sendLabReportWhatsApp(phone: string, data: {
     `${data.resultSummary}\n\n` +
     `${data.reportUrl ? '📄 Report: ' + data.reportUrl + '\n\n' : ''}` +
     `_Please collect your original report from Health1 Hospital._\n` +
-    `_For queries, call Health1 Lab: +91 79 4890 1234_`
+    `_For queries, call Health1 Lab: ${HOSPITAL.phone}_`
   );
   const cleanPhone = phone.replace(/[^0-9]/g, '');
   const fullPhone = cleanPhone.startsWith('91') ? cleanPhone : '91' + cleanPhone;

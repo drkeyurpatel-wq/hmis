@@ -125,7 +125,7 @@ export async function POST(req: NextRequest) {
       else if (raw.includes('H|\\^&')) { parsed = parseASTM(raw); format = 'astm'; }
       else {
         // Try JSON anyway
-        try { parsed = parseJSON(JSON.parse(raw)); format = 'json'; } catch {}
+        try { parsed = parseJSON(JSON.parse(raw)); format = 'json'; } catch (e) { console.error(e); }
       }
     }
 

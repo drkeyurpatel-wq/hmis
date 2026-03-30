@@ -271,7 +271,7 @@ export async function onLabCriticalResult(params: {
 }) {
   if (!sb()) return;
   // Insert into clinical_alerts (nursing station reads this)
-  await sb()!.from('hmis_cdss_alerts').insert({
+  await sb()!.from('hmis_clinical_alerts').insert({
     centre_id: params.centreId, patient_id: params.patientId,
     admission_id: params.admissionId || null,
     alert_type: 'lab_critical', severity: 'high',

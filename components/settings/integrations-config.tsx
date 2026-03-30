@@ -16,7 +16,7 @@ const PROVIDERS: { key: string; label: string; color: string; fields: { key: str
   { key: 'abdm', label: 'ABDM / ABHA', color: 'bg-orange-100 text-orange-700', fields: [
     { key: 'client_id', label: 'ABDM Client ID', placeholder: 'From ABDM sandbox/production' },
     { key: 'client_secret', label: 'ABDM Client Secret', secret: true },
-    { key: 'hip_id', label: 'HIP ID (HFR ID)', placeholder: 'IN2410013685' },
+    { key: 'hip_id', label: 'HIP ID (HFR ID)', placeholder: 'e.g. IN2410013685' },
     { key: 'environment', label: 'Environment', placeholder: 'sandbox or production' },
     { key: 'callback_url', label: 'Callback URL', placeholder: 'https://yourdomain.com/api/abdm' },
   ], testType: 'connection' },

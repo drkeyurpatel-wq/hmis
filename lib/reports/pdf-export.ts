@@ -31,7 +31,7 @@ export function exportToPDF(sheets: ExcelSheet[], title: string) {
     // Hospital logo
     const logoW = 45;
     const logoH = logoW / LOGO_ASPECT;
-    try { doc.addImage(LOGO_PNG, 'PNG', 14, 6, logoW, logoH); } catch {}
+    try { doc.addImage(LOGO_PNG, 'PNG', 14, 6, logoW, logoH); } catch (e) { console.error(e); }
 
     // Report title
     doc.setFont('helvetica', 'bold');

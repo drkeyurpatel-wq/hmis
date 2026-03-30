@@ -32,7 +32,7 @@ export async function GET(req: NextRequest) {
   let medpayDoctors: any[] = [];
   try {
     medpayDoctors = await getMedPayDoctors();
-  } catch {}
+  } catch (e) { console.error(e); }
 
   const result = (hmisStaff || []).map(s => ({
     hmis_id: s.id,
@@ -100,7 +100,7 @@ export async function POST(req: NextRequest) {
     const mpDocs = await getMedPayDoctors();
     const found = mpDocs.find(d => d.id === medpay_doctor_id);
     mpName = found?.name || '';
-  } catch {}
+  } catch (e) { console.error(e); }
 
   const { error } = await db.from('hmis_medpay_doctor_map').upsert({
     hmis_staff_id, medpay_doctor_id, medpay_doctor_name: mpName, verified: true,

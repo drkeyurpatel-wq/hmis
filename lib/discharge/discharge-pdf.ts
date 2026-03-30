@@ -4,6 +4,7 @@
 
 import { jsPDF } from 'jspdf';
 import { LOGO_PNG, LOGO_ASPECT } from '@/lib/config/logo';
+import { HOSPITAL } from '@/lib/config/hospital';
 import autoTable from 'jspdf-autotable';
 
 const TEAL = [13, 148, 136] as const;      // #0d9488
@@ -86,10 +87,10 @@ export function generateDischargePDF(
   y = 6;
   const logoW = 50;
   const logoH = logoW / LOGO_ASPECT;
-  try { doc.addImage(LOGO_PNG, 'PNG', 15, y, logoW, logoH); } catch {}
+  try { doc.addImage(LOGO_PNG, 'PNG', 15, y, logoW, logoH); } catch (e) { console.error(e); }
   doc.setFontSize(8); doc.setFont('helvetica', 'normal');
   doc.setTextColor(...GRAY);
-  doc.text('Nr. Shilaj Circle, S.P. Ring Road, Ahmedabad - 380058  |  HFR: IN2410013685', 15, y + logoH + 3);
+  doc.text(`${HOSPITAL.address}  |  HFR: ${HOSPITAL.hfrId}`, 15, y + logoH + 3);
 
   // Title
   doc.setFontSize(14); doc.setFont('helvetica', 'bold');

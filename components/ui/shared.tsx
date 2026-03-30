@@ -5,6 +5,7 @@
 import React, { useState, useEffect, createContext, useContext, useCallback } from 'react';
 import { useAuthStore } from '@/lib/store/auth';
 import { LOGO_SVG } from '@/lib/config/logo';
+import { HOSPITAL } from '@/lib/config/hospital';
 
 // ============================================================
 // LOADING SKELETON
@@ -519,7 +520,7 @@ export function printLabReport(data: {
   <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid #1e40af;padding-bottom:10px;margin-bottom:12px">
     <div style="display:flex;align-items:center;gap:12px">
       <img src="${LOGO_SVG}" style="width:150px;height:auto" alt="Health1" />
-      <div style="font-size:8px;color:#666;line-height:1.4">${data.centreAddress || 'Nr. Shilaj Circle, S.P. Ring Road, Ahmedabad - 380058'}<br/>${data.centrePhone || '+91 79 4890 1234'}</div>
+      <div style="font-size:8px;color:#666;line-height:1.4">${data.centreAddress || HOSPITAL.address}<br/>${data.centrePhone || HOSPITAL.phone}</div>
     </div>
     <div style="text-align:right;font-size:9px;color:#666">
       <div style="font-size:12px;font-weight:700;color:#1e40af">LABORATORY REPORT</div>

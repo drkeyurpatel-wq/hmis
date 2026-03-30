@@ -107,7 +107,7 @@ function VoiceNotesInner() {
     recognition.onend = () => {
       // Auto-restart if still recording
       if (recognitionRef.current) {
-        try { recognitionRef.current.start(); } catch {}
+        try { recognitionRef.current.start(); } catch (e) { console.error(e); }
       }
     };
 
@@ -121,7 +121,7 @@ function VoiceNotesInner() {
     if (recognitionRef.current) {
       const ref = recognitionRef.current;
       recognitionRef.current = null;
-      try { ref.stop(); } catch {}
+      try { ref.stop(); } catch (e) { console.error(e); }
     }
     setIsRecording(false);
     setInterimText('');
