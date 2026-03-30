@@ -62,7 +62,7 @@ function useLiveStats(centreId: string) {
         const [opd, adm, labs, bills, disch, bedsOcc, bedsAll] = await Promise.all([
           client.from('hmis_appointments').select('id', { count: 'exact', head: true }).eq('centre_id', centreId).gte('appointment_date', today).lte('appointment_date', today + 'T23:59:59'),
           client.from('hmis_admissions').select('id', { count: 'exact', head: true }).eq('centre_id', centreId).eq('status', 'active'),
-          client.from('hmis_lab_orders').select('id', { count: 'exact', head: true }).eq('centre_id', centreId).in('status', ['ordered', 'collected', 'processing']),
+          client.from('hmis_lab_orders').select('id', { count: 'exact', head: true }).eq('centre_id', centreId).in('status', ['ordered', 'sample_collected', 'processing']),
           client.from('hmis_bills').select('net_amount').eq('centre_id', centreId).gte('bill_date', today).eq('status', 'final'),
           client.from('hmis_admissions').select('id', { count: 'exact', head: true }).eq('centre_id', centreId).eq('status', 'active').not('discharge_date', 'is', null),
           client.from('hmis_beds').select('id', { count: 'exact', head: true }).eq('status', 'occupied'),

@@ -101,10 +101,10 @@ export function useCommandCentre() {
         return { type: 'rpc', data };
       })).catch(async () => {
         const [opd, ipd, ot, lab] = await Promise.all([
-          sb().from('hmis_opd_visits').select('centre_id, status').gte('visit_date', today),
+          sb().from('hmis_opd_visits').select('centre_id, status').gte('created_at', today + 'T00:00:00'),
           sb().from('hmis_admissions').select('centre_id, status, admission_date, actual_discharge'),
           sb().from('hmis_ot_bookings').select('ot_room_id, status, is_emergency, is_robotic, ot_room:hmis_ot_rooms!inner(centre_id)').eq('scheduled_date', today),
-          sb().from('hmis_lab_orders').select('centre_id, status').gte('created_at', today + 'T00:00:00').in('status', ['ordered', 'collected', 'processing']),
+          sb().from('hmis_lab_orders').select('centre_id, status').gte('created_at', today + 'T00:00:00').in('status', ['ordered', 'sample_collected', 'processing']),
         ]);
         return { type: 'fallback', opd: opd.data || [], ipd: ipd.data || [], ot: ot.data || [], lab: lab.data || [] };
       }),
@@ -404,10 +404,10 @@ export function useRevenueTrend(centreId?: string) {
 
           let billQ = sb().from('hmis_bills').select('gross_amount, net_amount').gte('bill_date', start).lte('bill_date', end).eq('status', 'final');
           let payQ = sb().from('hmis_payments').select('amount').gte('payment_date', start).lte('payment_date', end);
-          let opdQ = sb().from('hmis_opd_visits').select('id', { count: 'exact', head: true }).gte('visit_date', start).lte('visit_date', end);
+          let opdQ = sb().from('hmis_opd_visits').select('id', { count: 'exact', head: true }).gte('created_at', start).lte('created_at', end);
           let admQ = sb().from('hmis_admissions').select('id', { count: 'exact', head: true }).gte('admission_date', start).lte('admission_date', end);
           let disQ = sb().from('hmis_admissions').select('id', { count: 'exact', head: true }).gte('discharge_date', start).lte('discharge_date', end);
-          let labQ = sb().from('hmis_lab_orders').select('id', { count: 'exact', head: true }).gte('order_date', start).lte('order_date', end);
+          let labQ = sb().from('hmis_lab_orders').select('id', { count: 'exact', head: true }).gte('created_at', start).lte('created_at', end);
 
           if (centreId) {
             billQ = billQ.eq('centre_id', centreId);
@@ -461,8 +461,8 @@ export function useDeptDistribution(centreId?: string) {
         const today = new Date().toISOString().slice(0, 10);
         let q = sb().from('hmis_opd_visits')
           .select('department:hmis_departments(name)')
-          .gte('visit_date', today)
-          .lte('visit_date', today + 'T23:59:59');
+          .gte('created_at', today + 'T00:00:00')
+          .lte('created_at', today + 'T23:59:59');
         if (centreId) q = q.eq('centre_id', centreId);
         const { data: visits } = await q;
 
