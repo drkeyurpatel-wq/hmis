@@ -64,13 +64,29 @@ export async function GET(request: NextRequest) {
         charges.push({ description: 'ICU Monitoring', amount: bedCharge * 0.5 });
       }
 
+      // Diet charges — lookup active diet order for this admission
+      const { data: diet } = await sb.from('hmis_diet_orders')
+        .select('diet_type').eq('patient_id', pt.id).eq('status', 'active').limit(1).maybeSingle();
+      if (diet) {
+        const dietRates: Record<string, number> = { regular: 250, diabetic: 350, renal: 400, soft: 300, liquid: 200, npo: 0 };
+        const dietRate = dietRates[diet.diet_type] || 250;
+        if (dietRate > 0) charges.push({ description: `Diet — ${(diet.diet_type || 'regular').replace(/_/g, ' ')}`, amount: dietRate });
+      }
+
+      // Nursing charge for all inpatients
+      const nursingRate = (ward?.type === 'icu' || ward?.type === 'transplant_icu') ? 1500 : 500;
+      charges.push({ description: 'Nursing Care', amount: nursingRate });
+
       if (charges.length === 0) continue;
       const total = charges.reduce((s: number, c: any) => s + c.amount, 0);
 
       await sb.from('hmis_charge_log').insert(charges.map(c => ({
         centre_id: centre.id, patient_id: pt.id, admission_id: adm.id,
-        description: c.description, amount: c.amount, charge_date: today,
-        charge_type: 'auto_daily', created_by: 'system',
+        service_name: c.description, description: c.description,
+        category: c.description.startsWith('Bed') ? 'room' : c.description.startsWith('ICU') ? 'icu' : c.description.startsWith('Diet') ? 'diet' : 'nursing',
+        amount: c.amount, unit_rate: c.amount, quantity: 1,
+        service_date: today, status: 'captured',
+        source: 'auto_daily', captured_by: 'system',
       })));
 
       await sb.from('hmis_auto_charge_runs').insert({

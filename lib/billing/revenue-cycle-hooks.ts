@@ -81,6 +81,26 @@ export function useCashlessWorkflow(centreId: string | null) {
     if (update.disallowanceReason) upd.disallowance_reason = update.disallowanceReason;
     if (update.utrNumber) upd.utr_number = update.utrNumber;
     await sb().from('hmis_claims').update(upd).eq('id', id);
+
+    // BRIDGE: When claim is settled, update the related bill balance
+    if (update.settledAmount !== undefined && update.settledAmount > 0) {
+      try {
+        const { data: claim } = await sb().from('hmis_claims').select('bill_id').eq('id', id).single();
+        if (claim?.bill_id) {
+          const { data: bill } = await sb().from('hmis_bills')
+            .select('paid_amount, net_amount').eq('id', claim.bill_id).single();
+          if (bill) {
+            const newPaid = parseFloat(bill.paid_amount || '0') + update.settledAmount - (update.tdsAmount || 0) - (update.disallowanceAmount || 0);
+            const newBalance = Math.max(0, parseFloat(bill.net_amount || '0') - newPaid);
+            const newStatus = newBalance <= 0 ? 'paid' : newPaid > 0 ? 'partial' : 'draft';
+            await sb().from('hmis_bills').update({
+              paid_amount: newPaid, balance_amount: newBalance, status: newStatus,
+            }).eq('id', claim.bill_id);
+          }
+        }
+      } catch (e) { console.error('Claim→Bill update failed:', e); }
+    }
+
     loadClaims();
   }, [loadClaims]);
 

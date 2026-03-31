@@ -124,8 +124,24 @@ export function useReferrals(centreId: string | null) {
 
   const create = useCallback(async (data: any) => {
     if (!centreId || !sb()) return { success: false };
-    const { error } = await sb().from('hmis_referrals').insert({ centre_id: centreId, ...data });
-    if (!error) load();
+    const { data: ref, error } = await sb().from('hmis_referrals').insert({ centre_id: centreId, ...data }).select('id').maybeSingle();
+    if (!error) {
+      // BRIDGE: Create clinical alert for receiving department
+      try {
+        const patientName = data.patient_name || 'Patient';
+        const fromDept = data.referring_department || 'OPD';
+        const toDept = data.to_department || data.department || 'Unknown';
+        await sb().from('hmis_clinical_alerts').insert({
+          centre_id: centreId, patient_id: data.patient_id || null,
+          alert_type: 'referral', severity: data.urgency === 'emergency' ? 'critical' : 'info',
+          title: `Referral: ${patientName} → ${toDept}`,
+          description: `${fromDept} referred ${patientName} to ${toDept}. Reason: ${data.reason || 'N/A'}`,
+          source: 'referral', source_ref_id: ref?.id || null,
+          status: 'active',
+        });
+      } catch (e) { console.error('Referral alert failed:', e); }
+      load();
+    }
     return { success: !error, error: error?.message };
   }, [centreId, load]);
 

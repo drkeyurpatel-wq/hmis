@@ -166,7 +166,7 @@ export function useMedicationOrders(admissionId: string | null) {
     prnInstruction?: string; specialInstructions?: string;
   }, staffId: string) => {
     if (!admissionId || !sb()) return;
-    await sb().from('hmis_ipd_medication_orders').insert({
+    const { data: medOrder } = await sb().from('hmis_ipd_medication_orders').insert({
       admission_id: admissionId, ordered_by: staffId,
       drug_name: order.drugName, generic_name: order.genericName,
       dose: order.dose, route: order.route, frequency: order.frequency,
@@ -174,7 +174,52 @@ export function useMedicationOrders(admissionId: string | null) {
       end_date: order.endDate || null, is_stat: order.isStat || false,
       is_prn: order.isPrn || false, prn_instruction: order.prnInstruction,
       special_instructions: order.specialInstructions,
-    });
+    }).select('id').maybeSingle();
+
+    // BRIDGE: Auto-generate MAR schedule entries from frequency
+    if (medOrder && !order.isPrn) {
+      try {
+        const freqMap: Record<string, string[]> = {
+          'OD': ['08:00'], 'BD': ['08:00', '20:00'], 'TDS': ['08:00', '14:00', '20:00'],
+          'QID': ['06:00', '12:00', '18:00', '00:00'], 'HS': ['22:00'], 'STAT': ['now'],
+          'Q4H': ['00:00','04:00','08:00','12:00','16:00','20:00'],
+          'Q6H': ['00:00','06:00','12:00','18:00'],
+          'Q8H': ['00:00','08:00','16:00'], 'Q12H': ['08:00','20:00'],
+        };
+        const freqKey = (order.frequency || '').split(/[\s\(]/)[0].toUpperCase();
+        const times = freqMap[freqKey] || ['08:00'];
+        const startDate = order.startDate || new Date().toISOString().split('T')[0];
+        const days = order.isStat ? 1 : Math.min(parseInt(order.endDate || '3') || 3, 14); // max 14 days of MAR entries
+
+        const marRows: any[] = [];
+        for (let d = 0; d < days; d++) {
+          const date = new Date(startDate);
+          date.setDate(date.getDate() + d);
+          const dateStr = date.toISOString().split('T')[0];
+          for (const time of times) {
+            if (time === 'now') {
+              marRows.push({
+                admission_id: admissionId, medication_order_id: medOrder.id,
+                drug_name: order.drugName, dose: order.dose, route: order.route,
+                scheduled_time: new Date().toISOString(), scheduled_date: dateStr,
+                status: 'due', centre_id: null,
+              });
+            } else {
+              marRows.push({
+                admission_id: admissionId, medication_order_id: medOrder.id,
+                drug_name: order.drugName, dose: order.dose, route: order.route,
+                scheduled_time: dateStr + 'T' + time + ':00', scheduled_date: dateStr,
+                status: 'due', centre_id: null,
+              });
+            }
+          }
+        }
+        if (marRows.length > 0) {
+          await sb().from('hmis_mar').insert(marRows);
+        }
+      } catch (e) { console.error('MAR schedule generation failed:', e); }
+    }
+
     load();
   }, [admissionId, load]);
 
