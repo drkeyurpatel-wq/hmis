@@ -1,6 +1,7 @@
 // lib/appointments/appointment-hooks.ts — Rebuilt to match actual schema
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { sb } from '@/lib/supabase/browser';
+import { createOPDVisitFromAppointment } from '@/lib/bridge/cross-module-bridge';
 
 export interface DoctorSchedule {
   id: string; doctorId: string; doctorName: string; specialisation: string;
@@ -229,9 +230,24 @@ export function useAppointments(centreId: string | null) {
   // Status transitions
   const checkIn = useCallback(async (id: string) => {
     const { error } = await sb().from('hmis_appointments').update({ status: 'checked_in', checked_in_at: new Date().toISOString() }).eq('id', id);
-    if (!error) load();
+    if (!error) {
+      // Auto-create OPD visit on check-in
+      try {
+        const { data: appt } = await sb().from('hmis_appointments')
+          .select('patient_id, doctor_id, department_id, type, notes')
+          .eq('id', id).single();
+        if (appt && centreId) {
+          await createOPDVisitFromAppointment({
+            centreId, appointmentId: id,
+            patientId: appt.patient_id, doctorId: appt.doctor_id,
+            visitReason: appt.notes || '', staffId: appt.doctor_id || '',
+          });
+        }
+      } catch (e) { console.error('Auto-create OPD visit failed:', e); }
+      load();
+    }
     return { error: error?.message };
-  }, [load]);
+  }, [centreId, load]);
 
   const startConsultation = useCallback(async (id: string) => {
     const { error } = await sb().from('hmis_appointments').update({ status: 'in_consultation', consultation_start: new Date().toISOString() }).eq('id', id);

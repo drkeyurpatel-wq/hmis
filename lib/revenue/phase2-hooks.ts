@@ -3,6 +3,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { sb } from '@/lib/supabase/browser';
+import { triggerFinalBillOnDischarge, createBillFromCharges } from '@/lib/bridge/cross-module-bridge';
 import { sendDischargeAlert } from '@/lib/notifications/whatsapp';
 
 // ============================================================
@@ -111,6 +112,21 @@ export function useIPD(centreId: string | null) {
         }).catch(() => {})
       );
     }
+    // BRIDGE: Auto-create final bill from all captured charges
+    if (centreId) {
+      try {
+        const { data: admData } = await sb().from('hmis_admissions')
+          .select('patient_id').eq('id', admissionId).single();
+        if (admData) {
+          const billResult = await createBillFromCharges({
+            centreId, patientId: admData.patient_id, staffId: '',
+            admissionId, billType: 'ipd', payorType: 'self',
+          });
+          if (billResult.created) console.log('Discharge → auto-bill:', billResult.billId, '₹' + billResult.total);
+        }
+      } catch (e) { console.error('Discharge auto-bill failed:', e); }
+    }
+
     // WhatsApp: discharge alert
     try {
       const pt = (admInfo as any)?.patient;
@@ -119,7 +135,7 @@ export function useIPD(centreId: string | null) {
       }
     } catch { /* non-blocking */ }
     loadAdmissions('active');
-  }, [loadAdmissions]);
+  }, [centreId, loadAdmissions]);
 
   const initiateDischarge = useCallback(async (admissionId: string): Promise<boolean> => {
     if (!sb()) return false;

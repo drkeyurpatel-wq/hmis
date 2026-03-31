@@ -7,7 +7,7 @@ import { sb } from '@/lib/supabase/browser';
 import { printEncounterSummary, openPrintWindow } from '@/components/ui/shared';
 import { LOGO_SVG } from '@/lib/config/logo';
 import { HOSPITAL } from '@/lib/config/hospital';
-import { smartPostLabCharge, smartPostRadiologyCharge, smartPostConsultationCharge } from '@/lib/bridge/cross-module-bridge';
+import { smartPostLabCharge, smartPostRadiologyCharge, smartPostConsultationCharge, createBillFromCharges } from '@/lib/bridge/cross-module-bridge';
 import PatientBanner from '@/components/emr-v2/patient-banner';
 import VitalsPanel from '@/components/emr-v2/vitals-panel';
 import { SmartComplaintBuilder, generateComplaintText, type ActiveComplaint } from '@/components/emr/smart-complaint-builder';
@@ -103,7 +103,26 @@ function EMRInner() {
     setAdvice('');
     setFollowUpDate('');
     setReferral({ department: '', doctor: '', reason: '', urgency: 'routine' });
-    // Reset scroll to top
+
+    // Pre-fill vitals from latest nursing entry (if any in last 4 hours)
+    try {
+      const cutoff = new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString();
+      const { data: nsgVitals } = await sb().from('hmis_vitals')
+        .select('bp_systolic, bp_diastolic, heart_rate, spo2, temperature, respiratory_rate')
+        .eq('patient_id', id).gte('recorded_at', cutoff)
+        .order('recorded_at', { ascending: false }).limit(1).maybeSingle();
+      if (nsgVitals) {
+        setVitals(v => ({
+          ...v,
+          systolic: nsgVitals.bp_systolic?.toString() || '',
+          diastolic: nsgVitals.bp_diastolic?.toString() || '',
+          heartRate: nsgVitals.heart_rate?.toString() || '',
+          spo2: nsgVitals.spo2?.toString() || '',
+          temperature: nsgVitals.temperature?.toString() || '',
+          respiratoryRate: nsgVitals.respiratory_rate?.toString() || '',
+        }));
+      }
+    } catch { /* non-blocking — nursing vitals are optional */ }
 
     setPatient({
       id: pt.id, name: `${pt.first_name} ${pt.last_name || ''}`.trim(), age: pt.age_years?.toString() || '--',
@@ -239,6 +258,17 @@ function EMRInner() {
             visitType: 'new', visitId: opdVisitId || '', staffId,
           });
         } catch (e) { console.error('Consultation charge failed:', e); }
+
+        // Auto-create bill from all captured charges
+        try {
+          const billResult = await createBillFromCharges({
+            centreId, patientId: patient.id, staffId,
+            encounterId: result.id, billType: 'opd', payorType: 'self',
+          });
+          if (billResult.created) {
+            console.log('Auto-bill created:', billResult.billId, '₹' + billResult.total);
+          }
+        } catch (e) { console.error('Auto-bill failed:', e); }
 
         const orderCount = labInvs.length + radInvs.length;
         const rxCount = prescriptions.length;

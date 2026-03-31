@@ -149,6 +149,7 @@ export async function postPharmacyCharge(params: {
     centre_id: params.centreId, patient_id: params.patientId,
     admission_id: params.admissionId || null,
     description: `Pharmacy: ${params.drugName} × ${params.quantity}`,
+    service_name: params.drugName,
     category: 'pharmacy', quantity: params.quantity,
     unit_rate: params.amount / params.quantity, amount: params.amount,
     source: 'pharmacy', source_ref_id: params.dispensingId,
@@ -367,4 +368,70 @@ export async function generateBillNumber(centreId: string, billType: string): Pr
     .eq('centre_id', centreId).eq('bill_type', billType).eq('bill_date', today);
   const seq = ((count || 0) + 1).toString().padStart(4, '0');
   return `${prefix}-${dateStr}-${seq}`;
+}
+
+
+// ============================================================
+// AUTO-BILL FROM CHARGES — converts captured charges → bill
+// Called after EMR sign (OPD) or discharge (IPD)
+// ============================================================
+export async function createBillFromCharges(params: {
+  centreId: string; patientId: string; staffId: string;
+  encounterId?: string; admissionId?: string;
+  billType: 'opd' | 'ipd'; payorType?: string;
+}): Promise<{ created: boolean; billId?: string; total?: number }> {
+  if (!sb()) return { created: false };
+
+  // Get all unbilled captured charges for this patient/encounter
+  let q = sb().from('hmis_charge_log')
+    .select('id, service_name, description, category, quantity, unit_rate, amount, tariff_id')
+    .eq('patient_id', params.patientId).eq('centre_id', params.centreId)
+    .eq('status', 'captured').is('bill_id', null);
+  
+  if (params.admissionId) q = q.eq('admission_id', params.admissionId);
+
+  const { data: charges } = await q.order('created_at');
+  if (!charges || charges.length === 0) return { created: false };
+
+  const total = charges.reduce((sum: number, c: any) => sum + (parseFloat(c.amount) || 0), 0);
+  if (total <= 0) return { created: false };
+
+  // Generate bill number
+  const billNumber = await generateBillNumber(params.centreId, params.billType);
+
+  // Create bill
+  const { data: bill, error: billErr } = await sb().from('hmis_bills').insert({
+    centre_id: params.centreId, patient_id: params.patientId,
+    bill_number: billNumber, bill_type: params.billType,
+    bill_date: new Date().toISOString().split('T')[0],
+    payor_type: params.payorType || 'self',
+    encounter_id: params.encounterId || params.admissionId || null,
+    gross_amount: total, discount_amount: 0, tax_amount: 0,
+    net_amount: total, paid_amount: 0, balance_amount: total,
+    status: 'draft', created_by: params.staffId,
+  }).select('id').single();
+
+  if (billErr || !bill) {
+    console.error('Auto-bill creation failed:', billErr);
+    return { created: false };
+  }
+
+  // Create bill items from charges
+  const items = charges.map((c: any, i: number) => ({
+    bill_id: bill.id, centre_id: params.centreId,
+    service_name: c.service_name || c.description || 'Service',
+    service_date: new Date().toISOString().split('T')[0],
+    category: c.category || 'general',
+    quantity: c.quantity || 1, unit_rate: c.unit_rate || c.amount,
+    amount: c.amount, tariff_id: c.tariff_id || null,
+    sort_order: i + 1,
+  }));
+  await sb().from('hmis_bill_items').insert(items);
+
+  // Mark charges as billed
+  const chargeIds = charges.map((c: any) => c.id);
+  await sb().from('hmis_charge_log').update({ bill_id: bill.id, status: 'billed' })
+    .in('id', chargeIds);
+
+  return { created: true, billId: bill.id, total };
 }
