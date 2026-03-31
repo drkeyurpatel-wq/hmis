@@ -25,7 +25,7 @@ export interface EMRState {
   cloneEncounter: (id: string) => Promise<EncounterData | null>;
 
   // Save
-  saveEncounter: (data: EncounterData) => Promise<{ success: boolean; id?: string; offline?: boolean }>;
+  saveEncounter: (data: EncounterData, opdVisitId?: string) => Promise<{ success: boolean; id?: string; offline?: boolean }>;
   signEncounter: () => Promise<boolean>;
   autoSaveDraft: (data: EncounterData) => void;
 
@@ -128,10 +128,10 @@ export function useEMR(): EMRState {
   }, [loadFromDB]);
 
   // Save encounter — online: Supabase, offline: IndexedDB + sync queue
-  const saveEncounter = useCallback(async (data: EncounterData): Promise<{ success: boolean; id?: string; offline?: boolean }> => {
+  const saveEncounter = useCallback(async (data: EncounterData, opdVisitId?: string): Promise<{ success: boolean; id?: string; offline?: boolean }> => {
     if (isOnline()) {
       try {
-        const result = await saveToDb(data, { centreId, doctorId });
+        const result = await saveToDb(data, { centreId, doctorId, opdVisitId });
         if (result.error) throw result.error;
 
         // Clear draft if exists

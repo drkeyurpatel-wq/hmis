@@ -7,7 +7,7 @@ import { sb } from '@/lib/supabase/browser';
 import { printEncounterSummary, openPrintWindow } from '@/components/ui/shared';
 import { LOGO_SVG } from '@/lib/config/logo';
 import { HOSPITAL } from '@/lib/config/hospital';
-import { smartPostLabCharge, smartPostRadiologyCharge } from '@/lib/bridge/cross-module-bridge';
+import { smartPostLabCharge, smartPostRadiologyCharge, smartPostConsultationCharge } from '@/lib/bridge/cross-module-bridge';
 import PatientBanner from '@/components/emr-v2/patient-banner';
 import VitalsPanel from '@/components/emr-v2/vitals-panel';
 import { SmartComplaintBuilder, generateComplaintText, type ActiveComplaint } from '@/components/emr/smart-complaint-builder';
@@ -130,7 +130,7 @@ function EMRInner() {
       advice, followUpDate, referral: referral.department ? referral : undefined,
     };
 
-    const result = await emr.saveEncounter(encounterData as any);
+    const result = await emr.saveEncounter(encounterData as any, opdVisitId || undefined);
     if (result.success) {
       // On sign (final save), create real orders in downstream modules
       if (sign && sb() && centreId) {
@@ -140,17 +140,23 @@ function EMRInner() {
         // Create lab orders — resolve test_id from hmis_lab_test_master so worklist picks them up
         const labInvs = investigations.filter(i => i.type === 'lab');
         for (const inv of labInvs) {
-          // Lookup test_id by name (exact → fuzzy)
+          // Lookup test_id by name → code → fuzzy
           let testId: string | null = null;
           const { data: testExact } = await sb().from('hmis_lab_test_master')
             .select('id').ilike('test_name', inv.name).eq('is_active', true).limit(1).maybeSingle();
           if (testExact) { testId = testExact.id; }
           else {
-            const keyword = inv.name.split(/[\s\-\/\(\)]+/).filter((w: string) => w.length > 2)[0];
-            if (keyword) {
-              const { data: testFuzzy } = await sb().from('hmis_lab_test_master')
-                .select('id').ilike('test_name', `%${keyword}%`).eq('is_active', true).limit(1).maybeSingle();
-              if (testFuzzy) testId = testFuzzy.id;
+            // Try matching by test_code (e.g., "CBC", "LFT", "KFT")
+            const { data: codeMatch } = await sb().from('hmis_lab_test_master')
+              .select('id').ilike('test_code', inv.name.split(/[\s\(]/)[0]).eq('is_active', true).limit(1).maybeSingle();
+            if (codeMatch) { testId = codeMatch.id; }
+            else {
+              const keyword = inv.name.split(/[\s\-\/\(\)]+/).filter((w: string) => w.length > 1)[0];
+              if (keyword) {
+                const { data: testFuzzy } = await sb().from('hmis_lab_test_master')
+                  .select('id').or(`test_name.ilike.%${keyword}%,test_code.ilike.%${keyword}%`).eq('is_active', true).limit(1).maybeSingle();
+                if (testFuzzy) testId = testFuzzy.id;
+              }
             }
           }
           const { data: labOrder } = await sb().from('hmis_lab_orders').insert({
@@ -201,7 +207,7 @@ function EMRInner() {
 
         // Create pharmacy dispensing record — linked to encounter
         if (prescriptions.length > 0) {
-          await sb().from('hmis_pharmacy_dispensing').insert({
+          const { error: rxErr } = await sb().from('hmis_pharmacy_dispensing').insert({
             centre_id: centreId, patient_id: patient.id,
             encounter_id: encounterId,
             prescription_data: prescriptions.map(p => ({
@@ -211,17 +217,28 @@ function EMRInner() {
             })),
             status: 'pending',
           });
+          if (rxErr) console.error('Pharmacy dispensing insert failed:', rxErr);
 
           // Also insert individual prescriptions for tracking/refills
           const rxRows = prescriptions.map(p => ({
             centre_id: centreId, patient_id: patient.id,
             drug_name: p.drug,
-            dosage: p.dose, route: p.route,
-            frequency: p.frequency, duration_days: parseInt(p.duration) || 0,
+            dosage: p.dose || '', route: p.route || 'Oral',
+            frequency: p.frequency || '', duration_days: parseInt(p.duration) || 0,
             instructions: p.instructions || '',
           }));
-          await sb().from('hmis_prescriptions').insert(rxRows);
+          const { error: presErr } = await sb().from('hmis_prescriptions').insert(rxRows);
+          if (presErr) console.error('Prescriptions insert failed:', presErr);
         }
+
+        // Post consultation charge
+        try {
+          await smartPostConsultationCharge({
+            centreId, patientId: patient.id,
+            doctorName: staff?.full_name || '', isSuper: false,
+            visitType: 'new', visitId: opdVisitId || '', staffId,
+          });
+        } catch (e) { console.error('Consultation charge failed:', e); }
 
         const orderCount = labInvs.length + radInvs.length;
         const rxCount = prescriptions.length;

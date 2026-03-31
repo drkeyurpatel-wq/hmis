@@ -8,14 +8,23 @@ import { auditCreate } from '@/lib/audit/audit-logger';
 // ============================================================
 // TARIFF LOOKUP — find real rate from hmis_tariff_master
 // ============================================================
-export async function lookupTariff(centreId: string, serviceName: string, payorType: string = 'self'): Promise<{ tariffId: string; rate: number; serviceName: string; category: string } | null> {
+export async function lookupTariff(centreId: string, serviceName: string, payorType: string = 'self', categoryHint?: string): Promise<{ tariffId: string; rate: number; serviceName: string; category: string } | null> {
   if (!sb()) return null;
 
   // Try exact match first
   let { data } = await sb().from('hmis_tariff_master')
     .select('id, service_name, category, rate_self, rate_insurance, rate_pmjay, rate_cghs')
     .eq('centre_id', centreId).eq('is_active', true)
-    .ilike('service_name', serviceName).limit(1).maybeSingle();
+    .ilike('service_name', serviceName)
+    .limit(1).maybeSingle();
+  // If category hint provided and no match, try with category filter
+  if (!data && categoryHint) {
+    const { data: catExact } = await sb().from('hmis_tariff_master')
+      .select('id, service_name, category, rate_self, rate_insurance, rate_pmjay, rate_cghs')
+      .eq('centre_id', centreId).eq('is_active', true).eq('category', categoryHint)
+      .ilike('service_name', serviceName).limit(1).maybeSingle();
+    data = catExact;
+  }
 
   // Try fuzzy match
   if (!data) {
@@ -26,14 +35,16 @@ export async function lookupTariff(centreId: string, serviceName: string, payorT
     data = fuzzy;
   }
 
-  // Try keyword match (first 2 significant words)
+  // Try keyword match — with category filter to prevent cross-category mismatches
   if (!data) {
-    const words = serviceName.split(/[\s\-\/]+/).filter(w => w.length > 2).slice(0, 2);
+    const words = serviceName.split(/[\s\-\/\(\)]+/).filter(w => w.length > 2).slice(0, 2);
     if (words.length > 0) {
-      const { data: keyword } = await sb().from('hmis_tariff_master')
+      let kwQ = sb().from('hmis_tariff_master')
         .select('id, service_name, category, rate_self, rate_insurance, rate_pmjay, rate_cghs')
         .eq('centre_id', centreId).eq('is_active', true)
-        .ilike('service_name', `%${words[0]}%`).limit(1).maybeSingle();
+        .ilike('service_name', `%${words[0]}%`);
+      if (categoryHint) kwQ = kwQ.eq('category', categoryHint);
+      const { data: keyword } = await kwQ.limit(1).maybeSingle();
       data = keyword;
     }
   }
@@ -55,7 +66,7 @@ export async function smartPostLabCharge(params: {
   labOrderId?: string; testName: string; payorType?: string; staffId: string;
 }): Promise<{ posted: boolean; amount: number }> {
   if (!sb()) return { posted: false, amount: 0 };
-  const tariff = await lookupTariff(params.centreId, params.testName, params.payorType || 'self');
+  const tariff = await lookupTariff(params.centreId, params.testName, params.payorType || 'self', 'lab');
   const amount = tariff?.rate || 0;
   if (amount <= 0) return { posted: false, amount: 0 };
 
@@ -64,6 +75,7 @@ export async function smartPostLabCharge(params: {
     admission_id: params.admissionId || null,
     tariff_id: tariff?.tariffId || null,
     description: `Lab: ${tariff?.serviceName || params.testName}`,
+    service_name: tariff?.serviceName || params.testName,
     category: 'lab', quantity: 1, unit_rate: amount, amount,
     source: 'lab', source_ref_id: params.labOrderId, source_ref_type: 'lab_order',
     captured_by: params.staffId, service_date: new Date().toISOString().split('T')[0],
@@ -78,7 +90,7 @@ export async function smartPostRadiologyCharge(params: {
   radiologyOrderId?: string; testName: string; payorType?: string; staffId: string;
 }): Promise<{ posted: boolean; amount: number }> {
   if (!sb()) return { posted: false, amount: 0 };
-  const tariff = await lookupTariff(params.centreId, params.testName, params.payorType || 'self');
+  const tariff = await lookupTariff(params.centreId, params.testName, params.payorType || 'self', 'radiology');
   const amount = tariff?.rate || 0;
   if (amount <= 0) return { posted: false, amount: 0 };
 
@@ -87,6 +99,7 @@ export async function smartPostRadiologyCharge(params: {
     admission_id: params.admissionId || null,
     tariff_id: tariff?.tariffId || null,
     description: `Radiology: ${tariff?.serviceName || params.testName}`,
+    service_name: tariff?.serviceName || params.testName,
     category: 'radiology', quantity: 1, unit_rate: amount, amount,
     source: 'radiology', source_ref_id: params.radiologyOrderId, source_ref_type: 'radiology_order',
     captured_by: params.staffId, service_date: new Date().toISOString().split('T')[0],
