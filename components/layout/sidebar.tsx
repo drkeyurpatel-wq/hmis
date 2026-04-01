@@ -13,6 +13,7 @@ import {
   Activity, Truck, FileText, Wrench, SprayCan, Shirt,
   ClipboardList, UtensilsCrossed, Dumbbell, AlertTriangle,
   Package, Eye, UserPlus, MessageSquare, Star, Home, Mic,
+  GitBranch,
 } from 'lucide-react';
 
 interface NavItem { href: string; label: string; icon: any; moduleKey?: string }
@@ -49,6 +50,7 @@ const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
     { href: '/pnl', label: 'P&L', icon: BarChart3, moduleKey: 'billing' },
     { href: '/accounting', label: 'Accounting', icon: BarChart3, moduleKey: 'billing' },
     { href: '/revenue-leakage', label: 'Leakage Audit', icon: AlertTriangle, moduleKey: 'revenue_leakage' },
+    { href: '/referrals', label: 'Referrals', icon: GitBranch, moduleKey: 'referrals' },
   ]},
   { label: 'OPERATIONS', items: [
     { href: '/vpms', label: 'Procurement', icon: Truck, moduleKey: 'procurement' },

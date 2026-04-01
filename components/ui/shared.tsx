@@ -151,6 +151,7 @@ const STAFF_TYPE_FALLBACK: Record<string, string[]> = {
   ipd: ['doctor', 'nurse', 'admin'],
   ot: ['doctor', 'nurse', 'admin'],
   radiology: ['technician', 'admin', 'doctor'],
+  referrals: ['admin', 'doctor', 'accountant'],
   reports: ['admin', 'doctor', 'accountant'],
   settings: ['admin'], quality: ['admin', 'doctor', 'nurse'],
   mis: ['admin', 'doctor', 'accountant'],

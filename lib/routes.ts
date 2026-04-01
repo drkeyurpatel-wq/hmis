@@ -51,7 +51,12 @@ export const routes = {
   endoscopy: '/endoscopy',
   physiotherapy: '/physiotherapy',
   visitors: '/visitors',
-  referrals: '/referrals',
+  referrals: {
+    dashboard: '/referrals',
+    detail: (id: string) => `/referrals/${id}`,
+    sources: '/referrals/sources',
+    fees: '/referrals/fees',
+  },
   handover: '/handover',
   voiceNotes: '/voice-notes',
   pulse: '/pulse',
