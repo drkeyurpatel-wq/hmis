@@ -21,6 +21,7 @@ const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
   { label: '', items: [
     { href: '/', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/command-centre', label: 'Command Centre', icon: Activity },
+    { href: '/pulse', label: 'Pulse (MIS)', icon: BarChart3, moduleKey: 'mis' },
   ]},
   { label: 'CLINICAL', items: [
     { href: '/patients', label: 'Patients', icon: Users },
