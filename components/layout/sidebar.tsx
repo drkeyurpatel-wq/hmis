@@ -14,6 +14,7 @@ import {
   ClipboardList, UtensilsCrossed, Dumbbell, AlertTriangle,
   Package, Eye, UserPlus, MessageSquare, Star, Home, Mic,
   GitBranch,
+  IndianRupee,
 } from 'lucide-react';
 
 interface NavItem { href: string; label: string; icon: any; moduleKey?: string }
@@ -52,6 +53,7 @@ const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
     { href: '/accounting', label: 'Accounting', icon: BarChart3, moduleKey: 'billing' },
     { href: '/revenue-leakage', label: 'Leakage Audit', icon: AlertTriangle, moduleKey: 'revenue_leakage' },
     { href: '/referrals', label: 'Referrals', icon: GitBranch, moduleKey: 'referrals' },
+    { href: '/collect', label: 'Collect (AR)', icon: IndianRupee, moduleKey: 'billing' },
   ]},
   { label: 'OPERATIONS', items: [
     { href: '/vpms', label: 'Procurement', icon: Truck, moduleKey: 'procurement' },
