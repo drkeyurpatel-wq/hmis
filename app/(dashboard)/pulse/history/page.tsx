@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuthStore } from '@/lib/store/auth';
 import { usePulse, useCentres, formatLakhs, formatDate } from '@/lib/pulse/pulse-hooks';
 import { StatsSkeleton } from '@/components/ui/shared';
@@ -119,7 +119,7 @@ export default function PulseHistoryPage() {
   // Calendar data lookup
   const calSnapshotMap = (() => {
     const map: Record<string, any[]> = {};
-    rows.forEach(r => {
+    rows.forEach((r: any) => {
       const d = r.snapshot_date;
       if (!map[d]) map[d] = [];
       map[d].push(r);
@@ -197,11 +197,11 @@ export default function PulseHistoryPage() {
       <div className="flex flex-wrap gap-2 items-center">
         <select
           value={centreFilter}
-          onChange={e => setCentreFilter(e.target.value)}
+          onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setCentreFilter(e.target.value)}
           className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none cursor-pointer"
         >
           <option value="">All Centres</option>
-          {centres.map(c => (
+          {centres.map((c: { id: string; name: string }) => (
             <option key={c.id} value={c.id}>
               {c.name.replace('Health1 Super Speciality Hospitals — ', '').replace('Health1 ', '')}
             </option>
@@ -223,10 +223,10 @@ export default function PulseHistoryPage() {
             ))}
             {preset === 'custom' && (
               <>
-                <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)}
+                <input type="date" value={startDate} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setStartDate(e.target.value)}
                   className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none" />
                 <span className="text-gray-400 text-sm">to</span>
-                <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)}
+                <input type="date" value={endDate} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEndDate(e.target.value)}
                   className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none" />
               </>
             )}
@@ -303,8 +303,8 @@ export default function PulseHistoryPage() {
           <div className="flex items-center justify-between mb-4">
             <button
               onClick={() => {
-                if (calMonth === 0) { setCalMonth(11); setCalYear(y => y - 1); }
-                else setCalMonth(m => m - 1);
+                if (calMonth === 0) { setCalMonth(11); setCalYear((y: number) => y - 1); }
+                else setCalMonth((m: number) => m - 1);
               }}
               className="p-2 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
             >
@@ -315,8 +315,8 @@ export default function PulseHistoryPage() {
             </h3>
             <button
               onClick={() => {
-                if (calMonth === 11) { setCalMonth(0); setCalYear(y => y + 1); }
-                else setCalMonth(m => m + 1);
+                if (calMonth === 11) { setCalMonth(0); setCalYear((y: number) => y + 1); }
+                else setCalMonth((m: number) => m + 1);
               }}
               className="p-2 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
             >

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuthStore } from '@/lib/store/auth';
 import { usePulse, useCentres, formatDate } from '@/lib/pulse/pulse-hooks';
 import { StatsSkeleton } from '@/components/ui/shared';
@@ -77,7 +77,7 @@ export default function PulseManualEntryPage() {
     })();
   }, [selectedCentre, date]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const centreInfo = centres.find(c => c.id === selectedCentre);
+  const centreInfo = centres.find((c: { id: string }) => c.id === selectedCentre);
   const occupancy = centreInfo && centreInfo.beds_operational > 0
     ? ((form.beds_occupied / centreInfo.beds_operational) * 100).toFixed(1)
     : '0.0';
@@ -140,7 +140,7 @@ export default function PulseManualEntryPage() {
     const num = field === 'billing_amount' || field === 'collection_amount' || field === 'pharmacy_sales'
       ? parseFloat(value) || 0
       : parseInt(value, 10) || 0;
-    setForm(f => ({ ...f, [field]: num }));
+    setForm((f: EntryForm) => ({ ...f, [field]: num }));
   };
 
   const role = staff?.staff_type || '';
@@ -184,16 +184,16 @@ export default function PulseManualEntryPage() {
         <input
           type="date"
           value={date}
-          onChange={e => setDate(e.target.value)}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setDate(e.target.value)}
           className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none"
         />
         <select
           value={selectedCentre}
-          onChange={e => setSelectedCentre(e.target.value)}
+          onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSelectedCentre(e.target.value)}
           className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none cursor-pointer flex-1 min-w-[200px]"
         >
           <option value="">Select Centre</option>
-          {centres.map(c => (
+          {centres.map((c: { id: string; name: string }) => (
             <option key={c.id} value={c.id}>
               {c.name.replace('Health1 Super Speciality Hospitals — ', '').replace('Health1 ', '')}
             </option>
@@ -236,7 +236,7 @@ export default function PulseManualEntryPage() {
                       type="number"
                       min={0}
                       value={form[f.key] || ''}
-                      onChange={e => updateField(f.key, e.target.value)}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateField(f.key, e.target.value)}
                       className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none"
                       placeholder="0"
                     />
@@ -261,7 +261,7 @@ export default function PulseManualEntryPage() {
                       min={0}
                       step={100}
                       value={form[f.key] || ''}
-                      onChange={e => updateField(f.key, e.target.value)}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateField(f.key, e.target.value)}
                       className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none"
                       placeholder="0"
                     />
@@ -281,7 +281,7 @@ export default function PulseManualEntryPage() {
                     min={0}
                     max={centreInfo?.beds_operational || 999}
                     value={form.beds_occupied || ''}
-                    onChange={e => updateField('beds_occupied', e.target.value)}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateField('beds_occupied', e.target.value)}
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none"
                     placeholder="0"
                   />

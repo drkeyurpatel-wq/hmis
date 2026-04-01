@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuthStore } from '@/lib/store/auth';
 import {
   usePulse, useCentres,
@@ -109,7 +109,7 @@ export default function PulseDashboardPage() {
 
   // Aggregated summary
   const data = pulse.dashboard;
-  const totals = data.reduce((acc, s) => ({
+  const totals = data.reduce((acc: any, s: PulseSnapshot) => ({
     opd: acc.opd + (s.opd_count || 0),
     admissions: acc.admissions + (s.new_admissions || 0),
     discharges: acc.discharges + (s.discharges || 0),
@@ -138,14 +138,14 @@ export default function PulseDashboardPage() {
   // Trend chart data
   const trendChartData = (() => {
     const byDate: Record<string, Record<string, number>> = {};
-    trendData.forEach(p => {
+    trendData.forEach((p: PulseTrendPoint) => {
       if (!byDate[p.snapshot_date]) byDate[p.snapshot_date] = { date: 0 };
       const key = p.centre_code || p.centre_name;
       if (chartMode === 'revenue') {
         byDate[p.snapshot_date][`billing_${key}`] = p.billing_amount;
         byDate[p.snapshot_date]['total_collection'] = (byDate[p.snapshot_date]['total_collection'] || 0) + p.collection_amount;
       } else {
-        byDate[p.snapshot_date][key] = p[opsMetric] || 0;
+        byDate[p.snapshot_date][key] = (p as unknown as Record<string, number>)[opsMetric] || 0;
       }
     });
     return Object.entries(byDate)
@@ -153,7 +153,7 @@ export default function PulseDashboardPage() {
       .sort((a, b) => a.date.localeCompare(b.date));
   })();
 
-  const uniqueCentres = [...new Set(trendData.map(p => p.centre_code || p.centre_name))];
+  const uniqueCentres = [...new Set(trendData.map((p: PulseTrendPoint) => p.centre_code || p.centre_name))];
 
   // Check allowed roles
   const role = staff?.staff_type || '';
@@ -190,16 +190,16 @@ export default function PulseDashboardPage() {
           <input
             type="date"
             value={date}
-            onChange={e => setDate(e.target.value)}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setDate(e.target.value)}
             className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none"
           />
           <select
             value={centreFilter}
-            onChange={e => setCentreFilter(e.target.value)}
+            onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setCentreFilter(e.target.value)}
             className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none cursor-pointer"
           >
             <option value="">All Centres</option>
-            {centres.map(c => (
+            {centres.map((c: { id: string; name: string }) => (
               <option key={c.id} value={c.id}>{c.name.replace('Health1 Super Speciality Hospitals — ', '').replace('Health1 ', '')}</option>
             ))}
           </select>
@@ -284,7 +284,7 @@ export default function PulseDashboardPage() {
           <div>
             <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-3">Centre Performance</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-              {data.map(s => (
+              {data.map((s: PulseSnapshot) => (
                 <div key={s.centre_id} className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow overflow-hidden">
                   {/* Header */}
                   <div className="flex items-center justify-between px-4 py-3 bg-gray-50 border-b border-gray-100">
@@ -347,11 +347,11 @@ export default function PulseDashboardPage() {
                     <ResponsiveContainer width="100%" height="100%">
                       <AreaChart data={trendChartData}>
                         <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                        <XAxis dataKey="date" tick={{ fontSize: 10 }} tickFormatter={d => { const dt = new Date(d + 'T00:00:00'); return `${dt.getDate()}/${dt.getMonth() + 1}`; }} />
-                        <YAxis tick={{ fontSize: 10 }} tickFormatter={v => v >= 100000 ? `${(v / 100000).toFixed(0)}L` : `${v}`} />
+                        <XAxis dataKey="date" tick={{ fontSize: 10 }} tickFormatter={(d: string) => { const dt = new Date(d + 'T00:00:00'); return `${dt.getDate()}/${dt.getMonth() + 1}`; }} />
+                        <YAxis tick={{ fontSize: 10 }} tickFormatter={(v: number) => v >= 100000 ? `${(v / 100000).toFixed(0)}L` : `${v}`} />
                         <Tooltip
                           formatter={(value: number, name: string) => [formatLakhs(value), name.replace('billing_', '').replace('total_collection', 'Collections')]}
-                          labelFormatter={l => formatDate(l as string)}
+                          labelFormatter={(l: string) => formatDate(l)}
                         />
                         <Legend wrapperStyle={{ fontSize: 11 }} />
                         {uniqueCentres.map((c, i) => (
@@ -381,7 +381,7 @@ export default function PulseDashboardPage() {
                   <h3 className="text-sm font-semibold text-gray-800">Operational Trend</h3>
                   <select
                     value={opsMetric}
-                    onChange={e => setOpsMetric(e.target.value as typeof opsMetric)}
+                    onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setOpsMetric(e.target.value as typeof opsMetric)}
                     className="text-xs border border-gray-200 rounded px-2 py-1 cursor-pointer focus:ring-1 focus:ring-teal-500 outline-none"
                   >
                     <option value="opd_count">OPD</option>
@@ -396,19 +396,19 @@ export default function PulseDashboardPage() {
                       <LineChart data={(() => {
                         // Rebuild for ops view
                         const byDate: Record<string, Record<string, number>> = {};
-                        trendData.forEach(p => {
+                        trendData.forEach((p: PulseTrendPoint) => {
                           if (!byDate[p.snapshot_date]) byDate[p.snapshot_date] = {};
                           const key = p.centre_code || p.centre_name;
-                          byDate[p.snapshot_date][key] = p[opsMetric] || 0;
+                          byDate[p.snapshot_date][key] = (p as unknown as Record<string, number>)[opsMetric] || 0;
                         });
                         return Object.entries(byDate)
                           .map(([d, vals]) => ({ date: d, ...vals }))
                           .sort((a, b) => a.date.localeCompare(b.date));
                       })()}>
                         <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                        <XAxis dataKey="date" tick={{ fontSize: 10 }} tickFormatter={d => { const dt = new Date(d + 'T00:00:00'); return `${dt.getDate()}/${dt.getMonth() + 1}`; }} />
+                        <XAxis dataKey="date" tick={{ fontSize: 10 }} tickFormatter={(d: string) => { const dt = new Date(d + 'T00:00:00'); return `${dt.getDate()}/${dt.getMonth() + 1}`; }} />
                         <YAxis tick={{ fontSize: 10 }} />
-                        <Tooltip labelFormatter={l => formatDate(l as string)} />
+                        <Tooltip labelFormatter={(l: string) => formatDate(l)} />
                         <Legend wrapperStyle={{ fontSize: 11 }} />
                         {uniqueCentres.map((c, i) => (
                           <Line
