@@ -110,3 +110,65 @@ export type NewPatientReferralInput = {
   notes?: string;
   referred_by_staff_id?: string;
 };
+
+// ── Fee Agreement Types ──
+
+export type FeeType = 'percentage' | 'flat' | 'slab' | 'none';
+
+export interface FeeAgreement {
+  source_id: string;
+  fee_type: FeeType;
+  fee_pct: number;        // For percentage-based (e.g., 10 = 10%)
+  flat_amount: number;    // For flat fee (in ₹)
+  tds_applicable: boolean;
+  tds_pct: number;        // TDS percentage (e.g., 10 = 10%)
+  slabs: FeeSlab[];       // For slab-based
+}
+
+export interface FeeSlab {
+  id?: string;
+  min_revenue: number;
+  max_revenue: number;
+  fee_pct: number;
+  flat_amount: number;
+}
+
+export interface FeeCalculationResult {
+  base_amount: number;
+  fee_type: FeeType;
+  fee_pct_applied: number;
+  gross_fee: number;
+  tds_applicable: boolean;
+  tds_pct: number;
+  tds_amount: number;
+  net_payable: number;
+  slab_matched?: FeeSlab;
+}
+
+export interface PayoutRow {
+  source_id: string;
+  source_name: string;
+  type_code: string;
+  type_label: string;
+  patient_count: number;
+  total_billed: number;
+  fee_type: FeeType;
+  gross_fee: number;
+  tds_amount: number;
+  net_payable: number;
+  paid_amount: number;
+  pending_amount: number;
+  referrals: PatientReferralWithFee[];
+}
+
+export interface PatientReferralWithFee extends PatientReferral {
+  fee_type: FeeType;
+  fee_pct: number;
+  gross_fee: number;
+  tds_amount: number;
+  net_payable: number;
+  fee_paid: boolean;
+  payment_date: string | null;
+  payment_mode: string | null;
+  payment_ref: string | null;
+}

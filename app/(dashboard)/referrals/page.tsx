@@ -145,6 +145,9 @@ function DashboardInner() {
           <p className="text-sm text-gray-500">Track patient acquisition by referral source</p>
         </div>
         <div className="flex gap-2">
+          <Link href="/referrals/pay-calculator" className="px-4 py-2 bg-h1-teal text-white text-sm rounded-lg hover:bg-h1-teal/90 transition-colors cursor-pointer">
+            Pay Calculator
+          </Link>
           <Link href="/referrals/sources" className="px-4 py-2 bg-white border border-gray-200 text-sm rounded-lg hover:bg-gray-50 transition-colors cursor-pointer">
             Manage Sources
           </Link>

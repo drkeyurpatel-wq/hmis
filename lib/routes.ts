@@ -56,6 +56,7 @@ export const routes = {
     detail: (id: string) => `/referrals/${id}`,
     sources: '/referrals/sources',
     fees: '/referrals/fees',
+    payCalculator: '/referrals/pay-calculator',
   },
   handover: '/handover',
   voiceNotes: '/voice-notes',
