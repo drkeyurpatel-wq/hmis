@@ -122,8 +122,24 @@ CREATE TABLE IF NOT EXISTS hmis_conversion_followups (
 CREATE INDEX IF NOT EXISTS idx_conversion_followups_lead ON hmis_conversion_followups(lead_id);
 
 ALTER TABLE hmis_conversion_followups ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "followups_read" ON hmis_conversion_followups FOR SELECT TO authenticated USING (true);
-CREATE POLICY "followups_insert" ON hmis_conversion_followups FOR INSERT TO authenticated WITH CHECK (true);
+CREATE POLICY "followups_read" ON hmis_conversion_followups FOR SELECT TO authenticated USING (
+  lead_id IN (
+    SELECT l.id FROM hmis_conversion_leads l
+    WHERE l.centre_id IN (
+      SELECT sc.centre_id FROM hmis_staff_centres sc
+      JOIN hmis_staff s ON s.id = sc.staff_id WHERE s.auth_user_id = auth.uid()
+    )
+  )
+);
+CREATE POLICY "followups_insert" ON hmis_conversion_followups FOR INSERT TO authenticated WITH CHECK (
+  lead_id IN (
+    SELECT l.id FROM hmis_conversion_leads l
+    WHERE l.centre_id IN (
+      SELECT sc.centre_id FROM hmis_staff_centres sc
+      JOIN hmis_staff s ON s.id = sc.staff_id WHERE s.auth_user_id = auth.uid()
+    )
+  )
+);
 
 -- ────────────────────────────────────────────────────────────
 -- 3. TRIGGERS
