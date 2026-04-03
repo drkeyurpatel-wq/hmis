@@ -14,7 +14,7 @@ import {
   ClipboardList, UtensilsCrossed, Dumbbell, AlertTriangle,
   Package, Eye, UserPlus, MessageSquare, Star, Home, Mic,
   GitBranch, IndianRupee, TestTube, ArrowUpRight, Video,
-  Receipt, ShoppingCart, MapPin,
+  Receipt, ShoppingCart, MapPin, BrainCircuit,
 } from 'lucide-react';
 import type { CentreType } from '@/types/database';
 
@@ -111,6 +111,11 @@ const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
   // ---------- REPORTS (clinic_manager) ----------
   { label: 'REPORTS', items: [
     { href: '/reports', label: 'Reports', icon: BarChart3, modes: ['hospital', 'clinic'] },
+  ]},
+
+  // ---------- INTELLIGENCE ----------
+  { label: 'INTELLIGENCE', items: [
+    { href: '/brain', label: 'Brain (Clinical AI)', icon: BrainCircuit, moduleKey: 'brain', modes: ['hospital'] },
   ]},
 
   // ---------- ADMIN ----------
