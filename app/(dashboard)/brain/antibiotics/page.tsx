@@ -1,24 +1,17 @@
 'use client';
 
-import React, { useState, useCallback } from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import { useAuthStore } from '@/lib/store/auth';
 import { useSupabaseQuery, useSupabaseMutation } from '@/lib/hooks/use-supabase-query';
-import { TableSkeleton, EmptyState, CardSkeleton } from '@/components/ui/shared';
-import { ArrowLeft, Pill, AlertTriangle, CheckCircle, XCircle, Clock } from 'lucide-react';
+import { TableSkeleton, EmptyState, CardSkeleton, RoleGuard } from '@/components/ui/shared';
+import { ArrowLeft, Pill } from 'lucide-react';
 import type { AlertSeverity, AlertStatus, AntibioticAlertType } from '@/types/database';
 
 const SEVERITY_COLORS: Record<AlertSeverity, string> = {
   info: 'bg-blue-100 text-blue-700',
   warning: 'bg-amber-100 text-amber-700',
   critical: 'bg-red-100 text-red-700',
-};
-
-const STATUS_ICONS: Record<AlertStatus, React.ElementType> = {
-  active: AlertTriangle,
-  acknowledged: Clock,
-  resolved: CheckCircle,
-  overridden: XCircle,
 };
 
 const ALERT_LABELS: Record<AntibioticAlertType, string> = {
@@ -34,7 +27,7 @@ const ALERT_LABELS: Record<AntibioticAlertType, string> = {
   no_deescalation: 'No De-escalation',
 };
 
-export default function AntibioticStewardshipDashboard() {
+function AntibioticStewardshipInner() {
   const { activeCentreId } = useAuthStore();
   const centreId = activeCentreId || '';
   const [statusFilter, setStatusFilter] = useState<string>('active');
@@ -60,7 +53,7 @@ export default function AntibioticStewardshipDashboard() {
     { enabled: !!centreId }
   );
 
-  const { mutate: updateAlert } = useSupabaseMutation(
+  const { mutate: updateAlert, isMutating } = useSupabaseMutation(
     (sb, input: { id: string; status: string; resolution_note?: string }) =>
       sb.from('brain_antibiotic_alerts')
         .update({ status: input.status, resolved_at: new Date().toISOString(), resolution_note: input.resolution_note })
@@ -223,13 +216,18 @@ export default function AntibioticStewardshipDashboard() {
                           <div className="flex gap-1">
                             <button
                               onClick={() => updateAlert({ id: alert.id as string, status: 'acknowledged' })}
-                              className="px-2 py-1 text-xs bg-blue-50 text-blue-600 rounded cursor-pointer hover:bg-blue-100"
+                              disabled={isMutating}
+                              className="px-2 py-1 text-xs bg-blue-50 text-blue-600 rounded cursor-pointer hover:bg-blue-100 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                               Acknowledge
                             </button>
                             <button
-                              onClick={() => updateAlert({ id: alert.id as string, status: 'resolved', resolution_note: 'Resolved' })}
-                              className="px-2 py-1 text-xs bg-green-50 text-green-600 rounded cursor-pointer hover:bg-green-100"
+                              onClick={() => {
+                                const note = window.prompt('Resolution note:');
+                                if (note !== null) updateAlert({ id: alert.id as string, status: 'resolved', resolution_note: note || 'Resolved' });
+                              }}
+                              disabled={isMutating}
+                              className="px-2 py-1 text-xs bg-green-50 text-green-600 rounded cursor-pointer hover:bg-green-100 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                               Resolve
                             </button>
@@ -276,5 +274,13 @@ export default function AntibioticStewardshipDashboard() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function AntibioticStewardshipDashboard() {
+  return (
+    <RoleGuard module="brain">
+      <AntibioticStewardshipInner />
+    </RoleGuard>
   );
 }

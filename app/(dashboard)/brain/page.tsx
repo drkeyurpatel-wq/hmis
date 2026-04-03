@@ -4,11 +4,8 @@ import React from 'react';
 import Link from 'next/link';
 import { useAuthStore } from '@/lib/store/auth';
 import { useSupabaseQuery } from '@/lib/hooks/use-supabase-query';
-import { CardSkeleton } from '@/components/ui/shared';
-import {
-  Activity, Pill, Bug, Clock, Award,
-  AlertTriangle, ArrowRight, TrendingUp, TrendingDown,
-} from 'lucide-react';
+import { CardSkeleton, RoleGuard } from '@/components/ui/shared';
+import { Activity, Pill, Bug, Clock, Award, ArrowRight } from 'lucide-react';
 
 interface EngineCard {
   title: string;
@@ -25,13 +22,13 @@ const ENGINES: EngineCard[] = [
   { title: 'Quality Scorecard', href: '/brain/quality', icon: Award, description: 'NABH-aligned clinical quality indicators dashboard' },
 ];
 
-function StatCard({ title, value, subtitle, color, icon: Icon, href }: {
+function SummaryStatCard({ title, value, subtitle, color, icon: Icon, href }: {
   title: string; value: string | number; subtitle: string;
   color: string; icon: React.ElementType; href: string;
 }) {
   return (
     <Link href={href} className="block">
-      <div className={`bg-white rounded-xl border p-5 hover:shadow-md transition-shadow duration-200 cursor-pointer`}>
+      <div className="bg-white rounded-xl border p-5 hover:shadow-md transition-shadow duration-200 cursor-pointer">
         <div className="flex items-start justify-between mb-3">
           <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${color}`}>
             <Icon className="w-5 h-5 text-white" />
@@ -46,13 +43,13 @@ function StatCard({ title, value, subtitle, color, icon: Icon, href }: {
   );
 }
 
-export default function BrainDashboard() {
+function BrainDashboardInner() {
   const { activeCentreId } = useAuthStore();
   const centreId = activeCentreId || '';
 
-  // Fetch summary counts for each engine
+  // Use head: true + count for efficient counting (no row fetching)
   const { data: highRiskPatients, isLoading: loadingRisk } = useSupabaseQuery(
-    (sb) => sb.from('brain_readmission_risk').select('id', { count: 'exact', head: false })
+    (sb) => sb.from('brain_readmission_risk').select('id')
       .eq('centre_id', centreId).in('risk_category', ['high', 'very_high']),
     [centreId],
     { enabled: !!centreId }
@@ -106,14 +103,13 @@ export default function BrainDashboard() {
         </p>
       </div>
 
-      {/* Summary Cards */}
       {isLoading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
           {Array.from({ length: 5 }).map((_, i) => <CardSkeleton key={i} />)}
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
-          <StatCard
+          <SummaryStatCard
             title="High-Risk Patients"
             value={highRiskCount}
             subtitle={highRiskCount > 10 ? 'Above threshold' : 'This month'}
@@ -121,7 +117,7 @@ export default function BrainDashboard() {
             icon={Activity}
             href="/brain/readmission"
           />
-          <StatCard
+          <SummaryStatCard
             title="Antibiotic Alerts"
             value={alertCount}
             subtitle={alertCount > 5 ? 'Action needed' : 'Active alerts'}
@@ -129,7 +125,7 @@ export default function BrainDashboard() {
             icon={Pill}
             href="/brain/antibiotics"
           />
-          <StatCard
+          <SummaryStatCard
             title="SSI Events"
             value={ssiCount}
             subtitle="Last 30 days"
@@ -137,7 +133,7 @@ export default function BrainDashboard() {
             icon={Bug}
             href="/brain/infections"
           />
-          <StatCard
+          <SummaryStatCard
             title="LOS Outliers"
             value={outlierCount}
             subtitle="Exceeding predicted stay"
@@ -145,7 +141,7 @@ export default function BrainDashboard() {
             icon={Clock}
             href="/brain/los"
           />
-          <StatCard
+          <SummaryStatCard
             title="Quality Score"
             value={qualityGrade}
             subtitle={qualityScore > 0 ? `${qualityScore}/100` : 'No data yet'}
@@ -156,7 +152,6 @@ export default function BrainDashboard() {
         </div>
       )}
 
-      {/* Engine Details */}
       <h2 className="text-lg font-semibold text-gray-900 mb-4">Intelligence Engines</h2>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {ENGINES.map((engine) => (
@@ -175,5 +170,13 @@ export default function BrainDashboard() {
         ))}
       </div>
     </div>
+  );
+}
+
+export default function BrainDashboard() {
+  return (
+    <RoleGuard module="brain">
+      <BrainDashboardInner />
+    </RoleGuard>
   );
 }

@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { useAuthStore } from '@/lib/store/auth';
 import { useSupabaseQuery, useSupabaseMutation } from '@/lib/hooks/use-supabase-query';
-import { TableSkeleton, EmptyState, CardSkeleton } from '@/components/ui/shared';
+import { TableSkeleton, EmptyState, CardSkeleton, RoleGuard } from '@/components/ui/shared';
 import { ArrowLeft, Bug, Plus, X } from 'lucide-react';
 import type { InfectionType, DetectionSource, InfectionOutcome } from '@/types/database';
 
@@ -25,11 +25,13 @@ const OUTCOME_COLORS: Record<InfectionOutcome, string> = {
   readmitted: 'bg-orange-100 text-orange-700', death: 'bg-red-100 text-red-700',
 };
 
-export default function InfectionControlDashboard() {
+function InfectionControlInner() {
   const { activeCentreId, staff } = useAuthStore();
   const centreId = activeCentreId || '';
   const [showForm, setShowForm] = useState(false);
+  const [patientSearch, setPatientSearch] = useState('');
   const [form, setForm] = useState({
+    patient_id: '',
     infection_type: 'ssi' as InfectionType,
     detection_date: new Date().toISOString().slice(0, 10),
     detection_source: 'clinical_signs' as DetectionSource,
@@ -37,6 +39,16 @@ export default function InfectionControlDashboard() {
     procedure_name: '',
     treatment: '',
   });
+
+  // Patient search for the form
+  const { data: patientResults } = useSupabaseQuery(
+    (sb) => sb.from('hmis_patients')
+      .select('id, uhid, first_name, last_name')
+      .or(`uhid.ilike.%${patientSearch}%,first_name.ilike.%${patientSearch}%,last_name.ilike.%${patientSearch}%`)
+      .limit(5),
+    [patientSearch],
+    { enabled: patientSearch.length >= 2 }
+  );
 
   const { data: events, isLoading, error, isEmpty, refetch } = useSupabaseQuery(
     (sb) => sb.from('brain_infection_events')
@@ -74,10 +86,10 @@ export default function InfectionControlDashboard() {
   });
 
   const handleSubmit = () => {
-    if (!form.detection_date) return;
+    if (!form.detection_date || !form.patient_id) return;
     createEvent({
       centre_id: centreId,
-      patient_id: null,
+      patient_id: form.patient_id,
       infection_type: form.infection_type,
       detection_date: form.detection_date,
       detection_source: form.detection_source,
@@ -151,6 +163,43 @@ export default function InfectionControlDashboard() {
             </button>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="relative">
+              <label className="block text-xs font-medium text-gray-600 mb-1">Patient *</label>
+              {form.patient_id ? (
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium text-gray-900">
+                    {(patientResults as Array<Record<string, unknown>> | null)?.find((p) => p.id === form.patient_id)
+                      ? `${(patientResults as Array<Record<string, unknown>>).find((p) => p.id === form.patient_id)!.first_name} ${(patientResults as Array<Record<string, unknown>>).find((p) => p.id === form.patient_id)!.last_name}`
+                      : 'Selected'}
+                  </span>
+                  <button onClick={() => { setForm({ ...form, patient_id: '' }); setPatientSearch(''); }} className="text-xs text-red-500 cursor-pointer">Clear</button>
+                </div>
+              ) : (
+                <>
+                  <input
+                    type="text"
+                    value={patientSearch}
+                    onChange={(e) => setPatientSearch(e.target.value)}
+                    placeholder="Search by UHID or name..."
+                    className="w-full border rounded-lg px-3 py-2 text-sm"
+                  />
+                  {patientResults && (patientResults as Array<Record<string, unknown>>).length > 0 && (
+                    <div className="absolute z-10 top-full left-0 right-0 bg-white border rounded-lg shadow-lg mt-1 max-h-40 overflow-auto">
+                      {(patientResults as Array<Record<string, unknown>>).map((p) => (
+                        <button
+                          key={p.id as string}
+                          onClick={() => { setForm({ ...form, patient_id: p.id as string }); setPatientSearch(''); }}
+                          className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 cursor-pointer"
+                        >
+                          <span className="font-medium">{p.first_name as string} {p.last_name as string}</span>
+                          <span className="text-xs text-gray-400 ml-2">{p.uhid as string}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">Infection Type *</label>
               <select
@@ -219,8 +268,8 @@ export default function InfectionControlDashboard() {
           <div className="flex justify-end mt-4">
             <button
               onClick={handleSubmit}
-              disabled={isMutating}
-              className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 disabled:opacity-50 cursor-pointer flex items-center gap-2"
+              disabled={isMutating || !form.patient_id}
+              className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer flex items-center gap-2"
             >
               {isMutating && <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />}
               Submit Report
@@ -273,7 +322,7 @@ export default function InfectionControlDashboard() {
                       </td>
                       <td className="px-4 py-3 text-gray-600">{(event.organism as string) || '--'}</td>
                       <td className="px-4 py-3 text-xs text-gray-500 capitalize">
-                        {((event.detection_source as string) || '--').replace('_', ' ')}
+                        {((event.detection_source as string) || '--').replace(/_/g, ' ')}
                       </td>
                       <td className="px-4 py-3">
                         {outcome ? (
@@ -298,5 +347,13 @@ export default function InfectionControlDashboard() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function InfectionControlDashboard() {
+  return (
+    <RoleGuard module="brain">
+      <InfectionControlInner />
+    </RoleGuard>
   );
 }

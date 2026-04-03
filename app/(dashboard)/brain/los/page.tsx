@@ -4,10 +4,10 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { useAuthStore } from '@/lib/store/auth';
 import { useSupabaseQuery } from '@/lib/hooks/use-supabase-query';
-import { TableSkeleton, EmptyState, CardSkeleton } from '@/components/ui/shared';
-import { ArrowLeft, Clock, AlertTriangle, TrendingUp } from 'lucide-react';
+import { TableSkeleton, EmptyState, CardSkeleton, RoleGuard } from '@/components/ui/shared';
+import { ArrowLeft, AlertTriangle } from 'lucide-react';
 
-export default function LOSOptimizationDashboard() {
+function LOSOptimizationInner() {
   const { activeCentreId } = useAuthStore();
   const centreId = activeCentreId || '';
   const [showOutliersOnly, setShowOutliersOnly] = useState(false);
@@ -47,7 +47,8 @@ export default function LOSOptimizationDashboard() {
     ? Math.round(withActual.reduce((sum, p) => {
         const predicted = p.predicted_los_days as number;
         const actual = p.actual_los_days as number;
-        return sum + (1 - Math.abs(predicted - actual) / Math.max(predicted, actual));
+        const maxVal = Math.max(predicted, actual, 1);
+        return sum + (1 - Math.abs(predicted - actual) / maxVal);
       }, 0) / withActual.length * 100)
     : 0;
 
@@ -225,5 +226,13 @@ export default function LOSOptimizationDashboard() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function LOSOptimizationDashboard() {
+  return (
+    <RoleGuard module="brain">
+      <LOSOptimizationInner />
+    </RoleGuard>
   );
 }

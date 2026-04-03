@@ -48,7 +48,7 @@ export interface ReadmissionScores {
 }
 
 function scoreAge(age: number | null): number {
-  if (!age || age < 65) return 0;
+  if (age === null || age < 65) return 0;
   if (age < 75) return 0.5;
   return 1.0;
 }
@@ -170,6 +170,7 @@ export const ANTIBIOTIC_CLASSES: Record<string, string> = {
   clindamycin: 'lincosamide',
   cotrimoxazole: 'sulfonamide', 'trimethoprim-sulfamethoxazole': 'sulfonamide',
   nitrofurantoin: 'nitrofuran',
+  'pip-taz': 'penicillin',
   gentamicin: 'aminoglycoside', amikacin: 'aminoglycoside',
   tobramycin: 'aminoglycoside',
   tigecycline: 'glycylcycline',
@@ -374,7 +375,7 @@ export function isLOSOutlier(
   predictedDays: number,
   stddev: number | null
 ): boolean {
-  const threshold = stddev ? predictedDays + 2 * stddev : predictedDays * 1.5;
+  const threshold = (stddev && stddev > 0) ? predictedDays + 2 * stddev : predictedDays * 1.5;
   return actualDays > threshold;
 }
 

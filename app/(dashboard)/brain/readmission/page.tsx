@@ -4,8 +4,8 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { useAuthStore } from '@/lib/store/auth';
 import { useSupabaseQuery } from '@/lib/hooks/use-supabase-query';
-import { TableSkeleton, EmptyState, CardSkeleton } from '@/components/ui/shared';
-import { ArrowLeft, Activity, Phone, Home, Calendar, AlertTriangle } from 'lucide-react';
+import { TableSkeleton, EmptyState, CardSkeleton, RoleGuard } from '@/components/ui/shared';
+import { ArrowLeft, Phone, Home, Calendar, AlertTriangle } from 'lucide-react';
 import type { RiskCategory } from '@/types/database';
 
 const RISK_COLORS: Record<RiskCategory, string> = {
@@ -19,11 +19,21 @@ const RISK_LABELS: Record<RiskCategory, string> = {
   low: 'Low', moderate: 'Moderate', high: 'High', very_high: 'Very High',
 };
 
-export default function ReadmissionRiskDashboard() {
+function ReadmissionInner() {
   const { activeCentreId } = useAuthStore();
   const centreId = activeCentreId || '';
   const [filterCategory, setFilterCategory] = useState<string>('all');
 
+  // Separate unfiltered query for distribution cards
+  const { data: allRisks, isLoading: loadingAll } = useSupabaseQuery(
+    (sb) => sb.from('brain_readmission_risk')
+      .select('id, risk_category, was_readmitted')
+      .eq('centre_id', centreId),
+    [centreId],
+    { enabled: !!centreId }
+  );
+
+  // Filtered query for table display
   const { data: risks, isLoading, error, isEmpty } = useSupabaseQuery(
     (sb) => {
       let q = sb.from('brain_readmission_risk')
@@ -38,20 +48,21 @@ export default function ReadmissionRiskDashboard() {
     { enabled: !!centreId }
   );
 
-  // Compute distribution
+  // Distribution from unfiltered data
   const distribution = { low: 0, moderate: 0, high: 0, very_high: 0 };
-  const allData = risks as Array<Record<string, unknown>> | null;
-  allData?.forEach((r) => {
+  const allDistData = allRisks as Array<Record<string, unknown>> | null;
+  allDistData?.forEach((r) => {
     const cat = r.risk_category as RiskCategory;
     if (cat in distribution) distribution[cat]++;
   });
 
-  const total = (allData?.length ?? 0);
-  const readmittedCount = allData?.filter((r) => r.was_readmitted === true).length ?? 0;
+  const total = allDistData?.length ?? 0;
+  const readmittedCount = allDistData?.filter((r) => r.was_readmitted === true).length ?? 0;
+
+  const allData = risks as Array<Record<string, unknown>> | null;
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
-      {/* Header */}
       <div className="flex items-center gap-3 mb-6">
         <Link href="/brain" className="p-2 hover:bg-gray-100 rounded-lg cursor-pointer">
           <ArrowLeft className="w-4 h-4" />
@@ -62,8 +73,8 @@ export default function ReadmissionRiskDashboard() {
         </div>
       </div>
 
-      {/* Summary Cards */}
-      {isLoading ? (
+      {/* Distribution Cards (always unfiltered) */}
+      {loadingAll ? (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           {Array.from({ length: 4 }).map((_, i) => <CardSkeleton key={i} />)}
         </div>
@@ -73,7 +84,7 @@ export default function ReadmissionRiskDashboard() {
             <button
               key={cat}
               onClick={() => setFilterCategory(filterCategory === cat ? 'all' : cat)}
-              className={`bg-white rounded-xl border p-4 text-left cursor-pointer transition-all duration-200 ${filterCategory === cat ? 'ring-2 ring-blue-500' : 'hover:shadow-sm'}`}
+              className={`bg-white rounded-xl border p-4 text-left cursor-pointer transition-all duration-200 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1 ${filterCategory === cat ? 'ring-2 ring-blue-500' : 'hover:shadow-sm'}`}
             >
               <div className={`inline-flex px-2 py-0.5 rounded text-xs font-medium mb-2 ${RISK_COLORS[cat]}`}>
                 {RISK_LABELS[cat]}
@@ -86,7 +97,7 @@ export default function ReadmissionRiskDashboard() {
       )}
 
       {/* Outcome Tracking */}
-      {!isLoading && total > 0 && (
+      {!loadingAll && total > 0 && (
         <div className="bg-white rounded-xl border p-4 mb-6">
           <div className="flex items-center gap-6 text-sm">
             <div>
@@ -108,33 +119,27 @@ export default function ReadmissionRiskDashboard() {
       {/* Filter */}
       <div className="flex items-center gap-2 mb-4">
         <span className="text-sm text-gray-500">Filter:</span>
-        <button
-          onClick={() => setFilterCategory('all')}
-          className={`px-3 py-1 text-xs rounded-full cursor-pointer ${filterCategory === 'all' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600'}`}
-        >
-          All
-        </button>
-        {(['high', 'very_high'] as RiskCategory[]).map((cat) => (
+        {['all', 'high', 'very_high'].map((cat) => (
           <button
             key={cat}
             onClick={() => setFilterCategory(cat)}
-            className={`px-3 py-1 text-xs rounded-full cursor-pointer ${filterCategory === cat ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600'}`}
+            className={`px-3 py-1 text-xs rounded-full cursor-pointer focus-visible:ring-2 focus-visible:ring-blue-500 ${filterCategory === cat ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600'}`}
           >
-            {RISK_LABELS[cat]}
+            {cat === 'all' ? 'All' : RISK_LABELS[cat as RiskCategory]}
           </button>
         ))}
       </div>
 
       {/* Patient Table */}
-      {isLoading ? (
-        <TableSkeleton rows={8} cols={7} />
+      {error ? (
+        <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-sm text-red-700">{error}</div>
+      ) : isLoading ? (
+        <TableSkeleton rows={8} cols={6} />
       ) : isEmpty ? (
         <EmptyState
           title="No readmission risk data"
           description="Risk scores are calculated on patient discharge. Data will appear as patients are discharged."
         />
-      ) : error ? (
-        <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-sm text-red-700">{error}</div>
       ) : (
         <div className="bg-white rounded-xl border overflow-hidden">
           <div className="overflow-x-auto">
@@ -167,7 +172,7 @@ export default function ReadmissionRiskDashboard() {
                           {patient ? `${patient.first_name} ${patient.last_name}` : '--'}
                         </div>
                         <div className="text-xs text-gray-400">
-                          {patient?.uhid as string} | {patient?.age_years as number}y {patient?.gender as string}
+                          {(patient?.uhid as string) ?? ''} | {String(patient?.age_years ?? '')}y {(patient?.gender as string) ?? ''}
                         </div>
                       </td>
                       <td className="px-4 py-3 font-semibold">{(risk.total_risk_score as number).toFixed(1)}/10</td>
@@ -197,7 +202,8 @@ export default function ReadmissionRiskDashboard() {
                         {risk.was_readmitted ? (
                           <span className="inline-flex items-center gap-1 text-xs text-red-600 font-medium">
                             <AlertTriangle className="w-3 h-3" />
-                            Day {String(risk.readmission_days ?? '')}</span>
+                            Day {String(risk.readmission_days ?? '')}
+                          </span>
                         ) : (
                           <span className="text-xs text-gray-400">No</span>
                         )}
@@ -211,5 +217,13 @@ export default function ReadmissionRiskDashboard() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function ReadmissionRiskDashboard() {
+  return (
+    <RoleGuard module="brain">
+      <ReadmissionInner />
+    </RoleGuard>
   );
 }

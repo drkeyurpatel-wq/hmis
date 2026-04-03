@@ -4,8 +4,8 @@ import React from 'react';
 import Link from 'next/link';
 import { useAuthStore } from '@/lib/store/auth';
 import { useSupabaseQuery } from '@/lib/hooks/use-supabase-query';
-import { TableSkeleton, EmptyState, CardSkeleton } from '@/components/ui/shared';
-import { ArrowLeft, Award, TrendingUp, Download } from 'lucide-react';
+import { TableSkeleton, EmptyState, CardSkeleton, RoleGuard } from '@/components/ui/shared';
+import { ArrowLeft, Award } from 'lucide-react';
 import type { QualityGrade } from '@/types/database';
 
 const GRADE_COLORS: Record<QualityGrade, string> = {
@@ -62,7 +62,7 @@ const LIGHT_CLASSES = {
   red: 'bg-red-500',
 };
 
-export default function QualityScorecardDashboard() {
+function QualityScorecardInner() {
   const { activeCentreId } = useAuthStore();
   const centreId = activeCentreId || '';
 
@@ -116,7 +116,7 @@ export default function QualityScorecardDashboard() {
           <div className="bg-white rounded-xl border p-6">
             <div className="text-sm text-gray-500 mb-2">Score Trend (Last {allCards?.length ?? 0} months)</div>
             <div className="flex items-end gap-1 h-16">
-              {(allCards ?? []).reverse().map((card, i) => {
+              {[...(allCards ?? [])].reverse().map((card, i) => {
                 const s = (card.overall_quality_score as number) || 0;
                 return (
                   <div key={i} className="flex-1 flex flex-col items-center gap-1">
@@ -191,5 +191,13 @@ export default function QualityScorecardDashboard() {
         </div>
       ) : null}
     </div>
+  );
+}
+
+export default function QualityScorecardDashboard() {
+  return (
+    <RoleGuard module="brain">
+      <QualityScorecardInner />
+    </RoleGuard>
   );
 }

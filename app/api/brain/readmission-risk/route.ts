@@ -14,8 +14,16 @@ function adminSb() {
   return createClient(SUPABASE_URL, SUPABASE_KEY);
 }
 
+async function verifyCentreAccess(sb: ReturnType<typeof adminSb>, staffId: string, centreId: string): Promise<boolean> {
+  const { count } = await sb.from('hmis_staff_centres')
+    .select('id', { count: 'exact', head: true })
+    .eq('staff_id', staffId)
+    .eq('centre_id', centreId);
+  return (count ?? 0) > 0;
+}
+
 export async function POST(request: NextRequest) {
-  const { error: authError } = await requireAuth(request);
+  const { staff, error: authError } = await requireAuth(request);
   if (authError) return authError;
 
   try {
@@ -27,6 +35,11 @@ export async function POST(request: NextRequest) {
     }
 
     const sb = adminSb();
+
+    // Verify centre access
+    if (!await verifyCentreAccess(sb, staff!.id, centre_id)) {
+      return NextResponse.json({ error: 'Access denied for this centre' }, { status: 403 });
+    }
 
     // 1. Load admission + patient demographics
     const { data: admission, error: admErr } = await sb
@@ -57,12 +70,12 @@ export async function POST(request: NextRequest) {
       .neq('id', admission_id)
       .gte('admission_date', oneYearAgo.toISOString().slice(0, 10));
 
-    // 3. Count comorbidities from diagnoses
+    // 3. Count comorbidities from diagnoses (confirmed diagnoses for this patient)
     const { count: comorbidityCount } = await sb
       .from('hmis_diagnoses')
       .select('id', { count: 'exact', head: true })
       .eq('patient_id', admission.patient_id)
-      .eq('is_active', true);
+      .eq('diagnosis_type', 'confirmed');
 
     // 4. Calculate LOS
     const admDate = new Date(admission.admission_date);
@@ -80,17 +93,18 @@ export async function POST(request: NextRequest) {
       .eq('is_abnormal', true)
       .gte('created_at', dischargeMinus48h.toISOString());
 
-    // 6. Count discharge medications
+    // 6. Count discharge medications (via orders -> prescriptions for this encounter)
     const { count: medCount } = await sb
       .from('hmis_prescriptions')
-      .select('id', { count: 'exact', head: true })
+      .select('id, order:hmis_orders!inner(encounter_id, encounter_type, status)', { count: 'exact', head: true })
       .eq('patient_id', admission.patient_id)
-      .eq('admission_id', admission_id)
-      .eq('is_active', true);
+      .eq('hmis_orders.encounter_id', admission_id)
+      .eq('hmis_orders.encounter_type', 'ipd')
+      .neq('hmis_orders.status', 'cancelled');
 
     // Calculate age
     let age: number | null = patient?.age_years ?? null;
-    if (!age && patient?.date_of_birth) {
+    if (age === null && patient?.date_of_birth) {
       const dob = new Date(patient.date_of_birth);
       age = Math.floor((Date.now() - dob.getTime()) / (365.25 * 24 * 60 * 60 * 1000));
     }
@@ -123,19 +137,18 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (upsertErr) {
-      return NextResponse.json({ error: upsertErr.message }, { status: 500 });
+      return NextResponse.json({ error: 'Failed to save risk score' }, { status: 500 });
     }
 
     return NextResponse.json({ data: result });
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : 'Internal server error';
-    return NextResponse.json({ error: message }, { status: 500 });
+  } catch {
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
 // GET /api/brain/readmission-risk?centre_id=...&risk_category=...
 export async function GET(request: NextRequest) {
-  const { error: authError } = await requireAuth(request);
+  const { staff, error: authError } = await requireAuth(request);
   if (authError) return authError;
 
   const centreId = request.nextUrl.searchParams.get('centre_id');
@@ -143,8 +156,13 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'centre_id is required' }, { status: 400 });
   }
 
-  const riskCategory = request.nextUrl.searchParams.get('risk_category');
   const sb = adminSb();
+
+  if (!await verifyCentreAccess(sb, staff!.id, centreId)) {
+    return NextResponse.json({ error: 'Access denied for this centre' }, { status: 403 });
+  }
+
+  const riskCategory = request.nextUrl.searchParams.get('risk_category');
 
   let query = sb
     .from('brain_readmission_risk')
@@ -160,7 +178,7 @@ export async function GET(request: NextRequest) {
   const { data, error } = await query;
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to fetch risk data' }, { status: 500 });
   }
 
   return NextResponse.json({ data: data ?? [] });
