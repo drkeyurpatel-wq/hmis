@@ -292,7 +292,7 @@ RULES:
           centreId: admission?.centre_id || '', admissionId,
           bedId: admission.bed_id, roomId: admission.room_id,
           wardId: admission.ward_id, staffId,
-        }).catch(() => {})
+        }).catch((_e) => { /* components: non-blocking */ })
       );
     }
     // Discontinue all active meds

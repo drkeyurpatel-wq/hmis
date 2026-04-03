@@ -114,17 +114,17 @@ function fmt(n: number) { return new Intl.NumberFormat('en-IN').format(Math.roun
 
 export default function HomePage() {
   const { staff, activeCentreId, centres, isClinicMode } = useAuthStore();
-
-  // Render clinic dashboard if active centre is a clinic
-  if (isClinicMode) {
-    return <ClinicDashboard />;
-  }
   const router = useRouter();
   const staffType = staff?.staff_type || 'admin';
   const centreId = activeCentreId || '';
   const wq = useMyWorkQueue(centreId, staff?.id || null, staffType);
   const { stats, loading: statsLoading } = useLiveStats(centreId);
   const [filter, setFilter] = useState<string>('all');
+
+  // Render clinic dashboard if active centre is a clinic
+  if (isClinicMode) {
+    return <ClinicDashboard />;
+  }
 
   const activeCentre = centres.find((c: any) => c.centre_id === centreId);
   const centreName = (activeCentre as any)?.centre?.name || 'Health1';

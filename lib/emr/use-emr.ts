@@ -85,14 +85,14 @@ export function useEMR(): EMRState {
   // Cache patient when loaded
   useEffect(() => {
     if (patient) {
-      cachePatient(patient).catch(() => {});
+      cachePatient(patient).catch((_e) => { /* lib: non-blocking */ });
     }
   }, [patient]);
 
   // Cache encounter summaries
   useEffect(() => {
     if (pastEncounters.length > 0 && selectedPatientId) {
-      cacheEncounterBatch(pastEncounters.map(e => ({ ...e, patientId: selectedPatientId }))).catch(() => {});
+      cacheEncounterBatch(pastEncounters.map(e => ({ ...e, patientId: selectedPatientId }))).catch((_e) => { /* lib: non-blocking */ });
     }
   }, [pastEncounters, selectedPatientId]);
 
@@ -136,7 +136,7 @@ export function useEMR(): EMRState {
 
         // Clear draft if exists
         if (activeEncounterId) {
-          deleteDraft(activeEncounterId).catch(() => {});
+          deleteDraft(activeEncounterId).catch((_e) => { /* lib: non-blocking */ });
         }
 
         return { success: true, id: result.data?.id };
@@ -163,7 +163,7 @@ export function useEMR(): EMRState {
     // Request background sync
     if ('serviceWorker' in navigator && 'SyncManager' in window) {
       const reg = await navigator.serviceWorker.ready;
-      await (reg as any).sync?.register('sync-encounters').catch(() => {});
+      await (reg as any).sync?.register('sync-encounters').catch((_e) => { /* lib: non-blocking */ });
     }
 
     return { success: true, id: draftId, offline: true };
@@ -191,7 +191,7 @@ export function useEMR(): EMRState {
         createdAt: Date.now(),
         updatedAt: Date.now(),
         synced: false,
-      }).catch(() => {});
+      }).catch((_e) => { /* lib: non-blocking */ });
     }, 5000); // Auto-save every 5s of inactivity
   }, [activeEncounterId, selectedPatientId, centreId, doctorId]);
 

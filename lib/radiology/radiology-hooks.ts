@@ -421,7 +421,7 @@ export function useRadiologyWorklist(centreId: string | null) {
             centreId: ord.centre_id, patientId: ord.patient_id,
             radiologyOrderId: orderId, testName: ord.test_name,
             orderedBy: ord.ordered_by,
-          }).catch(() => {})
+          }).catch((_e) => { /* lib: non-blocking */ })
         );
       }
     }

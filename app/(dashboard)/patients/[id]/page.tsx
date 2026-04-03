@@ -54,7 +54,7 @@ function Patient360Inner() {
           centreId: activeCentreId || '', patientId, admissionId: p.admission?.id,
           vitals: { temperature: record.temperature, pulse: record.heart_rate, bp_systolic: record.systolic_bp, bp_diastolic: record.diastolic_bp, resp_rate: record.respiratory_rate, spo2: record.spo2 },
           staffId: staff.id,
-        }).catch(() => {});
+        }).catch((_e) => { /* app: non-blocking */ });
       });
     }
     else flash('Error: ' + error.message);

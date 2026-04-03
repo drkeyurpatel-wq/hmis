@@ -147,12 +147,12 @@ export function useNursingStation(centreId: string | null, wardFilter?: string) 
 
     // BRIDGE: Load on-duty staff from duty roster for current ward
     if (wardFilter && centreId) {
-      loadOnDutyForWard(centreId, wardFilter).then(setOnDutyStaff).catch(() => {});
+      loadOnDutyForWard(centreId, wardFilter).then(setOnDutyStaff).catch((_e) => { /* lib: non-blocking */ });
     } else if (centreId && wardData && wardData.length > 0) {
       // Load for all wards, merge
       Promise.all(wardData.map(w => loadOnDutyForWard(centreId!, w.id)))
         .then(results => setOnDutyStaff(results.flat()))
-        .catch(() => {});
+        .catch((_e) => { /* lib: non-blocking */ });
     }
 
     setLoading(false);
@@ -254,7 +254,7 @@ export function useNursingVitals(patientId: string | null, admissionId: string |
             resp_rate: vitals.respiratoryRate, spo2: vitals.spo2,
           },
           staffId,
-        }).catch(() => {});
+        }).catch((_e) => { /* lib: non-blocking */ });
       });
     }
     if (!error && !data) load();

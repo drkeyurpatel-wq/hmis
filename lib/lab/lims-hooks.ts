@@ -277,7 +277,7 @@ export function useResultEntry(orderId: string | null) {
           lab_order_id: orderId, result_id: results.find((r: any) => r.parameter_name === c.parameterName)?.id || orderId,
           parameter_name: c.parameterName, result_value: c.value,
           critical_type: parseFloat(c.value) < 0 ? 'low' : 'high', status: 'pending',
-        })).catch(() => {}); // ignore duplicates
+        })).catch((_e) => { /* lib: non-blocking */ }); // ignore duplicates
 
         // BRIDGE: Push to nursing station + doctor alerts
         if (labOrd) {
@@ -286,7 +286,7 @@ export function useResultEntry(orderId: string | null) {
               centreId: labOrd.centre_id, patientId: labOrd.patient_id,
               admissionId: labOrd.admission_id, parameterName: c.parameterName,
               resultValue: c.value, labOrderId: orderId!,
-            }).catch(() => {})
+            }).catch((_e) => { /* lib: non-blocking */ })
           );
         }
       }
@@ -316,7 +316,7 @@ export function useResultEntry(orderId: string | null) {
         onLabResultVerified({
           centreId: labOrd.centre_id, patientId: labOrd.patient_id,
           admissionId: labOrd.admission_id, labOrderId: orderId,
-        }).catch(() => {})
+        }).catch((_e) => { /* lib: non-blocking */ })
       );
 
       // BRIDGE: create critical alert if any results are critical
@@ -329,7 +329,7 @@ export function useResultEntry(orderId: string | null) {
             admissionId: labOrd.admission_id || undefined, labOrderId: orderId,
             testName: testInfo?.test_name || 'Lab test',
             criticalParams: criticalResults.map(r => ({ name: r.parameter_name, value: r.result_value })),
-          }).catch(() => {})
+          }).catch((_e) => { /* lib: non-blocking */ })
         );
       }
     }

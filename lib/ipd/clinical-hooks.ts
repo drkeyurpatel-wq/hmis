@@ -272,7 +272,7 @@ export function useMAR(admissionId: string | null) {
           onMedicationAdministered({
             centreId: adm.centre_id, patientId: adm.patient_id, admissionId: admissionId!,
             marId, drugName: (marRow?.medication_order as any)?.drug_name || '', staffId,
-          }).catch(() => {});
+          }).catch((_e) => { /* lib: non-blocking */ });
         });
       }
     }

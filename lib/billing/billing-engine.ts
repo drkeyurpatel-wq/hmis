@@ -279,7 +279,7 @@ export async function createBill(params: {
           centreId, admissionId: params.encounterId!, billId: bill.id,
           patientInsuranceId: adm.patient_insurance_id,
           netAmount: summary.net, staffId,
-        }).catch(() => {})
+        }).catch((_e) => { /* lib: non-blocking */ })
       );
     }
   }
