@@ -121,14 +121,6 @@ export default function HomePage() {
   const { stats, loading: statsLoading } = useLiveStats(centreId);
   const [filter, setFilter] = useState<string>('all');
 
-  // Render clinic dashboard if active centre is a clinic
-  if (isClinicMode) {
-    return <ClinicDashboard />;
-  }
-
-  const activeCentre = centres.find((c: any) => c.centre_id === centreId);
-  const centreName = (activeCentre as any)?.centre?.name || 'Health1';
-
   // Client-only: avoids hydration mismatch between server (UTC) and client (IST)
   const [greeting, setGreeting] = useState('Welcome');
   const [dateLabel, setDateLabel] = useState('');
@@ -137,6 +129,14 @@ export default function HomePage() {
     setGreeting(h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening');
     setDateLabel(new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'short' }));
   }, []);
+
+  // Render clinic dashboard if active centre is a clinic
+  if (isClinicMode) {
+    return <ClinicDashboard />;
+  }
+
+  const activeCentre = centres.find((c: any) => c.centre_id === centreId);
+  const centreName = (activeCentre as any)?.centre?.name || 'Health1';
 
   const filtered = filter === 'all' ? wq.items : wq.items.filter((i: any) => i.type === filter || i.urgency === filter);
   const typeCounts: Record<string, number> = {};
