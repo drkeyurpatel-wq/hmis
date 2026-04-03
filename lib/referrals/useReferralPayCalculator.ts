@@ -85,7 +85,7 @@ export function useReferralFeeAgreements(centreId: string | null) {
 
       // Load slabs if any
       const { data: slabs } = await sb()
-        .from('referral_fee_slabs')
+        .from('hmis_referral_fee_slabs')
         .select('*')
         .eq('centre_id', centreId)
         .order('min_revenue');
@@ -149,12 +149,12 @@ export function useReferralFeeAgreements(centreId: string | null) {
     // Save slabs if slab type
     if (agreement.fee_type === 'slab' && agreement.slabs) {
       // Delete existing slabs
-      await sb().from('referral_fee_slabs').delete().eq('source_id', sourceId);
+      await sb().from('hmis_referral_fee_slabs').delete().eq('referring_doctor_id', sourceId);
       // Insert new slabs
       if (agreement.slabs.length > 0) {
-        await sb().from('referral_fee_slabs').insert(
+        await sb().from('hmis_referral_fee_slabs').insert(
           agreement.slabs.map(s => ({
-            source_id: sourceId,
+            referring_doctor_id: sourceId,
             centre_id: centreId,
             min_revenue: s.min_revenue,
             max_revenue: s.max_revenue,
@@ -171,7 +171,7 @@ export function useReferralFeeAgreements(centreId: string | null) {
 
   const getAgreement = useCallback((sourceId: string): FeeAgreement => {
     return agreements[sourceId] || {
-      source_id: sourceId,
+      referring_doctor_id: sourceId,
       fee_type: 'none' as FeeType,
       fee_pct: 0,
       flat_amount: 0,

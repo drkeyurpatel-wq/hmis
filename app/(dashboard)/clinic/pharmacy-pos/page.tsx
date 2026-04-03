@@ -59,7 +59,7 @@ function PharmacyPOSInner() {
     const timeout = setTimeout(async () => {
       const client = sb();
       const { data } = await client
-        .from('hmis_drugs')
+        .from('hmis_drug_master')
         .select('id, name, generic_name, strength, pack_size, mrp, selling_price, stock_qty, requires_prescription')
         .or(`name.ilike.%${searchTerm}%,generic_name.ilike.%${searchTerm}%`)
         .eq('is_active', true)
@@ -140,7 +140,7 @@ function PharmacyPOSInner() {
     setInvLoading(true);
     const client = sb();
     const { data } = await client
-      .from('hmis_drugs')
+      .from('hmis_drug_master')
       .select('id, name, generic_name, strength, pack_size, mrp, stock_qty, reorder_level')
       .eq('is_active', true)
       .order('name', { ascending: true })
