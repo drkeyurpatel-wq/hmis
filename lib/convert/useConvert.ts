@@ -79,13 +79,23 @@ export function useConversionLead(leadId: string | null) {
     if (!leadId || !sb()) { setLoading(false); return; }
     setLoading(true);
 
-    const { data: leadData } = await sb()
+    const { data: leadData, error: leadError } = await sb()
       .from('hmis_conversion_leads')
       .select('*')
       .eq('id', leadId)
       .single();
 
-    if (leadData) {
+    if (!leadData || leadError) {
+      setLead(null);
+      setPatient(null);
+      setDoctor(null);
+      setDepartment(null);
+      setFollowups([]);
+      setLoading(false);
+      return;
+    }
+
+    {
       setLead(leadData as ConversionLead);
 
       const [patRes, docRes, deptRes, fuRes] = await Promise.all([
@@ -113,7 +123,7 @@ export function useConversionLead(leadId: string | null) {
       } else {
         setFollowups(fups);
       }
-    }
+    } // end leadData block
     setLoading(false);
   }, [leadId]);
 
@@ -177,13 +187,3 @@ export async function updateLeadStatus(leadId: string, status: string, extra?: R
   return { data, error };
 }
 
-// ---- Update Lead ----
-export async function updateLead(leadId: string, updates: Record<string, unknown>) {
-  const { data, error } = await sb()
-    .from('hmis_conversion_leads')
-    .update({ ...updates, updated_at: new Date().toISOString() })
-    .eq('id', leadId)
-    .select()
-    .single();
-  return { data, error };
-}

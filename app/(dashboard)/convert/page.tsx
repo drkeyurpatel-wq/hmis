@@ -88,9 +88,15 @@ function ConvertDashboard() {
   }, [funnel]);
 
   // Sorted doctors
+  const STRING_COLS = new Set(['doctor_name', 'department', 'top_loss_reason']);
   const sortedDoctors = useMemo(() => {
     const col = doctorSort.col as keyof DoctorConversionRate;
     return [...doctors].sort((a, b) => {
+      if (STRING_COLS.has(col)) {
+        const av = String(a[col] ?? '');
+        const bv = String(b[col] ?? '');
+        return doctorSort.asc ? av.localeCompare(bv) : bv.localeCompare(av);
+      }
       const av = (a[col] ?? 0) as number;
       const bv = (b[col] ?? 0) as number;
       return doctorSort.asc ? av - bv : bv - av;
@@ -108,7 +114,7 @@ function ConvertDashboard() {
 
   const refreshAll = () => { refetchFunnel(); refetchDoctors(); };
 
-  if (funnelLoading && doctorsLoading) {
+  if (funnelLoading || doctorsLoading) {
     return (
       <div className="p-6 space-y-4">
         <div className="h-8 bg-gray-200 rounded w-48 animate-pulse" />

@@ -47,48 +47,57 @@ function LeadDetail() {
   const submitFollowup = useCallback(async () => {
     if (!formData.description || submitting) return;
     setSubmitting(true);
-    const { error } = await logFollowup({
-      lead_id: leadId,
-      action_type: formData.actionType,
-      action_description: formData.description,
-      outcome: formData.outcome || undefined,
-      next_followup_date: formData.nextDate || undefined,
-      performed_by: staffId,
-    });
-    setSubmitting(false);
-    if (!error) {
-      setFormData({ actionType: 'phone_call', description: '', outcome: '', nextDate: '' });
-      setShowForm(false);
-      flash('Follow-up logged');
-      refetch();
-    } else {
-      flash('Error: ' + error.message);
+    try {
+      const { error } = await logFollowup({
+        lead_id: leadId,
+        action_type: formData.actionType,
+        action_description: formData.description,
+        outcome: formData.outcome || undefined,
+        next_followup_date: formData.nextDate || undefined,
+        performed_by: staffId,
+      });
+      if (!error) {
+        setFormData({ actionType: 'phone_call', description: '', outcome: '', nextDate: '' });
+        setShowForm(false);
+        flash('Follow-up logged');
+        refetch();
+      } else {
+        flash('Error: ' + error.message);
+      }
+    } catch (err: any) {
+      flash('Error: ' + (err?.message || 'Failed to log follow-up'));
+    } finally {
+      setSubmitting(false);
     }
   }, [formData, leadId, staffId, submitting, refetch]);
 
   const handleStatusChange = useCallback(async () => {
     if (!newStatus || statusSubmitting) return;
     setStatusSubmitting(true);
-    const { error } = await updateLeadStatus(leadId, newStatus);
-    if (error) {
-      flash('Error: ' + error.message);
+    try {
+      const { error } = await updateLeadStatus(leadId, newStatus);
+      if (error) {
+        flash('Error: ' + error.message);
+        return;
+      }
+      if (statusNote) {
+        await logFollowup({
+          lead_id: leadId,
+          action_type: 'note',
+          action_description: `Status changed to ${STATUS_LABELS[newStatus as LeadStatus] || newStatus}. ${statusNote}`,
+          performed_by: staffId,
+        });
+      }
+      setShowStatusModal(false);
+      setNewStatus('');
+      setStatusNote('');
+      flash('Status updated');
+      refetch();
+    } catch (err: any) {
+      flash('Error: ' + (err?.message || 'Failed to update status'));
+    } finally {
       setStatusSubmitting(false);
-      return;
     }
-    if (statusNote) {
-      await logFollowup({
-        lead_id: leadId,
-        action_type: 'note',
-        action_description: `Status changed to ${STATUS_LABELS[newStatus as LeadStatus] || newStatus}. ${statusNote}`,
-        performed_by: staffId,
-      });
-    }
-    setStatusSubmitting(false);
-    setShowStatusModal(false);
-    setNewStatus('');
-    setStatusNote('');
-    flash('Status updated');
-    refetch();
   }, [newStatus, statusNote, leadId, staffId, statusSubmitting, refetch]);
 
   if (loading) {

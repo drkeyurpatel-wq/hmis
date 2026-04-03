@@ -48,22 +48,27 @@ function TaskList() {
   const submitFollowup = useCallback(async () => {
     if (!followupForm || !followupForm.description || submitting) return;
     setSubmitting(true);
-    const { error } = await logFollowup({
-      lead_id: followupForm.leadId,
-      action_type: followupForm.actionType,
-      action_description: followupForm.description,
-      outcome: followupForm.outcome || undefined,
-      next_followup_date: followupForm.nextDate || undefined,
-      performed_by: staffId,
-    });
-    setSubmitting(false);
-    if (!error) {
-      setFollowupForm(null);
-      setExpandedId(null);
-      flash('Follow-up logged');
-      refetch();
-    } else {
-      flash('Error: ' + error.message);
+    try {
+      const { error } = await logFollowup({
+        lead_id: followupForm.leadId,
+        action_type: followupForm.actionType,
+        action_description: followupForm.description,
+        outcome: followupForm.outcome || undefined,
+        next_followup_date: followupForm.nextDate || undefined,
+        performed_by: staffId,
+      });
+      if (!error) {
+        setFollowupForm(null);
+        setExpandedId(null);
+        flash('Follow-up logged');
+        refetch();
+      } else {
+        flash('Error: ' + error.message);
+      }
+    } catch (err: any) {
+      flash('Error: ' + (err?.message || 'Failed to log follow-up'));
+    } finally {
+      setSubmitting(false);
     }
   }, [followupForm, staffId, submitting, refetch]);
 
