@@ -8,6 +8,7 @@ import { printEncounterSummary, openPrintWindow } from '@/components/ui/shared';
 import { LOGO_SVG } from '@/lib/config/logo';
 import { HOSPITAL } from '@/lib/config/hospital';
 import { smartPostLabCharge, smartPostRadiologyCharge, smartPostConsultationCharge, createBillFromCharges } from '@/lib/bridge/cross-module-bridge';
+import { createConversionLead } from '@/lib/convert/useConvert';
 import PatientBanner from '@/components/emr-v2/patient-banner';
 import VitalsPanel from '@/components/emr-v2/vitals-panel';
 import { SmartComplaintBuilder, generateComplaintText, type ActiveComplaint } from '@/components/emr/smart-complaint-builder';
@@ -73,6 +74,15 @@ function EMRInner() {
   const [showLab, setShowLab] = useState(false);
   const [showCopilot, setShowCopilot] = useState(false);
   const [saving, setSaving] = useState(false);
+
+  // Advise Admission/Procedure (Convert module)
+  const [showAdviseAdmission, setShowAdviseAdmission] = useState(false);
+  const [adviseForm, setAdviseForm] = useState({
+    procedure: '', type: 'ipd' as string, urgency: 'routine' as string,
+    estimatedCost: '', estimatedStay: '', concern: '',
+    insuranceApplicable: false, insurancePct: '',
+  });
+  const [adviseSaving, setAdviseSaving] = useState(false);
 
   // Load preselected patient
   useEffect(() => {
@@ -557,7 +567,131 @@ function EMRInner() {
                     advice: advice ? [advice] : [], followUp: followUpDate || '',
                   }, HOSPITAL);
                 }} className="px-4 py-2.5 bg-teal-600 text-white text-sm rounded-lg">Print Summary</button>
+                <button onClick={() => setShowAdviseAdmission(true)} disabled={!patient.id}
+                  className="px-4 py-2.5 bg-indigo-600 text-white text-sm rounded-lg font-medium hover:bg-indigo-700 disabled:opacity-40 cursor-pointer">Advise Admission</button>
               </div>
+
+              {/* Advise Admission/Procedure Modal */}
+              {showAdviseAdmission && (
+                <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-5 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-sm font-bold text-indigo-900">Advise Admission / Procedure</h4>
+                    <button onClick={() => setShowAdviseAdmission(false)} className="text-gray-400 hover:text-gray-600 text-sm cursor-pointer">Close</button>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="col-span-2">
+                      <label className="block text-xs text-gray-600 mb-1">Procedure / Admission Reason *</label>
+                      <input type="text" value={adviseForm.procedure}
+                        onChange={e => setAdviseForm(f => ({ ...f, procedure: e.target.value }))}
+                        className="w-full border rounded-lg px-3 py-2 text-sm" placeholder="e.g. Lap Cholecystectomy, Angioplasty, Knee Replacement" />
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {['Angioplasty', 'CABG', 'Lap Cholecystectomy', 'Knee Replacement', 'Hip Replacement', 'Cataract Surgery', 'Hernia Repair', 'Appendectomy', 'Tonsillectomy', 'Dialysis'].map(p => (
+                          <button key={p} onClick={() => setAdviseForm(f => ({ ...f, procedure: p }))}
+                            className="px-2 py-0.5 bg-white border rounded text-[9px] hover:bg-indigo-100 cursor-pointer">{p}</button>
+                        ))}
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-600 mb-1">Type</label>
+                      <select value={adviseForm.type} onChange={e => setAdviseForm(f => ({ ...f, type: e.target.value }))}
+                        className="w-full border rounded-lg px-3 py-2 text-sm">
+                        <option value="ipd">IPD Admission</option>
+                        <option value="surgery">Surgery</option>
+                        <option value="procedure">Procedure</option>
+                        <option value="daycare">Daycare</option>
+                        <option value="investigation">Investigation</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-600 mb-1">Urgency</label>
+                      <select value={adviseForm.urgency} onChange={e => setAdviseForm(f => ({ ...f, urgency: e.target.value }))}
+                        className="w-full border rounded-lg px-3 py-2 text-sm">
+                        <option value="routine">Routine</option>
+                        <option value="soon">Soon</option>
+                        <option value="urgent">Urgent</option>
+                        <option value="emergency">Emergency</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-600 mb-1">Estimated Cost</label>
+                      <input type="number" value={adviseForm.estimatedCost}
+                        onChange={e => setAdviseForm(f => ({ ...f, estimatedCost: e.target.value }))}
+                        className="w-full border rounded-lg px-3 py-2 text-sm" placeholder="Optional" />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-600 mb-1">Estimated Stay (days)</label>
+                      <input type="number" value={adviseForm.estimatedStay}
+                        onChange={e => setAdviseForm(f => ({ ...f, estimatedStay: e.target.value }))}
+                        className="w-full border rounded-lg px-3 py-2 text-sm" placeholder="Optional" />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-600 mb-1">Patient Concern</label>
+                      <select value={adviseForm.concern} onChange={e => setAdviseForm(f => ({ ...f, concern: e.target.value }))}
+                        className="w-full border rounded-lg px-3 py-2 text-sm">
+                        <option value="">None</option>
+                        <option value="cost">Cost</option>
+                        <option value="fear">Fear / Anxiety</option>
+                        <option value="second_opinion">Wants second opinion</option>
+                        <option value="time_off_work">Time off work</option>
+                        <option value="travel">Travel difficulty</option>
+                        <option value="other">Other</option>
+                      </select>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" checked={adviseForm.insuranceApplicable}
+                          onChange={e => setAdviseForm(f => ({ ...f, insuranceApplicable: e.target.checked }))}
+                          className="rounded" />
+                        <span className="text-xs text-gray-600">Insurance</span>
+                      </label>
+                      {adviseForm.insuranceApplicable && (
+                        <input type="number" value={adviseForm.insurancePct}
+                          onChange={e => setAdviseForm(f => ({ ...f, insurancePct: e.target.value }))}
+                          className="w-20 border rounded-lg px-2 py-1 text-sm" placeholder="%" />
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex gap-2 pt-1">
+                    <button onClick={async () => {
+                      if (!adviseForm.procedure || !patient.id || adviseSaving) return;
+                      setAdviseSaving(true);
+                      const primaryDx = diagnoses.find(d => d.type === 'primary') || diagnoses[0];
+                      const { error } = await createConversionLead({
+                        centre_id: centreId,
+                        patient_id: patient.id,
+                        opd_visit_id: opdVisitId || undefined,
+                        consulting_doctor_id: staffId || undefined,
+                        department_id: undefined,
+                        visit_date: new Date().toISOString().split('T')[0],
+                        advised_procedure: adviseForm.procedure,
+                        advised_type: adviseForm.type,
+                        urgency: adviseForm.urgency,
+                        estimated_cost: adviseForm.estimatedCost ? parseFloat(adviseForm.estimatedCost) : undefined,
+                        estimated_stay_days: adviseForm.estimatedStay ? parseInt(adviseForm.estimatedStay) : undefined,
+                        diagnosis: primaryDx ? primaryDx.name : undefined,
+                        icd_code: primaryDx ? primaryDx.code : undefined,
+                        patient_concern: adviseForm.concern || undefined,
+                        insurance_applicable: adviseForm.insuranceApplicable,
+                        insurance_coverage_pct: adviseForm.insurancePct ? parseFloat(adviseForm.insurancePct) : undefined,
+                        created_by: staffId,
+                      });
+                      setAdviseSaving(false);
+                      if (!error) {
+                        flash('Admission advised — lead created for counselor follow-up');
+                        setShowAdviseAdmission(false);
+                        setAdviseForm({ procedure: '', type: 'ipd', urgency: 'routine', estimatedCost: '', estimatedStay: '', concern: '', insuranceApplicable: false, insurancePct: '' });
+                      } else {
+                        flash('Error creating lead: ' + error.message);
+                      }
+                    }} disabled={adviseSaving || !adviseForm.procedure}
+                      className="px-5 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer">
+                      {adviseSaving ? 'Creating...' : 'Create Conversion Lead'}
+                    </button>
+                    <button onClick={() => setShowAdviseAdmission(false)}
+                      className="px-4 py-2 text-gray-600 hover:text-gray-800 text-sm cursor-pointer">Cancel</button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
