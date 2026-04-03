@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuthStore } from '@/lib/store/auth';
 import { sb } from '@/lib/supabase/browser';
+import { RoleGuard } from '@/components/ui/shared';
 import {
   Search, Plus, Minus, Trash2, CreditCard, Banknote,
   QrCode, ShoppingCart, Package, RefreshCw, CheckCircle,
@@ -30,6 +31,10 @@ function fmt(n: number) {
 }
 
 export default function PharmacyPOSPage() {
+  return <RoleGuard module="clinic_pharmacy"><PharmacyPOSInner /></RoleGuard>;
+}
+
+function PharmacyPOSInner() {
   const { staff, activeCentreId } = useAuthStore();
   const centreId = activeCentreId || '';
   const [activeTab, setActiveTab] = useState<Tab>('pos');

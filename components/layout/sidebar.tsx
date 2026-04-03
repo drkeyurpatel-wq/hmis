@@ -126,7 +126,7 @@ const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
 
 export function Sidebar({ mobileOpen, onMobileClose }: { mobileOpen?: boolean; onMobileClose?: () => void }) {
   const pathname = usePathname();
-  const { staff, centres, activeCentreId, setActiveCentre, isClinicMode } = useAuthStore();
+  const { staff, centres, activeCentreId, setActiveCentre, isClinicMode, isModuleEnabled } = useAuthStore();
   const [centreOpen, setCentreOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
 
@@ -146,10 +146,13 @@ export function Sidebar({ mobileOpen, onMobileClose }: { mobileOpen?: boolean; o
   const initials = staff?.full_name ? staff.full_name.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase() : 'H1';
   const w = collapsed ? 'w-[60px]' : 'w-[220px]';
 
-  // Filter nav groups by current mode, removing empty groups
+  // Filter nav groups by current mode AND module enablement, removing empty groups
   const filteredGroups = NAV_GROUPS.map((group) => ({
     ...group,
-    items: group.items.filter((item) => item.modes.includes(currentMode)),
+    items: group.items.filter((item) =>
+      item.modes.includes(currentMode) &&
+      (!item.moduleKey || isModuleEnabled(item.moduleKey))
+    ),
   })).filter((group) => group.items.length > 0);
 
   return (

@@ -155,6 +155,13 @@ const STAFF_TYPE_FALLBACK: Record<string, string[]> = {
   reports: ['admin', 'doctor', 'accountant'],
   settings: ['admin'], quality: ['admin', 'doctor', 'nurse'],
   mis: ['admin', 'doctor', 'accountant'],
+  // Clinic modules
+  clinic_opd: ['doctor', 'nurse', 'admin', 'receptionist'],
+  clinic_pharmacy: ['pharmacist', 'admin'],
+  clinic_lab: ['lab_tech', 'nurse', 'admin', 'technician'],
+  clinic_billing: ['admin', 'receptionist', 'accountant'],
+  clinic_referral: ['doctor', 'nurse', 'admin', 'receptionist'],
+  clinic_teleconsult: ['doctor', 'nurse', 'admin', 'technician'],
 };
 
 export function RoleGuard({ module, children, fallback }: {

@@ -7,7 +7,12 @@ import {
   FileText, Settings, BarChart3, Activity, Stethoscope, Scissors, Plus,
   ArrowRight, Shield, AlertTriangle, Heart, Truck, Mic, Droplets,
   Dumbbell, Eye, UserPlus, SprayCan, Wrench, Star, ClipboardList,
+  TestTube, ArrowUpRight, Video, ShoppingCart,
 } from 'lucide-react';
+import { useAuthStore } from '@/lib/store/auth';
+import type { CentreType } from '@/types/database';
+
+type Mode = CentreType;
 
 interface CommandItem {
   id: string;
@@ -18,73 +23,91 @@ interface CommandItem {
   href?: string;
   action?: () => void;
   keywords?: string;
+  modes?: Mode[];  // undefined = show in all modes
 }
 
 const NAV_ITEMS: CommandItem[] = [
+  // Both modes
   { id: 'nav-dashboard', label: 'Dashboard', icon: Activity, category: 'navigation', href: '/', keywords: 'home main' },
-  { id: 'nav-pulse', label: 'Hospital Pulse', icon: Heart, category: 'navigation', href: '/pulse', keywords: 'live command center' },
-  { id: 'nav-command', label: 'Command Centre', icon: Activity, category: 'navigation', href: '/command-centre', keywords: 'ops overview' },
   { id: 'nav-opd', label: 'OPD Queue', icon: Users, category: 'navigation', href: '/opd', keywords: 'outpatient queue token' },
-  { id: 'nav-appointments', label: 'Appointments', icon: Calendar, category: 'navigation', href: '/appointments', keywords: 'book schedule slot' },
-  { id: 'nav-emergency', label: 'Emergency / ER', icon: AlertTriangle, category: 'navigation', href: '/emergency', keywords: 'triage trauma mlc' },
-  { id: 'nav-ipd', label: 'IPD Admissions', icon: BedDouble, category: 'navigation', href: '/ipd', keywords: 'inpatient admit' },
-  { id: 'nav-emr', label: 'EMR', icon: Stethoscope, category: 'navigation', href: '/emr-v2', keywords: 'encounter medical record' },
-  { id: 'nav-voice', label: 'Voice Notes', icon: Mic, category: 'navigation', href: '/voice-notes', keywords: 'speak dictate' },
   { id: 'nav-billing', label: 'Billing', icon: CreditCard, category: 'navigation', href: '/billing', keywords: 'bill invoice payment' },
-  { id: 'nav-pnl', label: 'P&L', icon: BarChart3, category: 'navigation', href: '/pnl', keywords: 'profit loss revenue' },
-  { id: 'nav-lab', label: 'Laboratory', icon: FlaskConical, category: 'navigation', href: '/lab', keywords: 'test blood cbc' },
-  { id: 'nav-pharmacy', label: 'Pharmacy', icon: Pill, category: 'navigation', href: '/pharmacy', keywords: 'medicine drug dispense' },
-  { id: 'nav-radiology', label: 'Radiology', icon: FileText, category: 'navigation', href: '/radiology', keywords: 'xray ct mri ultrasound' },
-  { id: 'nav-ot', label: 'OT Management', icon: Scissors, category: 'navigation', href: '/ot', keywords: 'surgery operation theatre' },
-  { id: 'nav-cathlab', label: 'Cath Lab', icon: Heart, category: 'navigation', href: '/cathlab', keywords: 'cag ptca stent angiography' },
-  { id: 'nav-endoscopy', label: 'Endoscopy', icon: Eye, category: 'navigation', href: '/endoscopy', keywords: 'gi scope colonoscopy' },
-  { id: 'nav-dialysis', label: 'Dialysis', icon: Droplets, category: 'navigation', href: '/dialysis', keywords: 'hd session machine' },
-  { id: 'nav-physio', label: 'Physiotherapy', icon: Dumbbell, category: 'navigation', href: '/physiotherapy', keywords: 'rehab exercise' },
-  { id: 'nav-beds', label: 'Bed Management', icon: BedDouble, category: 'navigation', href: '/bed-management', keywords: 'ward room' },
-  { id: 'nav-blood', label: 'Blood Bank', icon: Droplets, category: 'navigation', href: '/blood-bank', keywords: 'donation crossmatch' },
-  { id: 'nav-insurance', label: 'Insurance', icon: Shield, category: 'navigation', href: '/insurance', keywords: 'cashless tpa preauth' },
-  { id: 'nav-leakage', label: 'Revenue Leakage', icon: AlertTriangle, category: 'navigation', href: '/revenue-leakage', keywords: 'unbilled missed charge' },
-  { id: 'nav-cssd', label: 'CSSD', icon: Shield, category: 'navigation', href: '/cssd', keywords: 'sterilization autoclave' },
-  { id: 'nav-housekeeping', label: 'Housekeeping', icon: SprayCan, category: 'navigation', href: '/housekeeping', keywords: 'cleaning schedule' },
-  { id: 'nav-equipment', label: 'Equipment', icon: Wrench, category: 'navigation', href: '/biomedical', keywords: 'maintenance amc calibration' },
-  { id: 'nav-duty', label: 'Duty Roster', icon: ClipboardList, category: 'navigation', href: '/duty-roster', keywords: 'shift schedule rota' },
-  { id: 'nav-vpms', label: 'Procurement', icon: Truck, category: 'navigation', href: '/vpms', keywords: 'vendor purchase indent' },
-  { id: 'nav-crm', label: 'CRM & Leads', icon: Users, category: 'navigation', href: '/crm', keywords: 'lead pipeline sales' },
-  { id: 'nav-referrals', label: 'Referrals', icon: UserPlus, category: 'navigation', href: '/referrals', keywords: 'refer doctor hospital' },
-  { id: 'nav-quality', label: 'Quality / NABH', icon: Shield, category: 'navigation', href: '/quality', keywords: 'kpi indicator audit' },
-  { id: 'nav-px', label: 'Patient Experience', icon: Star, category: 'navigation', href: '/px-coordinator', keywords: 'feedback satisfaction' },
   { id: 'nav-reports', label: 'Reports', icon: BarChart3, category: 'navigation', href: '/reports', keywords: 'mis analytics export' },
-  { id: 'nav-staff', label: 'Staff & Access', icon: Users, category: 'navigation', href: '/staff', keywords: 'employee user role' },
   { id: 'nav-settings', label: 'Settings', icon: Settings, category: 'navigation', href: '/settings', keywords: 'config integration' },
-  { id: 'nav-equip-life', label: 'Equipment Lifecycle', icon: Settings, category: 'navigation', href: '/equipment-lifecycle', keywords: 'amc calibration maintenance' },
-  { id: 'nav-linen', label: 'Linen', icon: Settings, category: 'navigation', href: '/linen', keywords: 'laundry exchange' },
-  { id: 'nav-infection', label: 'Infection Control', icon: Shield, category: 'navigation', href: '/infection-control', keywords: 'hai surveillance hygiene' },
-  { id: 'nav-dietary', label: 'Dietary', icon: Settings, category: 'navigation', href: '/dietary', keywords: 'food kitchen diet meal' },
-  { id: 'nav-ambulance', label: 'Ambulance', icon: AlertTriangle, category: 'navigation', href: '/ambulance', keywords: 'transport dispatch vehicle' },
-  { id: 'nav-mortuary', label: 'Mortuary', icon: Settings, category: 'navigation', href: '/mortuary', keywords: 'body deceased' },
-  { id: 'nav-visitors', label: 'Visitors', icon: Users, category: 'navigation', href: '/visitors', keywords: 'visitor pass gate' },
-  { id: 'nav-grievances', label: 'Grievances', icon: AlertTriangle, category: 'navigation', href: '/grievances', keywords: 'complaint feedback' },
-  { id: 'nav-documents', label: 'Documents', icon: FileText, category: 'navigation', href: '/documents', keywords: 'sop policy protocol' },
-  { id: 'nav-assets', label: 'Assets', icon: Settings, category: 'navigation', href: '/assets', keywords: 'inventory fixed asset depreciation' },
-  { id: 'nav-consent', label: 'Digital Consent', icon: FileText, category: 'navigation', href: '/digital-consent', keywords: 'consent form signature' },
-  { id: 'nav-surgical', label: 'Surgical Planning', icon: Scissors, category: 'navigation', href: '/surgical-planning', keywords: 'pre-op checklist readiness' },
-  { id: 'nav-homecare', label: 'Homecare', icon: Users, category: 'navigation', href: '/homecare', keywords: 'home visit wound care' },
-  { id: 'nav-tele', label: 'Telemedicine', icon: Stethoscope, category: 'navigation', href: '/telemedicine', keywords: 'video call teleconsult' },
-  { id: 'nav-handover', label: 'Shift Handover', icon: FileText, category: 'navigation', href: '/handover', keywords: 'shift change nurse report' },
-  { id: 'nav-onboarding', label: 'Centre Setup', icon: Settings, category: 'navigation', href: '/onboarding', keywords: 'new centre hospital setup' },
-  { id: 'nav-packages', label: 'Packages', icon: CreditCard, category: 'navigation', href: '/packages', keywords: 'bundle package rate' },
-  { id: 'nav-emr-mobile', label: 'EMR Mobile', icon: Stethoscope, category: 'navigation', href: '/emr-mobile', keywords: 'mobile bedside tablet' },
-  { id: 'nav-accounting', label: 'Accounting', icon: BarChart3, category: 'navigation', href: '/accounting', keywords: 'journal ledger chart accounts' },
-  { id: 'nav-bed-turnover', label: 'Bed Turnover', icon: BedDouble, category: 'navigation', href: '/bed-turnover', keywords: 'turnover housekeeping ready' },
+
+  // Clinic-only
+  { id: 'nav-clinic-pos', label: 'Pharmacy POS', icon: ShoppingCart, category: 'navigation', href: '/clinic/pharmacy-pos', keywords: 'sale medicine tablet counter', modes: ['clinic'] },
+  { id: 'nav-clinic-lab', label: 'Lab Collection', icon: TestTube, category: 'navigation', href: '/clinic/lab-collection', keywords: 'sample blood barcode batch', modes: ['clinic'] },
+  { id: 'nav-clinic-ref', label: 'Refer to Hospital', icon: ArrowUpRight, category: 'navigation', href: '/clinic/referral', keywords: 'refer hub specialist', modes: ['clinic'] },
+  { id: 'nav-clinic-tele', label: 'Teleconsult', icon: Video, category: 'navigation', href: '/clinic/teleconsult', keywords: 'video call specialist', modes: ['clinic'] },
+
+  // Hospital-only
+  { id: 'nav-pulse', label: 'Hospital Pulse', icon: Heart, category: 'navigation', href: '/pulse', keywords: 'live command center', modes: ['hospital'] },
+  { id: 'nav-command', label: 'Command Centre', icon: Activity, category: 'navigation', href: '/command-centre', keywords: 'ops overview', modes: ['hospital'] },
+  { id: 'nav-appointments', label: 'Appointments', icon: Calendar, category: 'navigation', href: '/appointments', keywords: 'book schedule slot', modes: ['hospital'] },
+  { id: 'nav-emergency', label: 'Emergency / ER', icon: AlertTriangle, category: 'navigation', href: '/emergency', keywords: 'triage trauma mlc', modes: ['hospital'] },
+  { id: 'nav-ipd', label: 'IPD Admissions', icon: BedDouble, category: 'navigation', href: '/ipd', keywords: 'inpatient admit', modes: ['hospital'] },
+  { id: 'nav-emr', label: 'EMR', icon: Stethoscope, category: 'navigation', href: '/emr-v2', keywords: 'encounter medical record', modes: ['hospital'] },
+  { id: 'nav-voice', label: 'Voice Notes', icon: Mic, category: 'navigation', href: '/voice-notes', keywords: 'speak dictate', modes: ['hospital'] },
+  { id: 'nav-pnl', label: 'P&L', icon: BarChart3, category: 'navigation', href: '/pnl', keywords: 'profit loss revenue', modes: ['hospital'] },
+  { id: 'nav-lab', label: 'Laboratory', icon: FlaskConical, category: 'navigation', href: '/lab', keywords: 'test blood cbc', modes: ['hospital'] },
+  { id: 'nav-pharmacy', label: 'Pharmacy', icon: Pill, category: 'navigation', href: '/pharmacy', keywords: 'medicine drug dispense', modes: ['hospital'] },
+  { id: 'nav-radiology', label: 'Radiology', icon: FileText, category: 'navigation', href: '/radiology', keywords: 'xray ct mri ultrasound', modes: ['hospital'] },
+  { id: 'nav-ot', label: 'OT Management', icon: Scissors, category: 'navigation', href: '/ot', keywords: 'surgery operation theatre', modes: ['hospital'] },
+  { id: 'nav-cathlab', label: 'Cath Lab', icon: Heart, category: 'navigation', href: '/cathlab', keywords: 'cag ptca stent angiography', modes: ['hospital'] },
+  { id: 'nav-endoscopy', label: 'Endoscopy', icon: Eye, category: 'navigation', href: '/endoscopy', keywords: 'gi scope colonoscopy', modes: ['hospital'] },
+  { id: 'nav-dialysis', label: 'Dialysis', icon: Droplets, category: 'navigation', href: '/dialysis', keywords: 'hd session machine', modes: ['hospital'] },
+  { id: 'nav-physio', label: 'Physiotherapy', icon: Dumbbell, category: 'navigation', href: '/physiotherapy', keywords: 'rehab exercise', modes: ['hospital'] },
+  { id: 'nav-beds', label: 'Bed Management', icon: BedDouble, category: 'navigation', href: '/bed-management', keywords: 'ward room', modes: ['hospital'] },
+  { id: 'nav-blood', label: 'Blood Bank', icon: Droplets, category: 'navigation', href: '/blood-bank', keywords: 'donation crossmatch', modes: ['hospital'] },
+  { id: 'nav-insurance', label: 'Insurance', icon: Shield, category: 'navigation', href: '/insurance', keywords: 'cashless tpa preauth', modes: ['hospital'] },
+  { id: 'nav-leakage', label: 'Revenue Leakage', icon: AlertTriangle, category: 'navigation', href: '/revenue-leakage', keywords: 'unbilled missed charge', modes: ['hospital'] },
+  { id: 'nav-cssd', label: 'CSSD', icon: Shield, category: 'navigation', href: '/cssd', keywords: 'sterilization autoclave', modes: ['hospital'] },
+  { id: 'nav-housekeeping', label: 'Housekeeping', icon: SprayCan, category: 'navigation', href: '/housekeeping', keywords: 'cleaning schedule', modes: ['hospital'] },
+  { id: 'nav-equipment', label: 'Equipment', icon: Wrench, category: 'navigation', href: '/biomedical', keywords: 'maintenance amc calibration', modes: ['hospital'] },
+  { id: 'nav-duty', label: 'Duty Roster', icon: ClipboardList, category: 'navigation', href: '/duty-roster', keywords: 'shift schedule rota', modes: ['hospital'] },
+  { id: 'nav-vpms', label: 'Procurement', icon: Truck, category: 'navigation', href: '/vpms', keywords: 'vendor purchase indent', modes: ['hospital'] },
+  { id: 'nav-crm', label: 'CRM & Leads', icon: Users, category: 'navigation', href: '/crm', keywords: 'lead pipeline sales', modes: ['hospital'] },
+  { id: 'nav-referrals', label: 'Referrals', icon: UserPlus, category: 'navigation', href: '/referrals', keywords: 'refer doctor hospital', modes: ['hospital'] },
+  { id: 'nav-ref-queue', label: 'Clinic Referrals Queue', icon: ArrowUpRight, category: 'navigation', href: '/referrals/clinic-queue', keywords: 'clinic spoke referral', modes: ['hospital'] },
+  { id: 'nav-sample-recv', label: 'Sample Receiving', icon: TestTube, category: 'navigation', href: '/lab/sample-receiving', keywords: 'clinic sample batch receive', modes: ['hospital'] },
+  { id: 'nav-quality', label: 'Quality / NABH', icon: Shield, category: 'navigation', href: '/quality', keywords: 'kpi indicator audit', modes: ['hospital'] },
+  { id: 'nav-px', label: 'Patient Experience', icon: Star, category: 'navigation', href: '/px-coordinator', keywords: 'feedback satisfaction', modes: ['hospital'] },
+  { id: 'nav-staff', label: 'Staff & Access', icon: Users, category: 'navigation', href: '/staff', keywords: 'employee user role', modes: ['hospital'] },
+  { id: 'nav-equip-life', label: 'Equipment Lifecycle', icon: Settings, category: 'navigation', href: '/equipment-lifecycle', keywords: 'amc calibration maintenance', modes: ['hospital'] },
+  { id: 'nav-linen', label: 'Linen', icon: Settings, category: 'navigation', href: '/linen', keywords: 'laundry exchange', modes: ['hospital'] },
+  { id: 'nav-infection', label: 'Infection Control', icon: Shield, category: 'navigation', href: '/infection-control', keywords: 'hai surveillance hygiene', modes: ['hospital'] },
+  { id: 'nav-dietary', label: 'Dietary', icon: Settings, category: 'navigation', href: '/dietary', keywords: 'food kitchen diet meal', modes: ['hospital'] },
+  { id: 'nav-ambulance', label: 'Ambulance', icon: AlertTriangle, category: 'navigation', href: '/ambulance', keywords: 'transport dispatch vehicle', modes: ['hospital'] },
+  { id: 'nav-mortuary', label: 'Mortuary', icon: Settings, category: 'navigation', href: '/mortuary', keywords: 'body deceased', modes: ['hospital'] },
+  { id: 'nav-visitors', label: 'Visitors', icon: Users, category: 'navigation', href: '/visitors', keywords: 'visitor pass gate', modes: ['hospital'] },
+  { id: 'nav-grievances', label: 'Grievances', icon: AlertTriangle, category: 'navigation', href: '/grievances', keywords: 'complaint feedback', modes: ['hospital'] },
+  { id: 'nav-documents', label: 'Documents', icon: FileText, category: 'navigation', href: '/documents', keywords: 'sop policy protocol', modes: ['hospital'] },
+  { id: 'nav-assets', label: 'Assets', icon: Settings, category: 'navigation', href: '/assets', keywords: 'inventory fixed asset depreciation', modes: ['hospital'] },
+  { id: 'nav-consent', label: 'Digital Consent', icon: FileText, category: 'navigation', href: '/digital-consent', keywords: 'consent form signature', modes: ['hospital'] },
+  { id: 'nav-surgical', label: 'Surgical Planning', icon: Scissors, category: 'navigation', href: '/surgical-planning', keywords: 'pre-op checklist readiness', modes: ['hospital'] },
+  { id: 'nav-homecare', label: 'Homecare', icon: Users, category: 'navigation', href: '/homecare', keywords: 'home visit wound care', modes: ['hospital'] },
+  { id: 'nav-tele', label: 'Telemedicine', icon: Stethoscope, category: 'navigation', href: '/telemedicine', keywords: 'video call teleconsult', modes: ['hospital'] },
+  { id: 'nav-handover', label: 'Shift Handover', icon: FileText, category: 'navigation', href: '/handover', keywords: 'shift change nurse report', modes: ['hospital'] },
+  { id: 'nav-onboarding', label: 'Centre Setup', icon: Settings, category: 'navigation', href: '/onboarding', keywords: 'new centre hospital setup', modes: ['hospital'] },
+  { id: 'nav-packages', label: 'Packages', icon: CreditCard, category: 'navigation', href: '/packages', keywords: 'bundle package rate', modes: ['hospital'] },
+  { id: 'nav-emr-mobile', label: 'EMR Mobile', icon: Stethoscope, category: 'navigation', href: '/emr-mobile', keywords: 'mobile bedside tablet', modes: ['hospital'] },
+  { id: 'nav-accounting', label: 'Accounting', icon: BarChart3, category: 'navigation', href: '/accounting', keywords: 'journal ledger chart accounts', modes: ['hospital'] },
+  { id: 'nav-bed-turnover', label: 'Bed Turnover', icon: BedDouble, category: 'navigation', href: '/bed-turnover', keywords: 'turnover housekeeping ready', modes: ['hospital'] },
 ];
 
 const ACTION_ITEMS: CommandItem[] = [
+  // Both modes
   { id: 'act-new-opd', label: 'Register New OPD Visit', icon: Plus, category: 'action', href: '/opd', keywords: 'create token' },
   { id: 'act-new-patient', label: 'Register New Patient', icon: Plus, category: 'action', href: '/patients/register', keywords: 'create add' },
   { id: 'act-new-bill', label: 'Create New Bill', icon: Plus, category: 'action', href: '/billing', keywords: 'invoice charge' },
-  { id: 'act-new-admission', label: 'New IPD Admission', icon: Plus, category: 'action', href: '/ipd', keywords: 'admit inpatient' },
-  { id: 'act-er-register', label: 'ER Registration', icon: AlertTriangle, category: 'action', href: '/emergency', keywords: 'emergency triage' },
-  { id: 'act-voice', label: 'Start Voice Note', icon: Mic, category: 'action', href: '/voice-notes', keywords: 'speak dictate' },
+  // Hospital-only
+  { id: 'act-new-admission', label: 'New IPD Admission', icon: Plus, category: 'action', href: '/ipd', keywords: 'admit inpatient', modes: ['hospital'] },
+  { id: 'act-er-register', label: 'ER Registration', icon: AlertTriangle, category: 'action', href: '/emergency', keywords: 'emergency triage', modes: ['hospital'] },
+  { id: 'act-voice', label: 'Start Voice Note', icon: Mic, category: 'action', href: '/voice-notes', keywords: 'speak dictate', modes: ['hospital'] },
+  // Clinic-only
+  { id: 'act-pharmacy-sale', label: 'New Pharmacy Sale', icon: ShoppingCart, category: 'action', href: '/clinic/pharmacy-pos', keywords: 'sell medicine pos', modes: ['clinic'] },
+  { id: 'act-lab-collect', label: 'Collect Lab Sample', icon: TestTube, category: 'action', href: '/clinic/lab-collection', keywords: 'sample blood', modes: ['clinic'] },
+  { id: 'act-refer', label: 'Refer to Hospital', icon: ArrowUpRight, category: 'action', href: '/clinic/referral', keywords: 'refer hub specialist', modes: ['clinic'] },
 ];
 
 export function CommandPalette() {
@@ -96,6 +119,14 @@ export function CommandPalette() {
   const [bills, setBills] = useState<CommandItem[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
+  const { isClinicMode } = useAuthStore();
+  const currentMode: Mode = isClinicMode ? 'clinic' : 'hospital';
+
+  // Filter items by current mode (undefined modes = show in all)
+  const modeFilter = useCallback((item: CommandItem) =>
+    !item.modes || item.modes.includes(currentMode), [currentMode]);
+  const filteredNav = NAV_ITEMS.filter(modeFilter);
+  const filteredActions = ACTION_ITEMS.filter(modeFilter);
 
   // ⌘K / Ctrl+K to open
   useEffect(() => {
@@ -201,13 +232,13 @@ export function CommandPalette() {
 
   // Combine and filter results
   useEffect(() => {
-    if (!query) { setResults([...ACTION_ITEMS.slice(0, 5), ...NAV_ITEMS.slice(0, 8)]); setSelectedIndex(0); return; }
+    if (!query) { setResults([...filteredActions.slice(0, 5), ...filteredNav.slice(0, 8)]); setSelectedIndex(0); return; }
     const q = query.toLowerCase();
-    const navMatches = NAV_ITEMS.filter(n => n.label.toLowerCase().includes(q) || n.keywords?.includes(q));
-    const actMatches = ACTION_ITEMS.filter(a => a.label.toLowerCase().includes(q) || a.keywords?.includes(q));
+    const navMatches = filteredNav.filter(n => n.label.toLowerCase().includes(q) || n.keywords?.includes(q));
+    const actMatches = filteredActions.filter(a => a.label.toLowerCase().includes(q) || a.keywords?.includes(q));
     setResults([...patients, ...bills, ...actMatches, ...navMatches].slice(0, 12));
     setSelectedIndex(0);
-  }, [query, patients, bills]);
+  }, [query, patients, bills, filteredNav, filteredActions]);
 
   // Keyboard navigation
   const handleKey = (e: React.KeyboardEvent) => {

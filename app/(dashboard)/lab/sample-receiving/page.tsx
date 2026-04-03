@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuthStore } from '@/lib/store/auth';
 import { sb } from '@/lib/supabase/browser';
+import { RoleGuard } from '@/components/ui/shared';
 import {
   TestTube, Search, CheckCircle, XCircle, RefreshCw,
   Package, AlertTriangle, ScanLine,
@@ -10,6 +11,10 @@ import {
 import type { LabCollection } from '@/types/database';
 
 export default function SampleReceivingPage() {
+  return <RoleGuard module="lab"><SampleReceivingInner /></RoleGuard>;
+}
+
+function SampleReceivingInner() {
   const { staff, activeCentreId } = useAuthStore();
   const centreId = activeCentreId || '';
   const [batchSearch, setBatchSearch] = useState('');

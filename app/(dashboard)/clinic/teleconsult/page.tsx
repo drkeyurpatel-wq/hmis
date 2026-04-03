@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useAuthStore } from '@/lib/store/auth';
 import { sb } from '@/lib/supabase/browser';
+import { RoleGuard } from '@/components/ui/shared';
 import {
   Video, Clock, Users, CheckCircle, RefreshCw,
   ExternalLink, Heart, Activity,
@@ -20,6 +21,10 @@ interface TeleconsultSlot {
 }
 
 export default function TeleconsultPage() {
+  return <RoleGuard module="clinic_teleconsult"><TeleconsultInner /></RoleGuard>;
+}
+
+function TeleconsultInner() {
   const { staff, activeCentreId } = useAuthStore();
   const centreId = activeCentreId || '';
   const [slots, setSlots] = useState<TeleconsultSlot[]>([]);

@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuthStore } from '@/lib/store/auth';
 import { sb } from '@/lib/supabase/browser';
+import { RoleGuard } from '@/components/ui/shared';
 import {
   ArrowUpRight, Search, XCircle, Clock, CheckCircle,
   RefreshCw, AlertTriangle, Users, Building2,
@@ -33,6 +34,10 @@ const DEPARTMENTS = [
 type Tab = 'refer' | 'my-referrals';
 
 export default function ReferralPage() {
+  return <RoleGuard module="clinic_referral"><ReferralInner /></RoleGuard>;
+}
+
+function ReferralInner() {
   const { staff, activeCentreId, hubCentreId } = useAuthStore();
   const centreId = activeCentreId || '';
   const [activeTab, setActiveTab] = useState<Tab>('refer');

@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuthStore } from '@/lib/store/auth';
 import { sb } from '@/lib/supabase/browser';
+import { RoleGuard } from '@/components/ui/shared';
 import {
   TestTube, Search, Plus, Package, Truck, CheckCircle,
   XCircle, Clock, RefreshCw, Filter, Printer, AlertTriangle,
@@ -25,6 +26,10 @@ const SAMPLE_TYPES = ['blood', 'urine', 'stool', 'swab', 'sputum'];
 type Tab = 'collect' | 'batch' | 'tracking';
 
 export default function LabCollectionPage() {
+  return <RoleGuard module="clinic_lab"><LabCollectionInner /></RoleGuard>;
+}
+
+function LabCollectionInner() {
   const { staff, activeCentreId, hubCentreId } = useAuthStore();
   const centreId = activeCentreId || '';
   const [activeTab, setActiveTab] = useState<Tab>('collect');

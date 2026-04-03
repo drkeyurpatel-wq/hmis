@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuthStore } from '@/lib/store/auth';
 import { sb } from '@/lib/supabase/browser';
+import { RoleGuard } from '@/components/ui/shared';
 import {
   ArrowUpRight, RefreshCw, CheckCircle, XCircle, Clock,
   Calendar, AlertTriangle, Building2, Filter,
@@ -19,6 +20,10 @@ const STATUS_CONFIG: Record<ClinicReferralStatus, { label: string; color: string
 };
 
 export default function ClinicReferralQueuePage() {
+  return <RoleGuard module="referrals"><ClinicReferralQueueInner /></RoleGuard>;
+}
+
+function ClinicReferralQueueInner() {
   const { staff, activeCentreId } = useAuthStore();
   const centreId = activeCentreId || '';
   const [referrals, setReferrals] = useState<ClinicReferral[]>([]);
