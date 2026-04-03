@@ -28,10 +28,13 @@ export async function GET(request: NextRequest) {
   }
 
   const { searchParams } = new URL(request.url);
-  const search = searchParams.get('search') || '';
+  const rawSearch = searchParams.get('search') || '';
   const category = searchParams.get('category') || '';
   const centreCode = searchParams.get('centre') || '';
   const limit = Math.min(parseInt(searchParams.get('limit') || '200'), 1000);
+
+  // Sanitize search: strip PostgREST filter-breaking chars to prevent injection
+  const search = rawSearch.replace(/[%_().,\\]/g, '').trim().slice(0, 100);
 
   try {
     const vpmsDb = vpms();

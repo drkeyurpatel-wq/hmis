@@ -48,12 +48,14 @@ CREATE INDEX IF NOT EXISTS idx_pharmacy_dispensing_vpms_unsync
 ALTER TABLE hmis_integration_log ENABLE ROW LEVEL SECURITY;
 
 -- Service role (API routes) can insert
-CREATE POLICY IF NOT EXISTS integration_log_insert_service
+DROP POLICY IF EXISTS integration_log_insert_service ON hmis_integration_log;
+CREATE POLICY integration_log_insert_service
   ON hmis_integration_log FOR INSERT
   WITH CHECK (true);
 
 -- Admin users can read
-CREATE POLICY IF NOT EXISTS integration_log_select_admin
+DROP POLICY IF EXISTS integration_log_select_admin ON hmis_integration_log;
+CREATE POLICY integration_log_select_admin
   ON hmis_integration_log FOR SELECT
   USING (
     EXISTS (
@@ -63,3 +65,39 @@ CREATE POLICY IF NOT EXISTS integration_log_select_admin
       AND hmis_staff.is_active = true
     )
   );
+
+-- ============================================================
+-- 4. Server-side SUM RPC for revenue push (avoids 1000-row client limit)
+-- ============================================================
+CREATE OR REPLACE FUNCTION hmis_sum_column(
+  p_table TEXT,
+  p_column TEXT,
+  p_centre_id UUID,
+  p_date_col TEXT,
+  p_from DATE,
+  p_to DATE,
+  p_statuses TEXT[]
+) RETURNS TABLE(total NUMERIC) AS $$
+BEGIN
+  -- Whitelist table+column to prevent SQL injection
+  IF p_table = 'hmis_bills' AND p_column = 'net_amount' AND p_date_col = 'bill_date' THEN
+    RETURN QUERY
+      SELECT COALESCE(SUM(net_amount), 0)
+      FROM hmis_bills
+      WHERE centre_id = p_centre_id
+        AND bill_date >= p_from AND bill_date <= p_to
+        AND status = ANY(p_statuses);
+
+  ELSIF p_table = 'hmis_payments' AND p_column = 'amount' AND p_date_col = 'payment_date' THEN
+    RETURN QUERY
+      SELECT COALESCE(SUM(amount), 0)
+      FROM hmis_payments
+      WHERE centre_id = p_centre_id
+        AND payment_date >= p_from AND payment_date <= p_to
+        AND status = ANY(p_statuses);
+
+  ELSE
+    RAISE EXCEPTION 'Unsupported table/column combination: %.%', p_table, p_column;
+  END IF;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER STABLE;

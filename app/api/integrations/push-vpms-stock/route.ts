@@ -141,23 +141,41 @@ async function updateStockAndCheckReorder(
     return { updated: false, indent_created: false, error: `Stock update failed: ${updateErr.message}` };
   }
 
-  // Insert stock ledger entry
-  await vpmsDb.from('stock_ledger').insert({
+  // Insert stock ledger entry for audit trail
+  const { error: ledgerErr } = await vpmsDb.from('stock_ledger').insert({
     item_id: vpmsItem.id,
     centre_id: vpmsCentreId,
     transaction_type: 'consumption',
     quantity: -item.quantity_consumed,
     balance_qty: newQty,
-    reference: `HMIS dispensing sync`,
+    reference: 'HMIS dispensing sync',
     source: 'hmis_auto',
     created_at: new Date().toISOString(),
-  }).then(() => {}).catch(() => {});
+  });
+  // Log but don't fail — stock_ledger may not exist in all VPMS setups
+  if (ledgerErr) {
+    console.warn(`[VPMS] stock_ledger insert failed for ${item.item_code}: ${ledgerErr.message}`);
+  }
 
   // Check reorder level — auto-generate indent if below threshold
   let indentCreated = false;
   const reorderLevel = vpmsItem.reorder_level || 0;
 
   if (newQty < reorderLevel && reorderLevel > 0) {
+    // Dedup: skip if a pending auto-indent already exists for this item+centre
+    const { data: existingIndent } = await vpmsDb.from('purchase_requisitions')
+      .select('id')
+      .eq('item_id', vpmsItem.id)
+      .eq('source', 'hmis_auto')
+      .in('status', ['pending_approval', 'draft'])
+      .limit(1)
+      .maybeSingle();
+
+    if (existingIndent) {
+      // Already has a pending auto-indent — don't duplicate
+      return { updated: true, indent_created: false };
+    }
+
     // Calculate suggested order quantity (reorder level * 2 - current stock)
     const suggestedQty = Math.max(reorderLevel * 2 - newQty, reorderLevel);
 

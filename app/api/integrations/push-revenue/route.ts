@@ -51,27 +51,62 @@ async function getCentreMTD(
   const monthStart = `${year}-${String(month).padStart(2, '0')}-01`;
   const monthEnd = `${year}-${String(month).padStart(2, '0')}-31`;
 
+  // Use Supabase RPC-style aggregation via select with count to avoid 1000-row default limit.
+  // Fetch SUM server-side by paginating if needed.
   const [billsRes, paymentsRes] = await Promise.all([
-    db.from('hmis_bills')
+    db.rpc('hmis_sum_column', {
+      p_table: 'hmis_bills',
+      p_column: 'net_amount',
+      p_centre_id: centreId,
+      p_date_col: 'bill_date',
+      p_from: monthStart,
+      p_to: monthEnd,
+      p_statuses: ['final', 'paid', 'partially_paid'],
+    }).maybeSingle(),
+    db.rpc('hmis_sum_column', {
+      p_table: 'hmis_payments',
+      p_column: 'amount',
+      p_centre_id: centreId,
+      p_date_col: 'payment_date',
+      p_from: monthStart,
+      p_to: monthEnd,
+      p_statuses: ['completed'],
+    }).maybeSingle(),
+  ]).catch(() => [null, null]);
+
+  // Fallback: client-side sum with explicit high limit if RPC not available
+  let billing = 0;
+  let collections = 0;
+
+  if (billsRes?.data?.total != null) {
+    billing = parseFloat(billsRes.data.total) || 0;
+  } else {
+    const { data } = await db.from('hmis_bills')
       .select('net_amount')
       .eq('centre_id', centreId)
       .gte('bill_date', monthStart)
       .lte('bill_date', monthEnd)
-      .in('status', ['final', 'paid', 'partially_paid']),
-    db.from('hmis_payments')
+      .in('status', ['final', 'paid', 'partially_paid'])
+      .limit(10000);
+    billing = (data || []).reduce(
+      (sum: number, b: any) => sum + (parseFloat(b.net_amount) || 0), 0
+    );
+  }
+
+  if (paymentsRes?.data?.total != null) {
+    collections = parseFloat(paymentsRes.data.total) || 0;
+  } else {
+    const { data } = await db.from('hmis_payments')
       .select('amount')
       .eq('centre_id', centreId)
       .gte('payment_date', monthStart)
       .lte('payment_date', monthEnd)
-      .eq('status', 'completed'),
-  ]);
-
-  const billing = (billsRes.data || []).reduce(
-    (sum: number, b: any) => sum + (parseFloat(b.net_amount) || 0), 0
-  );
-  const collections = (paymentsRes.data || []).reduce(
-    (sum: number, p: any) => sum + (parseFloat(p.amount) || 0), 0
-  );
+      .eq('status', 'completed')
+      .limit(10000);
+    collections = (data || []).reduce(
+      (sum: number, p: any) => sum + (parseFloat(p.amount) || 0), 0
+    );
+  }
 
   return { billing, collections };
 }
@@ -108,14 +143,15 @@ async function getCentreARPOB(
   const monthStart = `${year}-${String(month).padStart(2, '0')}-01`;
   const monthEnd = `${year}-${String(month).padStart(2, '0')}-31`;
 
-  // IPD revenue for the month
+  // IPD revenue for the month (explicit limit to avoid Supabase 1000-row default)
   const { data: ipdBills } = await db.from('hmis_bills')
     .select('net_amount')
     .eq('centre_id', centreId)
     .eq('bill_type', 'ipd')
     .gte('bill_date', monthStart)
     .lte('bill_date', monthEnd)
-    .in('status', ['final', 'paid', 'partially_paid']);
+    .in('status', ['final', 'paid', 'partially_paid'])
+    .limit(10000);
 
   const ipdRevenue = (ipdBills || []).reduce(
     (sum: number, b: any) => sum + (parseFloat(b.net_amount) || 0), 0
