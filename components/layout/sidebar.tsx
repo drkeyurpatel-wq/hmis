@@ -14,7 +14,7 @@ import {
   ClipboardList, UtensilsCrossed, Dumbbell, AlertTriangle,
   Package, Eye, UserPlus, MessageSquare, Star, Home, Mic,
   GitBranch, IndianRupee, TestTube, ArrowUpRight, Video,
-  Receipt, ShoppingCart, MapPin, BrainCircuit,
+  Receipt, ShoppingCart, MapPin, BrainCircuit, Timer,
 } from 'lucide-react';
 import type { CentreType } from '@/types/database';
 
@@ -46,6 +46,7 @@ const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
     { href: '/ward-board', label: 'Ward Board', icon: BedDouble, moduleKey: 'nursing', modes: ['hospital'] },
     { href: '/emergency', label: 'Emergency', icon: Siren, moduleKey: 'emergency', modes: ['hospital'] },
     { href: '/ot', label: 'OT & Surgery', icon: Scissors, moduleKey: 'ot', modes: ['hospital'] },
+    { href: '/ot-command', label: 'OT Command', icon: Timer, moduleKey: 'ot', modes: ['hospital'] },
     { href: '/cathlab', label: 'Cath Lab', icon: Heart, moduleKey: 'cathlab', modes: ['hospital'] },
     { href: '/endoscopy', label: 'Endoscopy', icon: Eye, moduleKey: 'endoscopy', modes: ['hospital'] },
     { href: '/dialysis', label: 'Dialysis', icon: Droplets, moduleKey: 'dialysis', modes: ['hospital'] },
