@@ -78,8 +78,11 @@ async function getCentreMTD(
   let billing = 0;
   let collections = 0;
 
-  if (billsRes?.data?.total != null) {
-    billing = parseFloat(billsRes.data.total) || 0;
+  const billsData = billsRes?.data as { total: number } | null;
+  const paymentsData = paymentsRes?.data as { total: number } | null;
+
+  if (billsData?.total != null) {
+    billing = parseFloat(String(billsData.total)) || 0;
   } else {
     const { data } = await db.from('hmis_bills')
       .select('net_amount')
@@ -93,8 +96,8 @@ async function getCentreMTD(
     );
   }
 
-  if (paymentsRes?.data?.total != null) {
-    collections = parseFloat(paymentsRes.data.total) || 0;
+  if (paymentsData?.total != null) {
+    collections = parseFloat(String(paymentsData.total)) || 0;
   } else {
     const { data } = await db.from('hmis_payments')
       .select('amount')
