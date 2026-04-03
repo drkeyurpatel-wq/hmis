@@ -1,7 +1,7 @@
 // public/sw.js
 // Health1 HMIS Service Worker — offline EMR support
 
-const CACHE_NAME = 'h1-hmis-v2';
+const CACHE_NAME = 'h1-hmis-v3';
 const OFFLINE_URL = '/offline';
 
 // App shell — cache these on install
@@ -45,6 +45,12 @@ self.addEventListener('fetch', (event) => {
 
   // API calls: network only (don't cache dynamic data)
   if (url.pathname.startsWith('/api/') || url.hostname.includes('supabase')) return;
+
+  // Next.js internals: NEVER intercept — this breaks client-side navigation
+  if (url.pathname.startsWith('/_next/')) return;
+
+  // RSC (React Server Component) requests: NEVER intercept
+  if (event.request.headers.get('RSC') || event.request.headers.get('Next-Router-State-Tree')) return;
 
   // Static assets: cache-first
   if (url.pathname.match(/\.(js|css|png|jpg|svg|woff2|ico)$/)) {
