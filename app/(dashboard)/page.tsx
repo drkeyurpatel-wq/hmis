@@ -128,10 +128,15 @@ export default function HomePage() {
 
   const activeCentre = centres.find((c: any) => c.centre_id === centreId);
   const centreName = (activeCentre as any)?.centre?.name || 'Health1';
-  const greeting = () => {
+
+  // Client-only: avoids hydration mismatch between server (UTC) and client (IST)
+  const [greeting, setGreeting] = useState('Welcome');
+  const [dateLabel, setDateLabel] = useState('');
+  useEffect(() => {
     const h = new Date().getHours();
-    return h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
-  };
+    setGreeting(h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening');
+    setDateLabel(new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'short' }));
+  }, []);
 
   const filtered = filter === 'all' ? wq.items : wq.items.filter((i: any) => i.type === filter || i.urgency === filter);
   const typeCounts: Record<string, number> = {};
@@ -144,8 +149,8 @@ export default function HomePage() {
       {/* HEADER */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-gray-900">{greeting()}, {staff?.full_name?.replace(/^Dr\.?\s*/i, '') || 'Doctor'}</h1>
-          <p className="text-sm text-gray-500">{centreName} &middot; {new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'short' })}</p>
+          <h1 className="text-xl font-bold text-gray-900">{greeting}, {staff?.full_name?.replace(/^Dr\.?\s*/i, '') || 'Doctor'}</h1>
+          <p className="text-sm text-gray-500">{centreName} &middot; {dateLabel}</p>
         </div>
         <button onClick={() => { wq.reload(); }} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
           <RefreshCw size={16} className={wq.loading ? 'animate-spin text-gray-400' : 'text-gray-500'} />
