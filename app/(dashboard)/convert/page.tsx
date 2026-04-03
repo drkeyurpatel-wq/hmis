@@ -7,11 +7,11 @@ import { useAuthStore } from '@/lib/store/auth';
 import { formatCurrency } from '@/lib/utils';
 import { useConversionFunnel, useDoctorConversionRates } from '@/lib/convert/useConvert';
 import {
-  PIPELINE_STAGES, LOST_STATUSES, STATUS_LABELS, STATUS_COLORS,
-  type FunnelStage, type DoctorConversionRate,
+  PIPELINE_STAGES, STATUS_LABELS, STATUS_COLORS,
+  type DoctorConversionRate,
 } from '@/lib/convert/types';
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, PieChart, Pie, Cell,
 } from 'recharts';
 import {

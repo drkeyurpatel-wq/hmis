@@ -655,33 +655,44 @@ function EMRInner() {
                     <button onClick={async () => {
                       if (!adviseForm.procedure || !patient.id || adviseSaving) return;
                       setAdviseSaving(true);
-                      const primaryDx = diagnoses.find(d => d.type === 'primary') || diagnoses[0];
-                      const { error } = await createConversionLead({
-                        centre_id: centreId,
-                        patient_id: patient.id,
-                        opd_visit_id: opdVisitId || undefined,
-                        consulting_doctor_id: staffId || undefined,
-                        department_id: undefined,
-                        visit_date: new Date().toISOString().split('T')[0],
-                        advised_procedure: adviseForm.procedure,
-                        advised_type: adviseForm.type,
-                        urgency: adviseForm.urgency,
-                        estimated_cost: adviseForm.estimatedCost ? parseFloat(adviseForm.estimatedCost) : undefined,
-                        estimated_stay_days: adviseForm.estimatedStay ? parseInt(adviseForm.estimatedStay) : undefined,
-                        diagnosis: primaryDx ? primaryDx.name : undefined,
-                        icd_code: primaryDx ? primaryDx.code : undefined,
-                        patient_concern: adviseForm.concern || undefined,
-                        insurance_applicable: adviseForm.insuranceApplicable,
-                        insurance_coverage_pct: adviseForm.insurancePct ? parseFloat(adviseForm.insurancePct) : undefined,
-                        created_by: staffId,
-                      });
-                      setAdviseSaving(false);
-                      if (!error) {
-                        flash('Admission advised — lead created for counselor follow-up');
-                        setShowAdviseAdmission(false);
-                        setAdviseForm({ procedure: '', type: 'ipd', urgency: 'routine', estimatedCost: '', estimatedStay: '', concern: '', insuranceApplicable: false, insurancePct: '' });
-                      } else {
-                        flash('Error creating lead: ' + error.message);
+                      try {
+                        const primaryDx = diagnoses.find(d => d.type === 'primary') || diagnoses[0];
+                        // Look up doctor's department_id
+                        let deptId: string | undefined;
+                        if (staffId) {
+                          const { data: staffRow } = await sb().from('hmis_staff').select('department_id').eq('id', staffId).maybeSingle();
+                          deptId = staffRow?.department_id || undefined;
+                        }
+                        const { error } = await createConversionLead({
+                          centre_id: centreId,
+                          patient_id: patient.id,
+                          opd_visit_id: opdVisitId || undefined,
+                          consulting_doctor_id: staffId || undefined,
+                          department_id: deptId,
+                          visit_date: new Date().toISOString().split('T')[0],
+                          advised_procedure: adviseForm.procedure,
+                          advised_type: adviseForm.type,
+                          urgency: adviseForm.urgency,
+                          estimated_cost: adviseForm.estimatedCost ? parseFloat(adviseForm.estimatedCost) : undefined,
+                          estimated_stay_days: adviseForm.estimatedStay ? parseInt(adviseForm.estimatedStay) : undefined,
+                          diagnosis: primaryDx ? primaryDx.name : undefined,
+                          icd_code: primaryDx ? primaryDx.code : undefined,
+                          patient_concern: adviseForm.concern || undefined,
+                          insurance_applicable: adviseForm.insuranceApplicable,
+                          insurance_coverage_pct: adviseForm.insurancePct ? parseFloat(adviseForm.insurancePct) : undefined,
+                          created_by: staffId,
+                        });
+                        if (!error) {
+                          flash('Admission advised — lead created for counselor follow-up');
+                          setShowAdviseAdmission(false);
+                          setAdviseForm({ procedure: '', type: 'ipd', urgency: 'routine', estimatedCost: '', estimatedStay: '', concern: '', insuranceApplicable: false, insurancePct: '' });
+                        } else {
+                          flash('Error creating lead: ' + error.message);
+                        }
+                      } catch (err: any) {
+                        flash('Error: ' + (err?.message || 'Failed to create lead'));
+                      } finally {
+                        setAdviseSaving(false);
                       }
                     }} disabled={adviseSaving || !adviseForm.procedure}
                       className="px-5 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer">

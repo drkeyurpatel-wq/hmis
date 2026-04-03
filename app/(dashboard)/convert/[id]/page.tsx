@@ -6,16 +6,16 @@ import { useParams } from 'next/navigation';
 import { RoleGuard } from '@/components/ui/shared';
 import { useAuthStore } from '@/lib/store/auth';
 import { formatCurrency, formatDate, formatDateTime } from '@/lib/utils';
-import { useConversionLead, logFollowup, updateLeadStatus, updateLead } from '@/lib/convert/useConvert';
+import { useConversionLead, logFollowup, updateLeadStatus } from '@/lib/convert/useConvert';
 import {
   STATUS_LABELS, STATUS_COLORS, URGENCY_COLORS, ADVISED_TYPE_LABELS,
   CONCERN_LABELS, ACTION_TYPE_LABELS, OUTCOME_LABELS, LOST_STATUSES,
   type ActionType, type FollowupOutcome, type LeadStatus,
 } from '@/lib/convert/types';
 import {
-  ArrowLeft, Phone, MessageCircle, FileText, Clock,
-  User, Stethoscope, Building2, Shield, Calendar,
-  Send, AlertTriangle, CheckCircle, XCircle,
+  ArrowLeft, Phone, MessageCircle, FileText,
+  User, Stethoscope, Building2,
+  Send, AlertTriangle,
 } from 'lucide-react';
 
 function LeadDetail() {
@@ -35,11 +35,14 @@ function LeadDetail() {
     nextDate: '',
   });
   const [submitting, setSubmitting] = useState(false);
+  const [toast, setToast] = useState('');
+  const flash = (m: string) => { setToast(m); setTimeout(() => setToast(''), 3000); };
 
   // Status change
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [newStatus, setNewStatus] = useState('');
   const [statusNote, setStatusNote] = useState('');
+  const [statusSubmitting, setStatusSubmitting] = useState(false);
 
   const submitFollowup = useCallback(async () => {
     if (!formData.description || submitting) return;
@@ -56,14 +59,22 @@ function LeadDetail() {
     if (!error) {
       setFormData({ actionType: 'phone_call', description: '', outcome: '', nextDate: '' });
       setShowForm(false);
+      flash('Follow-up logged');
       refetch();
+    } else {
+      flash('Error: ' + error.message);
     }
   }, [formData, leadId, staffId, submitting, refetch]);
 
   const handleStatusChange = useCallback(async () => {
-    if (!newStatus || submitting) return;
-    setSubmitting(true);
-    await updateLeadStatus(leadId, newStatus);
+    if (!newStatus || statusSubmitting) return;
+    setStatusSubmitting(true);
+    const { error } = await updateLeadStatus(leadId, newStatus);
+    if (error) {
+      flash('Error: ' + error.message);
+      setStatusSubmitting(false);
+      return;
+    }
     if (statusNote) {
       await logFollowup({
         lead_id: leadId,
@@ -72,12 +83,13 @@ function LeadDetail() {
         performed_by: staffId,
       });
     }
-    setSubmitting(false);
+    setStatusSubmitting(false);
     setShowStatusModal(false);
     setNewStatus('');
     setStatusNote('');
+    flash('Status updated');
     refetch();
-  }, [newStatus, statusNote, leadId, staffId, submitting, refetch]);
+  }, [newStatus, statusNote, leadId, staffId, statusSubmitting, refetch]);
 
   if (loading) {
     return (
@@ -345,13 +357,20 @@ function LeadDetail() {
               placeholder="Reason for status change..." />
           </div>
           <div className="flex items-center gap-2">
-            <button onClick={handleStatusChange} disabled={!newStatus || submitting}
+            <button onClick={handleStatusChange} disabled={!newStatus || statusSubmitting}
               className="px-5 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer">
-              {submitting ? 'Saving...' : 'Update Status'}
+              {statusSubmitting ? 'Saving...' : 'Update Status'}
             </button>
             <button onClick={() => { setShowStatusModal(false); setNewStatus(''); }}
               className="px-4 py-2 text-gray-500 hover:text-gray-700 text-sm cursor-pointer">Cancel</button>
           </div>
+        </div>
+      )}
+
+      {/* Toast */}
+      {toast && (
+        <div className="fixed bottom-6 right-6 z-50 px-4 py-2.5 bg-gray-900 text-white text-sm rounded-lg shadow-lg">
+          {toast}
         </div>
       )}
 

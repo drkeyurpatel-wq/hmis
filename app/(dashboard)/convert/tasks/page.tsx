@@ -8,11 +8,11 @@ import { formatCurrency, formatDate } from '@/lib/utils';
 import { useConversionTasks, logFollowup } from '@/lib/convert/useConvert';
 import {
   URGENCY_COLORS, ACTION_TYPE_LABELS, OUTCOME_LABELS,
-  type ConversionTask, type ActionType, type FollowupOutcome,
+  type ActionType, type FollowupOutcome,
 } from '@/lib/convert/types';
 import {
   Phone, MessageCircle, FileText, CalendarPlus,
-  ArrowLeft, Clock, AlertTriangle, ChevronDown, ChevronUp,
+  ArrowLeft, Clock, ChevronDown, ChevronUp,
   UserCheck, Send,
 } from 'lucide-react';
 
@@ -31,13 +31,15 @@ function TaskList() {
     nextDate: string;
   } | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [toast, setToast] = useState('');
+  const flash = (m: string) => { setToast(m); setTimeout(() => setToast(''), 3000); };
 
-  const openFollowup = useCallback((leadId: string, actionType: ActionType) => {
+  const openFollowup = useCallback((leadId: string, actionType: ActionType, presetOutcome?: FollowupOutcome) => {
     setFollowupForm({
       leadId,
       actionType,
       description: actionType === 'phone_call' ? 'Phone call to patient' : '',
-      outcome: '',
+      outcome: presetOutcome || '',
       nextDate: '',
     });
     setExpandedId(leadId);
@@ -58,11 +60,12 @@ function TaskList() {
     if (!error) {
       setFollowupForm(null);
       setExpandedId(null);
+      flash('Follow-up logged');
       refetch();
+    } else {
+      flash('Error: ' + error.message);
     }
   }, [followupForm, staffId, submitting, refetch]);
-
-  const urgencyOrder: Record<string, number> = { emergency: 0, urgent: 1, soon: 2, routine: 3 };
 
   if (loading) {
     return (
@@ -173,7 +176,7 @@ function TaskList() {
                       className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-50 text-gray-700 hover:bg-gray-100 text-xs font-medium transition-colors cursor-pointer">
                       <FileText size={13} /> Log Note
                     </button>
-                    <button onClick={() => openFollowup(task.lead_id, 'phone_call')}
+                    <button onClick={() => openFollowup(task.lead_id, 'note', 'scheduled')}
                       className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-teal-50 text-teal-700 hover:bg-teal-100 text-xs font-medium transition-colors cursor-pointer">
                       <CalendarPlus size={13} /> Schedule
                     </button>
@@ -250,6 +253,13 @@ function TaskList() {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* Toast */}
+      {toast && (
+        <div className="fixed bottom-6 right-6 z-50 px-4 py-2.5 bg-gray-900 text-white text-sm rounded-lg shadow-lg">
+          {toast}
         </div>
       )}
     </div>
