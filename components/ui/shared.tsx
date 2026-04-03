@@ -155,6 +155,7 @@ const STAFF_TYPE_FALLBACK: Record<string, string[]> = {
   reports: ['admin', 'doctor', 'accountant'],
   settings: ['admin'], quality: ['admin', 'doctor', 'nurse'],
   mis: ['admin', 'doctor', 'accountant'],
+  brain: ['doctor', 'nurse', 'admin'],
   // Clinic modules
   clinic_opd: ['doctor', 'nurse', 'admin', 'receptionist'],
   clinic_pharmacy: ['pharmacist', 'admin'],

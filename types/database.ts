@@ -272,3 +272,212 @@ export interface ClinicCapabilities {
   hasTeleconsult: boolean;
   opdRooms: number;
 }
+
+// ---------------------------------------------------------------------------
+// Brain (Clinical AI) Types
+// ---------------------------------------------------------------------------
+
+export type RiskCategory = 'low' | 'moderate' | 'high' | 'very_high';
+
+export type AntibioticAlertType =
+  | 'duration_exceeded' | 'broad_spectrum_no_culture' | 'escalation_no_justification'
+  | 'duplicate_class' | 'renal_dose_adjustment' | 'antibiotic_allergy_risk'
+  | 'iv_to_oral_opportunity' | 'prophylaxis_exceeded' | 'restricted_antibiotic'
+  | 'no_deescalation';
+
+export type AlertSeverity = 'info' | 'warning' | 'critical';
+export type AlertStatus = 'active' | 'acknowledged' | 'resolved' | 'overridden';
+
+export type InfectionType = 'ssi' | 'clabsi' | 'cauti' | 'vap' | 'cdiff' | 'mrsa' | 'other_hai';
+export type DetectionSource = 'lab_culture' | 'clinical_signs' | 'surveillance' | 'readmission';
+export type InfectionOutcome = 'resolved' | 'ongoing' | 'readmitted' | 'death';
+
+export type QualityGrade = 'A' | 'B' | 'C' | 'D' | 'F';
+
+export interface BrainReadmissionRisk {
+  id: string;
+  centre_id: string;
+  admission_id: string;
+  patient_id: string;
+  age_score: number;
+  comorbidity_count: number;
+  comorbidity_score: number;
+  prior_admissions_12m: number;
+  prior_admission_score: number;
+  los_score: number;
+  emergency_admission_score: number;
+  procedure_complexity_score: number;
+  abnormal_labs_at_discharge: number;
+  abnormal_labs_score: number;
+  polypharmacy_score: number;
+  social_risk_score: number;
+  total_risk_score: number;
+  risk_category: RiskCategory;
+  was_readmitted: boolean;
+  readmission_date: string | null;
+  readmission_days: number | null;
+  readmission_id: string | null;
+  post_discharge_call: boolean;
+  home_care_arranged: boolean;
+  followup_appointment_set: boolean;
+  calculated_at: string;
+  patient?: Patient;
+  admission?: Admission;
+}
+
+export interface BrainAntibioticAlert {
+  id: string;
+  centre_id: string;
+  patient_id: string;
+  admission_id: string | null;
+  prescription_id: string | null;
+  alert_type: AntibioticAlertType;
+  drug_name: string;
+  drug_class: string | null;
+  severity: AlertSeverity;
+  description: string;
+  recommendation: string;
+  prescribing_doctor_id: string | null;
+  status: AlertStatus;
+  resolved_by: string | null;
+  resolved_at: string | null;
+  resolution_note: string | null;
+  override_reason: string | null;
+  created_at: string;
+  patient?: Patient;
+  prescribing_doctor?: Staff;
+}
+
+export interface BrainAntibioticUsage {
+  id: string;
+  centre_id: string;
+  month: string;
+  total_admissions: number;
+  admissions_with_antibiotics: number;
+  antibiotic_usage_rate: number;
+  avg_duration_days: number;
+  culture_before_antibiotic_rate: number;
+  deescalation_rate: number;
+  iv_to_oral_conversion_rate: number;
+  restricted_antibiotic_count: number;
+  ddd_per_100_bed_days: number;
+  top_antibiotics: Array<{ name: string; count: number }>;
+  created_at: string;
+}
+
+export interface BrainInfectionEvent {
+  id: string;
+  centre_id: string;
+  patient_id: string;
+  admission_id: string | null;
+  infection_type: InfectionType;
+  detection_date: string;
+  detection_source: DetectionSource | null;
+  ward_id: string | null;
+  ot_room_id: string | null;
+  surgeon_id: string | null;
+  procedure_name: string | null;
+  procedure_date: string | null;
+  days_post_procedure: number | null;
+  organism: string | null;
+  antibiotic_sensitivity: Record<string, string> | null;
+  treatment: string | null;
+  outcome: InfectionOutcome | null;
+  additional_los_days: number;
+  additional_cost: number;
+  investigated: boolean;
+  root_cause: string | null;
+  preventable: boolean | null;
+  corrective_action: string | null;
+  reported_by: string | null;
+  created_at: string;
+  patient?: Patient;
+}
+
+export interface BrainInfectionRates {
+  id: string;
+  centre_id: string;
+  month: string;
+  total_surgeries: number;
+  ssi_count: number;
+  ssi_rate: number;
+  total_central_line_days: number;
+  clabsi_count: number;
+  clabsi_rate: number;
+  total_catheter_days: number;
+  cauti_count: number;
+  cauti_rate: number;
+  total_ventilator_days: number;
+  vap_count: number;
+  vap_rate: number;
+  hand_hygiene_compliance_pct: number | null;
+  created_at: string;
+}
+
+export interface BrainLosPrediction {
+  id: string;
+  centre_id: string;
+  admission_id: string;
+  predicted_los_days: number;
+  prediction_confidence: number | null;
+  prediction_model: string;
+  diagnosis_code: string | null;
+  procedure_type: string | null;
+  age_group: string | null;
+  comorbidity_count: number | null;
+  admission_type: string | null;
+  payor_type: string | null;
+  actual_los_days: number | null;
+  is_outlier: boolean;
+  outlier_reason: string | null;
+  alert_generated: boolean;
+  alert_generated_on_day: number | null;
+  calculated_at: string;
+  admission?: Admission;
+  patient?: Patient;
+}
+
+export interface BrainLosBenchmark {
+  id: string;
+  centre_id: string | null;
+  category: string;
+  code: string;
+  description: string | null;
+  avg_los: number;
+  median_los: number | null;
+  p25_los: number | null;
+  p75_los: number | null;
+  stddev_los: number | null;
+  sample_size: number;
+  last_updated: string;
+}
+
+export interface BrainQualityIndicators {
+  id: string;
+  centre_id: string;
+  month: string;
+  fall_rate: number;
+  medication_error_rate: number;
+  wrong_site_surgery_count: number;
+  blood_transfusion_reaction_count: number;
+  pressure_ulcer_rate: number;
+  mortality_rate: number;
+  icu_mortality_rate: number;
+  unplanned_icu_transfer_rate: number;
+  readmission_30_day_rate: number;
+  return_to_ot_rate: number;
+  ssi_rate: number;
+  antibiotic_prophylaxis_compliance: number;
+  surgical_safety_checklist_compliance: number;
+  consent_compliance: number;
+  ed_wait_time_avg_min: number;
+  ed_left_without_treatment_rate: number;
+  nurse_patient_ratio: number;
+  nursing_documentation_compliance: number;
+  patient_satisfaction_score: number;
+  complaint_rate: number;
+  grievance_resolution_within_48h_pct: number;
+  overall_quality_score: number;
+  overall_grade: QualityGrade | null;
+  created_at: string;
+}
