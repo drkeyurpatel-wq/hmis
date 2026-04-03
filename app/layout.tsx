@@ -18,6 +18,9 @@ export const metadata: Metadata = {
     statusBarStyle: 'default',
     title: 'Health1 HMIS',
   },
+  other: {
+    'mobile-web-app-capable': 'yes',
+  },
   icons: {
     icon: '/images/health1-192.png',
     apple: '/apple-touch-icon.png',

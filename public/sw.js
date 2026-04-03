@@ -1,7 +1,7 @@
 // public/sw.js
 // Health1 HMIS Service Worker — offline EMR support
 
-const CACHE_NAME = 'h1-hmis-v1';
+const CACHE_NAME = 'h1-hmis-v2';
 const OFFLINE_URL = '/offline';
 
 // App shell — cache these on install
