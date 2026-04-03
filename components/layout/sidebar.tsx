@@ -78,6 +78,7 @@ const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
     { href: '/revenue-leakage', label: 'Leakage Audit', icon: AlertTriangle, moduleKey: 'revenue_leakage', modes: ['hospital'] },
     { href: '/referrals', label: 'Referrals', icon: GitBranch, moduleKey: 'referrals', modes: ['hospital'] },
     { href: '/collect', label: 'Collect (AR)', icon: IndianRupee, moduleKey: 'billing', modes: ['hospital'] },
+    { href: '/convert', label: 'Convert (OPD→IPD)', icon: UserPlus, modes: ['hospital'] },
   ]},
 
   // ---------- REFERRAL (clinic) ----------
