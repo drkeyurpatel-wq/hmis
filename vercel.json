@@ -18,6 +18,10 @@
     {
       "path": "/api/cron/leakage-scan",
       "schedule": "0 3 * * *"
+    },
+    {
+      "path": "/api/integrations/push-revenue",
+      "schedule": "30 17 * * *"
     }
   ]
 }

@@ -23,6 +23,14 @@ export const env = {
   WHATSAPP_ACCESS_TOKEN: process.env.WHATSAPP_ACCESS_TOKEN || process.env.WHATSAPP_API_TOKEN || '',
   CRON_SECRET: process.env.CRON_SECRET || '',
 
+  // H1 Revenue
+  REVENUE_WORKER_URL: process.env.REVENUE_WORKER_URL || '',
+  REVENUE_SYNC_API_KEY: process.env.REVENUE_SYNC_API_KEY || '',
+
+  // MedPay
+  MEDPAY_SUPABASE_URL: process.env.MEDPAY_SUPABASE_URL || '',
+  MEDPAY_SERVICE_ROLE_KEY: process.env.MEDPAY_SERVICE_ROLE_KEY || '',
+
   // VPMS
   VPMS_SUPABASE_URL: process.env.VPMS_SUPABASE_URL || '',
   VPMS_SUPABASE_KEY: process.env.VPMS_SUPABASE_SERVICE_KEY || '',
@@ -94,6 +102,8 @@ export function getIntegrationStatuses(): Record<string, { configured: boolean; 
     email: { configured: !!env.RESEND_API_KEY, label: 'Email (Resend)' },
     sms: { configured: !!env.MSG91_AUTH_KEY, label: 'SMS (MSG91)' },
     whatsapp: { configured: !!env.WHATSAPP_API_URL && !!env.WHATSAPP_ACCESS_TOKEN, label: 'WhatsApp' },
+    revenue: { configured: !!env.REVENUE_WORKER_URL && !!env.REVENUE_SYNC_API_KEY, label: 'H1 Revenue' },
+    medpay: { configured: !!env.MEDPAY_SUPABASE_URL && !!env.MEDPAY_SERVICE_ROLE_KEY, label: 'MedPay' },
     vpms: { configured: !!env.VPMS_SUPABASE_URL && !!env.VPMS_SUPABASE_KEY, label: 'VPMS' },
     abdm: { configured: !!env.ABDM_CLIENT_ID && !!env.ABDM_CLIENT_SECRET, label: 'ABDM/ABHA' },
     pacs: { configured: !!env.PACS_VIEWER_URL, label: 'PACS/Stradus' },
