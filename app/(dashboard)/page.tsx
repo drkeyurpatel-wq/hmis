@@ -11,6 +11,7 @@ import {
   CheckCircle, Calendar, UserPlus, CreditCard, TrendingUp,
   ArrowUpRight, ArrowDownRight,
 } from 'lucide-react';
+import { ClinicDashboard } from './clinic/dashboard';
 
 const ago = (d: string) => {
   const mins = Math.floor((Date.now() - new Date(d).getTime()) / 60000);
@@ -112,7 +113,12 @@ function cn(...classes: (string | boolean | undefined)[]) { return classes.filte
 function fmt(n: number) { return new Intl.NumberFormat('en-IN').format(Math.round(n)); }
 
 export default function HomePage() {
-  const { staff, activeCentreId, centres } = useAuthStore();
+  const { staff, activeCentreId, centres, isClinicMode } = useAuthStore();
+
+  // Render clinic dashboard if active centre is a clinic
+  if (isClinicMode) {
+    return <ClinicDashboard />;
+  }
   const router = useRouter();
   const staffType = staff?.staff_type || 'admin';
   const centreId = activeCentreId || '';

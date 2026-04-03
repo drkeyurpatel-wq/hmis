@@ -13,82 +13,124 @@ import {
   Activity, Truck, FileText, Wrench, SprayCan, Shirt,
   ClipboardList, UtensilsCrossed, Dumbbell, AlertTriangle,
   Package, Eye, UserPlus, MessageSquare, Star, Home, Mic,
-  GitBranch,
-  IndianRupee,
+  GitBranch, IndianRupee, TestTube, ArrowUpRight, Video,
+  Receipt, ShoppingCart, MapPin,
 } from 'lucide-react';
+import type { CentreType } from '@/types/database';
 
-interface NavItem { href: string; label: string; icon: any; moduleKey?: string }
+type Mode = CentreType;
+
+interface NavItem {
+  href: string;
+  label: string;
+  icon: any;
+  moduleKey?: string;
+  modes: Mode[];
+}
 
 const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
+  // ---------- TOP ----------
   { label: '', items: [
-    { href: '/', label: 'Dashboard', icon: LayoutDashboard },
-    { href: '/command-centre', label: 'Command Centre', icon: Activity },
-    { href: '/pulse', label: 'Pulse (MIS)', icon: BarChart3, moduleKey: 'mis' },
+    { href: '/', label: 'Dashboard', icon: LayoutDashboard, modes: ['hospital', 'clinic'] },
+    { href: '/command-centre', label: 'Command Centre', icon: Activity, modes: ['hospital'] },
+    { href: '/pulse', label: 'Pulse (MIS)', icon: BarChart3, moduleKey: 'mis', modes: ['hospital'] },
   ]},
+
+  // ---------- CLINICAL (hospital) ----------
   { label: 'CLINICAL', items: [
-    { href: '/patients', label: 'Patients', icon: Users },
-    { href: '/opd', label: 'OPD', icon: Calendar, moduleKey: 'opd' },
-    { href: '/emr-v2', label: 'EMR', icon: Stethoscope, moduleKey: 'emr' },
-    { href: '/ipd', label: 'IPD', icon: BedDouble, moduleKey: 'ipd' },
-    { href: '/nursing-station', label: 'Nursing Station', icon: Heart, moduleKey: 'nursing' },
-    { href: '/ward-board', label: 'Ward Board', icon: BedDouble, moduleKey: 'nursing' },
-    { href: '/emergency', label: 'Emergency', icon: Siren, moduleKey: 'emergency' },
-    { href: '/ot', label: 'OT & Surgery', icon: Scissors, moduleKey: 'ot' },
-    { href: '/cathlab', label: 'Cath Lab', icon: Heart, moduleKey: 'cathlab' },
-    { href: '/endoscopy', label: 'Endoscopy', icon: Eye, moduleKey: 'endoscopy' },
-    { href: '/dialysis', label: 'Dialysis', icon: Droplets, moduleKey: 'dialysis' },
-    { href: '/physiotherapy', label: 'Physiotherapy', icon: Dumbbell, moduleKey: 'physiotherapy' },
+    { href: '/patients', label: 'Patients', icon: Users, modes: ['hospital', 'clinic'] },
+    { href: '/opd', label: 'OPD', icon: Calendar, moduleKey: 'opd', modes: ['hospital', 'clinic'] },
+    { href: '/emr-v2', label: 'EMR', icon: Stethoscope, moduleKey: 'emr', modes: ['hospital'] },
+    { href: '/ipd', label: 'IPD', icon: BedDouble, moduleKey: 'ipd', modes: ['hospital'] },
+    { href: '/nursing-station', label: 'Nursing Station', icon: Heart, moduleKey: 'nursing', modes: ['hospital'] },
+    { href: '/ward-board', label: 'Ward Board', icon: BedDouble, moduleKey: 'nursing', modes: ['hospital'] },
+    { href: '/emergency', label: 'Emergency', icon: Siren, moduleKey: 'emergency', modes: ['hospital'] },
+    { href: '/ot', label: 'OT & Surgery', icon: Scissors, moduleKey: 'ot', modes: ['hospital'] },
+    { href: '/cathlab', label: 'Cath Lab', icon: Heart, moduleKey: 'cathlab', modes: ['hospital'] },
+    { href: '/endoscopy', label: 'Endoscopy', icon: Eye, moduleKey: 'endoscopy', modes: ['hospital'] },
+    { href: '/dialysis', label: 'Dialysis', icon: Droplets, moduleKey: 'dialysis', modes: ['hospital'] },
+    { href: '/physiotherapy', label: 'Physiotherapy', icon: Dumbbell, moduleKey: 'physiotherapy', modes: ['hospital'] },
+    { href: '/clinic/teleconsult', label: 'Teleconsult', icon: Video, modes: ['clinic'] },
   ]},
+
+  // ---------- PHARMACY (clinic mode) ----------
+  { label: 'PHARMACY', items: [
+    { href: '/clinic/pharmacy-pos', label: 'Pharmacy POS', icon: ShoppingCart, modes: ['clinic'] },
+    { href: '/pharmacy', label: 'Pharmacy', icon: Pill, moduleKey: 'pharmacy', modes: ['hospital'] },
+  ]},
+
+  // ---------- DIAGNOSTICS ----------
   { label: 'DIAGNOSTICS', items: [
-    { href: '/lab', label: 'Laboratory', icon: FlaskConical, moduleKey: 'lab' },
-    { href: '/radiology', label: 'Radiology', icon: ScanLine, moduleKey: 'radiology' },
-    { href: '/blood-bank', label: 'Blood Bank', icon: Droplets, moduleKey: 'blood_bank' },
-    { href: '/pharmacy', label: 'Pharmacy', icon: Pill, moduleKey: 'pharmacy' },
+    { href: '/lab', label: 'Laboratory', icon: FlaskConical, moduleKey: 'lab', modes: ['hospital'] },
+    { href: '/radiology', label: 'Radiology', icon: ScanLine, moduleKey: 'radiology', modes: ['hospital'] },
+    { href: '/blood-bank', label: 'Blood Bank', icon: Droplets, moduleKey: 'blood_bank', modes: ['hospital'] },
+    { href: '/clinic/lab-collection', label: 'Lab Collection', icon: TestTube, modes: ['clinic'] },
+    { href: '/lab/sample-receiving', label: 'Sample Receiving', icon: TestTube, moduleKey: 'lab', modes: ['hospital'] },
   ]},
-  { label: 'REVENUE', items: [
-    { href: '/billing', label: 'Billing', icon: CreditCard, moduleKey: 'billing' },
-    { href: '/insurance', label: 'Insurance', icon: Shield, moduleKey: 'billing' },
-    { href: '/packages', label: 'Packages', icon: Package, moduleKey: 'billing' },
-    { href: '/pnl', label: 'P&L', icon: BarChart3, moduleKey: 'billing' },
-    { href: '/accounting', label: 'Accounting', icon: BarChart3, moduleKey: 'billing' },
-    { href: '/revenue-leakage', label: 'Leakage Audit', icon: AlertTriangle, moduleKey: 'revenue_leakage' },
-    { href: '/referrals', label: 'Referrals', icon: GitBranch, moduleKey: 'referrals' },
-    { href: '/collect', label: 'Collect (AR)', icon: IndianRupee, moduleKey: 'billing' },
+
+  // ---------- REVENUE ----------
+  { label: 'BILLING', items: [
+    { href: '/billing', label: 'Billing', icon: CreditCard, moduleKey: 'billing', modes: ['hospital', 'clinic'] },
+    { href: '/insurance', label: 'Insurance', icon: Shield, moduleKey: 'billing', modes: ['hospital'] },
+    { href: '/packages', label: 'Packages', icon: Package, moduleKey: 'billing', modes: ['hospital'] },
+    { href: '/pnl', label: 'P&L', icon: BarChart3, moduleKey: 'billing', modes: ['hospital'] },
+    { href: '/accounting', label: 'Accounting', icon: BarChart3, moduleKey: 'billing', modes: ['hospital'] },
+    { href: '/revenue-leakage', label: 'Leakage Audit', icon: AlertTriangle, moduleKey: 'revenue_leakage', modes: ['hospital'] },
+    { href: '/referrals', label: 'Referrals', icon: GitBranch, moduleKey: 'referrals', modes: ['hospital'] },
+    { href: '/collect', label: 'Collect (AR)', icon: IndianRupee, moduleKey: 'billing', modes: ['hospital'] },
   ]},
+
+  // ---------- REFERRAL (clinic) ----------
+  { label: 'REFERRAL', items: [
+    { href: '/clinic/referral', label: 'Refer to Hospital', icon: ArrowUpRight, modes: ['clinic'] },
+    { href: '/referrals/clinic-queue', label: 'Clinic Referrals', icon: ArrowUpRight, moduleKey: 'referrals', modes: ['hospital'] },
+  ]},
+
+  // ---------- OPERATIONS ----------
   { label: 'OPERATIONS', items: [
-    { href: '/vpms', label: 'Procurement', icon: Truck, moduleKey: 'procurement' },
-    { href: '/cssd', label: 'CSSD', icon: Shield, moduleKey: 'cssd' },
-    { href: '/housekeeping', label: 'Housekeeping', icon: SprayCan, moduleKey: 'housekeeping' },
-    { href: '/biomedical', label: 'Equipment', icon: Wrench, moduleKey: 'biomedical' },
-    { href: '/duty-roster', label: 'Duty Roster', icon: ClipboardList, moduleKey: 'duty_roster' },
-    { href: '/linen', label: 'Linen', icon: Shirt, moduleKey: 'linen' },
-    { href: '/dietary', label: 'Dietary', icon: UtensilsCrossed, moduleKey: 'dietary' },
-    { href: '/bed-turnover', label: 'Bed Turnover', icon: BedDouble, moduleKey: 'ipd' },
-    { href: '/ambulance', label: 'Ambulance', icon: Truck, moduleKey: 'ambulance' },
+    { href: '/vpms', label: 'Procurement', icon: Truck, moduleKey: 'procurement', modes: ['hospital'] },
+    { href: '/cssd', label: 'CSSD', icon: Shield, moduleKey: 'cssd', modes: ['hospital'] },
+    { href: '/housekeeping', label: 'Housekeeping', icon: SprayCan, moduleKey: 'housekeeping', modes: ['hospital'] },
+    { href: '/biomedical', label: 'Equipment', icon: Wrench, moduleKey: 'biomedical', modes: ['hospital'] },
+    { href: '/duty-roster', label: 'Duty Roster', icon: ClipboardList, moduleKey: 'duty_roster', modes: ['hospital'] },
+    { href: '/linen', label: 'Linen', icon: Shirt, moduleKey: 'linen', modes: ['hospital'] },
+    { href: '/dietary', label: 'Dietary', icon: UtensilsCrossed, moduleKey: 'dietary', modes: ['hospital'] },
+    { href: '/bed-turnover', label: 'Bed Turnover', icon: BedDouble, moduleKey: 'ipd', modes: ['hospital'] },
+    { href: '/ambulance', label: 'Ambulance', icon: Truck, moduleKey: 'ambulance', modes: ['hospital'] },
   ]},
+
+  // ---------- EXPERIENCE ----------
   { label: 'EXPERIENCE', items: [
-    { href: '/px-coordinator', label: 'PX Dashboard', icon: Star, moduleKey: 'px_coordinator' },
-    { href: '/px-feedback', label: 'Feedback', icon: MessageSquare, moduleKey: 'px_feedback' },
-    { href: '/grievances', label: 'Grievances', icon: AlertTriangle, moduleKey: 'grievances' },
-    { href: '/visitors', label: 'Visitors', icon: Users, moduleKey: 'visitors' },
-    { href: '/crm', label: 'CRM', icon: MessageSquare, moduleKey: 'crm' },
+    { href: '/px-coordinator', label: 'PX Dashboard', icon: Star, moduleKey: 'px_coordinator', modes: ['hospital'] },
+    { href: '/px-feedback', label: 'Feedback', icon: MessageSquare, moduleKey: 'px_feedback', modes: ['hospital'] },
+    { href: '/grievances', label: 'Grievances', icon: AlertTriangle, moduleKey: 'grievances', modes: ['hospital'] },
+    { href: '/visitors', label: 'Visitors', icon: Users, moduleKey: 'visitors', modes: ['hospital'] },
+    { href: '/crm', label: 'CRM', icon: MessageSquare, moduleKey: 'crm', modes: ['hospital'] },
   ]},
+
+  // ---------- REPORTS (clinic_manager) ----------
+  { label: 'REPORTS', items: [
+    { href: '/reports', label: 'Reports', icon: BarChart3, modes: ['hospital', 'clinic'] },
+  ]},
+
+  // ---------- ADMIN ----------
   { label: 'ADMIN', items: [
-    { href: '/staff', label: 'Staff', icon: Users },
-    { href: '/quality', label: 'Quality / NABH', icon: Shield, moduleKey: 'quality' },
-    { href: '/reports', label: 'Reports', icon: BarChart3 },
-    { href: '/handover', label: 'Shift Handover', icon: ClipboardList },
-    { href: '/documents', label: 'Documents', icon: FileText },
-    { href: '/infection-control', label: 'Infection Control', icon: Shield, moduleKey: 'infection_control' },
-    { href: '/settings', label: 'Settings', icon: Settings },
+    { href: '/staff', label: 'Staff', icon: Users, modes: ['hospital'] },
+    { href: '/quality', label: 'Quality / NABH', icon: Shield, moduleKey: 'quality', modes: ['hospital'] },
+    { href: '/handover', label: 'Shift Handover', icon: ClipboardList, modes: ['hospital'] },
+    { href: '/documents', label: 'Documents', icon: FileText, modes: ['hospital'] },
+    { href: '/infection-control', label: 'Infection Control', icon: Shield, moduleKey: 'infection_control', modes: ['hospital'] },
+    { href: '/settings', label: 'Settings', icon: Settings, modes: ['hospital', 'clinic'] },
   ]},
 ];
 
 export function Sidebar({ mobileOpen, onMobileClose }: { mobileOpen?: boolean; onMobileClose?: () => void }) {
   const pathname = usePathname();
-  const { staff, centres, activeCentreId, setActiveCentre } = useAuthStore();
+  const { staff, centres, activeCentreId, setActiveCentre, isClinicMode } = useAuthStore();
   const [centreOpen, setCentreOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
+
+  const currentMode: Mode = isClinicMode ? 'clinic' : 'hospital';
 
   const isActive = useCallback((href: string) => {
     if (href === '/') return pathname === '/';
@@ -103,6 +145,12 @@ export function Sidebar({ mobileOpen, onMobileClose }: { mobileOpen?: boolean; o
   const activeCentre = centres.find((c: any) => c.centre_id === activeCentreId);
   const initials = staff?.full_name ? staff.full_name.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase() : 'H1';
   const w = collapsed ? 'w-[60px]' : 'w-[220px]';
+
+  // Filter nav groups by current mode, removing empty groups
+  const filteredGroups = NAV_GROUPS.map((group) => ({
+    ...group,
+    items: group.items.filter((item) => item.modes.includes(currentMode)),
+  })).filter((group) => group.items.length > 0);
 
   return (
     <>
@@ -128,7 +176,9 @@ export function Sidebar({ mobileOpen, onMobileClose }: { mobileOpen?: boolean; o
                 </div>
                 <div>
                   <span className="text-[13px] font-bold text-white tracking-wide">Health1</span>
-                  <span className="text-[9px] text-white/30 block -mt-0.5 font-medium">HMIS</span>
+                  <span className="text-[9px] text-white/30 block -mt-0.5 font-medium">
+                    {isClinicMode ? 'Wellness Clinic' : 'HMIS'}
+                  </span>
                 </div>
               </Link>
               <button onClick={() => setCollapsed(true)} className="text-white/20 hover:text-white/60 transition-colors cursor-pointer">
@@ -149,13 +199,23 @@ export function Sidebar({ mobileOpen, onMobileClose }: { mobileOpen?: boolean; o
               </span>
               <ChevronDown size={11} className={cn('text-white/30 transition-transform shrink-0', centreOpen && 'rotate-180')} />
             </button>
+            {/* Clinic mode badge */}
+            {isClinicMode && (
+              <div className="mt-1.5 mx-0.5 flex items-center gap-1.5 px-2 py-1 rounded-md bg-teal-500/10 border border-teal-500/20">
+                <MapPin size={10} className="text-teal-400" />
+                <span className="text-[9px] font-semibold text-teal-400 uppercase tracking-wider">Clinic Mode</span>
+              </div>
+            )}
             {centreOpen && (
               <div className="absolute left-3 right-3 mt-1 bg-[#1a2640] border border-white/10 rounded-lg shadow-2xl z-50 overflow-hidden">
                 {centres.map((c: any) => (
                   <button key={c.centre_id} onClick={() => switchCentre(c.centre_id)}
                     className={cn('w-full text-left px-3 py-2.5 text-[11px] hover:bg-white/[0.06] border-b border-white/[0.04] last:border-0 transition-colors cursor-pointer',
                       c.centre_id === activeCentreId ? 'text-teal-400 font-semibold bg-white/[0.04]' : 'text-white/60')}>
-                    {c.centre?.name || c.centre_id}
+                    <span className="block">{c.centre?.name || c.centre_id}</span>
+                    {c.centre?.centre_type === 'clinic' && (
+                      <span className="text-[9px] text-teal-400/60 font-medium">Clinic</span>
+                    )}
                   </button>
                 ))}
               </div>
@@ -165,7 +225,7 @@ export function Sidebar({ mobileOpen, onMobileClose }: { mobileOpen?: boolean; o
 
         {/* Nav */}
         <nav className="flex-1 overflow-y-auto px-2 py-1" style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(255,255,255,0.08) transparent' }}>
-          {NAV_GROUPS.map((group, gi) => (
+          {filteredGroups.map((group, gi) => (
             <div key={gi} className={cn(group.label && 'mt-3.5')}>
               {group.label && !collapsed && (
                 <div className="px-2.5 mb-1">

@@ -1,6 +1,9 @@
 // Health1 HMIS/ERP — TypeScript Types
 // Auto-generate full types with: npx supabase gen types typescript --project-id bmuupgrzbfmddjwcqlss > types/supabase.ts
 
+export type CentreType = 'hospital' | 'clinic';
+export type OwnershipType = 'owned' | 'franchise';
+
 export interface Centre {
   id: string;
   code: string;
@@ -14,6 +17,27 @@ export interface Centre {
   config_json: Record<string, unknown>;
   created_at: string;
   updated_at: string;
+  // Clinic mode fields
+  centre_type: CentreType;
+  ownership_type: OwnershipType;
+  hub_centre_id: string | null;
+  // Franchise fields
+  franchise_partner_name: string | null;
+  franchise_agreement_date: string | null;
+  franchise_revenue_share_pct: number | null;
+  franchise_contact_phone: string | null;
+  franchise_contact_email: string | null;
+  // Clinic operational config
+  has_pharmacy: boolean;
+  has_lab_collection: boolean;
+  has_teleconsult: boolean;
+  opd_rooms: number;
+  operating_hours: string;
+  // Geolocation
+  latitude: number | null;
+  longitude: number | null;
+  pincode: string | null;
+  google_maps_url: string | null;
 }
 
 export interface Role {
@@ -169,4 +193,82 @@ export interface Vitals {
   gcs: number | null;
   blood_sugar: number | null;
   recorded_at: string;
+}
+
+// ---------------------------------------------------------------------------
+// Clinic Mode Types
+// ---------------------------------------------------------------------------
+
+export type LabCollectionStatus =
+  | 'collected' | 'batched' | 'dispatched' | 'in_transit'
+  | 'received_at_hub' | 'processing' | 'completed' | 'rejected';
+
+export type TransportMode = 'courier' | 'staff' | 'pickup';
+
+export interface LabCollection {
+  id: string;
+  centre_id: string;
+  hub_centre_id: string;
+  patient_id: string;
+  collection_number: string;
+  barcode: string | null;
+  sample_type: string;
+  tests_ordered: string[];
+  fasting_status: 'fasting' | 'non_fasting' | 'unknown' | null;
+  collected_by: string | null;
+  collected_at: string | null;
+  courier_batch_id: string | null;
+  dispatched_at: string | null;
+  dispatched_by: string | null;
+  transport_mode: TransportMode;
+  received_at_hub: string | null;
+  received_by: string | null;
+  status: LabCollectionStatus;
+  rejection_reason: string | null;
+  hmis_lab_order_id: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+  // Joined
+  patient?: Patient;
+  centre?: Centre;
+  hub_centre?: Centre;
+}
+
+export type ReferralUrgency = 'routine' | 'urgent' | 'emergency';
+
+export type ClinicReferralStatus =
+  | 'referred' | 'appointment_created' | 'patient_visited'
+  | 'completed' | 'cancelled' | 'no_show';
+
+export interface ClinicReferral {
+  id: string;
+  from_centre_id: string;
+  to_centre_id: string;
+  patient_id: string;
+  referral_number: string;
+  reason: string;
+  urgency: ReferralUrgency;
+  department: string | null;
+  referred_by: string | null;
+  clinical_notes: string | null;
+  vitals_at_referral: Record<string, unknown> | null;
+  appointment_created: boolean;
+  hub_appointment_id: string | null;
+  accepted_by: string | null;
+  status: ClinicReferralStatus;
+  created_at: string;
+  updated_at: string;
+  // Joined
+  patient?: Patient;
+  from_centre?: Centre;
+  to_centre?: Centre;
+  referred_by_staff?: Staff;
+}
+
+export interface ClinicCapabilities {
+  hasPharmacy: boolean;
+  hasLabCollection: boolean;
+  hasTeleconsult: boolean;
+  opdRooms: number;
 }
