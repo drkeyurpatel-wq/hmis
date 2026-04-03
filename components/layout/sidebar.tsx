@@ -248,7 +248,7 @@ export function Sidebar({ mobileOpen, onMobileClose }: { mobileOpen?: boolean; o
                   const active = isActive(item.href);
                   const Icon = item.icon;
                   return (
-                    <Link key={item.href + gi} href={item.href} onClick={onMobileClose}
+                    <a key={item.href + gi} href={item.href}
                       className={cn(
                         'flex items-center gap-2.5 px-2.5 py-[6px] rounded-md text-[12px] font-medium transition-all duration-100 relative group cursor-pointer',
                         collapsed && 'justify-center px-0 py-2',
@@ -260,7 +260,7 @@ export function Sidebar({ mobileOpen, onMobileClose }: { mobileOpen?: boolean; o
                       {active && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[2.5px] h-3.5 bg-teal-400 rounded-r-full" />}
                       <Icon size={collapsed ? 17 : 14} strokeWidth={active ? 2.2 : 1.8} className={cn('shrink-0', active ? 'text-teal-400' : 'text-white/25 group-hover:text-white/50')} />
                       {!collapsed && <span className="truncate">{item.label}</span>}
-                    </Link>
+                    </a>
                   );
                 })}
               </div>
