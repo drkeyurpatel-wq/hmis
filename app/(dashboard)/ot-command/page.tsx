@@ -38,7 +38,7 @@ function getUtilColor(pct: number) {
 }
 
 function OTCommandInner() {
-  const { staff, activeCentreId } = useAuthStore();
+  const { activeCentreId } = useAuthStore();
   const centreId = activeCentreId || '';
   const live = useOTLiveStatus(centreId);
   const dash = useOTCommandDashboard(centreId);

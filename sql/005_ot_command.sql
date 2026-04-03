@@ -298,17 +298,17 @@ BEGIN
   SELECT
     r.name::TEXT,
     r.id,
-    COUNT(*)::INT AS scheduled_cases,
+    COUNT(b.id)::INT AS scheduled_cases,
     COALESCE(SUM(b.estimated_duration_min), 0)::INT AS total_scheduled_minutes,
     600 AS available_minutes,
     GREATEST(600 - COALESCE(SUM(b.estimated_duration_min), 0)::INT, 0) AS gap_minutes,
     ROUND(GREATEST(600 - COALESCE(SUM(b.estimated_duration_min), 0), 0)::NUMERIC / 600 * 100, 1) AS gap_pct,
     MIN(b.scheduled_start) AS first_case_time,
-    MAX(b.scheduled_start + (b.estimated_duration_min || ' minutes')::INTERVAL)::TIME AS last_case_end_time,
+    MAX(b.scheduled_start + (COALESCE(b.estimated_duration_min, 60) || ' minutes')::INTERVAL)::TIME AS last_case_end_time,
     EXISTS(
       SELECT 1 FROM (
         SELECT b2.scheduled_start,
-          LAG(b2.scheduled_start + (b2.estimated_duration_min || ' minutes')::INTERVAL) OVER (ORDER BY b2.scheduled_start) AS prev_end
+          LAG(b2.scheduled_start + (COALESCE(b2.estimated_duration_min, 60) || ' minutes')::INTERVAL) OVER (ORDER BY b2.scheduled_start) AS prev_end
         FROM hmis_ot_bookings b2
         WHERE b2.ot_room_id = r.id AND b2.scheduled_date = p_date AND b2.status NOT IN ('cancelled')
       ) gaps

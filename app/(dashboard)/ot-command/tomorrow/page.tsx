@@ -148,7 +148,7 @@ function TomorrowInner() {
             <div className="flex items-center mb-2 ml-28">
               {Array.from({ length: TOTAL_HOURS + 1 }, (_, i) => i + HOUR_START).map(h => (
                 <div key={h} className="text-xs text-gray-400" style={{ width: `${100 / TOTAL_HOURS}%` }}>
-                  {h <= 12 ? `${h}AM` : h === 12 ? '12PM' : `${h - 12}PM`}
+                  {h < 12 ? `${h}AM` : h === 12 ? '12PM' : `${h - 12}PM`}
                 </div>
               ))}
             </div>

@@ -123,7 +123,7 @@ function TurnaroundInner() {
                 </BarChart>
               </ResponsiveContainer>
               <div className="mt-2 text-xs text-gray-400 text-center">
-                Target turnaround: {targetMin} min (dashed line at target)
+                Target turnaround: {targetMin} min
               </div>
             </div>
           )}

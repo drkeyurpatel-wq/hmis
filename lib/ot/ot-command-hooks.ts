@@ -413,11 +413,13 @@ export function useTurnaroundAnalysis(centreId: string | null) {
             return d > 0 && d < 300 ? Math.round(d) : 0;
           };
 
-          const total = diffMin(prevOut, currIn);
           const cleaning = roomReady ? diffMin(prevOut, roomReady) : 0;
           const waiting = roomReady && currIn ? diffMin(roomReady, currIn) : 0;
           const anaesSetup = anaesStart && currIn ? diffMin(currIn, anaesStart) : 0;
           const toIncision = incision && (anaesStart || currIn) ? diffMin(anaesStart || currIn, incision) : 0;
+          // Total includes all phases: gap between cases + prep time in next case
+          const total = cleaning + waiting + anaesSetup + toIncision
+            || diffMin(prevOut, currIn); // fallback to simple gap if no phase data
 
           const roomName = rooms.find(r => r.id === roomId)?.name || 'Unknown';
           const surgeonName = curr.surgeon?.full_name || 'Unknown';
