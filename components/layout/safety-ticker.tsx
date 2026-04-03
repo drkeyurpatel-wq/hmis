@@ -5,7 +5,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import Link from 'next/link';
+// import Link from 'next/link';
 import { useAuthStore } from '@/lib/store/auth';
 import { useSafetyTicker, type TickerItem } from '@/lib/alerts/safety-ticker-hooks';
 import { X, ChevronDown, ChevronUp, AlertCircle, Clock, TrendingDown, BedDouble, Bell, Heart } from 'lucide-react';
@@ -33,14 +33,14 @@ function TickerItemRow({ item, onAcknowledge }: { item: TickerItem; onAcknowledg
   const Icon = TYPE_ICONS[item.type] || AlertCircle;
   return (
     <div className="flex items-center gap-3 px-3 py-2 hover:bg-white/5 rounded-lg transition-colors">
-      <Link href={item.action} className="flex items-center gap-3 flex-1 min-w-0">
+      <a href={item.action} className="flex items-center gap-3 flex-1 min-w-0">
         <Icon size={14} className="text-gray-300 shrink-0" />
         <div className="flex-1 min-w-0">
           <span className="text-xs font-semibold text-white">{item.patientName}</span>
           {item.bedLabel && <span className="text-[10px] text-gray-400 ml-1.5">Bed {item.bedLabel}</span>}
           <div className="text-[10px] text-gray-400 truncate">{item.title} — {item.detail}</div>
         </div>
-      </Link>
+      </a>
       <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded shrink-0 ${
         item.severity === 'critical' ? 'bg-red-600 text-white' : item.severity === 'high' ? 'bg-amber-600 text-white' : 'bg-gray-600 text-gray-200'
       }`}>{item.severity.toUpperCase()}</span>

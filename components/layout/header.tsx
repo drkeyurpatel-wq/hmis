@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { sb } from '@/lib/supabase/browser';
-import Link from 'next/link';
+// import Link from 'next/link'; // replaced with <a> for reliable navigation
 import { DarkModeToggle } from '@/components/ui/dark-mode-toggle';
 import { NotificationBell } from '@/components/ui/notification-bell';
 
@@ -84,7 +84,7 @@ export function GlobalHeader() {
           {showResults && results.length > 0 && (
             <div className="absolute top-full left-0 right-0 mt-1.5 bg-white border border-gray-200 rounded-xl shadow-xl z-50 max-h-72 overflow-y-auto">
               {results.map(p => (
-                <Link
+                <a
                   key={p.id}
                   href={`/patients/${p.id}`}
                   onClick={() => { setShowResults(false); setSearchQ(''); }}
@@ -95,29 +95,29 @@ export function GlobalHeader() {
                     <div className="text-[10px] text-gray-400 mt-0.5">{p.uhid} · {p.age_years}/{p.gender?.charAt(0).toUpperCase()} · {p.phone_primary}</div>
                   </div>
                   <div className="flex gap-1.5">
-                    <Link href={`/emr-v2?patient=${p.id}`} onClick={e => e.stopPropagation()} className="px-2 py-1 bg-h1-teal-light text-h1-teal text-[10px] font-medium rounded-lg hover:bg-h1-teal-light transition-colors">EMR</Link>
-                    <Link href={`/patients/${p.id}`} onClick={e => e.stopPropagation()} className="px-2 py-1 bg-gray-50 text-gray-600 text-[10px] font-medium rounded-lg hover:bg-gray-100 transition-colors">Profile</Link>
+                    <a href={`/emr-v2?patient=${p.id}`} onClick={e => e.stopPropagation()} className="px-2 py-1 bg-h1-teal-light text-h1-teal text-[10px] font-medium rounded-lg hover:bg-h1-teal-light transition-colors">EMR</a>
+                    <a href={`/patients/${p.id}`} onClick={e => e.stopPropagation()} className="px-2 py-1 bg-gray-50 text-gray-600 text-[10px] font-medium rounded-lg hover:bg-gray-100 transition-colors">Profile</a>
                   </div>
-                </Link>
+                </a>
               ))}
             </div>
           )}
           {searchQ.length >= 2 && results.length === 0 && showResults && (
             <div className="absolute top-full left-0 right-0 mt-1.5 bg-white border rounded-xl shadow-lg p-5 text-center">
               <p className="text-sm text-gray-400">No patients found for "{searchQ}"</p>
-              <Link href="/patients/register" className="text-xs text-h1-teal hover:text-h1-navy mt-2 inline-block font-medium">+ Register new patient</Link>
+              <a href="/patients/register" className="text-xs text-h1-teal hover:text-h1-navy mt-2 inline-block font-medium">+ Register new patient</a>
             </div>
           )}
         </div>
 
         {/* Notifications */}
         <div className="flex items-center gap-2">
-          {pendingCounts.rx > 0 && <Link href="/pharmacy" className="flex items-center gap-1.5 px-2.5 py-1 bg-amber-50 text-amber-700 text-[10px] font-semibold rounded-full hover:bg-amber-100 transition-colors border border-amber-200">
-            <span className="w-1.5 h-1.5 bg-amber-500 rounded-full animate-pulse" />{pendingCounts.rx} Rx</Link>}
-          {pendingCounts.lab > 0 && <Link href="/lab" className="flex items-center gap-1.5 px-2.5 py-1 bg-blue-50 text-blue-700 text-[10px] font-semibold rounded-full hover:bg-blue-100 transition-colors border border-blue-200">
-            <span className="w-1.5 h-1.5 bg-blue-500 rounded-full" />{pendingCounts.lab} Lab</Link>}
-          {pendingCounts.preauth > 0 && <Link href="/billing" className="flex items-center gap-1.5 px-2.5 py-1 bg-purple-50 text-purple-700 text-[10px] font-semibold rounded-full hover:bg-purple-100 transition-colors border border-purple-200">
-            <span className="w-1.5 h-1.5 bg-purple-500 rounded-full" />{pendingCounts.preauth} PA</Link>}
+          {pendingCounts.rx > 0 && <a href="/pharmacy" className="flex items-center gap-1.5 px-2.5 py-1 bg-amber-50 text-amber-700 text-[10px] font-semibold rounded-full hover:bg-amber-100 transition-colors border border-amber-200">
+            <span className="w-1.5 h-1.5 bg-amber-500 rounded-full animate-pulse" />{pendingCounts.rx} Rx</a>}
+          {pendingCounts.lab > 0 && <a href="/lab" className="flex items-center gap-1.5 px-2.5 py-1 bg-blue-50 text-blue-700 text-[10px] font-semibold rounded-full hover:bg-blue-100 transition-colors border border-blue-200">
+            <span className="w-1.5 h-1.5 bg-blue-500 rounded-full" />{pendingCounts.lab} Lab</a>}
+          {pendingCounts.preauth > 0 && <a href="/billing" className="flex items-center gap-1.5 px-2.5 py-1 bg-purple-50 text-purple-700 text-[10px] font-semibold rounded-full hover:bg-purple-100 transition-colors border border-purple-200">
+            <span className="w-1.5 h-1.5 bg-purple-500 rounded-full" />{pendingCounts.preauth} PA</a>}
         </div>
 
         {/* Notifications + Dark mode */}

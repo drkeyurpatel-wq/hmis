@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import Link from 'next/link';
+// import Link from 'next/link'; // using <a> for reliable full-page navigation
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/lib/store/auth';
@@ -180,7 +180,7 @@ export function Sidebar({ mobileOpen, onMobileClose }: { mobileOpen?: boolean; o
             </button>
           ) : (
             <>
-              <Link href="/" className="flex items-center gap-2.5">
+              <a href="/" className="flex items-center gap-2.5">
                 <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-teal-400 to-teal-600 flex items-center justify-center shadow-lg shadow-teal-500/20">
                   <span className="text-[10px] font-black text-white tracking-tight">H1</span>
                 </div>
@@ -190,7 +190,7 @@ export function Sidebar({ mobileOpen, onMobileClose }: { mobileOpen?: boolean; o
                     {isClinicMode ? 'Wellness Clinic' : 'HMIS'}
                   </span>
                 </div>
-              </Link>
+              </a>
               <button onClick={() => setCollapsed(true)} className="text-white/20 hover:text-white/60 transition-colors cursor-pointer">
                 <PanelLeftClose size={15} />
               </button>
