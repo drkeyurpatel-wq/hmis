@@ -281,7 +281,7 @@ export function useDispensingQueue(centreId: string | null) {
               centreId, patientId: disp.data!.patient_id, admissionId: disp.data!.encounter_id,
               drugName: item.drugName, dose: item.dose || '', route: item.route || 'oral',
               frequency: item.frequency || '', dispensingId, staffId,
-            }).catch((_e) => { /* lib: non-blocking */ })
+            }).catch((_e: unknown) => { /* lib: non-blocking */ })
           );
         }
       }

@@ -192,7 +192,7 @@ export function useCssd(centreId: string | null) {
       // BRIDGE: Auto-check CSSD booking in surgical planning
       if (data.surgery_name) {
         import('@/lib/bridge/module-events').then(({ onCSSDIssued }) =>
-          onCSSDIssued({ centreId: centreId!, otBookingId: data.ot_booking_id, surgeryName: data.surgery_name }).catch((_e) => { /* lib: non-blocking */ })
+          onCSSDIssued({ centreId: centreId!, otBookingId: data.ot_booking_id, surgeryName: data.surgery_name }).catch((_e: unknown) => { /* lib: non-blocking */ })
         );
       }
 

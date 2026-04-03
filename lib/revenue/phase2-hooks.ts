@@ -83,7 +83,7 @@ export function useIPD(centreId: string | null) {
         onAdmissionCreated({
           centreId: centreId!, admissionId: admission.id,
           patientId: data.patientId, staffId: data.admittingDoctorId,
-        }).catch((_e) => { /* lib: non-blocking */ })
+        }).catch((_e: unknown) => { /* lib: non-blocking */ })
       );
       loadAdmissions('active');
     }
@@ -109,7 +109,7 @@ export function useIPD(centreId: string | null) {
         onDischargeConfirmed({
           centreId: centreId || '', admissionId,
           bedId: admInfo.bed_id, staffId: '',
-        }).catch((_e) => { /* lib: non-blocking */ })
+        }).catch((_e: unknown) => { /* lib: non-blocking */ })
       );
     }
     // BRIDGE: Auto-create final bill from all captured charges

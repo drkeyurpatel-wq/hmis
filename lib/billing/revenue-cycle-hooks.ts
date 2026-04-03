@@ -56,7 +56,7 @@ export function useCashlessWorkflow(centreId: string | null) {
           onPreAuthStatusChanged({
             centreId: adm?.centre_id || '', admissionId: pa.admission_id,
             status: 'approved', approvedAmount: pa.approved_amount,
-          }).catch((_e) => { /* lib: non-blocking */ })
+          }).catch((_e: unknown) => { /* lib: non-blocking */ })
         );
       }
     }

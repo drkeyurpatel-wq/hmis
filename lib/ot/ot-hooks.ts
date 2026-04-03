@@ -123,7 +123,7 @@ export function useOTSchedule(centreId: string | null) {
             patientId: adm.patient_id, surgeonId: data.surgeon_id,
             scheduledDate: data.scheduled_date, procedureName: data.procedure_name,
             staffId: data.surgeon_id || '',
-          }).catch((_e) => { /* lib: non-blocking */ })
+          }).catch((_e: unknown) => { /* lib: non-blocking */ })
         );
       }
     }
@@ -152,7 +152,7 @@ export function useOTSchedule(centreId: string | null) {
             patientId: adm.patient_id, procedureName: bk.procedure_name,
             staffId: extra?.staffId || '', surgeonCharges: bk.surgeon_charges || 0,
             anaesthetistCharges: bk.anaesthetist_charges || 0, otCharges: bk.total_ot_charges || 0,
-          }).catch((_e) => { /* lib: non-blocking */ })
+          }).catch((_e: unknown) => { /* lib: non-blocking */ })
         );
       }
     }

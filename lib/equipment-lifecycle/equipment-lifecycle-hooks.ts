@@ -110,7 +110,7 @@ export function useEquipmentLifecycle(centreId: string | null) {
             centreId, equipmentId: input.equipment_id,
             equipmentName: eqInfo.name, location: eqInfo.location || '',
             severity: input.severity, staffId: input.reported_by,
-          }).catch((_e) => { /* lib: non-blocking */ })
+          }).catch((_e: unknown) => { /* lib: non-blocking */ })
         );
       }
     }
