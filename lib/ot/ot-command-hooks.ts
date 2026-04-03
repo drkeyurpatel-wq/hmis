@@ -10,7 +10,15 @@ export function useOTLiveStatus(centreId: string | null) {
   const [bookings, setBookings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const today = new Date().toISOString().split('T')[0];
+  // Stable today string — only changes when the date actually changes
+  const [today, setToday] = useState(() => new Date().toISOString().split('T')[0]);
+  useEffect(() => {
+    const check = setInterval(() => {
+      const now = new Date().toISOString().split('T')[0];
+      if (now !== today) setToday(now);
+    }, 60000);
+    return () => clearInterval(check);
+  }, [today]);
 
   const load = useCallback(async () => {
     if (!centreId || !sb()) return;
@@ -45,7 +53,7 @@ export function useOTLiveStatus(centreId: string | null) {
   // Real-time subscription
   useEffect(() => {
     if (!centreId || !sb()) return;
-    const channel = sb().channel('ot-live-status')
+    const channel = sb().channel(`ot-live-status-${centreId}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'hmis_ot_bookings' }, () => { load(); })
       .subscribe();
     return () => { sb().removeChannel(channel); };

@@ -4,7 +4,7 @@ import { RoleGuard } from '@/components/ui/shared';
 import { useAuthStore } from '@/lib/store/auth';
 import { useOTGaps } from '@/lib/ot/ot-command-hooks';
 import Link from 'next/link';
-import { ArrowLeft, AlertTriangle, Clock, Calendar } from 'lucide-react';
+import { ArrowLeft, AlertTriangle } from 'lucide-react';
 
 const HOUR_START = 7; // 7 AM
 const HOUR_END = 21;  // 9 PM

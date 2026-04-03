@@ -138,7 +138,7 @@ function TurnaroundInner() {
                   <XAxis dataKey="day" tick={{ fontSize: 11 }} />
                   <YAxis tick={{ fontSize: 11 }} unit=" min" />
                   <Tooltip contentStyle={{ fontSize: 11, borderRadius: 8 }}
-                    formatter={(value: number, name: string) => [`${value} min (${ta.avgByDayOfWeek.find(d => d.avg === value)?.count || 0} samples)`, 'Avg Turnaround']} />
+                    formatter={(value: number) => [`${value} min`, 'Avg Turnaround']} />
                   <Bar dataKey="avg" fill="#3b82f6" radius={[4, 4, 0, 0]} name="Avg Turnaround">
                   </Bar>
                 </BarChart>

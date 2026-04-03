@@ -9,8 +9,8 @@ import {
   Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell,
 } from 'recharts';
 import {
-  Timer, Activity, AlertTriangle, CheckCircle, Clock, XCircle,
-  TrendingUp, Calendar, ChevronRight, RefreshCw,
+  AlertTriangle, CheckCircle, Clock, XCircle,
+  TrendingUp, Calendar, RefreshCw,
 } from 'lucide-react';
 
 const STATUS_COLORS: Record<string, string> = {
@@ -19,7 +19,6 @@ const STATUS_COLORS: Record<string, string> = {
 const STATUS_LABELS: Record<string, string> = {
   in_use: 'In Use', ready: 'Ready', cleaning: 'Cleaning', not_scheduled: 'Not Scheduled',
 };
-const UTIL_COLORS = ['#ef4444', '#eab308', '#84cc16', '#22c55e'];
 const CHART_COLORS = ['#3b82f6', '#8b5cf6', '#f59e0b', '#ef4444', '#06b6d4', '#ec4899', '#10b981', '#f97316'];
 
 const DELAY_LABELS: Record<string, string> = {
@@ -304,7 +303,7 @@ function OTCommandInner() {
                     <div key={room.roomName} className="flex items-center gap-2">
                       <span className="text-xs text-gray-600 w-20 shrink-0 truncate">{room.roomName}</span>
                       <div className="flex gap-0.5 flex-1">
-                        {room.days.sort((a, b) => a.date.localeCompare(b.date)).map(d => (
+                        {[...room.days].sort((a, b) => a.date.localeCompare(b.date)).map(d => (
                           <div key={d.date}
                             className="w-5 h-5 rounded-sm cursor-pointer transition-transform duration-150 hover:scale-125"
                             style={{ backgroundColor: getUtilColor(d.utilization), opacity: d.utilization > 0 ? 0.3 + (d.utilization / 100) * 0.7 : 0.1 }}
