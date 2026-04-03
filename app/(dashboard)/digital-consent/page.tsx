@@ -310,7 +310,7 @@ function Inner() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <div>
                   {selected.patient_signature_data ? (
-                    <div className="border rounded p-3"><div className="text-xs text-green-600 font-semibold mb-1">Patient Signature ✓</div><img src={selected.patient_signature_data} alt="signature" className="max-h-24" /></div>
+                    <div className="border rounded p-3"><div className="text-xs text-green-600 font-semibold mb-1">Patient Signature ✓</div><img src={selected.patient_signature_data} alt="signature" className="max-h-24" /> </div>
                   ) : (
                     <SignaturePad label="Patient Signature" onSave={async (data) => {
                       await dc.capturePatientSignature(selected.id, data, staffId);
@@ -321,7 +321,7 @@ function Inner() {
                 </div>
                 <div>
                   {selected.witness_signature_data ? (
-                    <div className="border rounded p-3"><div className="text-xs text-green-600 font-semibold mb-1">Witness Signature ✓</div><div className="text-xs text-gray-400">{selected.witness_name}</div><img src={selected.witness_signature_data} alt="witness" className="max-h-24" /></div>
+                    <div className="border rounded p-3"><div className="text-xs text-green-600 font-semibold mb-1">Witness Signature ✓</div><div className="text-xs text-gray-400">{selected.witness_name}</div><img src={selected.witness_signature_data} alt="witness" className="max-h-24" /> </div>
                   ) : (
                     <SignaturePad label="Witness / Staff Signature" onSave={async (data) => {
                       const name = staff?.full_name || 'Staff';
@@ -337,8 +337,8 @@ function Inner() {
             {/* Existing signatures display */}
             {selected.consent_given && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                {selected.patient_signature_data && <div className="border rounded p-3"><div className="text-xs text-gray-500 mb-1">Patient Signature</div><img src={selected.patient_signature_data} alt="sig" className="max-h-24" /></div>}
-                {selected.witness_signature_data && <div className="border rounded p-3"><div className="text-xs text-gray-500 mb-1">Witness: {selected.witness_name}</div><img src={selected.witness_signature_data} alt="witness" className="max-h-24" /></div>}
+                {selected.patient_signature_data && <div className="border rounded p-3"><div className="text-xs text-gray-500 mb-1">Patient Signature</div><img src={selected.patient_signature_data} alt="sig" className="max-h-24" /> </div>}
+                {selected.witness_signature_data && <div className="border rounded p-3"><div className="text-xs text-gray-500 mb-1">Witness: {selected.witness_name}</div><img src={selected.witness_signature_data} alt="witness" className="max-h-24" /> </div>}
               </div>
             )}
 

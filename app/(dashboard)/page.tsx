@@ -152,7 +152,7 @@ export default function HomePage() {
           <h1 className="text-xl font-bold text-gray-900">{greeting}, {staff?.full_name?.replace(/^Dr\.?\s*/i, '') || 'Doctor'}</h1>
           <p className="text-sm text-gray-500">{centreName} &middot; {dateLabel}</p>
         </div>
-        <button onClick={() => { wq.reload(); }} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+        <button onClick={() => { wq.reload(); }} aria-label="Refresh data" className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
           <RefreshCw size={16} className={wq.loading ? 'animate-spin text-gray-400' : 'text-gray-500'} />
         </button>
       </div>

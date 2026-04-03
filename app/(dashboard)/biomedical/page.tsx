@@ -86,10 +86,10 @@ function BiomedicalInner() {
     setShowPmAdd(false); flash('PM schedule added');
   };
 
-  const today = new Date().toISOString().split('T')[0];
+  const [today, setToday] = useState(""); useEffect(() => { setToday(new Date().toISOString().split("T")[0]); }, []);
 
   return (
-    <div className="max-w-7xl mx-auto space-y-4">
+    <div className="overflow-x-auto max-w-7xl mx-auto space-y-4">
       {toast && <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-teal-600 text-white px-4 py-2 rounded-lg shadow-lg text-sm">{toast}</div>}
 
       <div className="flex items-center justify-between">

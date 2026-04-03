@@ -20,7 +20,7 @@ function BedCard({ bed, onSelect }: { bed: BedData; onSelect: (b: BedData) => vo
     <div onClick={() => onSelect(bed)}
       className={`rounded-lg border-2 ${cfg.border} ${cfg.bg} p-2 cursor-pointer hover:shadow-md transition-all min-w-[110px] relative`}>
       {/* Bed number badge */}
-      <div className="flex items-center justify-between mb-1">
+      <div className="overflow-x-auto flex items-center justify-between mb-1">
         <span className={`font-bold text-sm ${cfg.text}`}>{bed.bedNumber}</span>
         {bed.status === 'occupied' && bed.daysAdmitted !== undefined && (
           <span className={`text-[9px] px-1 py-0.5 rounded ${isLongStay ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-teal-700'}`}>

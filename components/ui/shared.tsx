@@ -347,7 +347,7 @@ export function printBill(bill: {
   openPrintWindow(`
 <div class="hdr">
   <div style="display:flex;gap:10px;align-items:center">
-    <img class="logo" src="${LOGO_SVG}" alt="Health1" />
+    <img class="logo" src="${LOGO_SVG}" alt="Health1" /> 
     <div><div class="hn">${centre.name}</div><div class="hs">${centre.address} | ${centre.phone}</div><div class="hs">${centre.tagline}</div></div>
   </div>
   <div style="text-align:right;font-size:10px;color:#666">
@@ -398,7 +398,7 @@ export function printDischargeSummary(data: {
   openPrintWindow(`
 <div class="hdr">
   <div style="display:flex;gap:10px;align-items:center">
-    <img class="logo" src="${LOGO_SVG}" alt="Health1" />
+    <img class="logo" src="${LOGO_SVG}" alt="Health1" /> 
     <div><div class="hn">${centre.name}</div><div class="hs">${centre.address} | ${centre.phone}</div></div>
   </div>
   <div style="text-align:right"><div style="font-size:14px;font-weight:700;color:#1e40af">DISCHARGE SUMMARY</div></div>
@@ -468,7 +468,7 @@ export function printEncounterSummary(data: {
   openPrintWindow(`
 <div class="hdr">
   <div style="display:flex;gap:10px;align-items:center">
-    <img class="logo" src="${LOGO_SVG}" alt="Health1" />
+    <img class="logo" src="${LOGO_SVG}" alt="Health1" /> 
     <div><div class="hn">${centre.name}</div><div class="hs">${centre.address} | ${centre.phone}</div><div class="hs">${centre.tagline}</div></div>
   </div>
   <div style="text-align:right;font-size:10px;color:#666">
@@ -529,7 +529,7 @@ export function printLabReport(data: {
   <!-- Header -->
   <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid #1e40af;padding-bottom:10px;margin-bottom:12px">
     <div style="display:flex;align-items:center;gap:12px">
-      <img src="${LOGO_SVG}" style="width:150px;height:auto" alt="Health1" />
+      <img src="${LOGO_SVG}" style="width:150px;height:auto" alt="Health1" /> 
       <div style="font-size:8px;color:#666;line-height:1.4">${data.centreAddress || HOSPITAL.address}<br/>${data.centrePhone || HOSPITAL.phone}</div>
     </div>
     <div style="text-align:right;font-size:9px;color:#666">

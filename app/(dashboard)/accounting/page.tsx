@@ -43,7 +43,7 @@ function AccountingPageInner() {
   const typeColor = (t: string) => t === 'asset' ? 'text-teal-700' : t === 'liability' ? 'text-red-700' : t === 'equity' ? 'text-purple-700' : t === 'revenue' ? 'text-green-700' : 'text-orange-700';
 
   return (
-    <div className="max-w-6xl mx-auto">
+    <div className="overflow-x-auto max-w-6xl mx-auto">
       <div className="flex items-center justify-between mb-6">
         <div><h1 className="text-2xl font-bold text-gray-900">Accounting</h1><p className="text-sm text-gray-500">General Ledger, Chart of Accounts, Trial Balance</p></div>
         <div className="flex gap-2 items-center"><input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="text-sm border rounded-lg px-2 py-1.5" />

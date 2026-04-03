@@ -61,7 +61,7 @@ function TeleconsultInner() {
   const pendingCount = slots.filter(s => s.status !== 'completed' && s.status !== 'cancelled').length;
 
   return (
-    <div className="w-full max-w-[1280px] mx-auto space-y-5">
+    <div className="overflow-x-auto w-full max-w-[1280px] mx-auto space-y-5">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold text-gray-900">Teleconsult Station</h1>

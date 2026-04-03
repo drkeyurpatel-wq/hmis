@@ -148,9 +148,9 @@ export default function ConsentBuilder({ consents, patientId, patientName, admis
         </ul>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px;margin-top:30px">
-        <div style="text-align:center"><div style="height:60px;border-bottom:1px solid #333">${form.patientSignature ? `<img src="${form.patientSignature}" style="height:55px"/>` : ''}</div><div style="font-size:9px;margin-top:4px"><b>Patient / Authorized Representative</b><br/>Name: ${patientName}<br/>Date: ${new Date().toLocaleDateString('en-IN')}</div></div>
-        <div style="text-align:center"><div style="height:60px;border-bottom:1px solid #333">${form.witnessSignature ? `<img src="${form.witnessSignature}" style="height:55px"/>` : ''}</div><div style="font-size:9px;margin-top:4px"><b>Witness</b><br/>Name: ${form.witnessName}<br/>Relation: ${form.witnessRelation}</div></div>
-        <div style="text-align:center"><div style="height:60px;border-bottom:1px solid #333">${form.doctorSignature ? `<img src="${form.doctorSignature}" style="height:55px"/>` : ''}</div><div style="font-size:9px;margin-top:4px"><b>Doctor / Counselor</b><br/>Date: ${new Date().toLocaleDateString('en-IN')}</div></div>
+        <div style="text-align:center"><div style="height:60px;border-bottom:1px solid #333">${form.patientSignature ? `<img alt="" src="${form.patientSignature}" style="height:55px"/>` : ''}</div><div style="font-size:9px;margin-top:4px"><b>Patient / Authorized Representative</b><br/>Name: ${patientName}<br/> Date: ${new Date().toLocaleDateString('en-IN')}</div></div>
+        <div style="text-align:center"><div style="height:60px;border-bottom:1px solid #333">${form.witnessSignature ? `<img alt="" src="${form.witnessSignature}" style="height:55px"/>` : ''}</div><div style="font-size:9px;margin-top:4px"><b>Witness</b><br/>Name: ${form.witnessName}<br/> Relation: ${form.witnessRelation}</div></div>
+        <div style="text-align:center"><div style="height:60px;border-bottom:1px solid #333">${form.doctorSignature ? `<img alt="" src="${form.doctorSignature}" style="height:55px"/>` : ''}</div><div style="font-size:9px;margin-top:4px"><b>Doctor / Counselor</b><br/> Date: ${new Date().toLocaleDateString('en-IN')}</div></div>
       </div>
     </div>`, `Consent — ${patientName} — ${form.consentType}`);
   };

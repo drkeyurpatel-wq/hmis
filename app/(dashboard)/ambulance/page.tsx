@@ -40,7 +40,7 @@ function AmbulanceInner() {
   const timeAgo = (d: string) => { if (!d) return ''; const m = Math.floor((Date.now() - new Date(d).getTime()) / 60000); return m < 60 ? `${m}m ago` : `${Math.floor(m / 60)}h ${m % 60}m ago`; };
 
   return (
-    <div className="max-w-[1400px] mx-auto space-y-4">
+    <div className="overflow-x-auto max-w-[1400px] mx-auto space-y-4">
       {toast && <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-teal-600 text-white px-5 py-2.5 rounded-xl shadow-lg text-sm font-medium">{toast}</div>}
 
       <div className="flex items-center justify-between">

@@ -452,7 +452,7 @@ export default function ABHAVerification({ patientId, patientName, patientPhone,
             <div className="bg-gradient-to-r from-orange-50 to-green-50 rounded-xl border p-4">
               <div className="flex items-start gap-4">
                 {profile?.profilePhoto && (
-                  <img src={`data:image/png;base64,${profile.profilePhoto}`} alt="ABHA" className="w-16 h-16 rounded-full border-2 border-white shadow" />
+                  <img src={`data:image/png;base64,${profile.profilePhoto}`} alt="ABHA" className="w-16 h-16 rounded-full border-2 border-white shadow" /> 
                 )}
                 <div className="flex-1">
                   <div className="font-bold text-lg">{profile?.name || patientName}</div>

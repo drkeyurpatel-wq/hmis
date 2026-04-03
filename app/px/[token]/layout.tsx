@@ -16,7 +16,7 @@ export default function PxLayout({ children }: { children: React.ReactNode }) {
       {/* Header */}
       <header className="bg-[#1B3A5C] text-white px-4 py-3 flex items-center gap-3 sticky top-0 z-50">
         <div className="flex items-center gap-2">
-          <img src="/images/health1-logo.svg" alt="Health1" className="h-7 w-auto brightness-0 invert" />
+          <img src="/images/health1-logo.svg" alt="Health1" className="h-7 w-auto brightness-0 invert" /> 
           <div className="text-[10px] text-white/70">Patient Services</div>
         </div>
       </header>

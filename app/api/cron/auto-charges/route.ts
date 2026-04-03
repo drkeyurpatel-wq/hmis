@@ -15,6 +15,7 @@ function adminSb() {
 }
 
 export async function GET(request: NextRequest) {
+  try {
   // Auth: cron secret or skip in dev
   const authHeader = request.headers.get('authorization');
   if (process.env.NODE_ENV === 'production') {
@@ -102,4 +103,8 @@ export async function GET(request: NextRequest) {
   }
 
   return NextResponse.json({ date: today, centres: results, totalPatients: results.reduce((s, r) => s + r.patients, 0) });
+  } catch (err: unknown) {
+    console.error("[cron] Error:", err);
+    return NextResponse.json({ error: "Internal error", detail: String(err) }, { status: 500 });
+  }
 }

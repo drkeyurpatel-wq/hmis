@@ -119,7 +119,10 @@ async function persistAlerts(sb: any, alerts: any[]): Promise<number> {
 }
 
 export async function GET(request: NextRequest) {
-  const { error: authError } = await requireAuth(request);
+  // Accept either user auth or CRON_SECRET for Vercel cron
+  const cronSecret = request.headers.get("x-cron-secret") || request.headers.get("authorization")?.replace("Bearer ", "");
+  const isCron = cronSecret === process.env.CRON_SECRET && process.env.CRON_SECRET;
+  const { error: authError } = isCron ? { error: null } : await requireAuth(request);
   if (authError) return authError;
 
   const sb = adminSb();

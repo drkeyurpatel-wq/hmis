@@ -154,7 +154,7 @@ function BillingInner() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold tracking-tight">Billing & Revenue</h1>
-          <p className="text-xs text-gray-400 mt-0.5">{staff?.full_name} · {new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</p>
+          <p className="text-xs text-gray-400 mt-0.5">{staff?.full_name} · {typeof window !== 'undefined' ? new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : ''}</p>
         </div>
         <button onClick={() => setShowNewBill(true)}
           className="flex items-center gap-2 px-4 py-2.5 bg-h1-navy text-white text-sm rounded-xl font-semibold hover:bg-h1-navy/90 transition-colors shadow-sm shadow-h1-teal/20">

@@ -175,7 +175,7 @@ export function Sidebar({ mobileOpen, onMobileClose }: { mobileOpen?: boolean; o
         {/* Logo */}
         <div className="h-14 flex items-center justify-between px-3 shrink-0 border-b border-white/[0.06]">
           {collapsed ? (
-            <button onClick={() => setCollapsed(false)} className="w-full flex justify-center text-white/40 hover:text-white/80 cursor-pointer">
+            <button onClick={() => setCollapsed(false)} aria-label="Expand sidebar" className="w-full flex justify-center text-white/40 hover:text-white/80 cursor-pointer">
               <PanelLeft size={18} />
             </button>
           ) : (
@@ -191,7 +191,7 @@ export function Sidebar({ mobileOpen, onMobileClose }: { mobileOpen?: boolean; o
                   </span>
                 </div>
               </a>
-              <button onClick={() => setCollapsed(true)} className="text-white/20 hover:text-white/60 transition-colors cursor-pointer">
+              <button onClick={() => setCollapsed(true)} aria-label="Collapse sidebar" className="text-white/20 hover:text-white/60 transition-colors cursor-pointer">
                 <PanelLeftClose size={15} />
               </button>
             </>

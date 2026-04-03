@@ -12,7 +12,7 @@ function OnboardingInner() {
       </div>
       <CentreOnboarding onComplete={(centreId) => {
         // Refresh centres in auth store
-        window.location.href = '/settings';
+        router.push('/settings');
       }} />
     </div>
   );

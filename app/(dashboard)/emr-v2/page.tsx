@@ -533,7 +533,7 @@ function EMRInner() {
                   const dxLine = diagnoses.map(d => `${d.name} (${d.code})`).join(', ');
                   openPrintWindow(`<div style="max-width:600px;margin:0 auto;font-family:Segoe UI,Arial;color:#1a1a1a">
                     <div style="display:flex;align-items:center;gap:12px;border-bottom:3px solid #1e40af;padding-bottom:8px;margin-bottom:10px">
-                      <img src="${LOGO_SVG}" style="width:140px;height:auto" alt="Health1" />
+                      <img src="${LOGO_SVG}" style="width:140px;height:auto" alt="Health1" /> 
                       <div style="flex:1">
                         <div style="font-size:8px;color:#666">${HOSPITAL.address}</div>
                         <div style="font-size:8px;color:#666">Ph: ${HOSPITAL.phone} | GSTIN: ${HOSPITAL.gstin}</div>

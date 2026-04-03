@@ -7,7 +7,7 @@ export const runtime = 'edge';
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: Request) {
-  const authHeader = request.headers.get('authorization');
+  try {
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
@@ -63,4 +63,8 @@ export async function GET(request: Request) {
   }
 
   return NextResponse.json({ success: true, totalLeaks, scannedAt: now.toISOString() });
+  } catch (err: unknown) {
+    console.error("[cron] Error:", err);
+    return NextResponse.json({ error: "Internal error", detail: String(err) }, { status: 500 });
+  }
 }

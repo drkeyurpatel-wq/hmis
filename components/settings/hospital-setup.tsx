@@ -83,7 +83,7 @@ export default function HospitalSetup({ centreId, flash }: Props) {
       </div>
 
       {form.logo_url && <div className="flex items-center gap-3">
-        <img src={form.logo_url} alt="Logo" className="h-12 w-12 object-contain border rounded" onError={(e: any) => { e.target.style.display = 'none'; }} />
+        <img src={form.logo_url} alt="Logo" className="h-12 w-12 object-contain border rounded" onError={(e: any) => { e.target.style.display = 'none'; }} /> 
         <span className="text-[10px] text-gray-400">Logo preview</span>
       </div>}
 

@@ -48,15 +48,15 @@ export default function ConsentList({ consents, staffId, onRevoke, onFlash }: Pr
       ${c.alternatives_explained ? `<div style="margin-bottom:10px"><b>Alternatives:</b> ${c.alternatives_explained}</div>` : ''}
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px;margin-top:30px">
         <div style="text-align:center">
-          <div style="height:60px;border-bottom:1px solid #333">${c.signature_data ? `<img src="${c.signature_data}" style="height:55px"/>` : ''}</div>
+          <div style="height:60px;border-bottom:1px solid #333">${c.signature_data ? `<img alt="" src="${c.signature_data}" style="height:55px"/> ` : ''}</div>
           <div style="font-size:9px;margin-top:4px"><b>Patient / Representative</b></div>
         </div>
         <div style="text-align:center">
-          <div style="height:60px;border-bottom:1px solid #333">${c.witness_signature ? `<img src="${c.witness_signature}" style="height:55px"/>` : ''}</div>
+          <div style="height:60px;border-bottom:1px solid #333">${c.witness_signature ? `<img alt="" src="${c.witness_signature}" style="height:55px"/> ` : ''}</div>
           <div style="font-size:9px;margin-top:4px"><b>Witness</b><br/>${c.witness_name || ''} (${c.witness_relation || ''})</div>
         </div>
         <div style="text-align:center">
-          <div style="height:60px;border-bottom:1px solid #333">${c.doctor_signature ? `<img src="${c.doctor_signature}" style="height:55px"/>` : ''}</div>
+          <div style="height:60px;border-bottom:1px solid #333">${c.doctor_signature ? `<img alt="" src="${c.doctor_signature}" style="height:55px"/> ` : ''}</div>
           <div style="font-size:9px;margin-top:4px"><b>Doctor</b></div>
         </div>
       </div>
@@ -97,15 +97,15 @@ export default function ConsentList({ consents, staffId, onRevoke, onFlash }: Pr
           {viewConsent.alternatives_explained && <div className="text-xs mb-2"><b className="text-blue-600">Alternatives:</b> {viewConsent.alternatives_explained}</div>}
           <div className="grid grid-cols-3 gap-4 mt-3">
             {viewConsent.signature_data && <div className="text-center">
-              <img src={viewConsent.signature_data} alt="Patient signature" className="h-12 mx-auto border rounded" />
+              <img src={viewConsent.signature_data} alt="Patient signature" className="h-12 mx-auto border rounded" /> 
               <div className="text-[10px] text-gray-400 mt-1">Patient</div>
             </div>}
             {viewConsent.witness_signature && <div className="text-center">
-              <img src={viewConsent.witness_signature} alt="Witness signature" className="h-12 mx-auto border rounded" />
+              <img src={viewConsent.witness_signature} alt="Witness signature" className="h-12 mx-auto border rounded" /> 
               <div className="text-[10px] text-gray-400 mt-1">Witness: {viewConsent.witness_name}</div>
             </div>}
             {viewConsent.doctor_signature && <div className="text-center">
-              <img src={viewConsent.doctor_signature} alt="Doctor signature" className="h-12 mx-auto border rounded" />
+              <img src={viewConsent.doctor_signature} alt="Doctor signature" className="h-12 mx-auto border rounded" /> 
               <div className="text-[10px] text-gray-400 mt-1">Doctor</div>
             </div>}
           </div>

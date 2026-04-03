@@ -95,7 +95,7 @@ export default function DashboardLayout({
         <CommandPalette />
         <Sidebar mobileOpen={mobileOpen} onMobileClose={() => setMobileOpen(false)} />
         {/* Mobile hamburger */}
-        <button onClick={() => setMobileOpen(true)}
+        <button onClick={() => setMobileOpen(true)} aria-label="Open menu"
           className="fixed top-3 left-3 z-20 md:hidden w-10 h-10 bg-white border rounded-lg flex items-center justify-center shadow-sm">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
         </button>

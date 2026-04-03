@@ -45,7 +45,8 @@ function AppointmentsInner() {
 
   // Booking form
   // Booking form — single state object (was 14 individual useStates)
-  const [bf, setBf] = useState({ dept: '', doctor: '', date: new Date().toISOString().split('T')[0], type: 'new', priority: 'normal', reason: '', source: 'counter', slot: '', isWalkIn: false });
+  const [bf, setBf] = useState({ dept: '', doctor: '', date: '', type: 'new', priority: 'normal', reason: '', source: 'counter', slot: '', isWalkIn: false });
+  useEffect(() => { setBf(prev => ({ ...prev, date: prev.date || new Date().toISOString().split("T")[0] })); }, []);
   const [slots, setSlots] = useState<TimeSlot[]>([]);
   const [patientSearch, setPatientSearch] = useState('');
   const [patientResults, setPatientResults] = useState<any[]>([]);
@@ -133,7 +134,7 @@ function AppointmentsInner() {
   });
 
   return (
-    <div className="max-w-7xl mx-auto space-y-4">
+    <div className="overflow-x-auto max-w-7xl mx-auto space-y-4">
       {toast && <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-h1-success text-white px-4 py-2 rounded-xl shadow-lg text-sm font-medium">{toast}</div>}
 
       {/* Header */}

@@ -168,7 +168,7 @@ export default function CommandCentrePage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold text-gray-900">Command Centre</h1>
-          <p className="text-[12px] text-gray-500">Real-time hospital operations · {new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'short', year: 'numeric' })}</p>
+          <p className="text-[12px] text-gray-500">Real-time hospital operations · {''}</p>
         </div>
         <div className="flex items-center gap-2">
           {centres.length > 1 && (
