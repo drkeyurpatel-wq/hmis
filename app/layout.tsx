@@ -34,6 +34,26 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: `
+          // Force-unregister broken service worker that was blocking navigation
+          if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistrations().then(function(registrations) {
+              registrations.forEach(function(registration) {
+                registration.unregister().then(function(success) {
+                  if (success) console.log('[H1] Old service worker unregistered');
+                });
+              });
+            });
+            // Clear all SW caches
+            if ('caches' in window) {
+              caches.keys().then(function(names) {
+                names.forEach(function(name) { caches.delete(name); });
+              });
+            }
+          }
+        `}} />
+      </head>
       <body>{children}</body>
     </html>
   );
