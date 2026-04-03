@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from 'next';
+import Script from 'next/script';
 import './globals.css';
 
 export const viewport: Viewport = {
@@ -13,11 +14,6 @@ export const metadata: Metadata = {
   title: 'Health1 HMIS',
   description: 'Health1 Super Speciality Hospitals — Hospital Management Information System',
   manifest: '/manifest.json',
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: 'default',
-    title: 'Health1 HMIS',
-  },
   other: {
     'mobile-web-app-capable': 'yes',
   },
@@ -34,27 +30,16 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <head>
-        <script dangerouslySetInnerHTML={{ __html: `
-          // Force-unregister broken service worker that was blocking navigation
+      <body>
+        {children}
+        <Script id="sw-cleanup" strategy="afterInteractive">{`
           if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.getRegistrations().then(function(registrations) {
-              registrations.forEach(function(registration) {
-                registration.unregister().then(function(success) {
-                  if (success) console.log('[H1] Old service worker unregistered');
-                });
-              });
+            navigator.serviceWorker.getRegistrations().then(function(regs) {
+              regs.forEach(function(r) { r.unregister(); });
             });
-            // Clear all SW caches
-            if ('caches' in window) {
-              caches.keys().then(function(names) {
-                names.forEach(function(name) { caches.delete(name); });
-              });
-            }
           }
-        `}} />
-      </head>
-      <body>{children}</body>
+        `}</Script>
+      </body>
     </html>
   );
 }
