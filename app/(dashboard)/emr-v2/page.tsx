@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useCallback, useEffect, Suspense } from 'react';
+import React, { useState, useCallback, useEffect, useRef, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useEMR } from '@/lib/emr/use-emr';
 import { useAuthStore } from '@/lib/store/auth';
@@ -17,6 +17,8 @@ import DiagnosisBuilder from '@/components/emr-v2/diagnosis-builder';
 import PrescriptionBuilder from '@/components/emr-v2/prescription-builder';
 import InvestigationPanel from '@/components/emr-v2/investigation-panel';
 import AICopilot from '@/components/emr-v2/ai-copilot';
+import VoiceInput from '@/components/emr-v2/voice-input';
+import RxPrint from '@/components/emr-v2/rx-print';
 import PatientImagingPanel from '@/components/radiology/patient-imaging-panel';
 import PatientLabHistory from '@/components/lab/patient-lab-history';
 
@@ -74,6 +76,7 @@ function EMRInner() {
   const [showLab, setShowLab] = useState(false);
   const [showCopilot, setShowCopilot] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [showRxPrint, setShowRxPrint] = useState(false);
 
   // Advise Admission/Procedure (Convert module)
   const [showAdviseAdmission, setShowAdviseAdmission] = useState(false);
@@ -339,10 +342,40 @@ function EMRInner() {
     setSaving(false);
   };
 
-  // Step navigation
-  const stepIdx = 0; // Single page layout
+  // Keyboard shortcuts: Ctrl+S = Save Draft, Ctrl+Enter = Sign & Lock
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault();
+        if (patient.id && !saving) saveEncounter(false);
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        e.preventDefault();
+        if (patient.id && !saving && complaints.length > 0) saveEncounter(true);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [patient.id, saving, complaints.length]);
 
+  // Auto-save every 60 seconds when there's data
+  const autoSaveRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [lastAutoSave, setLastAutoSave] = useState<string>('');
 
+  useEffect(() => {
+    if (autoSaveRef.current) clearInterval(autoSaveRef.current);
+    if (!patient.id) return;
+    const hasData = complaints.length > 0 || diagnoses.length > 0 || prescriptions.length > 0 || !!(vitals.systolic || vitals.heartRate);
+    if (!hasData) return;
+    autoSaveRef.current = setInterval(() => {
+      if (!saving) {
+        saveEncounter(false).then(() => {
+          setLastAutoSave(new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }));
+        });
+      }
+    }, 60000);
+    return () => { if (autoSaveRef.current) clearInterval(autoSaveRef.current); };
+  }, [patient.id, complaints.length, diagnoses.length, prescriptions.length, vitals.systolic, vitals.heartRate, saving]);
 
   // Filled indicators
   const filled = {
@@ -360,8 +393,8 @@ function EMRInner() {
     <div className="max-w-7xl mx-auto space-y-3">
       {toast && <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-emerald-600 text-white px-4 py-2 rounded-xl shadow-lg text-sm">{toast}</div>}
 
-      {/* Patient Banner */}
-      <PatientBanner patient={patient} onSearch={() => setShowSearch(true)} />
+      {/* Patient Banner (sticky) */}
+      <PatientBanner patient={patient} onSearch={() => setShowSearch(true)} filledSections={filled} />
 
       {/* Patient Search Modal */}
       {showSearch && (
@@ -471,7 +504,8 @@ function EMRInner() {
                     className="w-full px-3 py-2 border rounded-lg text-sm mt-1" placeholder="Reason for referral" />}
                 </div>
               </div>
-              <div><label className="text-xs text-gray-500">Advice / Patient Instructions</label>
+              <div><div className="flex items-center gap-2"><label className="text-xs text-gray-500">Advice / Patient Instructions</label>
+                <VoiceInput onTranscript={(text) => setAdvice(prev => prev ? prev + ' ' + text : text)} /></div>
                 <textarea value={advice} onChange={e => setAdvice(e.target.value)} rows={4} className="w-full px-3 py-2 border rounded-lg text-sm"
                   placeholder="Diet advice, activity restrictions, warning signs to watch for, medication reminders..." />
                 <div className="flex flex-wrap gap-1 mt-1">{['Drink plenty of fluids', 'Avoid oily/spicy food', 'Complete full course of antibiotics', 'Rest for 3 days', 'Monitor temperature', 'Visit ER if symptoms worsen', 'Avoid driving on this medication', 'Follow-up with reports'].map(a => (
@@ -522,37 +556,19 @@ function EMRInner() {
               {advice && <div className="bg-gray-50 rounded-lg p-3 text-xs"><div className="font-bold text-gray-700 mb-1">Advice</div><div className="whitespace-pre-line">{advice}</div></div>}
               {followUpDate && <div className="text-xs"><span className="font-bold text-gray-700">Follow-up:</span> {new Date(followUpDate).toLocaleDateString('en-IN', { weekday: 'long', day: '2-digit', month: 'short', year: 'numeric' })}</div>}
 
-              <div className="flex gap-3 pt-2">
-                <button onClick={() => saveEncounter(false)} disabled={saving} className="px-6 py-2.5 bg-gray-200 text-sm rounded-lg disabled:opacity-40">{saving ? 'Saving...' : 'Save Draft'}</button>
+              {lastAutoSave && <div className="text-[10px] text-gray-400 mb-1">Auto-saved at {lastAutoSave}</div>}
+              <div className="flex gap-3 pt-2 flex-wrap">
+                <button onClick={() => saveEncounter(false)} disabled={saving} className="px-6 py-2.5 bg-gray-200 text-sm rounded-lg disabled:opacity-40 hover:bg-gray-300 transition-colors duration-200 cursor-pointer" title="Ctrl+S">
+                  {saving ? 'Saving...' : 'Save Draft'}
+                  <span className="ml-1.5 text-[9px] text-gray-400 hidden sm:inline">Ctrl+S</span>
+                </button>
                 <button onClick={() => saveEncounter(true)} disabled={saving || !complaints.length}
-                  className="px-8 py-2.5 bg-emerald-600 text-white text-sm rounded-lg font-medium disabled:opacity-40">{saving ? 'Signing...' : 'Sign & Complete'}</button>
-                {prescriptions.length > 0 && <button onClick={() => {
-                  const rxRows = prescriptions.map((p, i) =>
-                    `<tr><td style="padding:4px 6px;border:1px solid #ddd;text-align:center;font-size:10px">${i+1}</td><td style="padding:4px 6px;border:1px solid #ddd;font-size:10px"><b>${p.drug}</b> (${p.generic}) ${p.dose}</td><td style="padding:4px 6px;border:1px solid #ddd;text-align:center;font-size:10px">${p.route}</td><td style="padding:4px 6px;border:1px solid #ddd;text-align:center;font-size:10px">${p.frequency}</td><td style="padding:4px 6px;border:1px solid #ddd;text-align:center;font-size:10px">${p.duration}</td><td style="padding:4px 6px;border:1px solid #ddd;font-size:9px">${p.instructions}</td></tr>`
-                  ).join('');
-                  const dxLine = diagnoses.map(d => `${d.name} (${d.code})`).join(', ');
-                  openPrintWindow(`<div style="max-width:600px;margin:0 auto;font-family:Segoe UI,Arial;color:#1a1a1a">
-                    <div style="display:flex;align-items:center;gap:12px;border-bottom:3px solid #1e40af;padding-bottom:8px;margin-bottom:10px">
-                      <img src="${LOGO_SVG}" style="width:140px;height:auto" alt="Health1" /> 
-                      <div style="flex:1">
-                        <div style="font-size:8px;color:#666">${HOSPITAL.address}</div>
-                        <div style="font-size:8px;color:#666">Ph: ${HOSPITAL.phone} | GSTIN: ${HOSPITAL.gstin}</div>
-                      </div>
-                      <div style="font-size:12px;font-weight:700;color:#dc2626">&#x211E; PRESCRIPTION</div>
-                    </div>
-                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;font-size:10px;padding:6px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:4px;margin-bottom:10px">
-                      <div><b>Patient:</b> ${patient.name}</div><div><b>UHID:</b> ${patient.uhid}</div>
-                      <div><b>Age/Sex:</b> ${patient.age}/${patient.gender}</div><div><b>Date:</b> ${new Date().toLocaleDateString('en-IN')}</div>
-                      <div><b>Doctor:</b> Dr. ${staff?.full_name || ''}</div>${dxLine ? `<div><b>Dx:</b> ${dxLine}</div>` : ''}
-                    </div>
-                    <table style="width:100%;border-collapse:collapse;margin-bottom:10px"><thead><tr style="background:#eff6ff">
-                      <th style="padding:4px;border:1px solid #ddd;font-size:9px;width:30px">#</th><th style="padding:4px;border:1px solid #ddd;text-align:left;font-size:9px">Medication</th><th style="padding:4px;border:1px solid #ddd;font-size:9px">Route</th><th style="padding:4px;border:1px solid #ddd;font-size:9px">Freq</th><th style="padding:4px;border:1px solid #ddd;font-size:9px">Duration</th><th style="padding:4px;border:1px solid #ddd;font-size:9px">Instructions</th>
-                    </tr></thead><tbody>${rxRows}</tbody></table>
-                    ${advice ? `<div style="font-size:9px;padding:6px;background:#fef3c7;border:1px solid #fbbf24;border-radius:4px;margin-bottom:8px"><b>Advice:</b> ${advice}</div>` : ''}
-                    ${followUpDate ? `<div style="font-size:9px;margin-bottom:8px"><b>Follow-up:</b> ${new Date(followUpDate).toLocaleDateString('en-IN', { weekday: 'long', day: '2-digit', month: 'short', year: 'numeric' })}</div>` : ''}
-                    <div style="margin-top:40px;text-align:right;font-size:10px"><div style="border-top:1px solid #000;display:inline-block;padding-top:4px;min-width:200px">Dr. ${staff?.full_name || ''}<br/>${staff?.specialisation || ''}</div></div>
-                  </div>`, `Rx-${patient.uhid}`);
-                }} className="px-4 py-2.5 bg-amber-500 text-white text-sm rounded-lg">Print Rx Pad</button>}
+                  className="px-8 py-2.5 bg-emerald-600 text-white text-sm rounded-lg font-medium disabled:opacity-40 hover:bg-emerald-700 transition-colors duration-200 cursor-pointer" title="Ctrl+Enter">
+                  {saving ? 'Signing...' : 'Sign & Complete'}
+                  <span className="ml-1.5 text-[9px] text-white/60 hidden sm:inline">Ctrl+Enter</span>
+                </button>
+                {prescriptions.length > 0 && <button onClick={() => setShowRxPrint(true)}
+                  className="px-4 py-2.5 bg-amber-500 text-white text-sm rounded-lg hover:bg-amber-600 transition-colors duration-200 cursor-pointer">Print Rx Pad</button>}
                 <button onClick={() => {
                   printEncounterSummary({
                     patientName: patient.name, uhid: patient.uhid, ageGender: `${patient.age}/${patient.gender}`,
@@ -708,6 +724,14 @@ function EMRInner() {
         </div>
 
         {/* Right sidebar */}
+        {/* Rx Print Modal */}
+        {showRxPrint && <RxPrint
+          patient={patient} prescriptions={prescriptions} diagnoses={diagnoses}
+          advice={advice} followUpDate={followUpDate}
+          doctorName={staff?.full_name || ''} doctorSpecialisation={staff?.specialisation || ''}
+          onClose={() => setShowRxPrint(false)}
+        />}
+
         {(showHistory || showImaging || showLab || showCopilot) && (
           <div className="w-80 flex-shrink-0 space-y-3">
             {showHistory && <div className="bg-white rounded-xl border p-3 max-h-96 overflow-y-auto">
