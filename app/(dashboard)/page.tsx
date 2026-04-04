@@ -175,11 +175,11 @@ export default function HomePage() {
           { href: '/ipd', label: 'New Admission', icon: BedDouble, color: 'text-indigo-600' },
           { href: '/billing', label: 'New Bill', icon: CreditCard, color: 'text-amber-600' },
         ].map((item) => (
-          <Link key={item.href} href={item.href}
+          <a key={item.href} href={item.href}
             className="flex items-center gap-2.5 px-3.5 py-2.5 bg-white rounded-xl border border-gray-100 hover:border-gray-200 hover:shadow-sm transition-all group">
             <item.icon size={16} className={item.color} />
             <span className="text-[12px] font-semibold text-gray-700 group-hover:text-gray-900">{item.label}</span>
-          </Link>
+          </a>
         ))}
       </div>
 
