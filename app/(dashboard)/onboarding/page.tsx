@@ -1,9 +1,11 @@
 'use client';
 import React from 'react';
+import { useRouter } from 'next/navigation';
 import { RoleGuard } from '@/components/ui/shared';
 import CentreOnboarding from '@/components/onboarding/centre-onboarding';
 
 function OnboardingInner() {
+  const router = useRouter();
   return (
     <div className="max-w-4xl mx-auto py-8">
       <div className="text-center mb-8">
