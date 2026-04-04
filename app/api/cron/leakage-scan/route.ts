@@ -31,15 +31,17 @@ export async function GET(request: Request) {
       .eq('centre_id', cid).is('bill_id', null).neq('status', 'reversed')
       .lte('created_at', new Date(Date.now() - 86400000).toISOString());
 
-    // 2. Active admissions without today's room charge
+    // 2. Active admissions without today's room charge (batch query — no N+1)
     const { data: admissions } = await sb.from('hmis_admissions')
       .select('id').eq('centre_id', cid).eq('status', 'active');
     let missingRoom = 0;
-    for (const adm of (admissions || [])) {
-      const { count } = await sb.from('hmis_charge_log')
-        .select('id', { count: 'exact', head: true })
-        .eq('admission_id', adm.id).eq('category', 'room').eq('service_date', todayStr);
-      if (count === 0) missingRoom++;
+    const admIds = (admissions || []).map(a => a.id);
+    if (admIds.length > 0) {
+      const { data: chargedAdmissions } = await sb.from('hmis_charge_log')
+        .select('admission_id').in('admission_id', admIds)
+        .eq('category', 'room').eq('service_date', todayStr);
+      const chargedSet = new Set((chargedAdmissions || []).map(c => c.admission_id));
+      missingRoom = admIds.filter(id => !chargedSet.has(id)).length;
     }
 
     // 3. Completed labs not billed
