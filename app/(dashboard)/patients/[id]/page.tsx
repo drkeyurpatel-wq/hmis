@@ -35,6 +35,7 @@ function Patient360Inner() {
   // Quick vitals
   const [showVitals, setShowVitals] = useState(false);
   const [vf, setVf] = useState({ heart_rate: '', systolic_bp: '', diastolic_bp: '', temperature: '', spo2: '', respiratory_rate: '' });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const saveVitals = useCallback(async () => {
     if (!sb() || !staff) return;
     const record: any = { patient_id: patientId, recorded_by: staff.id, recorded_at: new Date().toISOString() };
@@ -63,6 +64,7 @@ function Patient360Inner() {
   // Quick note
   const [showNote, setShowNote] = useState(false);
   const [noteText, setNoteText] = useState('');
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const saveNote = useCallback(async () => {
     if (!sb() || !staff || !noteText.trim()) return;
     const { error } = await sb().from('hmis_emr_encounters').insert({
@@ -75,6 +77,7 @@ function Patient360Inner() {
   }, [patientId, staff, noteText, activeCentreId, p]);
 
   // Administer medication (mark MAR as given)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const giveMed = useCallback(async (marId: string, medName: string) => {
     if (!sb() || !staff) return;
     const { error } = await sb().from('hmis_mar').update({

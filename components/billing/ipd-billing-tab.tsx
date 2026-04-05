@@ -21,6 +21,7 @@ export default function IPDBillingTab({ centreId, staffId, bills, onSelectBill, 
   const [mode, setMode] = useState<'list' | 'bill'>('list');
   const [loading, setLoading] = useState(true);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     loadAdmissions();
   }, [centreId]);

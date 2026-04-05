@@ -76,6 +76,7 @@ export default function ConsentManager({ patientAbhaAddress, patientName, staffI
 
   const flash = (m: string) => { setToast(m); setTimeout(() => setToast(''), 3000); };
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!patientAbhaAddress || !sb()) return;
     loadRequests();

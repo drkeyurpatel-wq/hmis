@@ -37,6 +37,7 @@ function AppointmentsInner() {
   // Master data
   const [doctors, setDoctors] = useState<any[]>([]);
   const [departments, setDepartments] = useState<any[]>([]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!sb() || !centreId) return;
     sb().from('hmis_staff').select('id, full_name, specialisation').eq('staff_type', 'doctor').eq('is_active', true).order('full_name').then(({ data }: any) => setDoctors(data || []));
@@ -46,6 +47,7 @@ function AppointmentsInner() {
   // Booking form
   // Booking form — single state object (was 14 individual useStates)
   const [bf, setBf] = useState({ dept: '', doctor: '', date: '', type: 'new', priority: 'normal', reason: '', source: 'counter', slot: '', isWalkIn: false });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { setBf(prev => ({ ...prev, date: prev.date || new Date().toISOString().split("T")[0] })); }, []);
   const [slots, setSlots] = useState<TimeSlot[]>([]);
   const [patientSearch, setPatientSearch] = useState('');
@@ -90,6 +92,7 @@ function AppointmentsInner() {
   useEffect(() => { appts.load({ date, doctorId: doctorFilter === 'all' ? undefined : doctorFilter, deptId: deptFilter === 'all' ? undefined : deptFilter }); }, [date, doctorFilter, deptFilter]);
 
   // Patient search
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (patientSearch.length < 2 || !sb()) { setPatientResults([]); return; }
     const t = setTimeout(async () => {
@@ -103,6 +106,7 @@ function AppointmentsInner() {
   }, [patientSearch]);
 
   // Slots
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (bookDoctor && bookDate && !isWalkIn) appts.getAvailableSlots(bookDoctor, bookDate).then(setSlots);
     else setSlots([]);

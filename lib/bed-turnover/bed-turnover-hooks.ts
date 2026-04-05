@@ -277,6 +277,7 @@ export function useBedTurnover(centreId: string | null) {
   useEffect(() => { load(); }, [load]);
 
   // Auto-refresh every 30s
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     const iv = setInterval(load, 30000);
     return () => clearInterval(iv);

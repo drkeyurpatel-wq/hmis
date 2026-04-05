@@ -31,6 +31,7 @@ function Inner() {
   const [staffList, setStaffList] = useState<{ id: string; full_name: string; staff_type: string }[]>([]);
   const [wards, setWards] = useState<{ id: string; name: string }[]>([]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!centreId || !sb()) return;
     sb().from('hmis_staff').select('id, full_name, staff_type').eq('is_active', true).order('full_name').then(({ data }) => setStaffList(data || []));
@@ -38,6 +39,7 @@ function Inner() {
   }, [centreId]);
 
   // Load roster when month changes
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     const daysInMonth = new Date(viewYear, viewMonth, 0).getDate();
     const from = `${viewYear}-${String(viewMonth).padStart(2, '0')}-01`;

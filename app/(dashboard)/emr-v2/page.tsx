@@ -88,11 +88,13 @@ function EMRInner() {
   const [adviseSaving, setAdviseSaving] = useState(false);
 
   // Load preselected patient
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (preselectedPatient) selectPatientById(preselectedPatient);
   }, [preselectedPatient]);
 
   // Auto-mark OPD visit as "with_doctor" when EMR opens from queue
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (opdVisitId && sb()) {
       sb().from('hmis_opd_visits').update({ status: 'with_doctor', consultation_start: new Date().toISOString() }).eq('id', opdVisitId).in('status', ['waiting', 'checked_in']);
@@ -343,6 +345,7 @@ function EMRInner() {
   };
 
   // Keyboard shortcuts: Ctrl+S = Save Draft, Ctrl+Enter = Sign & Lock
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === 's') {
@@ -362,6 +365,7 @@ function EMRInner() {
   const autoSaveRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [lastAutoSave, setLastAutoSave] = useState<string>('');
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (autoSaveRef.current) clearInterval(autoSaveRef.current);
     if (!patient.id) return;

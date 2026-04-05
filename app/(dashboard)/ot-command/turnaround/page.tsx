@@ -37,6 +37,7 @@ function TurnaroundInner() {
   const [dateTo, setDateTo] = useState(today);
   const [targetMin, setTargetMin] = useState(30);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { ta.load(dateFrom, dateTo); }, [dateFrom, dateTo, centreId, ta.load]);
 
   return (

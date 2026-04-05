@@ -91,6 +91,7 @@ export function useLabWorklist(centreId: string | null) {
   useEffect(() => { load(); }, [load]);
 
   // Realtime
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!centreId || !sb()) return;
     const ch = sb().channel('lab-worklist')

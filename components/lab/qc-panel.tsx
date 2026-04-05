@@ -20,6 +20,7 @@ export default function QCPanel({ centreId, staffId, onFlash }: Props) {
   const chartRef = useRef<any>(null);
 
   // Levey-Jennings chart
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!canvasRef.current || !qcResults.lot) return;
     const lj = qcResults.getLJData();

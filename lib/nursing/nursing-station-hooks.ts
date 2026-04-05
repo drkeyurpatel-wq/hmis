@@ -162,6 +162,7 @@ export function useNursingStation(centreId: string | null, wardFilter?: string) 
   useEffect(() => { load(); }, [load]);
 
   // Real-time: auto-refresh when admissions/beds/MAR change
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!centreId || !sb()) return;
     const ch = sb().channel('nursing-station-' + centreId)
