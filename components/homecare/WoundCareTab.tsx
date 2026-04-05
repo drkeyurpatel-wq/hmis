@@ -1,5 +1,6 @@
 'use client';
 import React from 'react';
+import { ClipboardList } from 'lucide-react';
 
 interface WoundCareTabProps {
   selectedEnrollId: string | null;
@@ -11,7 +12,7 @@ export default function WoundCareTab({ selectedEnrollId, records }: WoundCareTab
     <div>
       <h2 className="font-semibold text-sm mb-3">Wound Care Log</h2>
       {!selectedEnrollId ? <div className="text-center py-8 bg-white rounded-xl border text-gray-400 text-sm">Select a patient from Patients tab first</div> :
-      records.length === 0 ? <div className="text-center py-8 bg-white rounded-xl border text-gray-400 text-sm">No wound care records. Document during visit checkout.</div> :
+      records.length === 0 ? <div className="text-center py-12 bg-white rounded-xl border"><ClipboardList className="w-8 h-8 text-gray-300 mx-auto mb-2" /><p className="text-sm font-medium text-gray-500">No wound care logs</p><p className="text-xs text-gray-400 mt-1 max-w-xs mx-auto">Record wound assessments during home visits.</p></div> :
       <div className="space-y-3">{records.map((w: any) => (
         <div key={w.id} className="bg-white rounded-xl border p-4">
           <div className="flex items-center justify-between mb-2">

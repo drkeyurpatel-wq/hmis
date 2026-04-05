@@ -1,5 +1,6 @@
 'use client';
 import React, { useState } from 'react';
+import { CalendarCheck } from 'lucide-react';
 
 interface VisitsTabProps {
   selectedEnrollId: string | null;
@@ -78,7 +79,7 @@ export default function VisitsTab({ selectedEnrollId, enrollmentNumber, visits, 
             <button onClick={() => { setShowVisitForm(false); setVF({}); }} className="px-4 py-2 bg-gray-100 text-sm rounded-lg">Cancel</button>
           </div>
         </div>}
-        {visits.length === 0 ? <div className="text-center py-8 bg-white rounded-xl border text-gray-400 text-sm">No visits recorded</div> :
+        {visits.length === 0 ? <div className="text-center py-12 bg-white rounded-xl border"><CalendarCheck className="w-8 h-8 text-gray-300 mx-auto mb-2" /><p className="text-sm font-medium text-gray-500">No visits scheduled</p><p className="text-xs text-gray-400 mt-1 max-w-xs mx-auto">Enroll a patient first, then schedule home visits.</p></div> :
         <div className="space-y-2">{visits.map((v: any) => (
           <div key={v.id} className={`bg-white rounded-lg border p-3 ${v.needs_escalation ? 'border-red-300 bg-red-50/30' : ''}`}>
             <div className="flex items-center justify-between">

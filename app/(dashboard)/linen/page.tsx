@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { useAuthStore } from '@/lib/store/auth';
 import { RoleGuard } from '@/components/ui/shared';
+import { Package, ArrowLeftRight } from 'lucide-react';
 import {
   useLinenInventory, useLinenExchange, LINEN_TYPES, type LinenType,
 } from '@/lib/linen/linen-hooks';
@@ -121,7 +122,14 @@ function LinenInner() {
             </table>
           </div>
         ))}
-        {inv.inventory.length === 0 && <div className="bg-white rounded-2xl border p-8 text-center text-gray-400 text-sm">{inv.loading ? 'Loading...' : 'No inventory. Add items above.'}</div>}
+        {inv.inventory.length === 0 && <div className="bg-white rounded-2xl border p-8 text-center">
+          {inv.loading ? <p className="text-sm text-gray-400">Loading...</p> : <div className="flex flex-col items-center gap-2">
+            <Package size={32} className="text-gray-300" />
+            <p className="text-sm text-gray-500 font-medium">No linen inventory records</p>
+            <p className="text-xs text-gray-400 max-w-sm">Add initial stock counts to begin tracking linen across wards.</p>
+            <button onClick={() => setShowAdd(true)} className="mt-2 px-3 py-1.5 bg-teal-600 text-white text-xs rounded-lg font-medium hover:bg-teal-700 cursor-pointer">+ Add / Update</button>
+          </div>}
+        </div>}
       </div>}
 
       {/* ===== EXCHANGE LOG ===== */}
@@ -172,7 +180,14 @@ function LinenInner() {
               </tr>
             ))}</tbody>
           </table>
-          {ex.exchanges.length === 0 && <div className="p-8 text-center text-gray-400 text-sm">{ex.loading ? 'Loading...' : 'No exchanges today'}</div>}
+          {ex.exchanges.length === 0 && <div className="p-8 text-center">
+            {ex.loading ? <p className="text-sm text-gray-400">Loading...</p> : <div className="flex flex-col items-center gap-2">
+              <ArrowLeftRight size={28} className="text-gray-300" />
+              <p className="text-sm text-gray-500 font-medium">No linen exchanges logged</p>
+              <p className="text-xs text-gray-400 max-w-sm">Record daily linen exchanges between laundry and wards.</p>
+              <button onClick={() => setShowExAdd(true)} className="mt-2 px-3 py-1.5 bg-teal-600 text-white text-xs rounded-lg font-medium hover:bg-teal-700 cursor-pointer">+ Log Exchange</button>
+            </div>}
+          </div>}
         </div>
       </div>}
 

@@ -1,8 +1,9 @@
 'use client';
 import React, { useState, useEffect, useMemo } from 'react';
-import { RoleGuard } from '@/components/ui/shared';
+import { RoleGuard, SetupRequired } from '@/components/ui/shared';
 import { useAuthStore } from '@/lib/store/auth';
 import { useOTSchedule, useOTNotes, useOTUtilization } from '@/lib/ot/ot-hooks';
+import { Calendar, ShieldCheck, Package } from 'lucide-react';
 import { sb } from '@/lib/supabase/browser';
 import Link from 'next/link';
 
@@ -105,6 +106,16 @@ function OTInner() {
         ))}
       </div>
 
+      {schedule.rooms.length === 0 && (
+        <SetupRequired
+          moduleName="Operation Theatre"
+          prerequisites={[
+            { label: 'Configure OT rooms in Settings before booking surgeries', done: false, hint: 'Add at least one OT room with type, equipment, and availability' },
+          ]}
+          settingsHref="/settings/modules"
+        />
+      )}
+
       <div className="flex gap-0.5 mb-4 pb-0.5 overflow-x-auto scrollbar-thin">
         {tabs.map(([k,l,icon]) => <button key={k} onClick={() => setTab(k)}
           className={`px-2 py-2 text-[11px] font-medium whitespace-nowrap rounded-xl ${tab===k?'bg-teal-600 text-white shadow-sm':'bg-white text-gray-500 border border-gray-100 hover:bg-gray-50'}`}>{icon} {l}</button>)}
@@ -162,7 +173,11 @@ function OTInner() {
             </div>
           );
         })}
-        {schedule.rooms.length === 0 && <div className="text-center py-8 bg-white rounded-xl border text-gray-400 text-sm">No OT rooms configured</div>}
+        {schedule.rooms.length === 0 && <div className="flex flex-col items-center justify-center py-10 bg-white rounded-xl border" role="status">
+          <Calendar className="w-10 h-10 text-gray-300 mb-3" aria-hidden="true" />
+          <p className="text-sm font-medium text-gray-700">No OT bookings</p>
+          <p className="text-xs text-gray-400 mt-1 max-w-sm">Create a booking to begin the surgical workflow.</p>
+        </div>}
       </div>}
 
       {/* Selected booking detail panel */}
@@ -198,7 +213,16 @@ function OTInner() {
       </div>}
 
       {/* ===== CASE LIST ===== */}
-      {tab === 'board' && viewMode === 'list' && <div className="bg-white rounded-xl border overflow-hidden">
+      {tab === 'board' && viewMode === 'list' && schedule.bookings.length === 0 && schedule.rooms.length > 0 && (
+        <div className="flex flex-col items-center justify-center py-10 bg-white rounded-xl border" role="status">
+          <Calendar className="w-10 h-10 text-gray-300 mb-3" aria-hidden="true" />
+          <p className="text-sm font-medium text-gray-700">No OT bookings</p>
+          <p className="text-xs text-gray-400 mt-1 max-w-sm">Create a booking to begin the surgical workflow.</p>
+          <button onClick={() => setTab('new_booking')} className="mt-3 px-4 py-2 bg-teal-600 text-white text-sm rounded-lg hover:bg-teal-700 cursor-pointer">+ Book Surgery</button>
+        </div>
+      )}
+
+      {tab === 'board' && viewMode === 'list' && schedule.bookings.length > 0 && <div className="bg-white rounded-xl border overflow-hidden">
         <table className="w-full text-xs"><thead><tr className="bg-gray-50 border-b">
           <th className="p-2 text-left">Time</th><th className="p-2 text-left">Patient</th><th className="p-2 text-left">Procedure</th>
           <th className="p-2">OT</th><th className="p-2">Surgeon</th><th className="p-2">Anaes</th><th className="p-2">Type</th><th className="p-2">Status</th><th className="p-2">Duration</th>
@@ -289,7 +313,7 @@ function OTInner() {
       {/* ===== UTILIZATION ===== */}
       {tab === 'utilization' && <div className="space-y-4">
         <h2 className="font-semibold text-sm">OT Utilization — Last 30 Days</h2>
-        {utilization.roomUtilization.length === 0 ? <div className="text-center py-8 bg-white rounded-xl border text-gray-400 text-sm">No data</div> :
+        {utilization.roomUtilization.length === 0 ? <div className="flex flex-col items-center justify-center py-10 bg-white rounded-xl border" role="status"><Calendar className="w-10 h-10 text-gray-300 mb-3" aria-hidden="true" /><p className="text-sm font-medium text-gray-700">No utilization data</p><p className="text-xs text-gray-400 mt-1 max-w-sm">Utilization metrics appear after OT rooms are configured and surgeries are booked.</p></div> :
         <div className="grid grid-cols-2 gap-3">{utilization.roomUtilization.map((r, i) => {
           const pct = r.totalMin > 0 ? Math.round((r.usedMin / r.totalMin) * 100) : 0;
           return (
@@ -335,11 +359,21 @@ function OTInner() {
       {/* ===== IMPLANTS / SAFETY — Framework ===== */}
       {tab === 'admin' && adminView === 'implants' && <div className="bg-white rounded-xl border p-4">
         <h2 className="font-bold text-sm mb-3">Implant & Consumable Tracking</h2>
+        <div className="flex items-center gap-3 bg-gray-50 rounded-lg p-4 mb-3" role="status">
+          <Package className="w-5 h-5 text-gray-300 shrink-0" aria-hidden="true" />
+          <p className="text-xs text-gray-500">No implant records. Implants are logged during surgical procedures.</p>
+        </div>
         <p className="text-xs text-gray-500 mb-3">Implants are tracked per surgery in each OT booking detail page. Select a booking above to manage implants.</p>
         <div className="text-xs text-gray-400">Fields tracked: manufacturer, catalogue #, lot #, serial #, size, quantity, cost, MRP. Each implant is linked to the patient record for medicolegal traceability.</div>
       </div>}
       {tab === 'admin' && adminView === 'safety' && <div className="bg-white rounded-xl border p-4">
         <h2 className="font-bold text-sm mb-3">WHO Surgical Safety Checklist</h2>
+        {schedule.bookings.length === 0 && (
+          <div className="flex items-center gap-3 bg-gray-50 rounded-lg p-4 mb-3" role="status">
+            <ShieldCheck className="w-5 h-5 text-gray-300 shrink-0" aria-hidden="true" />
+            <p className="text-xs text-gray-500">Safety checklists are created automatically when an OT booking is confirmed.</p>
+          </div>
+        )}
         <p className="text-xs text-gray-500 mb-3">The WHO checklist runs in 3 phases per surgery — available in each OT booking detail page.</p>
         <div className="grid grid-cols-3 gap-3 text-xs">
           <div className="bg-blue-50 rounded-lg p-3"><div className="font-bold text-teal-700">Sign In</div><div className="text-gray-500 mt-1">Before anaesthesia — patient identity, consent, allergy, airway risk, blood loss risk, equipment check</div></div>

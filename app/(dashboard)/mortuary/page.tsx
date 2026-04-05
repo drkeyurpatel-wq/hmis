@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuthStore } from '@/lib/store/auth';
 import { RoleGuard } from '@/components/ui/shared';
+import { ClipboardList } from 'lucide-react';
 import { sb } from '@/lib/supabase/browser';
 import { useMortuary, type MortuaryRecord } from '@/lib/mortuary/mortuary-hooks';
 
@@ -183,7 +184,13 @@ function MortuaryInner() {
           </div>
         )}
         {view === 'current' && mort.records.filter(r => r.status !== 'released').length === 0 && (
-          <div className="bg-white rounded-2xl border p-8 text-center text-gray-400 text-sm">{mort.loading ? 'Loading...' : 'No bodies currently in mortuary'}</div>
+          <div className="bg-white rounded-2xl border p-8 text-center">
+            {mort.loading ? <p className="text-sm text-gray-400">Loading...</p> : <div className="flex flex-col items-center gap-2">
+              <ClipboardList size={32} className="text-gray-300" />
+              <p className="text-sm text-gray-500 font-medium">No mortuary records</p>
+              <p className="text-xs text-gray-400 max-w-sm">Records are created when a patient death is registered in the system.</p>
+            </div>}
+          </div>
         )}
 
         {/* Table for all records */}
@@ -206,7 +213,13 @@ function MortuaryInner() {
               </tr>
             ))}</tbody>
           </table>
-          {mort.records.length === 0 && <div className="p-8 text-center text-gray-400 text-sm">No records</div>}
+          {mort.records.length === 0 && <div className="p-8 text-center">
+            <div className="flex flex-col items-center gap-2">
+              <ClipboardList size={28} className="text-gray-300" />
+              <p className="text-sm text-gray-500 font-medium">No mortuary records</p>
+              <p className="text-xs text-gray-400 max-w-sm">Records are created when a patient death is registered in the system.</p>
+            </div>
+          </div>}
         </div>}
       </div>}
 

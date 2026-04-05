@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useAuthStore } from '@/lib/store/auth';
 import { useSupabaseQuery } from '@/lib/hooks/use-supabase-query';
 import { CardSkeleton, RoleGuard } from '@/components/ui/shared';
-import { Activity, Pill, Bug, Clock, Award, ArrowRight } from 'lucide-react';
+import { Activity, Pill, Bug, Clock, Award, ArrowRight, BrainCircuit } from 'lucide-react';
 
 interface EngineCard {
   title: string;
@@ -94,6 +94,13 @@ function BrainDashboardInner() {
   const qualityGrade = (latestQuality?.overall_grade as string) ?? '--';
   const qualityScore = (latestQuality?.overall_quality_score as number) ?? 0;
 
+  const hasNoData = !isLoading
+    && highRiskCount === 0
+    && alertCount === 0
+    && ssiCount === 0
+    && outlierCount === 0
+    && !latestQuality;
+
   return (
     <div className="p-6 max-w-7xl mx-auto">
       <div className="mb-6">
@@ -152,22 +159,55 @@ function BrainDashboardInner() {
         </div>
       )}
 
+      {hasNoData && (
+        <div className="bg-purple-50 border border-purple-200 rounded-xl p-6 mb-8 flex items-start gap-4">
+          <div className="w-10 h-10 rounded-lg bg-purple-100 flex items-center justify-center flex-shrink-0">
+            <BrainCircuit className="w-5 h-5 text-purple-600" />
+          </div>
+          <div>
+            <h3 className="text-sm font-semibold text-purple-900 mb-1">Awaiting Clinical Data</h3>
+            <p className="text-sm text-purple-700">
+              Clinical Intelligence models activate automatically as clinical data accumulates.
+              Each engine has a minimum data threshold before predictions become meaningful.
+            </p>
+          </div>
+        </div>
+      )}
+
       <h2 className="text-lg font-semibold text-gray-900 mb-4">Intelligence Engines</h2>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {ENGINES.map((engine) => (
-          <Link key={engine.href} href={engine.href}>
-            <div className="bg-white rounded-xl border p-5 hover:shadow-md transition-shadow duration-200 cursor-pointer h-full">
-              <div className="flex items-center gap-3 mb-3">
-                <engine.icon className="w-5 h-5 text-blue-600" />
-                <h3 className="text-sm font-semibold text-gray-900">{engine.title}</h3>
+        {ENGINES.map((engine) => {
+          const thresholds: Record<string, string> = {
+            '/brain/readmission': 'Needs 50+ discharged admissions with complete diagnosis and LOS data',
+            '/brain/antibiotics': 'Needs 100+ culture sensitivity results for antibiogram generation',
+            '/brain/infections': 'Needs HAI events to be reported via Infection Control module',
+            '/brain/los': 'Needs 100+ completed admissions with length of stay > 0 days',
+            '/brain/quality': 'Runs via NABH quality snapshot cron — check Settings for latest data',
+          };
+          const threshold = hasNoData ? thresholds[engine.href] : null;
+          return (
+            <Link key={engine.href} href={engine.href}>
+              <div className="bg-white rounded-xl border p-5 hover:shadow-md transition-shadow duration-200 cursor-pointer h-full">
+                <div className="flex items-center gap-3 mb-3">
+                  <engine.icon className="w-5 h-5 text-blue-600" />
+                  <h3 className="text-sm font-semibold text-gray-900">{engine.title}</h3>
+                </div>
+                <p className="text-xs text-gray-500">{engine.description}</p>
+                {threshold && (
+                  <div className="bg-purple-50 rounded-lg p-3 mt-3 text-xs text-purple-700">
+                    <p className="font-medium">Needs clinical data to activate</p>
+                    <p className="mt-0.5 text-purple-600">{threshold}</p>
+                  </div>
+                )}
+                {!threshold && (
+                  <div className="flex items-center gap-1 mt-3 text-xs text-blue-600 font-medium">
+                    View Dashboard <ArrowRight className="w-3 h-3" />
+                  </div>
+                )}
               </div>
-              <p className="text-xs text-gray-500">{engine.description}</p>
-              <div className="flex items-center gap-1 mt-3 text-xs text-blue-600 font-medium">
-                View Dashboard <ArrowRight className="w-3 h-3" />
-              </div>
-            </div>
-          </Link>
-        ))}
+            </Link>
+          );
+        })}
       </div>
     </div>
   );

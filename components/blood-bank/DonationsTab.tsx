@@ -1,5 +1,6 @@
 'use client';
 import React, { useState } from 'react';
+import { Droplets } from 'lucide-react';
 
 interface DonationsTabProps {
   donations: any[];
@@ -44,7 +45,7 @@ export default function DonationsTab({ donations, donors, collect, updateTTI, se
         </div>
         <button onClick={async () => { if (!donForm.donorId || !donForm.bagNumber) return; const d = await collect(donForm.donorId, donForm.bagNumber, donForm.aboGroup, donForm.rhType, staffId, donForm.volumeMl); if (d) { flash('Collected: ' + d.donation_number); setShowForm(false); } }} className="px-4 py-2 bg-green-600 text-white text-sm rounded-lg">Record Collection</button>
       </div>}
-      {donations.length === 0 ? <div className="text-center py-8 bg-white rounded-xl border text-gray-400 text-sm">No donations</div> :
+      {donations.length === 0 ? <div className="text-center py-12 bg-white rounded-xl border"><Droplets className="w-8 h-8 text-gray-300 mx-auto mb-2" /><p className="text-sm font-medium text-gray-500">No donations recorded</p><p className="text-xs text-gray-400 mt-1 max-w-xs mx-auto">Register a donor first, then record their donation.</p></div> :
       <div className="space-y-2">{donations.map((d: any) => (
         <div key={d.id} className="bg-white rounded-lg border p-3">
           <div className="flex items-center justify-between">

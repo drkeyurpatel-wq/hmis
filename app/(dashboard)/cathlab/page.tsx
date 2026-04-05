@@ -4,6 +4,7 @@ import { RoleGuard } from '@/components/ui/shared';
 import { useAuthStore } from '@/lib/store/auth';
 import { useCathLab, useCathLabInventory, useCathLabMonitoring, type CathProcedure, type VesselFinding, type StentEntry } from '@/lib/cathlab/cathlab-hooks';
 import { sb } from '@/lib/supabase/browser';
+import { CalendarOff, PackageOpen, Activity } from 'lucide-react';
 
 const STATUS_COLORS: Record<string, string> = { scheduled: 'bg-blue-100 text-blue-700', in_progress: 'bg-amber-100 text-amber-700', completed: 'bg-green-100 text-green-700', abandoned: 'bg-red-100 text-red-700', complication: 'bg-red-100 text-red-700' };
 const TYPE_COLORS: Record<string, string> = { cag: 'bg-blue-600', ptca: 'bg-red-600', pci: 'bg-red-600', ppi: 'bg-purple-600', icd: 'bg-purple-600', crt: 'bg-purple-600', ep_study: 'bg-indigo-600', tavi: 'bg-amber-600', bmc: 'bg-teal-600', structural: 'bg-orange-600' };
@@ -148,7 +149,7 @@ function CathLabInner() {
 
       {/* ═══ SCHEDULE TAB ═══ */}
       {tab === 'schedule' && (cath.loading ? <div className="animate-pulse h-48 bg-gray-200 rounded-xl" /> :
-        cath.procedures.length === 0 ? <div className="text-center py-12 bg-white rounded-xl border text-gray-400 text-sm">No procedures on {date}</div> :
+        cath.procedures.length === 0 ? <div className="flex flex-col items-center py-12 bg-white rounded-xl border text-center"><CalendarOff className="w-8 h-8 text-gray-300 mb-2" aria-hidden="true" /><p className="text-sm font-medium text-gray-700">No cathlab procedures recorded</p><p className="text-xs text-gray-400 mt-1 max-w-sm">Schedule a procedure to begin tracking.</p></div> :
         <div className="space-y-2">
           {cath.procedures.map(p => (
             <div key={p.id} className={`bg-white rounded-xl border p-4 hover:shadow-md transition-shadow cursor-pointer ${p.is_emergency ? 'border-l-4 border-l-red-500' : ''}`} onClick={() => { setSelected(p); setDetailTab('findings'); }}>
@@ -203,6 +204,7 @@ function CathLabInner() {
             }} className="w-full py-1.5 bg-teal-600 text-white text-xs rounded font-medium">Add</button></div>
           </div>
         </div>
+        {inv.items.length === 0 && <div className="flex flex-col items-center py-12 bg-white rounded-xl border text-center"><PackageOpen className="w-8 h-8 text-gray-300 mb-2" aria-hidden="true" /><p className="text-sm font-medium text-gray-700">No cathlab inventory (stents, balloons, wires)</p><p className="text-xs text-gray-400 mt-1 max-w-sm">Configure inventory in cathlab settings before procedures.</p></div>}
         {inv.items.length > 0 && <div className="bg-white rounded-xl border overflow-hidden">
           <table className="w-full text-xs"><thead><tr className="bg-gray-50 border-b">
             <th className="p-2 text-left">Type</th><th className="p-2">Brand</th><th className="p-2">Size</th>
@@ -409,6 +411,7 @@ function CathLabInner() {
 
           {/* HEMODYNAMICS */}
           {detailTab === 'hemo' && <div className="space-y-3">
+            {!selected.hemodynamics || Object.values(selected.hemodynamics).every(v => v === null || v === undefined) ? <div className="flex flex-col items-center py-8 text-center"><Activity className="w-8 h-8 text-gray-300 mb-2" aria-hidden="true" /><p className="text-sm font-medium text-gray-700">No hemodynamic monitoring records</p><p className="text-xs text-gray-400 mt-1 max-w-sm">Start a procedure to begin real-time monitoring.</p></div> : null}
             <h4 className="text-xs font-bold">Hemodynamic measurements</h4>
             <div className="grid grid-cols-3 gap-3">
               {[['ao_systolic','Ao Systolic','mmHg'],['ao_diastolic','Ao Diastolic','mmHg'],['lv_systolic','LV Systolic','mmHg'],['lvedp','LVEDP','mmHg'],['ra_mean','RA Mean','mmHg'],['rv_systolic','RV Systolic','mmHg'],['pa_systolic','PA Systolic','mmHg'],['pa_diastolic','PA Diastolic','mmHg'],['pcwp','PCWP','mmHg'],['cardiac_output','CO','L/min'],['cardiac_index','CI','L/min/m²'],['qp_qs','Qp:Qs','']].map(([key,label,unit]) => (

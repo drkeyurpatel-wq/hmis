@@ -1,6 +1,7 @@
 'use client';
 import React, { useState, useEffect, useMemo } from 'react';
 import { RoleGuard } from '@/components/ui/shared';
+import { ClipboardList, Activity, BarChart3 } from 'lucide-react';
 import { useAuthStore } from '@/lib/store/auth';
 import { usePhysio, BODY_REGIONS, SPORTS, COMP_LEVELS, MODALITIES, SESSION_TYPES, PLAN_TYPES, RTS_PHASES, OUTCOME_MEASURES } from '@/lib/physiotherapy/physio-hooks';
 import { sb } from '@/lib/supabase/browser';
@@ -177,7 +178,7 @@ function PhysioInner() {
 
       {/* ═══ SESSIONS TAB ═══ */}
       {tab === 'sessions' && (physio.sessions.length === 0
-        ? <div className="text-center py-12 bg-white rounded-xl border text-gray-400 text-sm">No sessions on {date}</div>
+        ? <div className="text-center py-12 bg-white rounded-xl border text-gray-400 text-sm">No sessions on {date}. Use the + Session button to schedule a physiotherapy session for a patient.</div>
         : <div className="space-y-2">{physio.sessions.map((s: any) => (
           <div key={s.id} className="bg-white rounded-xl border p-4 hover:shadow-md cursor-pointer" onClick={() => { setSelected(s); setDetailTab('treatment'); }}>
             <div className="flex items-center justify-between">
@@ -207,7 +208,12 @@ function PhysioInner() {
 
       {/* ═══ PLANS TAB ═══ */}
       {tab === 'plans' && (physio.plans.length === 0
-        ? <div className="text-center py-12 bg-white rounded-xl border text-gray-400 text-sm">No active plans</div>
+        ? <div className="flex flex-col items-center justify-center py-12 bg-white rounded-xl border" role="status">
+            <ClipboardList className="w-10 h-10 text-gray-300 mb-3" aria-hidden="true" />
+            <p className="text-sm font-medium text-gray-700">No active treatment plans</p>
+            <p className="text-xs text-gray-400 mt-1 max-w-sm">Search for a patient and create their physiotherapy plan.</p>
+            <button onClick={() => setShowNewPlan(true)} className="mt-3 px-4 py-2 bg-teal-600 text-white text-sm rounded-lg hover:bg-teal-700 cursor-pointer">+ New Plan</button>
+          </div>
         : <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">{physio.plans.map((p: any) => (
           <div key={p.id} className="bg-white rounded-xl border p-4">
             <div className="flex items-center justify-between mb-2">
@@ -461,6 +467,12 @@ function PhysioInner() {
           {/* FUNCTIONAL TESTS */}
           {detailTab === 'functional' && <div className="space-y-3">
             <h4 className="text-xs font-bold">Functional tests ({(selected.functional_tests || []).length})</h4>
+            {(selected.functional_tests || []).length === 0 && (
+              <div className="flex items-center gap-3 bg-gray-50 rounded-lg p-4" role="status">
+                <Activity className="w-5 h-5 text-gray-300 shrink-0" aria-hidden="true" />
+                <p className="text-xs text-gray-500">No Functional Movement Screen assessments recorded. Create a treatment plan first, then assess the patient.</p>
+              </div>
+            )}
             {(selected.functional_tests || []).map((t: any, i: number) => (
               <div key={i} className="bg-amber-50 rounded-lg p-2 text-xs flex items-center gap-2">
                 <span className="font-bold capitalize">{t.test?.replace(/_/g, ' ')}</span>
@@ -482,6 +494,12 @@ function PhysioInner() {
 
           {/* OUTCOME MEASURES */}
           {detailTab === 'outcome' && <div className="space-y-3">
+            {!selected.patient_reported?.pain_current && !selected.patient_reported?.pain_worst && !selected.patient_reported?.confidence && !selected.patient_reported?.function_level && (
+              <div className="flex items-center gap-3 bg-gray-50 rounded-lg p-4" role="status">
+                <BarChart3 className="w-5 h-5 text-gray-300 shrink-0" aria-hidden="true" />
+                <p className="text-xs text-gray-500">No outcome measurements recorded. Track patient progress by recording outcomes during treatment sessions.</p>
+              </div>
+            )}
             <h4 className="text-xs font-bold">Patient-reported</h4>
             <div className="grid grid-cols-3 gap-3">
               {[['pain_current','Pain now','/10'],['pain_worst','Worst pain','/10'],['confidence','Confidence','/10']].map(([key,label,unit]) => (

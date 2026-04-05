@@ -1,6 +1,7 @@
 'use client';
 import React, { useState, useMemo } from 'react';
-import { RoleGuard } from '@/components/ui/shared';
+import { RoleGuard, EmptyState } from '@/components/ui/shared';
+import { Package, RotateCw, ArrowLeftRight } from 'lucide-react';
 import { useAuthStore } from '@/lib/store/auth';
 import { useCssd, type InstrumentSet, type SterilizationCycle, type IssueReturn } from '@/lib/cssd/cssd-hooks';
 
@@ -119,7 +120,7 @@ function CssdInner() {
         <div className="flex gap-1">{['all', 'available', 'in_use', 'sterilizing', 'expired'].map(s =>
           <button key={s} onClick={() => setStatusFilter(s)} className={`px-2 py-1 text-[10px] rounded-lg ${statusFilter === s ? 'bg-teal-100 text-teal-700 font-bold' : 'bg-white border text-gray-500'}`}>{s === 'all' ? 'All' : s.replace('_', ' ')}</button>
         )}</div>
-        {filteredSets.length === 0 ? <div className="text-center py-12 bg-white rounded-xl border text-gray-400 text-sm">No sets found</div> :
+        {filteredSets.length === 0 ? <EmptyState icon={Package} title="No instrument sets configured" description="Add instrument sets in the master data before starting sterilization cycles." action={{ label: 'New Set', onClick: () => setShowNewSet(true) }} /> :
         <div className="bg-white rounded-xl border overflow-x-auto">
           <table className="w-full text-xs"><thead><tr className="bg-gray-50 border-b">
             <th className="p-2 text-left">Code</th><th className="p-2 text-left">Name</th><th className="p-2">Dept</th>
@@ -155,7 +156,7 @@ function CssdInner() {
       </>}
 
       {/* ═══ CYCLES TAB ═══ */}
-      {tab === 'cycles' && (cssd.cycles.length === 0 ? <div className="text-center py-12 bg-white rounded-xl border text-gray-400 text-sm">No cycles — start one</div> :
+      {tab === 'cycles' && (cssd.cycles.length === 0 ? <EmptyState icon={RotateCw} title="No sterilization cycles recorded" description="Configure autoclaves and instrument sets first." action={{ label: 'Start Cycle', onClick: () => setShowNewCycle(true) }} /> :
         <div className="bg-white rounded-xl border overflow-x-auto">
           <table className="w-full text-xs"><thead><tr className="bg-gray-50 border-b">
             <th className="p-2">Cycle #</th><th className="p-2">Autoclave</th><th className="p-2">Type</th>
@@ -194,7 +195,7 @@ function CssdInner() {
       )}
 
       {/* ═══ ISSUE/RETURN TAB ═══ */}
-      {tab === 'issue_return' && <div className="space-y-4">
+      {tab === 'issue_return' && (cssd.issues.length === 0 ? <EmptyState icon={ArrowLeftRight} title="No decontamination tracking" description="Register scopes/instruments first." /> : <div className="space-y-4">
         {pendingReturns.length > 0 && <div className="bg-amber-50 rounded-xl border border-amber-200 p-4">
           <h3 className="text-sm font-bold text-amber-800 mb-2">Pending Returns ({pendingReturns.length})</h3>
           <div className="space-y-1">{pendingReturns.map(i => (
@@ -229,7 +230,7 @@ function CssdInner() {
             </tr>
           ))}</tbody></table>
         </div>
-      </div>}
+      </div>)}
 
       {/* ═══ AUTOCLAVES TAB ═══ */}
       {tab === 'autoclaves' && (cssd.autoclaves.length === 0

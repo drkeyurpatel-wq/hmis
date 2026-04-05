@@ -251,6 +251,9 @@ export default function ABHAVerification({ patientId, patientName, patientPhone,
         {/* ===== MENU ===== */}
         {mode === 'menu' && (
           <div className="space-y-3">
+            <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2.5 text-xs text-amber-800 leading-relaxed">
+              ABDM integration is pending sandbox registration. ABHA verification and linking will be available once the NHCX sandbox connection is configured (HFR ID: IN2410013685).
+            </div>
             <p className="text-sm text-gray-600">Choose how to link ABHA for this patient:</p>
             <div className="grid grid-cols-2 gap-3">
               <button onClick={() => { reset(); setMode('create_aadhaar'); }} className="p-4 border-2 border-dashed rounded-xl hover:border-blue-400 hover:bg-blue-50 text-left transition-colors">
@@ -403,6 +406,9 @@ export default function ABHAVerification({ patientId, patientName, patientPhone,
             <div className="flex items-center gap-2">
               <button onClick={() => { reset(); stopCamera(); setMode('menu'); }} className="text-gray-400 hover:text-gray-600 text-sm">← Back</button>
               <h3 className="font-bold text-sm">Scan & Share — QR Code</h3>
+            </div>
+            <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-xs text-amber-800 leading-relaxed">
+              ABDM integration is pending sandbox registration. ABHA scanning will be available once the NHCX sandbox connection is configured.
             </div>
             <div className="bg-gray-50 rounded-xl border-2 border-dashed p-4 text-center">
               {!cameraActive ? (

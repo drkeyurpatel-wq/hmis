@@ -1,5 +1,6 @@
 'use client';
 import React from 'react';
+import { Package } from 'lucide-react';
 import { BLOOD_GROUPS } from '@/lib/lab/blood-bank-hooks';
 
 interface InventoryTabProps {
@@ -11,9 +12,14 @@ interface InventoryTabProps {
 const DISPLAY_COMPONENTS = ['whole_blood', 'prbc', 'ffp', 'platelet_concentrate', 'cryoprecipitate', 'sdp'] as const;
 
 export default function InventoryTab({ inventory, components, groupColor }: InventoryTabProps) {
+  const totalUnits = inventory.reduce((s, i) => s + i.units, 0);
+
   return (
     <div>
       <h2 className="font-semibold text-sm mb-3">Blood Inventory — Available Stock</h2>
+      {totalUnits === 0 && components.length === 0 && (
+        <div className="text-center py-12 bg-white rounded-xl border mb-4"><Package className="w-8 h-8 text-gray-300 mx-auto mb-2" /><p className="text-sm font-medium text-gray-500">Blood bank inventory is empty</p><p className="text-xs text-gray-400 mt-1 max-w-sm mx-auto">Donations and component processing will populate the inventory.</p></div>
+      )}
       {/* Matrix: Groups × Components */}
       <div className="bg-white rounded-xl border overflow-x-auto mb-4">
         <table className="w-full text-xs">

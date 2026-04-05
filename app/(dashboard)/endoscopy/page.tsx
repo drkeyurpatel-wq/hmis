@@ -4,6 +4,7 @@ import { RoleGuard } from '@/components/ui/shared';
 import { useAuthStore } from '@/lib/store/auth';
 import { useEndoscopy, useDecontamination, type EndoProcedure } from '@/lib/endoscopy/endoscopy-hooks';
 import { sb } from '@/lib/supabase/browser';
+import { CalendarOff, ShieldAlert } from 'lucide-react';
 
 const TYPE_COLORS: Record<string, string> = { ogd: 'bg-blue-600', colonoscopy: 'bg-purple-600', ercp: 'bg-amber-600', eus: 'bg-teal-600', bronchoscopy: 'bg-indigo-600', sigmoidoscopy: 'bg-pink-600' };
 const STATUS_COLORS: Record<string, string> = { scheduled: 'bg-blue-100 text-blue-700', in_progress: 'bg-amber-100 text-amber-700', completed: 'bg-green-100 text-green-700', cancelled: 'bg-red-100 text-red-700' };
@@ -145,7 +146,7 @@ function EndoInner() {
 
       {/* ═══ SCHEDULE TAB ═══ */}
       {tab === 'schedule' && (endo.loading ? <div className="animate-pulse h-48 bg-gray-200 rounded-xl" /> :
-        endo.procedures.length === 0 ? <div className="text-center py-12 bg-white rounded-xl border text-gray-400 text-sm">No procedures on {date}</div> :
+        endo.procedures.length === 0 ? <div className="flex flex-col items-center py-12 bg-white rounded-xl border text-center"><CalendarOff className="w-8 h-8 text-gray-300 mb-2" aria-hidden="true" /><p className="text-sm font-medium text-gray-700">No endoscopy procedures scheduled</p><p className="text-xs text-gray-400 mt-1 max-w-sm">Register endoscopes in equipment settings to begin scheduling.</p></div> :
         <div className="space-y-2">
           {endo.procedures.map(p => (
             <div key={p.id} className={`bg-white rounded-xl border p-4 hover:shadow-md cursor-pointer ${p.is_emergency ? 'border-l-4 border-l-red-500' : ''}`} onClick={() => { setSelected(p); setDetailTab('findings'); }}>
@@ -225,6 +226,7 @@ function EndoInner() {
             }} className="w-full py-1.5 bg-teal-600 text-white text-xs rounded font-medium">Log</button></div>
           </div>
         </div>
+        {decon.logs.length === 0 && <div className="flex flex-col items-center py-12 bg-white rounded-xl border text-center"><ShieldAlert className="w-8 h-8 text-gray-300 mb-2" aria-hidden="true" /><p className="text-sm font-medium text-gray-700">No decontamination logs</p><p className="text-xs text-gray-400 mt-1 max-w-sm">Log scope cleaning after each procedure for infection control compliance.</p></div>}
         {decon.logs.length > 0 && <div className="bg-white rounded-xl border overflow-hidden">
           <table className="w-full text-xs"><thead><tr className="bg-gray-50 border-b">
             <th className="p-2">Time</th><th className="p-2">Scope</th><th className="p-2">Type</th><th className="p-2">Method</th>

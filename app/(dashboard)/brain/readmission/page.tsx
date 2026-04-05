@@ -137,8 +137,8 @@ function ReadmissionInner() {
         <TableSkeleton rows={8} cols={6} />
       ) : isEmpty ? (
         <EmptyState
-          title="No readmission risk data"
-          description="Risk scores are calculated on patient discharge. Data will appear as patients are discharged."
+          title="No readmission risk scores generated yet"
+          description="The engine runs automatically when sufficient clinical data is available. Risk scores are calculated on patient discharge."
         />
       ) : (
         <div className="bg-white rounded-xl border overflow-hidden">

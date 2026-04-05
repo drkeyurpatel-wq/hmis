@@ -139,8 +139,8 @@ function QualityScorecardInner() {
         <TableSkeleton rows={16} cols={4} />
       ) : isEmpty ? (
         <EmptyState
-          title="No quality data"
-          description="Generate a monthly quality scorecard to see NABH indicators here."
+          title="No quality indicators generated yet"
+          description="The engine runs automatically when sufficient clinical data is available. Monthly scorecards are generated from admissions, outcomes, and compliance data."
         />
       ) : error ? (
         <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-sm text-red-700">{error}</div>

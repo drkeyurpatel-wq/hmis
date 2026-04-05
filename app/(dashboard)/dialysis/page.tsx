@@ -1,6 +1,7 @@
 'use client';
 import React, { useState, useEffect, useMemo } from 'react';
-import { RoleGuard } from '@/components/ui/shared';
+import { RoleGuard, EmptyState } from '@/components/ui/shared';
+import { Droplets, Users, Cog } from 'lucide-react';
 import { useAuthStore } from '@/lib/store/auth';
 import { useDialysis, useDialysisMonitoring, useDialysisPatients, type DialysisSession } from '@/lib/dialysis/dialysis-hooks';
 import { sb } from '@/lib/supabase/browser';
@@ -184,7 +185,7 @@ function DialysisInner() {
 
       {/* ═══ SESSIONS TABLE ═══ */}
       {tab === 'sessions' && (dial.loading ? <div className="animate-pulse h-48 bg-gray-200 rounded-xl" /> :
-        dial.sessions.length === 0 ? <div className="text-center py-12 bg-white rounded-xl border text-gray-400 text-sm">No sessions on {date}</div> :
+        dial.sessions.length === 0 ? <EmptyState icon={Droplets} title="No dialysis sessions" description="Configure dialysis machines and enroll patients first." action={{ label: 'Schedule Session', onClick: () => setShowNew(true) }} /> :
         <div className="bg-white rounded-xl border overflow-x-auto">
           <table className="w-full text-xs"><thead><tr className="bg-gray-50 border-b">
             <th className="p-2 text-left">Patient</th><th className="p-2">M/C</th><th className="p-2">Shift</th>
@@ -214,7 +215,7 @@ function DialysisInner() {
       )}
 
       {/* ═══ MACHINES TAB ═══ */}
-      {tab === 'machines' && <div className="bg-white rounded-xl border overflow-hidden">
+      {tab === 'machines' && (dial.machines.length === 0 ? <EmptyState icon={Cog} title="No dialysis machines configured" description="No water quality records. Log water quality checks to maintain compliance." /> : <div className="bg-white rounded-xl border overflow-hidden">
         <table className="w-full text-xs"><thead><tr className="bg-gray-50 border-b">
           <th className="p-2 text-left">Machine</th><th className="p-2">Brand/Model</th><th className="p-2">Serial</th>
           <th className="p-2">Status</th><th className="p-2">Sessions</th><th className="p-2">Last Maint</th><th className="p-2">Next Maint</th>
@@ -233,11 +234,11 @@ function DialysisInner() {
             </tr>
           );
         })}</tbody></table>
-      </div>}
+      </div>)}
 
       {/* ═══ CHRONIC PATIENTS TAB ═══ */}
       {tab === 'patients' && (dialPatients.patients.length === 0
-        ? <div className="text-center py-12 bg-white rounded-xl border text-gray-400 text-sm">No chronic dialysis patients registered</div>
+        ? <EmptyState icon={Users} title="No dialysis patients enrolled" description="Search for a patient and create their dialysis enrollment." />
         : <div className="bg-white rounded-xl border overflow-hidden">
           <table className="w-full text-xs"><thead><tr className="bg-gray-50 border-b">
             <th className="p-2 text-left">Patient</th><th className="p-2">CKD Stage</th><th className="p-2">Etiology</th>

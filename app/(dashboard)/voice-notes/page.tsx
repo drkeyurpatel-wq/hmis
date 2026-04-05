@@ -6,7 +6,7 @@ import { sb } from '@/lib/supabase/browser';
 import {
   Mic, MicOff, Square, Play, Pause, Wand2, Check, X, Edit3,
   Stethoscope, Activity, Pill, FlaskConical, FileText, ChevronRight,
-  Loader2, Volume2, Sparkles, RotateCcw,
+  Loader2, Volume2, Sparkles, RotateCcw, Info,
 } from 'lucide-react';
 
 interface StructuredNote {
@@ -385,6 +385,21 @@ function VoiceNotesInner() {
                 <div className="text-xs text-gray-300 mt-1">Record → Structure with AI → Review → Save</div>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Empty state — no voice notes recorded yet */}
+      {!patient && !saved && (
+        <div className="bg-gray-50 rounded-2xl border-2 border-dashed border-gray-200 p-10 text-center">
+          <Mic size={36} className="text-gray-300 mx-auto mb-3" />
+          <div className="text-sm font-medium text-gray-500">No voice notes recorded yet</div>
+          <div className="text-xs text-gray-400 mt-2 max-w-md mx-auto leading-relaxed">
+            Use the microphone button to record clinical notes. Select a patient above, then speak naturally — the AI will structure your dictation into SOAP format automatically.
+          </div>
+          <div className="flex items-center justify-center gap-1.5 mt-4 text-[10px] text-gray-400">
+            <Info size={12} className="text-gray-300" />
+            <span>Record → Structure with AI → Review → Save to EMR</span>
           </div>
         </div>
       )}

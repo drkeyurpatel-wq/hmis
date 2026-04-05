@@ -89,7 +89,14 @@ function VisitorInner() {
       {/* ACTIVE BOARD */}
       {tab === 'active' && (
         <div className="space-y-2">
-          {filtered.length === 0 ? <div className="text-center py-12 bg-white rounded-2xl border text-gray-400">No active visitors</div> :
+          {filtered.length === 0 ? (
+            <div className="text-center py-16 bg-white rounded-2xl border">
+              <Users size={32} className="mx-auto text-gray-300 mb-3" />
+              <h3 className="text-sm font-medium text-gray-900">No visitor passes issued yet</h3>
+              <p className="text-xs text-gray-400 mt-1 max-w-sm mx-auto">Issue a visitor pass to begin tracking hospital visitors.</p>
+              <button onClick={() => setShowNew(true)} className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-teal-600 text-white text-sm rounded-xl font-semibold hover:bg-teal-700 cursor-pointer"><Plus size={14} /> Issue Pass</button>
+            </div>
+          ) :
           filtered.map(p => (
             <div key={p.id} className={`bg-white rounded-xl border p-4 flex items-center gap-4 ${['icu', 'nicu', 'isolation'].includes(p.pass_type) ? 'border-red-200 bg-red-50/20' : ''}`}>
               <div className="w-10 h-10 rounded-full bg-teal-100 flex items-center justify-center shrink-0">

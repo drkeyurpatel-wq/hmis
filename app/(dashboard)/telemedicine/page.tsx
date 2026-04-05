@@ -134,7 +134,14 @@ function TeleInner() {
               </div>
             );
           })}
-          {tele.consults.length === 0 && <div className="text-center py-12 bg-white rounded-2xl border text-gray-400">No teleconsults scheduled today</div>}
+          {tele.consults.length === 0 && (
+            <div className="text-center py-16 bg-white rounded-2xl border">
+              <Video size={32} className="mx-auto text-gray-300 mb-3" />
+              <h3 className="text-sm font-medium text-gray-900">No teleconsultation sessions yet</h3>
+              <p className="text-xs text-gray-400 mt-1 max-w-sm mx-auto">Schedule a teleconsult to begin virtual patient care. Video integration requires configuration in Settings.</p>
+              <button onClick={() => setShowSchedule(true)} className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-teal-600 text-white text-sm rounded-xl font-semibold hover:bg-teal-700 cursor-pointer"><Plus size={14} /> Schedule Teleconsult</button>
+            </div>
+          )}
         </div>
       )}
 

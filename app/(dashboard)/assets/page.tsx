@@ -106,7 +106,14 @@ function AssetInner() {
                   <td><span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${STATUS_BADGE[a.status] || 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-100 text-gray-600'} capitalize text-[8px]`}>{a.status?.replace(/_/g, ' ')}</span></td>
                 </tr>
               );
-            })}{ast.assets.length === 0 && <tr><td colSpan={10} className="text-center py-12 text-gray-400">No assets found</td></tr>}</tbody>
+            })}{ast.assets.length === 0 && <tr><td colSpan={10} className="py-12 text-center">
+              <div className="flex flex-col items-center gap-2">
+                <Package size={32} className="text-gray-300" />
+                <p className="text-sm text-gray-500 font-medium">No assets registered</p>
+                <p className="text-xs text-gray-400 max-w-sm">Register medical equipment and assets to track maintenance schedules and lifecycle costs.</p>
+                <button onClick={() => setShowNew(true)} className="mt-2 flex items-center gap-1.5 px-3 py-1.5 bg-teal-600 text-white text-xs rounded-lg font-medium hover:bg-teal-700 cursor-pointer"><Plus size={13} /> Register Asset</button>
+              </div>
+            </td></tr>}</tbody>
           </table>
         </div>
       )}
@@ -126,7 +133,7 @@ function AssetInner() {
                   </div>
                 ))}</div>
               </div>
-            ) : <div className="text-center py-8 text-gray-300 text-xs">No data</div>}
+            ) : <div className="flex flex-col items-center gap-1.5 py-8"><Package size={24} className="text-gray-300" /><p className="text-xs text-gray-400">No assets registered. Register assets to view category analytics.</p></div>}
           </div>
           <div className="bg-white rounded-2xl border p-5">
             <h3 className="text-sm font-bold mb-3">Assets by Department</h3>
@@ -136,7 +143,7 @@ function AssetInner() {
                 <YAxis type="category" dataKey="dept" tick={{ fontSize: 9, fill: '#64748b' }} width={80} axisLine={false} tickLine={false} />
                 <Bar dataKey="count" fill="#0d9488" radius={[0, 4, 4, 0]} barSize={14} />
               </BarChart></ResponsiveContainer>
-            ) : <div className="text-center py-8 text-gray-300 text-xs">No data</div>}
+            ) : <div className="flex flex-col items-center gap-1.5 py-8"><Package size={24} className="text-gray-300" /><p className="text-xs text-gray-400">No assets registered. Register assets to view department distribution.</p></div>}
           </div>
           {/* Depreciation summary */}
           <div className="col-span-2 bg-white rounded-2xl border p-5">

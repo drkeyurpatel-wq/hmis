@@ -1,5 +1,6 @@
 'use client';
 import React, { useState } from 'react';
+import { Users } from 'lucide-react';
 import { BLOOD_GROUPS } from '@/lib/lab/blood-bank-hooks';
 
 interface DonorsTabProps {
@@ -49,7 +50,7 @@ export default function DonorsTab({ donors, register, groupColor, flash }: Donor
         </div>
         <button onClick={async () => { const d = await register(dForm); if (d) { flash('Donor registered: ' + d.donor_number); setShowForm(false); } }} className="px-4 py-2 bg-green-600 text-white text-sm rounded-lg">Register Donor</button>
       </div>}
-      {donors.length === 0 ? <div className="text-center py-8 bg-white rounded-xl border text-gray-400 text-sm">No donors registered</div> :
+      {donors.length === 0 ? <div className="text-center py-12 bg-white rounded-xl border"><Users className="w-8 h-8 text-gray-300 mx-auto mb-2" /><p className="text-sm font-medium text-gray-500">No donors registered yet</p><p className="text-xs text-gray-400 mt-1 max-w-xs mx-auto">Register your first donor to begin the blood bank workflow.</p></div> :
       <div className="bg-white rounded-xl border overflow-hidden"><table className="w-full text-xs"><thead><tr className="bg-gray-50 border-b">
         <th className="p-2 text-left">Donor #</th><th className="p-2 text-left">Name</th><th className="p-2">Group</th><th className="p-2">Type</th><th className="p-2">Donations</th><th className="p-2">Last</th><th className="p-2">Status</th>
       </tr></thead><tbody>{donors.map((d: any) => (

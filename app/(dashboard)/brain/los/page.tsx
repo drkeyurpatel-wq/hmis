@@ -107,8 +107,8 @@ function LOSOptimizationInner() {
         <TableSkeleton rows={8} cols={7} />
       ) : isEmpty ? (
         <EmptyState
-          title="No LOS predictions"
-          description="Predictions are generated on new admissions. Data will appear as patients are admitted."
+          title="No length-of-stay predictions generated yet"
+          description="The engine runs automatically when sufficient clinical data is available. Predictions are generated as patients are admitted."
         />
       ) : error ? (
         <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-sm text-red-700">{error}</div>

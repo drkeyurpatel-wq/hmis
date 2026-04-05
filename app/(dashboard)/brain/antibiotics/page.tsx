@@ -158,8 +158,8 @@ function AntibioticStewardshipInner() {
         <TableSkeleton rows={8} cols={6} />
       ) : isEmpty ? (
         <EmptyState
-          title="No antibiotic alerts"
-          description="Run the antibiotic stewardship scan to generate alerts from active prescriptions."
+          title="No antibiotic alerts generated yet"
+          description="The engine runs automatically when sufficient clinical data is available. Alerts are generated from active antibiotic prescriptions."
         />
       ) : error ? (
         <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-sm text-red-700">{error}</div>

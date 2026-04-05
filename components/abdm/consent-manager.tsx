@@ -202,11 +202,22 @@ export default function ConsentManager({ patientAbhaAddress, patientName, staffI
       )}
 
       {/* Consent request list */}
+      {/* Health records empty state */}
+      {!loading && requests.length === 0 && !showNew && (
+        <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 text-xs text-blue-800 leading-relaxed">
+          No health records linked via ABDM. Records will appear here once ABHA integration is active.
+        </div>
+      )}
+
+      {/* Consent request list */}
       {loading ? (
         <div className="animate-pulse h-32 bg-gray-100 rounded-xl" />
       ) : requests.length === 0 ? (
-        <div className="text-center py-8 bg-gray-50 rounded-xl text-gray-400 text-sm">
-          No consent requests yet. Request records from other facilities.
+        <div className="text-center py-8 bg-gray-50 rounded-xl px-4">
+          <div className="text-sm text-gray-500 font-medium">No consent requests</div>
+          <div className="text-xs text-gray-400 mt-1.5 max-w-sm mx-auto leading-relaxed">
+            ABDM consent management will be available after sandbox registration (HFR ID: IN2410013685). Once active, you can request health records from other facilities via the ABDM consent flow.
+          </div>
         </div>
       ) : (
         <div className="space-y-2">

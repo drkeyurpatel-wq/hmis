@@ -1,6 +1,6 @@
 'use client';
 import React, { useState } from 'react';
-import { RoleGuard } from '@/components/ui/shared';
+import { RoleGuard, SetupRequired } from '@/components/ui/shared';
 import { useAuthStore } from '@/lib/store/auth';
 import { useAmbulances } from '@/lib/ambulance/ambulance-hooks';
 import { Plus, X, Search, Truck, Phone, MapPin, Clock, ChevronRight } from 'lucide-react';
@@ -42,6 +42,19 @@ function AmbulanceInner() {
   return (
     <div className="overflow-x-auto max-w-[1400px] mx-auto space-y-4">
       {toast && <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-teal-600 text-white px-5 py-2.5 rounded-xl shadow-lg text-sm font-medium">{toast}</div>}
+
+      {amb.vehicles.length === 0 && (
+        <SetupRequired
+          moduleName="Ambulance & Transport"
+          icon={Truck}
+          prerequisites={[
+            { label: 'Register ambulances', done: false, hint: 'Add vehicles to your fleet' },
+            { label: 'Configure GPS tracking', done: false, hint: 'Enable real-time location' },
+            { label: 'Set up dispatch protocol', done: false, hint: 'Define response workflows' },
+          ]}
+          settingsHref="/settings/modules"
+        />
+      )}
 
       <div className="flex items-center justify-between">
         <div><h1 className="text-xl font-bold tracking-tight">Ambulance & Transport</h1><p className="text-xs text-gray-400">{amb.stats.totalVehicles} vehicles · {amb.stats.todayRequests} trips today</p></div>
@@ -89,7 +102,13 @@ function AmbulanceInner() {
               </div>
             );
           })}
-          {amb.vehicles.length === 0 && <div className="col-span-4 text-center py-12 bg-white rounded-2xl border text-gray-400">No vehicles configured</div>}
+          {amb.vehicles.length === 0 && (
+            <div className="col-span-4 text-center py-16 bg-white rounded-2xl border">
+              <Truck size={32} className="mx-auto text-gray-300 mb-3" />
+              <h3 className="text-sm font-medium text-gray-900">No ambulances configured</h3>
+              <p className="text-xs text-gray-400 mt-1 max-w-sm mx-auto">Register your ambulance fleet to enable dispatch and tracking.</p>
+            </div>
+          )}
         </div>
       )}
 

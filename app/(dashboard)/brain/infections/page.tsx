@@ -283,8 +283,8 @@ function InfectionControlInner() {
         <TableSkeleton rows={8} cols={6} />
       ) : isEmpty ? (
         <EmptyState
-          title="No infection events recorded"
-          description="Use the 'Report Infection' button to log HAI events. Auto-detection from lab cultures will also populate this list."
+          title="No infection events recorded yet"
+          description="The engine runs automatically when sufficient clinical data is available. You can also manually report events using the button above."
         />
       ) : error ? (
         <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-sm text-red-700">{error}</div>

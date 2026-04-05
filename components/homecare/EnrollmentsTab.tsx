@@ -1,5 +1,6 @@
 'use client';
 import React, { useState, useEffect } from 'react';
+import { UserPlus } from 'lucide-react';
 import { sb } from '@/lib/supabase/browser';
 
 interface EnrollmentsTabProps {
@@ -72,7 +73,7 @@ export default function EnrollmentsTab({ enrollments, enroll, updateStatus, staf
           <textarea value={eForm.special_instructions} onChange={e => setEF(f => ({...f, special_instructions: e.target.value}))} rows={2} className="w-full px-3 py-2 border rounded-lg text-sm" placeholder="Dietary restrictions, mobility issues, caretaker info..." /></div>
         <button onClick={async () => { if (!eForm.patient_id || !eForm.address_line1) return; const r = await enroll(eForm, staffId); if (r) { flash('Enrolled: ' + r.enrollment_number); setShowForm(false); } }} className="px-4 py-2 bg-green-600 text-white text-sm rounded-lg">Enroll</button>
       </div>}
-      {enrollments.length === 0 ? <div className="text-center py-8 bg-white rounded-xl border text-gray-400 text-sm">No homecare patients</div> :
+      {enrollments.length === 0 ? <div className="text-center py-12 bg-white rounded-xl border"><UserPlus className="w-8 h-8 text-gray-300 mx-auto mb-2" /><p className="text-sm font-medium text-gray-500">No homecare patients enrolled</p><p className="text-xs text-gray-400 mt-1 max-w-xs mx-auto">Search for a patient and create their homecare enrollment to begin.</p></div> :
       <div className="space-y-2">{enrollments.map((e: any) => (
         <div key={e.id} className={`bg-white rounded-lg border p-3 cursor-pointer hover:border-green-300 ${selectedEnrollId === e.id ? 'border-green-500 bg-green-50/30' : ''}`} onClick={() => setSelectedEnrollId(e.id)}>
           <div className="flex items-center justify-between">

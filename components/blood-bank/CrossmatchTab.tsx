@@ -1,5 +1,6 @@
 'use client';
 import React from 'react';
+import { FlaskConical } from 'lucide-react';
 
 interface CrossmatchTabProps {
   matches: any[];
@@ -12,7 +13,7 @@ export default function CrossmatchTab({ matches, complete, staffId, groupColor }
   return (
     <div>
       <h2 className="font-semibold text-sm mb-3">Crossmatch / Compatibility Testing</h2>
-      {matches.length === 0 ? <div className="text-center py-8 bg-white rounded-xl border text-gray-400 text-sm">No crossmatch requests. Start from Blood Requests tab.</div> :
+      {matches.length === 0 ? <div className="text-center py-12 bg-white rounded-xl border"><FlaskConical className="w-8 h-8 text-gray-300 mx-auto mb-2" /><p className="text-sm font-medium text-gray-500">No crossmatch requests</p><p className="text-xs text-gray-400 mt-1 max-w-xs mx-auto">Components must be prepared before crossmatching.</p></div> :
       <div className="bg-white rounded-xl border overflow-hidden"><table className="w-full text-xs"><thead><tr className="bg-gray-50 border-b">
         <th className="p-2 text-left">Patient</th><th className="p-2">Patient Grp</th><th className="p-2">Component</th><th className="p-2">IS</th><th className="p-2">37°C</th><th className="p-2">ICT/AGT</th><th className="p-2">Result</th><th className="p-2">Actions</th>
       </tr></thead><tbody>{matches.map((m: any) => (

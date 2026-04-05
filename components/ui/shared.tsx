@@ -72,16 +72,69 @@ export function PageLoader() {
 // EMPTY STATE
 // ============================================================
 export function EmptyState({ icon, title, description, action, onAction }: {
-  icon?: string; title: string; description?: string; action?: string; onAction?: () => void;
+  icon?: string | React.ComponentType<{ className?: string }>;
+  title: string;
+  description?: string;
+  action?: string | { label: string; onClick: () => void };
+  onAction?: () => void;
 }) {
+  const IconComp = typeof icon === 'string' ? null : icon;
+  const actionLabel = typeof action === 'string' ? action : action?.label;
+  const actionHandler = typeof action === 'object' ? action.onClick : onAction;
+
   return (
     <div className="text-center py-12 bg-white rounded-xl border">
-      {icon && <div className="text-4xl mb-3">{icon}</div>}
+      {typeof icon === 'string' && <div className="text-4xl mb-3">{icon}</div>}
+      {IconComp && <div className="flex justify-center mb-3"><IconComp className="w-10 h-10 text-gray-300" /></div>}
       <h3 className="text-sm font-medium text-gray-900">{title}</h3>
-      {description && <p className="text-xs text-gray-400 mt-1">{description}</p>}
-      {action && onAction && (
-        <button onClick={onAction} className="mt-3 px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700">{action}</button>
+      {description && <p className="text-xs text-gray-400 mt-1 max-w-md mx-auto">{description}</p>}
+      {actionLabel && actionHandler && (
+        <button onClick={actionHandler} className="mt-3 px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors duration-200 cursor-pointer">{actionLabel}</button>
       )}
+    </div>
+  );
+}
+
+/**
+ * Setup wizard banner for modules that need master data configured before use.
+ * Shows prerequisite steps and links to settings/configuration pages.
+ */
+export function SetupRequired({ moduleName, icon: IconComponent, prerequisites, settingsHref }: {
+  moduleName: string;
+  icon?: React.ComponentType<{ className?: string }>;
+  prerequisites: Array<{ label: string; done: boolean; hint?: string }>;
+  settingsHref?: string;
+}) {
+  const doneCount = prerequisites.filter(p => p.done).length;
+  const allDone = doneCount === prerequisites.length;
+  if (allDone) return null;
+
+  return (
+    <div className="bg-amber-50 border border-amber-200 rounded-xl p-6 mb-4">
+      <div className="flex items-start gap-3">
+        {IconComponent && <IconComponent className="w-6 h-6 text-amber-600 mt-0.5 shrink-0" />}
+        <div className="flex-1 min-w-0">
+          <h3 className="text-sm font-bold text-amber-900">{moduleName} Setup Required</h3>
+          <p className="text-xs text-amber-700 mt-1">Complete these steps before using this module:</p>
+          <ul className="mt-3 space-y-2">
+            {prerequisites.map((p, i) => (
+              <li key={i} className="flex items-center gap-2 text-xs">
+                <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 ${p.done ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                  {p.done ? '\u2713' : (i + 1)}
+                </span>
+                <span className={p.done ? 'text-gray-400 line-through' : 'text-gray-700'}>{p.label}</span>
+                {p.hint && !p.done && <span className="text-amber-500 text-[10px]">({p.hint})</span>}
+              </li>
+            ))}
+          </ul>
+          {settingsHref && (
+            <a href={settingsHref} className="inline-block mt-3 px-4 py-2 bg-amber-600 text-white text-xs rounded-lg hover:bg-amber-700 transition-colors duration-200 cursor-pointer font-medium">
+              Go to Settings
+            </a>
+          )}
+          <div className="mt-2 text-[10px] text-amber-500">{doneCount}/{prerequisites.length} steps completed</div>
+        </div>
+      </div>
     </div>
   );
 }
