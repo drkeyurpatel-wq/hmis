@@ -75,7 +75,7 @@ function TeleInner() {
       {toast && <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-teal-600 text-white px-5 py-2.5 rounded-xl shadow-lg text-sm font-medium">{toast}</div>}
 
       <div className="flex items-center justify-between">
-        <div><h1 className="text-xl font-bold tracking-tight">Telemedicine</h1><p className="text-xs text-gray-400">Video consultations via Jitsi Meet</p></div>
+        <div><h1 className="text-xl font-bold tracking-tight">Telemedicine <span className="ml-2 px-2 py-0.5 text-[10px] font-medium bg-amber-100 text-amber-700 rounded-full align-middle">Coming soon</span></h1><p className="text-xs text-gray-400">Video integration pending setup. Contact IT to configure Jitsi/Twilio.</p></div>
         <button onClick={() => setShowSchedule(true)} className="flex items-center gap-2 px-4 py-2.5 bg-teal-600 text-white text-sm rounded-xl font-semibold hover:bg-teal-700"><Plus size={15} /> Schedule Consult</button>
       </div>
 
@@ -124,10 +124,10 @@ function TeleInner() {
                 <div className="flex gap-2 shrink-0">
                   {c.status === 'scheduled' && <button onClick={() => tele.updateConsult(c.id, { status: 'waiting' })} className="px-3 py-2 bg-amber-50 text-amber-700 text-xs rounded-xl font-medium hover:bg-amber-100">Patient Waiting</button>}
                   {['scheduled', 'waiting'].includes(c.status) && (
-                    <button onClick={() => joinCall(c)} className="px-4 py-2 bg-teal-600 text-white text-xs rounded-xl font-semibold hover:bg-teal-700 flex items-center gap-1.5"><Video size={13} /> Join Call</button>
+                    <button disabled className="px-4 py-2 bg-teal-600 text-white text-xs rounded-xl font-semibold opacity-50 cursor-not-allowed flex items-center gap-1.5"><Video size={13} /> Join Call <span className="ml-1 px-1.5 py-0.5 text-[9px] bg-amber-100 text-amber-700 rounded-full">Coming soon</span></button>
                   )}
                   {c.status === 'in_progress' && (
-                    <button onClick={() => joinCall(c)} className="px-4 py-2 bg-purple-600 text-white text-xs rounded-xl font-semibold hover:bg-purple-700 flex items-center gap-1.5 animate-pulse"><Video size={13} /> Rejoin</button>
+                    <button disabled className="px-4 py-2 bg-purple-600 text-white text-xs rounded-xl font-semibold opacity-50 cursor-not-allowed flex items-center gap-1.5"><Video size={13} /> Rejoin <span className="ml-1 px-1.5 py-0.5 text-[9px] bg-amber-100 text-amber-700 rounded-full">Coming soon</span></button>
                   )}
                   {c.room_url && <a href={c.room_url} target="_blank" rel="noopener noreferrer" className="p-2 bg-gray-100 rounded-xl hover:bg-gray-200"><ExternalLink size={14} className="text-gray-500" /></a>}
                 </div>

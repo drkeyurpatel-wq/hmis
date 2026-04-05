@@ -254,26 +254,26 @@ export default function ABHAVerification({ patientId, patientName, patientPhone,
             <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2.5 text-xs text-amber-800 leading-relaxed">
               ABDM integration is pending sandbox registration. ABHA verification and linking will be available once the NHCX sandbox connection is configured (HFR ID: IN2410013685).
             </div>
-            <p className="text-sm text-gray-600">Choose how to link ABHA for this patient:</p>
+            <p className="text-sm text-gray-600">Choose how to link ABHA for this patient: <span className="ml-1 px-2 py-0.5 text-[10px] font-medium bg-amber-100 text-amber-700 rounded-full">Pending NHCX registration</span></p>
             <div className="grid grid-cols-2 gap-3">
-              <button onClick={() => { reset(); setMode('create_aadhaar'); }} className="p-4 border-2 border-dashed rounded-xl hover:border-blue-400 hover:bg-blue-50 text-left transition-colors">
+              <button disabled className="p-4 border-2 border-dashed rounded-xl opacity-50 cursor-not-allowed text-left" title="Pending NHCX sandbox registration (scheduled 7 Apr)">
                 <div className="text-sm font-bold text-gray-900">Create New ABHA</div>
                 <div className="text-[10px] text-gray-500 mt-1">Via Aadhaar OTP verification</div>
               </button>
-              <button onClick={() => { reset(); setMode('create_mobile'); }} className="p-4 border-2 border-dashed rounded-xl hover:border-green-400 hover:bg-green-50 text-left transition-colors">
+              <button disabled className="p-4 border-2 border-dashed rounded-xl opacity-50 cursor-not-allowed text-left" title="Pending NHCX sandbox registration (scheduled 7 Apr)">
                 <div className="text-sm font-bold text-gray-900">Create via Mobile</div>
                 <div className="text-[10px] text-gray-500 mt-1">Mobile number based creation</div>
               </button>
-              <button onClick={() => { reset(); setMode('verify_existing'); }} className="p-4 border-2 border-dashed rounded-xl hover:border-purple-400 hover:bg-purple-50 text-left transition-colors">
+              <button disabled className="p-4 border-2 border-dashed rounded-xl opacity-50 cursor-not-allowed text-left" title="Pending NHCX sandbox registration (scheduled 7 Apr)">
                 <div className="text-sm font-bold text-gray-900">Verify Existing ABHA</div>
                 <div className="text-[10px] text-gray-500 mt-1">Link existing ABHA number</div>
               </button>
-              <button onClick={() => { reset(); setMode('scan_qr'); }} className="p-4 border-2 border-dashed rounded-xl hover:border-orange-400 hover:bg-orange-50 text-left transition-colors">
+              <button disabled className="p-4 border-2 border-dashed rounded-xl opacity-50 cursor-not-allowed text-left" title="Pending NHCX sandbox registration (scheduled 7 Apr)">
                 <div className="text-sm font-bold text-gray-900">Scan & Share</div>
                 <div className="text-[10px] text-gray-500 mt-1">Scan ABHA QR from PHR app</div>
               </button>
             </div>
-            <button onClick={() => { reset(); setMode('search_phr'); }} className="w-full p-3 border rounded-xl hover:bg-gray-50 text-left">
+            <button disabled className="w-full p-3 border rounded-xl opacity-50 cursor-not-allowed text-left" title="Pending NHCX sandbox registration (scheduled 7 Apr)">
               <div className="text-sm font-medium text-gray-700">Search by ABHA Address</div>
               <div className="text-[10px] text-gray-400">Find patient by user@abdm address</div>
             </button>

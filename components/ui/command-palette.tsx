@@ -47,7 +47,8 @@ const NAV_ITEMS: CommandItem[] = [
   { id: 'nav-emergency', label: 'Emergency / ER', icon: AlertTriangle, category: 'navigation', href: '/emergency', keywords: 'triage trauma mlc', modes: ['hospital'] },
   { id: 'nav-ipd', label: 'IPD Admissions', icon: BedDouble, category: 'navigation', href: '/ipd', keywords: 'inpatient admit', modes: ['hospital'] },
   { id: 'nav-emr', label: 'EMR', icon: Stethoscope, category: 'navigation', href: '/emr-v2', keywords: 'encounter medical record', modes: ['hospital'] },
-  { id: 'nav-voice', label: 'Voice Notes', icon: Mic, category: 'navigation', href: '/voice-notes', keywords: 'speak dictate', modes: ['hospital'] },
+  // Hidden: no active use case. Re-enable when needed.
+  // { id: 'nav-voice', label: 'Voice Notes', icon: Mic, category: 'navigation', href: '/voice-notes', keywords: 'speak dictate', modes: ['hospital'] },
   { id: 'nav-pnl', label: 'P&L', icon: BarChart3, category: 'navigation', href: '/pnl', keywords: 'profit loss revenue', modes: ['hospital'] },
   { id: 'nav-lab', label: 'Laboratory', icon: FlaskConical, category: 'navigation', href: '/lab', keywords: 'test blood cbc', modes: ['hospital'] },
   { id: 'nav-pharmacy', label: 'Pharmacy', icon: Pill, category: 'navigation', href: '/pharmacy', keywords: 'medicine drug dispense', modes: ['hospital'] },
@@ -78,7 +79,8 @@ const NAV_ITEMS: CommandItem[] = [
   { id: 'nav-infection', label: 'Infection Control', icon: Shield, category: 'navigation', href: '/infection-control', keywords: 'hai surveillance hygiene', modes: ['hospital'] },
   { id: 'nav-dietary', label: 'Dietary', icon: Settings, category: 'navigation', href: '/dietary', keywords: 'food kitchen diet meal', modes: ['hospital'] },
   { id: 'nav-ambulance', label: 'Ambulance', icon: AlertTriangle, category: 'navigation', href: '/ambulance', keywords: 'transport dispatch vehicle', modes: ['hospital'] },
-  { id: 'nav-mortuary', label: 'Mortuary', icon: Settings, category: 'navigation', href: '/mortuary', keywords: 'body deceased', modes: ['hospital'] },
+  // Hidden: no active use case. Re-enable when needed.
+  // { id: 'nav-mortuary', label: 'Mortuary', icon: Settings, category: 'navigation', href: '/mortuary', keywords: 'body deceased', modes: ['hospital'] },
   { id: 'nav-visitors', label: 'Visitors', icon: Users, category: 'navigation', href: '/visitors', keywords: 'visitor pass gate', modes: ['hospital'] },
   { id: 'nav-grievances', label: 'Grievances', icon: AlertTriangle, category: 'navigation', href: '/grievances', keywords: 'complaint feedback', modes: ['hospital'] },
   { id: 'nav-documents', label: 'Documents', icon: FileText, category: 'navigation', href: '/documents', keywords: 'sop policy protocol', modes: ['hospital'] },
@@ -103,7 +105,8 @@ const ACTION_ITEMS: CommandItem[] = [
   // Hospital-only
   { id: 'act-new-admission', label: 'New IPD Admission', icon: Plus, category: 'action', href: '/ipd', keywords: 'admit inpatient', modes: ['hospital'] },
   { id: 'act-er-register', label: 'ER Registration', icon: AlertTriangle, category: 'action', href: '/emergency', keywords: 'emergency triage', modes: ['hospital'] },
-  { id: 'act-voice', label: 'Start Voice Note', icon: Mic, category: 'action', href: '/voice-notes', keywords: 'speak dictate', modes: ['hospital'] },
+  // Hidden: EMR has built-in voice-to-text now. Re-enable if standalone voice notes needed.
+  // { id: 'act-voice', label: 'Start Voice Note', icon: Mic, category: 'action', href: '/voice-notes', keywords: 'speak dictate', modes: ['hospital'] },
   // Clinic-only
   { id: 'act-pharmacy-sale', label: 'New Pharmacy Sale', icon: ShoppingCart, category: 'action', href: '/clinic/pharmacy-pos', keywords: 'sell medicine pos', modes: ['clinic'] },
   { id: 'act-lab-collect', label: 'Collect Lab Sample', icon: TestTube, category: 'action', href: '/clinic/lab-collection', keywords: 'sample blood', modes: ['clinic'] },
