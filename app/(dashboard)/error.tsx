@@ -1,5 +1,7 @@
 'use client';
 
+import * as Sentry from '@sentry/nextjs';
+import { useEffect } from 'react';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
 
 export default function DashboardError({
@@ -9,6 +11,9 @@ export default function DashboardError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  useEffect(() => {
+    Sentry.captureException(error);
+  }, [error]);
   return (
     <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4 px-6">
       <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center">
