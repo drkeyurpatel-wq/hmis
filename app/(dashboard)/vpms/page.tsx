@@ -4,9 +4,7 @@ import { RoleGuard } from '@/components/ui/shared';
 import { useAuthStore } from '@/lib/store/auth';
 import { useIndents, usePurchaseOrders, useGRNs, useVendors } from '@/lib/procurement/procurement-hooks';
 import { Plus, X, Search, Truck, Package, Star, Phone, Mail } from 'lucide-react';
-
-const fmt = (n: number) => Math.round(n).toLocaleString('en-IN');
-const INR = (n: number) => n >= 100000 ? `₹${(n / 100000).toFixed(1)}L` : `₹${fmt(n)}`;
+import { fmtINR, fmtINRCompact } from '@/lib/utils/format';
 type Tab = 'indents' | 'po' | 'grn' | 'vendors';
 const DEPARTMENTS = ['Administration', 'OT', 'ICU', 'Emergency', 'Laboratory', 'Radiology', 'Pharmacy', 'OPD', 'IPD', 'Housekeeping', 'Kitchen', 'Maintenance', 'IT', 'Biomedical', 'CSSD'];
 const VENDOR_CATEGORIES = ['pharma', 'surgical', 'medical_equipment', 'it', 'facility', 'lab', 'consumables', 'other'];
@@ -92,9 +90,9 @@ function VPMSInner() {
           { l: 'Pending Approval', v: indents.stats.pendingApproval, c: indents.stats.pendingApproval > 0 ? 'text-amber-700' : 'text-gray-400' },
           { l: 'Approved', v: indents.stats.approved, c: 'text-emerald-700' },
           { l: 'Ordered', v: indents.stats.ordered, c: 'text-blue-700' },
-          { l: 'Indent Value', v: INR(indents.stats.totalValue), c: 'text-gray-800' },
+          { l: 'Indent Value', v: fmtINRCompact(indents.stats.totalValue), c: 'text-gray-800' },
           { l: 'POs Active', v: pos.stats.sent, c: 'text-blue-700' },
-          { l: 'PO Value', v: INR(pos.stats.totalValue), c: 'text-gray-800' },
+          { l: 'PO Value', v: fmtINRCompact(pos.stats.totalValue), c: 'text-gray-800' },
           { l: 'GRN Pending', v: grns.stats.pending, c: grns.stats.pending > 0 ? 'text-amber-700' : 'text-gray-400' },
           { l: 'Vendors', v: vendors.vendors.length, c: 'text-teal-700' },
         ].map(s => (
@@ -127,7 +125,7 @@ function VPMSInner() {
                   <td className="text-[11px]">{ind.department}</td>
                   <td className="text-[10px] text-gray-500 max-w-[180px] truncate">{items.length} item{items.length !== 1 ? 's' : ''}: {items.slice(0, 2).map((i: any) => i.item_name).join(', ')}{items.length > 2 ? '...' : ''}</td>
                   <td><span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${ind.priority === 'emergency' ? 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-red-50 text-red-700' : ind.priority === 'urgent' ? 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-700' : 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-100 text-gray-600'} uppercase text-[8px]`}>{ind.priority}</span></td>
-                  <td className="text-right text-[11px] font-semibold">₹{fmt(ind.total_estimated_cost || 0)}</td>
+                  <td className="text-right text-[11px] font-semibold">{fmtINR(ind.total_estimated_cost || 0)}</td>
                   <td className="text-[11px]">{ind.requester?.full_name || '—'}</td>
                   <td className="text-[10px] text-gray-500">{new Date(ind.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}</td>
                   <td><span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${INDENT_BADGE[ind.status] || 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-100 text-gray-600'} capitalize`}>{ind.status?.replace('_', ' ')}</span></td>
@@ -163,7 +161,7 @@ function VPMSInner() {
                   <td className="text-[10px] text-gray-500">{items.length} item{items.length !== 1 ? 's' : ''}</td>
                   <td className="text-[10px]">{po.order_date ? new Date(po.order_date + 'T12:00:00').toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }) : '—'}</td>
                   <td className="text-[10px]">{po.expected_date ? new Date(po.expected_date + 'T12:00:00').toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }) : '—'}</td>
-                  <td className="text-right font-semibold text-[11px]">₹{fmt(po.total_amount || 0)}</td>
+                  <td className="text-right font-semibold text-[11px]">{fmtINR(po.total_amount || 0)}</td>
                   <td className="text-[10px]">{po.creator?.full_name || '—'}</td>
                   <td><span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${PO_BADGE[po.status] || 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-100 text-gray-600'} capitalize`}>{po.status?.replace('_', ' ')}</span></td>
                 </tr>);
@@ -190,7 +188,7 @@ function VPMSInner() {
                 <td className="text-[11px]">{g.supplier}</td>
                 <td className="text-[10px]">{g.invoice_number || '—'}</td>
                 <td className="text-[10px]">{g.received_date ? new Date(g.received_date + 'T12:00:00').toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: '2-digit' }) : '—'}</td>
-                <td className="text-right font-semibold text-[11px]">₹{fmt(g.total_amount || 0)}</td>
+                <td className="text-right font-semibold text-[11px]">{fmtINR(g.total_amount || 0)}</td>
                 <td className="text-[10px]">{g.receiver?.full_name || '—'}</td>
                 <td><span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${GRN_BADGE[g.status] || 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-100 text-gray-600'} capitalize`}>{g.status}</span></td>
               </tr>
@@ -268,7 +266,7 @@ function VPMSInner() {
                 ))}
               </div>
               {indentItems.some(i => i.estimated_cost > 0) && (
-                <div className="text-right mt-2 text-sm font-bold text-gray-700">Estimated Total: ₹{fmt(indentItems.reduce((s, i) => s + parseFloat(i.estimated_cost || 0) * parseFloat(i.qty || 1), 0))}</div>
+                <div className="text-right mt-2 text-sm font-bold text-gray-700">Estimated Total: {fmtINR(indentItems.reduce((s, i) => s + parseFloat(i.estimated_cost || 0) * parseFloat(i.qty || 1), 0))}</div>
               )}
             </div>
             <button onClick={handleCreateIndent} disabled={!indentForm.department || indentItems.every(i => !i.item_name)} className="w-full py-2.5 bg-teal-600 text-white text-sm rounded-xl font-semibold disabled:opacity-40 hover:bg-teal-700">Submit Indent</button>
@@ -287,12 +285,12 @@ function VPMSInner() {
             <div className="grid grid-cols-3 gap-3 text-center">
               <div className="bg-gray-50 rounded-xl p-2.5"><div className="text-[9px] text-gray-400 uppercase">Priority</div><div className={`text-sm font-bold capitalize ${selectedIndent.priority === 'emergency' ? 'text-red-600' : selectedIndent.priority === 'urgent' ? 'text-amber-600' : 'text-gray-600'}`}>{selectedIndent.priority}</div></div>
               <div className="bg-gray-50 rounded-xl p-2.5"><div className="text-[9px] text-gray-400 uppercase">Items</div><div className="text-sm font-bold">{(selectedIndent.items || []).length}</div></div>
-              <div className="bg-gray-50 rounded-xl p-2.5"><div className="text-[9px] text-gray-400 uppercase">Est. Cost</div><div className="text-sm font-bold">₹{fmt(selectedIndent.total_estimated_cost || 0)}</div></div>
+              <div className="bg-gray-50 rounded-xl p-2.5"><div className="text-[9px] text-gray-400 uppercase">Est. Cost</div><div className="text-sm font-bold">{fmtINR(selectedIndent.total_estimated_cost || 0)}</div></div>
             </div>
             <div className="border rounded-xl overflow-hidden">
               <table className="w-full text-xs text-[11px]"><thead><tr><th>Item</th><th className="text-center">Qty</th><th>Unit</th><th>Spec</th><th className="text-right">Cost</th></tr></thead>
                 <tbody>{(selectedIndent.items || []).map((item: any, i: number) => (
-                  <tr key={i}><td className="font-semibold">{item.item_name}</td><td className="text-center font-bold">{item.qty}</td><td>{item.unit}</td><td className="text-gray-500">{item.specification || '—'}</td><td className="text-right">₹{fmt(parseFloat(item.estimated_cost || 0) * parseFloat(item.qty || 1))}</td></tr>
+                  <tr key={i}><td className="font-semibold">{item.item_name}</td><td className="text-center font-bold">{item.qty}</td><td>{item.unit}</td><td className="text-gray-500">{item.specification || '—'}</td><td className="text-right">{fmtINR(parseFloat(item.estimated_cost || 0) * parseFloat(item.qty || 1))}</td></tr>
                 ))}</tbody>
               </table>
             </div>

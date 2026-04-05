@@ -3,9 +3,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { RoleGuard } from '@/components/ui/shared';
 import { useAuthStore } from '@/lib/store/auth';
 import { useLeakageScanner, useLeakageActions, LEAK_TYPES, type Leak } from '@/lib/revenue-leakage/leakage-hooks';
-
-const fmt = (n: number) => Math.round(n).toLocaleString('en-IN');
-const INR = (n: number) => n >= 100000 ? `₹${(n / 100000).toFixed(1)}L` : `₹${fmt(n)}`;
+import { fmtINR, fmtINRCompact } from '@/lib/utils/format';
 const SEV_COLORS: Record<string, string> = { critical: 'bg-red-600 text-white', high: 'bg-red-100 text-red-700', medium: 'bg-amber-100 text-amber-700', low: 'bg-gray-100 text-gray-600' };
 const SEV_ROW: Record<string, string> = { critical: 'bg-red-50/50 border-l-4 border-l-red-500', high: 'bg-red-50/20', medium: '', low: '' };
 
@@ -43,7 +41,7 @@ function LeakageInner() {
       {/* Summary cards */}
       <div className="grid grid-cols-3 gap-3">
         <div className={`rounded-xl border-2 p-5 text-center ${scanner.stats.totalAmount > 0 ? 'border-red-200 bg-red-50' : 'border-green-200 bg-green-50'}`}>
-          <div className={`text-3xl font-black ${scanner.stats.totalAmount > 0 ? 'text-red-600' : 'text-green-600'}`}>{scanner.stats.totalAmount > 0 ? INR(scanner.stats.totalAmount) : '₹0'}</div>
+          <div className={`text-3xl font-black ${scanner.stats.totalAmount > 0 ? 'text-red-600' : 'text-green-600'}`}>{scanner.stats.totalAmount > 0 ? fmtINRCompact(scanner.stats.totalAmount) : '₹0'}</div>
           <div className="text-xs text-gray-500 mt-1">Estimated leakage</div>
         </div>
         <div className="bg-white rounded-xl border p-5 text-center">
@@ -68,7 +66,7 @@ function LeakageInner() {
             <div key={type} className="bg-white rounded-xl border p-3 cursor-pointer hover:shadow-sm" onClick={() => setTypeFilter(typeFilter === type ? 'all' : type)}>
               <div className="flex items-center gap-2 mb-1"><span className="text-lg">{cfg?.icon || '!'}</span><span className="text-[10px] font-medium">{cfg?.label || type}</span></div>
               <div className="text-lg font-black">{data.count}</div>
-              {data.amount > 0 && <div className="text-[10px] text-red-600 font-bold">{INR(data.amount)}</div>}
+              {data.amount > 0 && <div className="text-[10px] text-red-600 font-bold">{fmtINRCompact(data.amount)}</div>}
             </div>
           );
         })}
@@ -106,7 +104,7 @@ function LeakageInner() {
               <td className="p-2"><div className="flex items-center gap-1.5"><span>{cfg?.icon || '!'}</span><span className="text-[10px] font-medium">{cfg?.label || l.type}</span></div></td>
               <td className="p-2"><span className="font-medium">{l.patient_name}</span> <span className="text-[10px] text-gray-400">{l.uhid}</span></td>
               <td className="p-2 text-gray-600 max-w-[350px]">{l.description}</td>
-              <td className="p-2 text-right font-bold text-red-600">{l.amount > 0 ? `₹${fmt(l.amount)}` : '—'}</td>
+              <td className="p-2 text-right font-bold text-red-600">{l.amount > 0 ? `${fmtINR(l.amount)}` : '—'}</td>
               <td className="p-2 text-center"><span className={l.days_old > 7 ? 'text-red-600 font-bold' : 'text-gray-500'}>{l.days_old}d</span></td>
               <td className="p-2 text-center">{canPost ? (
                 <button disabled={isPosting} onClick={async () => {

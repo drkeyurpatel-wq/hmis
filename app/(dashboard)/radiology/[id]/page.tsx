@@ -132,7 +132,7 @@ export default function StudyDetailPage() {
             </h3>
             <div className="flex gap-2">
               {r.reportStatus === 'final' && !r.verifiedByName && (
-                <button onClick={() => verifyReport(r.id)} className="px-3 py-1.5 bg-emerald-600 text-white text-xs rounded-lg">Verify</button>
+                <button onClick={() => verifyReport(r.id)} className="px-3 py-1.5 bg-emerald-600 text-white text-xs rounded-lg cursor-pointer">Verify</button>
               )}
               {r.tatMinutes && <span className="text-xs text-gray-400">TAT: {r.tatMinutes >= 60 ? `${Math.floor(r.tatMinutes / 60)}h ${r.tatMinutes % 60}m` : `${r.tatMinutes}m`}</span>}
             </div>
@@ -158,7 +158,7 @@ export default function StudyDetailPage() {
           <div className="text-center text-gray-400 text-sm mb-3">No report received from Stradus yet</div>
           {!showManualReport && (
             <div className="text-center">
-              <button onClick={() => setShowManualReport(true)} className="px-4 py-2 bg-teal-600 text-white text-sm rounded-lg">Enter Report Manually (Fallback)</button>
+              <button onClick={() => setShowManualReport(true)} className="px-4 py-2 bg-teal-600 text-white text-sm rounded-lg cursor-pointer">Enter Report Manually (Fallback)</button>
             </div>
           )}
         </div>
@@ -169,7 +169,7 @@ export default function StudyDetailPage() {
         <div className="flex items-center justify-between"><h3 className="font-bold text-sm">Manual Report Entry</h3>
           {templates.templates.length > 0 && <div className="flex gap-1">{templates.templates.slice(0, 4).map(t => (
             <button key={t.id} onClick={() => setReportForm(f => ({ ...f, technique: t.technique_text || f.technique, findings: t.findings_template, impression: t.impression_template || f.impression }))}
-              className="px-2 py-0.5 bg-gray-100 text-[10px] rounded hover:bg-blue-100">{t.template_name}</button>
+              className="px-2 py-0.5 bg-gray-100 text-[10px] rounded hover:bg-blue-100 cursor-pointer">{t.template_name}</button>
           ))}</div>}
         </div>
         <div className="grid grid-cols-2 gap-3">
@@ -180,8 +180,8 @@ export default function StudyDetailPage() {
         <div><label className="text-xs text-gray-500">Impression *</label><textarea value={reportForm.impression} onChange={e => setReportForm(f => ({...f, impression: e.target.value}))} rows={3} className="w-full px-3 py-2 border rounded-lg text-sm font-medium" /></div>
         <label className="flex items-center gap-2 text-xs text-red-700"><input type="checkbox" checked={reportForm.is_critical} onChange={e => setReportForm(f => ({...f, is_critical: e.target.checked}))} className="rounded" />Critical finding</label>
         {actionError && <div className="text-sm text-red-700">{actionError}</div>}
-        <div className="flex gap-2"><button onClick={saveManualReport} disabled={!reportForm.findings.trim() || !reportForm.impression.trim()} className="px-6 py-2 bg-emerald-600 text-white text-sm rounded-lg disabled:opacity-40">Save Report</button>
-          <button onClick={() => setShowManualReport(false)} className="px-4 py-2 bg-gray-200 text-sm rounded-lg">Cancel</button></div>
+        <div className="flex gap-2"><button onClick={saveManualReport} disabled={!reportForm.findings.trim() || !reportForm.impression.trim()} className="px-6 py-2 bg-emerald-600 text-white text-sm rounded-lg disabled:opacity-40 cursor-pointer">Save Report</button>
+          <button onClick={() => setShowManualReport(false)} className="px-4 py-2 bg-gray-200 text-sm rounded-lg cursor-pointer">Cancel</button></div>
       </div>}
 
       {/* Related studies for same patient */}

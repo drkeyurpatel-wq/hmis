@@ -139,7 +139,7 @@ function DialysisInner() {
         <div><h1 className="text-xl font-bold">Dialysis Unit</h1><p className="text-xs text-gray-500">{dial.stats.machinesTotal} machines · {dial.stats.totalToday} sessions today</p></div>
         <div className="flex gap-2">
           <input type="date" value={date} onChange={e => setDate(e.target.value)} className="px-3 py-1.5 border rounded-lg text-xs" />
-          <button onClick={() => setShowNew(true)} className="px-4 py-2 bg-teal-600 text-white text-xs rounded-lg font-medium hover:bg-teal-700">+ Schedule Session</button>
+          <button onClick={() => setShowNew(true)} className="px-4 py-2 bg-teal-600 text-white text-xs rounded-lg font-medium hover:bg-teal-700 cursor-pointer">+ Schedule Session</button>
         </div>
       </div>
 
@@ -157,7 +157,7 @@ function DialysisInner() {
       {/* Tabs */}
       <div className="flex gap-1">
         {(['sessions', 'machines', 'patients', 'analytics'] as Tab[]).map(t =>
-          <button key={t} onClick={() => setTab(t)} className={`px-4 py-2 text-xs font-medium rounded-lg capitalize ${tab === t ? 'bg-teal-600 text-white' : 'bg-white border hover:bg-gray-50'}`}>
+          <button key={t} onClick={() => setTab(t)} className={`px-4 py-2 text-xs font-medium rounded-lg capitalize ${tab === t ? 'bg-teal-600 text-white' : 'bg-white border hover:bg-gray-50'} cursor-pointer`}>
             {t === 'sessions' ? `Sessions (${dial.sessions.length})` : t === 'machines' ? `Machines (${dial.machines.length})` : t === 'patients' ? `Chronic Patients (${dialPatients.patients.length})` : 'Analytics'}
           </button>
         )}
@@ -206,8 +206,8 @@ function DialysisInner() {
               <td className="p-2 text-center">{s.urr ? <span className={`font-bold ${s.urr >= 65 ? 'text-green-600' : 'text-red-600'}`}>{s.urr}%</span> : '—'}</td>
               <td className="p-2 text-center"><span className={`px-1.5 py-0.5 rounded text-[9px] font-medium ${STATUS_COLORS[s.status]}`}>{s.status.replace('_', ' ')}</span></td>
               <td className="p-2" onClick={e => e.stopPropagation()}>
-                {s.status === 'scheduled' && <button onClick={() => { dial.startSession(s.id); flash('Started'); }} className="px-2 py-1 bg-amber-100 text-amber-700 rounded text-[9px] font-medium">Start</button>}
-                {s.status === 'in_progress' && <button onClick={() => { setSelected(s); setDetailTab('post'); }} className="px-2 py-1 bg-green-100 text-green-700 rounded text-[9px] font-medium">End</button>}
+                {s.status === 'scheduled' && <button onClick={() => { dial.startSession(s.id); flash('Started'); }} className="px-2 py-1 bg-amber-100 text-amber-700 rounded text-[9px] font-medium cursor-pointer">Start</button>}
+                {s.status === 'in_progress' && <button onClick={() => { setSelected(s); setDetailTab('post'); }} className="px-2 py-1 bg-green-100 text-green-700 rounded text-[9px] font-medium cursor-pointer">End</button>}
               </td>
             </tr>
           ))}</tbody></table>
@@ -287,18 +287,18 @@ function DialysisInner() {
       {/* ═══ SCHEDULE NEW MODAL ═══ */}
       {showNew && <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center" onClick={() => setShowNew(false)}>
         <div className="bg-white rounded-xl w-[600px] max-h-[90vh] overflow-y-auto p-5 space-y-4" onClick={e => e.stopPropagation()}>
-          <div className="flex justify-between"><h3 className="font-bold text-sm">Schedule Dialysis Session</h3><button onClick={() => setShowNew(false)} className="text-gray-400 text-lg">×</button></div>
+          <div className="flex justify-between"><h3 className="font-bold text-sm">Schedule Dialysis Session</h3><button onClick={() => setShowNew(false)} className="text-gray-400 text-lg cursor-pointer">×</button></div>
 
-          {selPat ? <div className="flex items-center gap-3 bg-blue-50 rounded-lg p-3"><span className="font-medium text-sm">{selPat.first_name} {selPat.last_name}</span><span className="text-xs text-gray-500">{selPat.uhid}</span><button onClick={() => setSelPat(null)} className="ml-auto text-xs text-red-500">×</button></div>
+          {selPat ? <div className="flex items-center gap-3 bg-blue-50 rounded-lg p-3"><span className="font-medium text-sm">{selPat.first_name} {selPat.last_name}</span><span className="text-xs text-gray-500">{selPat.uhid}</span><button onClick={() => setSelPat(null)} className="ml-auto text-xs text-red-500 cursor-pointer">×</button></div>
           : <div className="relative"><input value={patSearch} onChange={e => setPatSearch(e.target.value)} className="w-full px-3 py-2 border rounded-lg text-sm" placeholder="Search patient..." autoFocus />
-            {patResults.length > 0 && <div className="absolute z-10 mt-1 w-full bg-white border rounded-lg shadow-lg max-h-40 overflow-y-auto">{patResults.map(p => <button key={p.id} onClick={() => { setSelPat(p); setPatSearch(''); setPatResults([]); autoFillFromProfile(p.id); }} className="w-full text-left px-3 py-2 text-xs hover:bg-blue-50 border-b">{p.first_name} {p.last_name} · {p.uhid}</button>)}</div>}</div>}
+            {patResults.length > 0 && <div className="absolute z-10 mt-1 w-full bg-white border rounded-lg shadow-lg max-h-40 overflow-y-auto">{patResults.map(p => <button key={p.id} onClick={() => { setSelPat(p); setPatSearch(''); setPatResults([]); autoFillFromProfile(p.id); }} className="w-full text-left px-3 py-2 text-xs hover:bg-blue-50 border-b cursor-pointer">{p.first_name} {p.last_name} · {p.uhid}</button>)}</div>}</div>}
 
           <div className="grid grid-cols-3 gap-3">
             <div><label className="text-[9px] text-gray-500">Machine *</label><select value={sf.machine_id} onChange={e => setSf(f => ({...f, machine_id: e.target.value}))} className="w-full px-2 py-1.5 border rounded text-xs">
               <option value="">Select</option>{dial.machines.filter(m => m.status === 'available').map(m => <option key={m.id} value={m.id}>{m.machine_number} ({m.brand})</option>)}</select></div>
             <div><label className="text-[9px] text-gray-500">Type</label><select value={sf.dialysis_type} onChange={e => setSf(f => ({...f, dialysis_type: e.target.value}))} className="w-full px-2 py-1.5 border rounded text-xs">
               {DIALYSIS_TYPES.map(t => <option key={t} value={t}>{t.toUpperCase()}</option>)}</select></div>
-            <div><label className="text-[9px] text-gray-500">Shift</label><div className="flex gap-1 mt-0.5">{['morning', 'afternoon', 'evening'].map(s => <button key={s} onClick={() => setSf(f => ({...f, shift: s}))} className={`flex-1 py-1 rounded text-[9px] capitalize ${sf.shift === s ? 'bg-teal-600 text-white' : 'bg-gray-100'}`}>{s}</button>)}</div></div>
+            <div><label className="text-[9px] text-gray-500">Shift</label><div className="flex gap-1 mt-0.5">{['morning', 'afternoon', 'evening'].map(s => <button key={s} onClick={() => setSf(f => ({...f, shift: s}))} className={`flex-1 py-1 rounded text-[9px] capitalize ${sf.shift === s ? 'bg-teal-600 text-white' : 'bg-gray-100'} cursor-pointer`}>{s}</button>)}</div></div>
             <div><label className="text-[9px] text-gray-500">Access</label><select value={sf.access_type} onChange={e => setSf(f => ({...f, access_type: e.target.value}))} className="w-full px-2 py-1.5 border rounded text-xs">
               {ACCESS_TYPES.map(a => <option key={a} value={a}>{a.replace(/_/g, ' ')}</option>)}</select></div>
             <div><label className="text-[9px] text-gray-500">Pre Weight (kg)</label><input type="number" step="0.1" value={sf.pre_weight} onChange={e => setSf(f => ({...f, pre_weight: e.target.value}))} className="w-full px-2 py-1.5 border rounded text-xs" /></div>
@@ -311,7 +311,7 @@ function DialysisInner() {
             <div><label className="text-[9px] text-gray-500">Doctor</label><select value={sf.doctor_id} onChange={e => setSf(f => ({...f, doctor_id: e.target.value}))} className="w-full px-2 py-1.5 border rounded text-xs"><option value="">Select</option>{doctors.map(d => <option key={d.id} value={d.id}>{d.full_name}</option>)}</select></div>
           </div>
           <label className="flex items-center gap-2 text-xs"><input type="checkbox" checked={sf.is_emergency} onChange={e => setSf(f => ({...f, is_emergency: e.target.checked}))} className="rounded" /> Emergency dialysis</label>
-          <button onClick={handleSchedule} disabled={!selPat || !sf.machine_id} className="w-full py-2.5 bg-teal-600 text-white text-sm rounded-lg font-medium disabled:opacity-40 hover:bg-teal-700">Schedule</button>
+          <button onClick={handleSchedule} disabled={!selPat || !sf.machine_id} className="w-full py-2.5 bg-teal-600 text-white text-sm rounded-lg font-medium disabled:opacity-40 hover:bg-teal-700 cursor-pointer">Schedule</button>
         </div>
       </div>}
 
@@ -328,11 +328,11 @@ function DialysisInner() {
               <div className="font-bold text-lg mt-1">{selected.patient_name}</div>
               <div className="text-xs text-gray-500">{selected.uhid} · {selected.age}y · Access: {selected.access_type.replace(/_/g, ' ')}</div>
             </div>
-            <button onClick={() => setSelected(null)} className="text-gray-400 text-lg">×</button>
+            <button onClick={() => setSelected(null)} className="text-gray-400 text-lg cursor-pointer">×</button>
           </div>
 
           <div className="flex gap-1">{(['pre', 'monitoring', 'post'] as const).map(t =>
-            <button key={t} onClick={() => setDetailTab(t)} className={`px-4 py-1.5 text-[10px] font-medium rounded-lg capitalize ${detailTab === t ? 'bg-teal-600 text-white' : 'bg-white border'}`}>{t === 'pre' ? 'Pre-dialysis' : t === 'post' ? 'Post-dialysis' : 'Monitoring'}</button>
+            <button key={t} onClick={() => setDetailTab(t)} className={`px-4 py-1.5 text-[10px] font-medium rounded-lg capitalize ${detailTab === t ? 'bg-teal-600 text-white' : 'bg-white border'} cursor-pointer`}>{t === 'pre' ? 'Pre-dialysis' : t === 'post' ? 'Post-dialysis' : 'Monitoring'}</button>
           )}</div>
 
           {/* PRE */}
@@ -395,7 +395,7 @@ function DialysisInner() {
                 <div><label className="text-[9px] text-gray-500">Comfort</label><select value={monForm.patient_comfort} onChange={e => setMonForm(f => ({...f, patient_comfort: e.target.value}))} className="w-full px-2 py-1 border rounded text-[10px]"><option value="comfortable">OK</option><option value="restless">Restless</option><option value="drowsy">Drowsy</option><option value="distressed">Distressed</option></select></div>
               </div>
               <input value={monForm.symptoms} onChange={e => setMonForm(f => ({...f, symptoms: e.target.value}))} className="w-full px-2 py-1.5 border rounded text-xs" placeholder="Symptoms / interventions..." />
-              <button onClick={addMonitoringCheck} className="px-4 py-1.5 bg-amber-600 text-white text-xs rounded font-medium">Record Check</button>
+              <button onClick={addMonitoringCheck} className="px-4 py-1.5 bg-amber-600 text-white text-xs rounded font-medium cursor-pointer">Record Check</button>
             </div>}
 
             <h4 className="text-xs font-bold mt-2">Complications</h4>
@@ -404,7 +404,7 @@ function DialysisInner() {
                 const cur = selected.complications || [];
                 const upd = c === 'none' ? ['none'] : cur.filter(x => x !== 'none').includes(c) ? cur.filter(x => x !== c) : [...cur.filter(x => x !== 'none'), c];
                 saveField('complications', upd);
-              }} className={`px-2 py-1 rounded text-[9px] capitalize ${(selected.complications || []).includes(c) ? (c === 'none' ? 'bg-green-600 text-white' : 'bg-red-600 text-white') : 'bg-gray-100 text-gray-500'}`}>{c.replace('_', ' ')}</button>
+              }} className={`px-2 py-1 rounded text-[9px] capitalize ${(selected.complications || []).includes(c) ? (c === 'none' ? 'bg-green-600 text-white' : 'bg-red-600 text-white') : 'bg-gray-100 text-gray-500'} cursor-pointer`}>{c.replace('_', ' ')}</button>
             )}</div>
           </div>}
 
@@ -429,7 +429,7 @@ function DialysisInner() {
               await dial.endSession(selected.id, { post_weight: postW });
               flash('Session completed');
               setSelected(null);
-            }} className="w-full py-2.5 bg-green-600 text-white text-sm rounded-lg font-medium hover:bg-green-700">Complete Session</button>}
+            }} className="w-full py-2.5 bg-green-600 text-white text-sm rounded-lg font-medium hover:bg-green-700 cursor-pointer">Complete Session</button>}
           </div>}
         </div>
       </div>}

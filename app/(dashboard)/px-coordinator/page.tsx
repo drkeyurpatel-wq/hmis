@@ -86,13 +86,13 @@ function ComplaintRow({
             className="w-full border border-gray-200 rounded px-3 py-2 text-xs resize-none h-16 focus:outline-none focus:ring-2 focus:ring-green-300"
           />
           <div className="flex gap-2">
-            <button onClick={() => setShowResolve(false)} className="flex-1 py-1.5 text-xs text-gray-600 border border-gray-200 rounded-lg">
+            <button onClick={() => setShowResolve(false)} className="flex-1 py-1.5 text-xs text-gray-600 border border-gray-200 rounded-lg cursor-pointer">
               Cancel
             </button>
             <button
               onClick={() => { onResolve(notes); setShowResolve(false); }}
               disabled={!notes.trim()}
-              className="flex-1 py-1.5 text-xs font-medium bg-green-600 text-white rounded-lg disabled:opacity-50"
+              className="flex-1 py-1.5 text-xs font-medium bg-green-600 text-white rounded-lg disabled:opacity-50 cursor-pointer"
             >
               Resolve
             </button>
@@ -101,12 +101,12 @@ function ComplaintRow({
       ) : (
         <div className="flex gap-2">
           {complaint.status === 'open' && (
-            <button onClick={onAssign} className="flex-1 py-1.5 text-xs font-medium bg-blue-600 text-white rounded-lg">
+            <button onClick={onAssign} className="flex-1 py-1.5 text-xs font-medium bg-blue-600 text-white rounded-lg cursor-pointer">
               Assign to Me
             </button>
           )}
           {(complaint.status === 'assigned' || complaint.status === 'in_progress') && (
-            <button onClick={() => setShowResolve(true)} className="flex-1 py-1.5 text-xs font-medium bg-green-600 text-white rounded-lg">
+            <button onClick={() => setShowResolve(true)} className="flex-1 py-1.5 text-xs font-medium bg-green-600 text-white rounded-lg cursor-pointer">
               Resolve
             </button>
           )}
@@ -164,7 +164,7 @@ export default function PxCoordinatorPage() {
             onClick={() => setTab(t)}
             className={`px-4 py-2 text-sm font-medium rounded-lg capitalize transition-colors ${
               tab === t ? 'bg-[#1B3A5C] text-white' : 'bg-gray-100 text-gray-600'
-            }`}
+            } cursor-pointer`}
           >
             {t === 'calls' ? 'Nurse calls' : t}
             {t === 'complaints' && stats.open_complaints > 0 && (

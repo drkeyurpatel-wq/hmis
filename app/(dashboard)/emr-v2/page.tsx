@@ -279,7 +279,7 @@ function EMRInner() {
             encounterId: result.id, billType: 'opd', payorType: 'self',
           });
           if (billResult.created) {
-            console.log('Auto-bill created:', billResult.billId, '₹' + billResult.total);
+            // bill creation success handled by flash() message below
           }
         } catch (e) { console.error('Auto-bill failed:', e); }
 

@@ -131,7 +131,7 @@ function InsuranceInner() {
         <div><h1 className="text-xl font-bold">Insurance Management</h1><p className="text-xs text-gray-500">Pre-auth, claims, settlement tracking</p></div>
         <div className="flex gap-1">
           {(['dashboard', 'preauths', 'claims', 'new'] as View[]).map(v => (
-            <button key={v} onClick={() => setView(v)} className={`px-3 py-1.5 text-xs rounded-lg ${view === v ? 'bg-teal-600 text-white' : 'bg-white border'}`}>
+            <button key={v} onClick={() => setView(v)} className={`px-3 py-1.5 text-xs rounded-lg ${view === v ? 'bg-teal-600 text-white' : 'bg-white border'} cursor-pointer`}>
               {v === 'dashboard' ? 'Dashboard' : v === 'preauths' ? 'Pre-Auths' : v === 'claims' ? 'Claims' : '+ New Pre-Auth'}
             </button>
           ))}
@@ -172,7 +172,7 @@ function InsuranceInner() {
       {view === 'preauths' && <>
         <div className="flex gap-1 mb-2">
           {['all', 'pending', 'approved', 'queried', 'rejected'].map(s => (
-            <button key={s} onClick={() => setFilter(s)} className={`px-2 py-1 text-[10px] rounded border ${filter === s ? 'bg-teal-600 text-white border-teal-600' : 'bg-white'}`}>{s === 'all' ? 'All' : s.charAt(0).toUpperCase() + s.slice(1)}</button>
+            <button key={s} onClick={() => setFilter(s)} className={`px-2 py-1 text-[10px] rounded border ${filter === s ? 'bg-teal-600 text-white border-teal-600' : 'bg-white'} cursor-pointer`}>{s === 'all' ? 'All' : s.charAt(0).toUpperCase() + s.slice(1)}</button>
           ))}
         </div>
         <div className="bg-white rounded-xl border overflow-hidden">
@@ -220,7 +220,7 @@ function InsuranceInner() {
 
       {/* PRE-AUTH DETAIL */}
       {view === 'detail' && detail && <>
-        <button onClick={() => { setView('preauths'); setDetail(null); }} className="text-xs text-gray-500 hover:text-teal-600">← Back to list</button>
+        <button onClick={() => { setView('preauths'); setDetail(null); }} className="text-xs text-gray-500 hover:text-teal-600 cursor-pointer">← Back to list</button>
         <div className="bg-white rounded-xl border p-5 space-y-4">
           <div className="flex items-center justify-between">
             <div>
@@ -243,12 +243,12 @@ function InsuranceInner() {
           {/* Status Actions */}
           <div className="flex flex-wrap gap-2">
             {detail.status === 'pending' && <>
-              <button onClick={() => updatePreAuth(detail.id, 'approved', {})} className="px-3 py-1.5 bg-green-600 text-white text-xs rounded-lg">Mark Approved</button>
-              <button onClick={() => updatePreAuth(detail.id, 'queried', {})} className="px-3 py-1.5 bg-purple-600 text-white text-xs rounded-lg">Query Raised</button>
-              <button onClick={() => updatePreAuth(detail.id, 'rejected', {})} className="px-3 py-1.5 bg-red-600 text-white text-xs rounded-lg">Rejected</button>
+              <button onClick={() => updatePreAuth(detail.id, 'approved', {})} className="px-3 py-1.5 bg-green-600 text-white text-xs rounded-lg cursor-pointer">Mark Approved</button>
+              <button onClick={() => updatePreAuth(detail.id, 'queried', {})} className="px-3 py-1.5 bg-purple-600 text-white text-xs rounded-lg cursor-pointer">Query Raised</button>
+              <button onClick={() => updatePreAuth(detail.id, 'rejected', {})} className="px-3 py-1.5 bg-red-600 text-white text-xs rounded-lg cursor-pointer">Rejected</button>
             </>}
-            {detail.status === 'queried' && <button onClick={() => updatePreAuth(detail.id, 'pending', {})} className="px-3 py-1.5 bg-blue-600 text-white text-xs rounded-lg">Query Responded</button>}
-            {detail.status === 'approved' && <button onClick={() => updatePreAuth(detail.id, 'enhancement', {})} className="px-3 py-1.5 bg-orange-600 text-white text-xs rounded-lg">Request Enhancement</button>}
+            {detail.status === 'queried' && <button onClick={() => updatePreAuth(detail.id, 'pending', {})} className="px-3 py-1.5 bg-blue-600 text-white text-xs rounded-lg cursor-pointer">Query Responded</button>}
+            {detail.status === 'approved' && <button onClick={() => updatePreAuth(detail.id, 'enhancement', {})} className="px-3 py-1.5 bg-orange-600 text-white text-xs rounded-lg cursor-pointer">Request Enhancement</button>}
           </div>
 
           {/* Documents */}
@@ -286,7 +286,7 @@ function InsuranceInner() {
         </div>
         <div><label className="text-xs text-gray-500 font-medium">Notes</label>
           <textarea value={newPA.notes} onChange={e => setNewPA(p => ({ ...p, notes: e.target.value }))} className="w-full mt-1 px-3 py-2 border rounded-lg text-sm" rows={2} placeholder="Clinical details, co-morbidities..." /></div>
-        <button onClick={submitPreAuth} className="px-6 py-2.5 bg-teal-600 text-white text-sm rounded-lg font-medium">Submit Pre-Auth</button>
+        <button onClick={submitPreAuth} className="px-6 py-2.5 bg-teal-600 text-white text-sm rounded-lg font-medium cursor-pointer">Submit Pre-Auth</button>
       </div>}
     </div>
   );

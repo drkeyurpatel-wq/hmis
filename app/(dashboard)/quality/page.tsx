@@ -94,7 +94,7 @@ function QualityInner() {
 
       <div className="flex gap-1 border-b">{(['dashboard', 'incidents', 'indicators', 'audit_trail'] as Tab[]).map(t =>
         <button key={t} onClick={() => { setTab(t); if (t === 'audit_trail') audit.load(auditFilter.entityType ? auditFilter : undefined); }}
-          className={`px-4 py-2 text-xs font-medium rounded-xl capitalize ${tab === t ? 'bg-teal-600 text-white shadow-sm' : 'bg-white text-gray-500 border border-gray-100 hover:bg-gray-50'}`}>
+          className={`px-4 py-2 text-xs font-medium rounded-xl capitalize ${tab === t ? 'bg-teal-600 text-white shadow-sm' : 'bg-white text-gray-500 border border-gray-100 hover:bg-gray-50'} cursor-pointer`}>
           {t === 'dashboard' ? 'Dashboard' : t === 'incidents' ? `Incidents (${incidents.stats.open})` : t === 'indicators' ? 'NABH Indicators' : 'Audit Trail'}
         </button>
       )}</div>
@@ -139,9 +139,9 @@ function QualityInner() {
       {tab === 'incidents' && <div className="space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex gap-1">{['all', 'reported', 'investigating', 'action_taken', 'closed'].map(s =>
-            <button key={s} onClick={() => incidents.load({ status: s })} className="px-2 py-1 text-[10px] rounded border bg-white hover:bg-blue-50">{s === 'all' ? 'All' : s.replace('_', ' ')}</button>
+            <button key={s} onClick={() => incidents.load({ status: s })} className="px-2 py-1 text-[10px] rounded border bg-white hover:bg-blue-50 cursor-pointer">{s === 'all' ? 'All' : s.replace('_', ' ')}</button>
           )}</div>
-          <button onClick={() => setShowNewInc(!showNewInc)} className="px-4 py-2 bg-red-600 text-white text-xs rounded-lg">{showNewInc ? 'Cancel' : '+ Report Incident'}</button>
+          <button onClick={() => setShowNewInc(!showNewInc)} className="px-4 py-2 bg-red-600 text-white text-xs rounded-lg cursor-pointer">{showNewInc ? 'Cancel' : '+ Report Incident'}</button>
         </div>
 
         {showNewInc && <div className="bg-white rounded-xl border p-5 space-y-3">
@@ -162,7 +162,7 @@ function QualityInner() {
             <textarea value={incForm.description} onChange={e => setIncForm(f => ({ ...f, description: e.target.value }))} rows={3} className="w-full px-3 py-2 border rounded-lg text-sm" placeholder="What happened? When? Who was involved?" /></div>
           <div><label className="text-xs text-gray-500">Immediate Action Taken</label>
             <input type="text" value={incForm.immediateAction} onChange={e => setIncForm(f => ({ ...f, immediateAction: e.target.value }))} className="w-full px-3 py-2 border rounded-lg text-xs" placeholder="What was done immediately?" /></div>
-          <button onClick={submitIncident} disabled={!incForm.description} className="px-6 py-2 bg-red-600 text-white text-sm rounded-lg disabled:opacity-40">Submit Incident Report</button>
+          <button onClick={submitIncident} disabled={!incForm.description} className="px-6 py-2 bg-red-600 text-white text-sm rounded-lg disabled:opacity-40 cursor-pointer">Submit Incident Report</button>
         </div>}
 
         {incidents.loading ? <div className="animate-pulse h-48 bg-gray-200 rounded-xl" /> :
@@ -189,9 +189,9 @@ function QualityInner() {
             {inc.immediate_action && <div className="text-[10px] text-green-700 mt-1">Immediate action: {inc.immediate_action}</div>}
             {['reported', 'investigating'].includes(inc.status) && (
               <div className="flex gap-1 mt-2">
-                {inc.status === 'reported' && <button onClick={() => incidents.updateIncident(inc.id, { status: 'investigating', assigned_to: staffId })} className="px-2 py-1 bg-amber-100 text-amber-700 rounded text-[9px]">Start Investigation</button>}
-                {inc.status === 'investigating' && <button onClick={() => incidents.updateIncident(inc.id, { status: 'action_taken' })} className="px-2 py-1 bg-green-100 text-green-700 rounded text-[9px]">Mark Action Taken</button>}
-                <button onClick={() => incidents.updateIncident(inc.id, { status: 'closed', closed_at: new Date().toISOString() })} className="px-2 py-1 bg-gray-100 text-gray-600 rounded text-[9px]">Close</button>
+                {inc.status === 'reported' && <button onClick={() => incidents.updateIncident(inc.id, { status: 'investigating', assigned_to: staffId })} className="px-2 py-1 bg-amber-100 text-amber-700 rounded text-[9px] cursor-pointer">Start Investigation</button>}
+                {inc.status === 'investigating' && <button onClick={() => incidents.updateIncident(inc.id, { status: 'action_taken' })} className="px-2 py-1 bg-green-100 text-green-700 rounded text-[9px] cursor-pointer">Mark Action Taken</button>}
+                <button onClick={() => incidents.updateIncident(inc.id, { status: 'closed', closed_at: new Date().toISOString() })} className="px-2 py-1 bg-gray-100 text-gray-600 rounded text-[9px] cursor-pointer">Close</button>
               </div>
             )}
           </div>
@@ -202,7 +202,7 @@ function QualityInner() {
       {tab === 'indicators' && <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="font-bold text-sm">NABH Quality Indicators (20 KPIs)</h2>
-          <button onClick={() => setShowNewQI(!showNewQI)} className="px-4 py-2 bg-teal-600 text-white text-xs rounded-lg">{showNewQI ? 'Cancel' : '+ Submit Data'}</button>
+          <button onClick={() => setShowNewQI(!showNewQI)} className="px-4 py-2 bg-teal-600 text-white text-xs rounded-lg cursor-pointer">{showNewQI ? 'Cancel' : '+ Submit Data'}</button>
         </div>
 
         {showNewQI && <div className="bg-white rounded-xl border p-4 space-y-3">
@@ -217,7 +217,7 @@ function QualityInner() {
               <input type="number" value={qiForm.value} onChange={e => setQiForm(f => ({ ...f, value: e.target.value }))} className="w-full px-2 py-1.5 border rounded text-xs" step="0.01" /></div>
             <div><label className="text-[9px] text-gray-500">Numerator</label>
               <input type="number" value={qiForm.numerator} onChange={e => setQiForm(f => ({ ...f, numerator: e.target.value }))} className="w-full px-2 py-1.5 border rounded text-xs" /></div>
-            <div className="flex items-end"><button onClick={submitQI} disabled={!qiForm.value} className="w-full py-1.5 bg-teal-600 text-white text-xs rounded disabled:opacity-40">Submit</button></div>
+            <div className="flex items-end"><button onClick={submitQI} disabled={!qiForm.value} className="w-full py-1.5 bg-teal-600 text-white text-xs rounded disabled:opacity-40 cursor-pointer">Submit</button></div>
           </div>
         </div>}
 
@@ -257,8 +257,8 @@ function QualityInner() {
           <input type="date" value={auditFilter.dateFrom} onChange={e => setAuditFilter(f => ({ ...f, dateFrom: e.target.value }))} className="px-2 py-1 border rounded text-xs" />
           <span className="text-xs text-gray-400 self-center">to</span>
           <input type="date" value={auditFilter.dateTo} onChange={e => setAuditFilter(f => ({ ...f, dateTo: e.target.value }))} className="px-2 py-1 border rounded text-xs" />
-          <button onClick={() => audit.load(auditFilter.entityType || auditFilter.dateFrom ? auditFilter : undefined)} className="px-3 py-1 bg-teal-600 text-white text-xs rounded">Filter</button>
-          <button onClick={() => exportToCSV(audit.logs.map((l: any) => ({ timestamp: l.created_at, user: l.user?.full_name, action: l.action, entity_type: l.entity_type, details: l.entity_label, changes: l.changes ? JSON.stringify(l.changes) : "" })), "audit_trail")} className="px-3 py-1 bg-gray-100 text-xs rounded border">Export CSV</button>
+          <button onClick={() => audit.load(auditFilter.entityType || auditFilter.dateFrom ? auditFilter : undefined)} className="px-3 py-1 bg-teal-600 text-white text-xs rounded cursor-pointer">Filter</button>
+          <button onClick={() => exportToCSV(audit.logs.map((l: any) => ({ timestamp: l.created_at, user: l.user?.full_name, action: l.action, entity_type: l.entity_type, details: l.entity_label, changes: l.changes ? JSON.stringify(l.changes) : "" })), "audit_trail")} className="px-3 py-1 bg-gray-100 text-xs rounded border cursor-pointer">Export CSV</button>
         </div>
 
         {audit.loading ? <div className="animate-pulse h-48 bg-gray-200 rounded-xl" /> :

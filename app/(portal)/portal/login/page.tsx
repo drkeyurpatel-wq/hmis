@@ -1,5 +1,6 @@
 'use client';
 import React, { useState } from 'react';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 
 export default function PortalLoginPage() {
@@ -57,7 +58,7 @@ export default function PortalLoginPage() {
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
           <div className="w-16 h-16 rounded-2xl bg-teal-600 flex items-center justify-center mx-auto mb-4">
-            <img src="/images/health1-logo.svg" alt="Health1" className="h-12 w-auto" /> 
+            <Image src="/images/health1-logo.svg" alt="Health1" width={96} height={48} className="h-12 w-auto" />
           </div>
           <h1 className="text-xl font-bold text-gray-900">Patient Portal</h1>
           <p className="text-sm text-gray-500 mt-1">View reports, appointments & bills</p>

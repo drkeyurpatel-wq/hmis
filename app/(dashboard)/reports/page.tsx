@@ -6,6 +6,7 @@ import { useReportEngine, type ReportFilters } from '@/lib/reports/report-engine
 import { exportToExcel, type ExcelSheet, type ExcelColumn } from '@/lib/reports/excel-export';
 import { exportToPDF } from '@/lib/reports/pdf-export';
 import { sb } from '@/lib/supabase/browser';
+import { fmtNum, fmtINRCompact } from '@/lib/utils/format';
 
 type ReportType = 'revenue'|'doctors'|'occupancy'|'opd'|'discharge_tat'|'insurance'|'pharmacy'|'lab'|'radiology'|'ar_aging'|'charges'|'centre_comparison';
 
@@ -23,9 +24,6 @@ const REPORT_META: Record<ReportType, { label: string; icon: string; desc: strin
   charges: { label: 'Charge Capture', icon: '', desc: 'Auto + manual charges by source, category, date' },
   centre_comparison: { label: 'Centre Comparison', icon: '🏢', desc: '5-centre side-by-side: revenue, OPD, IPD, beds' },
 };
-
-const fmt = (n: number) => n >= 10000000 ? '₹' + (n / 10000000).toFixed(2) + ' Cr' : n >= 100000 ? '₹' + (n / 100000).toFixed(2) + ' L' : '₹' + Math.round(n).toLocaleString('en-IN');
-const fmtN = (n: number) => Math.round(n).toLocaleString('en-IN');
 
 function ReportsInner() {
   const { activeCentreId } = useAuthStore();
@@ -208,24 +206,24 @@ function ReportsInner() {
         {/* ===== REVENUE ===== */}
         {report === 'revenue' && d.totals && <div className="space-y-4">
           <div className="grid grid-cols-5 gap-2">
-            <KPI label="Bills" value={fmtN(d.totals.count)} /><KPI label="Gross" value={fmt(d.totals.gross)} color="text-blue-700" />
-            <KPI label="Net Revenue" value={fmt(d.totals.net)} color="text-green-700" /><KPI label="Collected" value={fmt(d.totals.paid)} color="text-green-700" />
-            <KPI label="Outstanding" value={fmt(d.totals.balance)} color="text-red-700" />
+            <KPI label="Bills" value={fmtNum(d.totals.count)} /><KPI label="Gross" value={fmtINRCompact(d.totals.gross)} color="text-blue-700" />
+            <KPI label="Net Revenue" value={fmtINRCompact(d.totals.net)} color="text-green-700" /><KPI label="Collected" value={fmtINRCompact(d.totals.paid)} color="text-green-700" />
+            <KPI label="Outstanding" value={fmtINRCompact(d.totals.balance)} color="text-red-700" />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div><h3 className="text-xs font-bold text-gray-500 mb-2">By Centre</h3>
-              <Table cols={[{ key: 'centre', label: 'Centre' }, { key: 'count', label: 'Bills', align: 'center' }, { key: 'net', label: 'Net Revenue', align: 'right', fmt: fmt }, { key: 'paid', label: 'Collected', align: 'right', fmt: fmt }, { key: 'balance', label: 'Outstanding', align: 'right', fmt: fmt }]} rows={d.byCentre} /></div>
+              <Table cols={[{ key: 'centre', label: 'Centre' }, { key: 'count', label: 'Bills', align: 'center' }, { key: 'net', label: 'Net Revenue', align: 'right', fmt: fmtINRCompact }, { key: 'paid', label: 'Collected', align: 'right', fmt: fmtINRCompact }, { key: 'balance', label: 'Outstanding', align: 'right', fmt: fmtINRCompact }]} rows={d.byCentre} /></div>
             <div><h3 className="text-xs font-bold text-gray-500 mb-2">By Payor</h3>
-              <Table cols={[{ key: 'payor', label: 'Payor' }, { key: 'count', label: 'Bills', align: 'center' }, { key: 'net', label: 'Net', align: 'right', fmt: fmt }, { key: 'paid', label: 'Collected', align: 'right', fmt: fmt }]} rows={d.byPayor} /></div>
+              <Table cols={[{ key: 'payor', label: 'Payor' }, { key: 'count', label: 'Bills', align: 'center' }, { key: 'net', label: 'Net', align: 'right', fmt: fmtINRCompact }, { key: 'paid', label: 'Collected', align: 'right', fmt: fmtINRCompact }]} rows={d.byPayor} /></div>
           </div>
           <h3 className="text-xs font-bold text-gray-500">Daily Trend</h3>
-          <Table cols={[{ key: 'date', label: 'Date' }, { key: 'count', label: 'Bills', align: 'center' }, { key: 'gross', label: 'Gross', align: 'right', fmt: fmt }, { key: 'net', label: 'Net', align: 'right', fmt: fmt }, { key: 'paid', label: 'Collected', align: 'right', fmt: fmt }]} rows={d.byDate} max={31} />
+          <Table cols={[{ key: 'date', label: 'Date' }, { key: 'count', label: 'Bills', align: 'center' }, { key: 'gross', label: 'Gross', align: 'right', fmt: fmtINRCompact }, { key: 'net', label: 'Net', align: 'right', fmt: fmtINRCompact }, { key: 'paid', label: 'Collected', align: 'right', fmt: fmtINRCompact }]} rows={d.byDate} max={31} />
         </div>}
 
         {/* ===== DOCTORS ===== */}
         {report === 'doctors' && d.doctors && <div className="space-y-4">
           <KPI label="Doctors" value={d.totalDoctors} />
-          <Table cols={[{ key: 'name', label: 'Doctor' }, { key: 'department', label: 'Department' }, { key: 'opd', label: 'OPD', align: 'center' }, { key: 'ipd', label: 'IPD', align: 'center' }, { key: 'surgeries', label: 'Surgeries', align: 'center' }, { key: 'revenue', label: 'Revenue', align: 'right', fmt: fmt }]} rows={d.doctors} max={100} />
+          <Table cols={[{ key: 'name', label: 'Doctor' }, { key: 'department', label: 'Department' }, { key: 'opd', label: 'OPD', align: 'center' }, { key: 'ipd', label: 'IPD', align: 'center' }, { key: 'surgeries', label: 'Surgeries', align: 'center' }, { key: 'revenue', label: 'Revenue', align: 'right', fmt: fmtINRCompact }]} rows={d.doctors} max={100} />
         </div>}
 
         {/* ===== OCCUPANCY ===== */}
@@ -247,7 +245,7 @@ function ReportsInner() {
         {/* ===== OPD ===== */}
         {report === 'opd' && <div className="space-y-4">
           <div className="grid grid-cols-3 gap-2">
-            <KPI label="Total Visits" value={fmtN(d.total)} color="text-blue-700" /><KPI label="Completed" value={fmtN(d.completed)} color="text-green-700" />
+            <KPI label="Total Visits" value={fmtNum(d.total)} color="text-blue-700" /><KPI label="Completed" value={fmtNum(d.completed)} color="text-green-700" />
             <KPI label="Avg Wait" value={d.avgWaitMin + ' min'} color={d.avgWaitMin > 30 ? 'text-red-700' : 'text-green-700'} />
           </div>
           <div className="grid grid-cols-3 gap-4">
@@ -268,26 +266,26 @@ function ReportsInner() {
         {/* ===== INSURANCE ===== */}
         {report === 'insurance' && d.claims && <div className="space-y-4">
           <div className="grid grid-cols-5 gap-2">
-            <KPI label="Claims" value={d.total} /><KPI label="Claimed" value={fmt(d.totalClaimed)} color="text-blue-700" />
-            <KPI label="Settled" value={fmt(d.totalSettled)} color="text-green-700" /><KPI label="Disallowance" value={fmt(d.totalDisallowance)} color="text-red-700" />
+            <KPI label="Claims" value={d.total} /><KPI label="Claimed" value={fmtINRCompact(d.totalClaimed)} color="text-blue-700" />
+            <KPI label="Settled" value={fmtINRCompact(d.totalSettled)} color="text-green-700" /><KPI label="Disallowance" value={fmtINRCompact(d.totalDisallowance)} color="text-red-700" />
             <KPI label="Avg TAT" value={d.avgTAT + 'd'} color={d.avgTAT > 30 ? 'text-red-700' : 'text-green-700'} />
           </div>
-          <Table cols={[{ key: 'claimNumber', label: 'Claim #' }, { key: 'patient', label: 'Patient' }, { key: 'centre', label: 'Centre' }, { key: 'status', label: 'Status' }, { key: 'claimed', label: 'Claimed', align: 'right', fmt: fmt }, { key: 'settled', label: 'Settled', align: 'right', fmt: fmt }, { key: 'disallowance', label: 'Disallowance', align: 'right', fmt: fmt }, { key: 'tatDays', label: 'TAT', align: 'center' }]} rows={d.claims} max={100} />
+          <Table cols={[{ key: 'claimNumber', label: 'Claim #' }, { key: 'patient', label: 'Patient' }, { key: 'centre', label: 'Centre' }, { key: 'status', label: 'Status' }, { key: 'claimed', label: 'Claimed', align: 'right', fmt: fmtINRCompact }, { key: 'settled', label: 'Settled', align: 'right', fmt: fmtINRCompact }, { key: 'disallowance', label: 'Disallowance', align: 'right', fmt: fmtINRCompact }, { key: 'tatDays', label: 'TAT', align: 'center' }]} rows={d.claims} max={100} />
         </div>}
 
         {/* ===== PHARMACY ===== */}
         {report === 'pharmacy' && <div className="space-y-4">
           <div className="grid grid-cols-4 gap-2">
-            <KPI label="Total Items" value={fmtN(d.totalItems)} /><KPI label="Stock Value" value={fmt(d.totalStockValue)} color="text-blue-700" />
+            <KPI label="Total Items" value={fmtNum(d.totalItems)} /><KPI label="Stock Value" value={fmtINRCompact(d.totalStockValue)} color="text-blue-700" />
             <KPI label="Expiring 30d" value={d.expiring30} color={d.expiring30 > 0 ? 'text-amber-700' : 'text-green-700'} />
-            <KPI label="Expired" value={d.expiredCount} sub={fmt(d.expiredValue)} color={d.expiredCount > 0 ? 'text-red-700' : 'text-green-700'} />
+            <KPI label="Expired" value={d.expiredCount} sub={fmtINRCompact(d.expiredValue)} color={d.expiredCount > 0 ? 'text-red-700' : 'text-green-700'} />
           </div>
         </div>}
 
         {/* ===== LAB ===== */}
         {report === 'lab' && <div className="space-y-4">
           <div className="grid grid-cols-3 gap-2">
-            <KPI label="Total Orders" value={fmtN(d.total)} /><KPI label="Pending" value={d.pending} color="text-amber-700" />
+            <KPI label="Total Orders" value={fmtNum(d.total)} /><KPI label="Pending" value={d.pending} color="text-amber-700" />
             <KPI label="Completed" value={d.completed} color="text-green-700" />
           </div>
           <Table cols={[{ key: 'name', label: 'Test' }, { key: 'count', label: 'Orders', align: 'right' }]} rows={d.byTest} max={30} />
@@ -296,7 +294,7 @@ function ReportsInner() {
         {/* ===== RADIOLOGY ===== */}
         {report === 'radiology' && <div className="space-y-4">
           <div className="grid grid-cols-4 gap-2">
-            <KPI label="Total Studies" value={fmtN(d.total)} /><KPI label="Reported" value={d.reported} color="text-green-700" />
+            <KPI label="Total Studies" value={fmtNum(d.total)} /><KPI label="Reported" value={d.reported} color="text-green-700" />
             <KPI label="STAT" value={d.stat} color={d.stat > 0 ? 'text-red-700' : ''} />
             <KPI label="Avg TAT" value={d.avgTAT > 0 ? (d.avgTAT >= 60 ? Math.floor(d.avgTAT/60) + 'h' : d.avgTAT + 'm') : '—'} />
           </div>
@@ -306,22 +304,22 @@ function ReportsInner() {
         {/* ===== AR AGING ===== */}
         {report === 'ar_aging' && d.outstanding && <div className="space-y-4">
           <div className="grid grid-cols-5 gap-2">
-            <KPI label="Total Outstanding" value={fmt(d.total)} color="text-red-700" /><KPI label="0-30 days" value={fmt(d.buckets['0-30'])} color="text-green-700" />
-            <KPI label="31-60 days" value={fmt(d.buckets['31-60'])} color="text-amber-700" /><KPI label="61-90 days" value={fmt(d.buckets['61-90'])} color="text-orange-700" />
-            <KPI label="90+ days" value={fmt(d.buckets['90+'])} color="text-red-700" />
+            <KPI label="Total Outstanding" value={fmtINRCompact(d.total)} color="text-red-700" /><KPI label="0-30 days" value={fmtINRCompact(d.buckets['0-30'])} color="text-green-700" />
+            <KPI label="31-60 days" value={fmtINRCompact(d.buckets['31-60'])} color="text-amber-700" /><KPI label="61-90 days" value={fmtINRCompact(d.buckets['61-90'])} color="text-orange-700" />
+            <KPI label="90+ days" value={fmtINRCompact(d.buckets['90+'])} color="text-red-700" />
           </div>
-          <Table cols={[{ key: 'billNumber', label: 'Bill #' }, { key: 'patient', label: 'Patient' }, { key: 'centre', label: 'Centre' }, { key: 'payor', label: 'Payor' }, { key: 'net', label: 'Net', align: 'right', fmt: fmt }, { key: 'paid', label: 'Paid', align: 'right', fmt: fmt }, { key: 'balance', label: 'Balance', align: 'right', fmt: fmt }, { key: 'ageDays', label: 'Age', align: 'center' }, { key: 'bucket', label: 'Bucket', align: 'center' }]} rows={d.outstanding} max={100} />
+          <Table cols={[{ key: 'billNumber', label: 'Bill #' }, { key: 'patient', label: 'Patient' }, { key: 'centre', label: 'Centre' }, { key: 'payor', label: 'Payor' }, { key: 'net', label: 'Net', align: 'right', fmt: fmtINRCompact }, { key: 'paid', label: 'Paid', align: 'right', fmt: fmtINRCompact }, { key: 'balance', label: 'Balance', align: 'right', fmt: fmtINRCompact }, { key: 'ageDays', label: 'Age', align: 'center' }, { key: 'bucket', label: 'Bucket', align: 'center' }]} rows={d.outstanding} max={100} />
         </div>}
 
         {/* ===== CHARGES ===== */}
         {report === 'charges' && <div className="space-y-4">
           <div className="grid grid-cols-4 gap-2">
-            <KPI label="Total Charges" value={fmt(d.total)} color="text-blue-700" /><KPI label="Count" value={fmtN(d.count)} />
-            <KPI label="Captured" value={fmtN(d.captured)} color="text-amber-700" /><KPI label="Posted" value={fmtN(d.posted)} color="text-green-700" />
+            <KPI label="Total Charges" value={fmtINRCompact(d.total)} color="text-blue-700" /><KPI label="Count" value={fmtNum(d.count)} />
+            <KPI label="Captured" value={fmtNum(d.captured)} color="text-amber-700" /><KPI label="Posted" value={fmtNum(d.posted)} color="text-green-700" />
           </div>
           <div className="grid grid-cols-2 gap-4">
-            <div><h3 className="text-xs font-bold text-gray-500 mb-2">By Source</h3><Table cols={[{ key: 'source', label: 'Source' }, { key: 'amount', label: 'Amount', align: 'right', fmt: fmt }]} rows={d.bySource} /></div>
-            <div><h3 className="text-xs font-bold text-gray-500 mb-2">By Category</h3><Table cols={[{ key: 'category', label: 'Category' }, { key: 'amount', label: 'Amount', align: 'right', fmt: fmt }]} rows={d.byCategory} /></div>
+            <div><h3 className="text-xs font-bold text-gray-500 mb-2">By Source</h3><Table cols={[{ key: 'source', label: 'Source' }, { key: 'amount', label: 'Amount', align: 'right', fmt: fmtINRCompact }]} rows={d.bySource} /></div>
+            <div><h3 className="text-xs font-bold text-gray-500 mb-2">By Category</h3><Table cols={[{ key: 'category', label: 'Category' }, { key: 'amount', label: 'Amount', align: 'right', fmt: fmtINRCompact }]} rows={d.byCategory} /></div>
           </div>
         </div>}
 
@@ -329,7 +327,7 @@ function ReportsInner() {
         {report === 'centre_comparison' && d.centres && <div className="space-y-4">
           <Table cols={[
             { key: 'centre', label: 'Centre' }, { key: 'code', label: 'Code', align: 'center' },
-            { key: 'revenue', label: 'Revenue', align: 'right', fmt: fmt }, { key: 'collected', label: 'Collected', align: 'right', fmt: fmt }, { key: 'outstanding', label: 'Outstanding', align: 'right', fmt: fmt },
+            { key: 'revenue', label: 'Revenue', align: 'right', fmt: fmtINRCompact }, { key: 'collected', label: 'Collected', align: 'right', fmt: fmtINRCompact }, { key: 'outstanding', label: 'Outstanding', align: 'right', fmt: fmtINRCompact },
             { key: 'opd', label: 'OPD', align: 'center' }, { key: 'ipd', label: 'IPD', align: 'center' },
             { key: 'totalBeds', label: 'Beds', align: 'center' }, { key: 'occupiedBeds', label: 'Occ', align: 'center' }, { key: 'occupancy', label: 'Occ %', align: 'center', fmt: (v: number) => v + '%' },
           ]} rows={d.centres} />

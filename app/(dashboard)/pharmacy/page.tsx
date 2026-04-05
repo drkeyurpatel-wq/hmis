@@ -6,9 +6,7 @@ import { useAuthStore } from '@/lib/store/auth';
 import { useDrugMaster, usePharmacyStock, useDispensingQueue, usePharmacyDashboard } from '@/lib/pharmacy/pharmacy-hooks';
 import { usePharmacyReturns, useStockTransfers, useControlledSubstances } from '@/lib/pharmacy/pharmacy-v2-hooks';
 import { sb } from '@/lib/supabase/browser';
-
-const fmt = (n: number) => n.toLocaleString('en-IN', { maximumFractionDigits: 0 });
-const fmtL = (n: number) => n >= 100000 ? `${(n/100000).toFixed(2)}L` : `${fmt(n)}`;
+import { fmtINR, fmtINRCompact } from '@/lib/utils/format';
 
 type Tab = 'dispensing'|'inventory'|'drug_master'|'controlled'|'more';
 
@@ -87,8 +85,8 @@ function PharmacyInner() {
       {tab === 'dispensing' && /* stats */ <div className="space-y-4">
         <div className="grid grid-cols-6 gap-3">
           {[['Dispensed Today',dashboard.todayDispensed,'text-h1-teal','bg-h1-teal-light'],
-            ['Revenue Today',`₹${fmtL(dashboard.todayRevenue)}`,'text-green-700','bg-green-50'],
-            ['Month Revenue',`₹${fmtL(dashboard.monthRevenue)}`,'text-green-700','bg-green-50'],
+            ['Revenue Today',`${fmtINRCompact(dashboard.todayRevenue)}`,'text-green-700','bg-green-50'],
+            ['Month Revenue',`${fmtINRCompact(dashboard.monthRevenue)}`,'text-green-700','bg-green-50'],
             ['Pending Rx',dispensing.stats.pending,'text-yellow-700','bg-yellow-50'],
             ['Low Stock',stock.lowStock.length,'text-red-700','bg-red-50'],
             ['Expiring (90d)',stock.expiringSoon.length,'text-orange-700','bg-orange-50'],
@@ -99,9 +97,9 @@ function PharmacyInner() {
         <div className="grid grid-cols-2 gap-3">
           <div className="bg-white rounded-xl border p-4">
             <h3 className="text-xs font-bold mb-2">Stock Value</h3>
-            <div className="flex justify-between text-sm"><span className="text-gray-500">At cost:</span><span className="font-bold">₹{fmtL(stock.totalValue)}</span></div>
-            <div className="flex justify-between text-sm"><span className="text-gray-500">At MRP:</span><span className="font-bold text-green-700">₹{fmtL(stock.totalMRPValue)}</span></div>
-            <div className="flex justify-between text-sm"><span className="text-gray-500">Margin:</span><span className="font-bold text-h1-teal">₹{fmtL(stock.totalMRPValue - stock.totalValue)}</span></div>
+            <div className="flex justify-between text-sm"><span className="text-gray-500">At cost:</span><span className="font-bold">{fmtINRCompact(stock.totalValue)}</span></div>
+            <div className="flex justify-between text-sm"><span className="text-gray-500">At MRP:</span><span className="font-bold text-green-700">{fmtINRCompact(stock.totalMRPValue)}</span></div>
+            <div className="flex justify-between text-sm"><span className="text-gray-500">Margin:</span><span className="font-bold text-h1-teal">{fmtINRCompact(stock.totalMRPValue - stock.totalValue)}</span></div>
             <div className="flex justify-between text-sm"><span className="text-gray-500">Items:</span><span className="font-bold">{stock.aggregated.length} drugs / {stock.stock.length} batches</span></div>
           </div>
           <div className="bg-white rounded-xl border p-4">
@@ -132,7 +130,7 @@ function PharmacyInner() {
             {rx.prescription_data && <div className="mt-2 flex flex-wrap gap-1">{(typeof rx.prescription_data === 'string' ? JSON.parse(rx.prescription_data) : rx.prescription_data).map((med: any, i: number) => (
               <span key={i} className="bg-gray-100 text-gray-700 px-2 py-0.5 rounded text-[10px]">{med.drug_name || med.name || 'Drug'} {med.dose} {med.route}</span>
             ))}</div>}
-            {rx.total_amount > 0 && <div className="mt-1 text-xs text-green-700 font-bold">₹{fmt(parseFloat(rx.total_amount))}</div>}
+            {rx.total_amount > 0 && <div className="mt-1 text-xs text-green-700 font-bold">{fmtINR(parseFloat(rx.total_amount))}</div>}
           </div>
         ))}</div>}
 
@@ -307,7 +305,7 @@ function PharmacyInner() {
             <td className={`p-2 text-center ${expiryColor(a.earliestExpiry)}`}>{a.earliestExpiry} ({daysToExpiry(a.earliestExpiry)}d)</td>
             <td className="p-2 text-right">₹{a.avgCost.toFixed(2)}</td>
             <td className="p-2 text-right">₹{parseFloat(a.mrp).toFixed(2)}</td>
-            <td className="p-2 text-right font-bold">₹{fmt(Math.round(a.totalCost))}</td>
+            <td className="p-2 text-right font-bold">{fmtINR(Math.round(a.totalCost))}</td>
           </tr>))}</tbody></table></div>
       </div>}
 
@@ -334,17 +332,17 @@ function PharmacyInner() {
         <div className="grid grid-cols-3 gap-3">
           <div className="bg-red-50 rounded-xl border border-red-200 p-4 text-center"><div className="text-[10px] text-red-600">Already Expired</div><div className="text-2xl font-bold text-red-700">{stock.expired.length}</div></div>
           <div className="bg-orange-50 rounded-xl border border-orange-200 p-4 text-center"><div className="text-[10px] text-orange-600">Expiring in 90 days</div><div className="text-2xl font-bold text-orange-700">{stock.expiringSoon.length}</div></div>
-          <div className="bg-yellow-50 rounded-xl border border-yellow-200 p-4 text-center"><div className="text-[10px] text-yellow-600">Value at Risk</div><div className="text-2xl font-bold text-yellow-700">₹{fmt(stock.expiringSoon.reduce((s,i) => s+parseFloat(i.purchase_rate)*i.quantity_available, 0))}</div></div>
+          <div className="bg-yellow-50 rounded-xl border border-yellow-200 p-4 text-center"><div className="text-[10px] text-yellow-600">Value at Risk</div><div className="text-2xl font-bold text-yellow-700">{fmtINR(stock.expiringSoon.reduce((s,i) => s+parseFloat(i.purchase_rate)*i.quantity_available, 0))}</div></div>
         </div>
         {stock.expired.length > 0 && <><h3 className="text-sm font-bold text-red-700">Expired Stock — Action Required</h3>
           <div className="bg-white rounded-xl border overflow-hidden"><table className="w-full text-xs"><thead><tr className="bg-red-50 border-b"><th className="p-2 text-left">Drug</th><th className="p-2">Batch</th><th className="p-2">Expired</th><th className="p-2 text-right">Qty</th><th className="p-2 text-right">Loss</th></tr></thead><tbody>{stock.expired.map(s => (
-            <tr key={s.id} className="border-b bg-red-50"><td className="p-2 font-medium text-red-700">{s.drug?.generic_name}</td><td className="p-2 text-center font-mono text-[10px]">{s.batch_number}</td><td className="p-2 text-center text-red-600">{s.expiry_date}</td><td className="p-2 text-right font-bold">{s.quantity_available}</td><td className="p-2 text-right text-red-700 font-bold">₹{fmt(Math.round(parseFloat(s.purchase_rate)*s.quantity_available))}</td></tr>
+            <tr key={s.id} className="border-b bg-red-50"><td className="p-2 font-medium text-red-700">{s.drug?.generic_name}</td><td className="p-2 text-center font-mono text-[10px]">{s.batch_number}</td><td className="p-2 text-center text-red-600">{s.expiry_date}</td><td className="p-2 text-right font-bold">{s.quantity_available}</td><td className="p-2 text-right text-red-700 font-bold">{fmtINR(Math.round(parseFloat(s.purchase_rate)*s.quantity_available))}</td></tr>
           ))}</tbody></table></div></>}
         <h3 className="text-sm font-bold text-orange-700">Expiring Within 90 Days</h3>
         <div className="bg-white rounded-xl border overflow-hidden"><table className="w-full text-xs"><thead><tr className="bg-orange-50 border-b"><th className="p-2 text-left">Drug</th><th className="p-2">Batch</th><th className="p-2">Expiry</th><th className="p-2">Days Left</th><th className="p-2 text-right">Qty</th><th className="p-2 text-right">Value</th></tr></thead><tbody>{stock.expiringSoon.filter(s => daysToExpiry(s.expiry_date) > 0).map(s => (
           <tr key={s.id} className="border-b"><td className="p-2 font-medium">{s.drug?.generic_name}</td><td className="p-2 text-center font-mono text-[10px]">{s.batch_number}</td><td className="p-2 text-center">{s.expiry_date}</td>
             <td className={`p-2 text-center font-bold ${daysToExpiry(s.expiry_date) <= 30 ? 'text-red-600' : 'text-yellow-600'}`}>{daysToExpiry(s.expiry_date)}d</td>
-            <td className="p-2 text-right">{s.quantity_available}</td><td className="p-2 text-right">₹{fmt(Math.round(parseFloat(s.purchase_rate)*s.quantity_available))}</td></tr>
+            <td className="p-2 text-right">{s.quantity_available}</td><td className="p-2 text-right">{fmtINR(Math.round(parseFloat(s.purchase_rate)*s.quantity_available))}</td></tr>
         ))}</tbody></table></div>
       </div>}
 
@@ -489,7 +487,7 @@ function PharmacyInner() {
           <div className="flex gap-2 text-[10px]">
             <span className="bg-h1-teal-light text-h1-teal px-2 py-1 rounded">Patient returns: {returns.stats.patientReturns}</span>
             <span className="bg-red-100 text-red-700 px-2 py-1 rounded">Expiry write-off: {returns.stats.expiryWriteOff}</span>
-            <span className="bg-green-100 text-green-700 px-2 py-1 rounded">Total refund: ₹{fmt(returns.stats.totalRefund)}</span>
+            <span className="bg-green-100 text-green-700 px-2 py-1 rounded">Total refund: {fmtINR(returns.stats.totalRefund)}</span>
           </div>
         </div>
         {/* Return form */}
@@ -536,7 +534,7 @@ function PharmacyInner() {
               <td className="p-2 text-center"><span className={`px-1 py-0.5 rounded text-[9px] ${r.return_type === 'patient_return' ? 'bg-h1-teal-light text-h1-teal' : r.return_type === 'expiry_write_off' ? 'bg-red-100 text-red-700' : 'bg-gray-100'}`}>{r.return_type?.replace(/_/g, ' ')}</span></td>
               <td className="p-2 text-center">{r.quantity}</td><td className="p-2 text-center text-gray-400">{r.batch_number}</td>
               <td className="p-2 text-gray-500 text-[10px]">{r.reason}</td>
-              <td className="p-2 text-right font-bold">{parseFloat(r.refund_amount) > 0 ? `₹${fmt(parseFloat(r.refund_amount))}` : '—'}</td>
+              <td className="p-2 text-right font-bold">{parseFloat(r.refund_amount) > 0 ? `${fmtINR(parseFloat(r.refund_amount))}` : '—'}</td>
               <td className="p-2 text-[10px]">{r.staff?.full_name}</td>
               <td className="p-2 text-center text-gray-400 text-[10px]">{new Date(r.created_at).toLocaleDateString('en-IN')}</td>
             </tr>

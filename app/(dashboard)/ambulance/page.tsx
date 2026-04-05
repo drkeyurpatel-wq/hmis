@@ -58,7 +58,7 @@ function AmbulanceInner() {
 
       <div className="flex items-center justify-between">
         <div><h1 className="text-xl font-bold tracking-tight">Ambulance & Transport</h1><p className="text-xs text-gray-400">{amb.stats.totalVehicles} vehicles · {amb.stats.todayRequests} trips today</p></div>
-        <button onClick={() => setShowNew(true)} className="flex items-center gap-2 px-4 py-2.5 bg-red-600 text-white text-sm rounded-xl font-semibold hover:bg-red-700"><Plus size={15} /> New Request</button>
+        <button onClick={() => setShowNew(true)} className="flex items-center gap-2 px-4 py-2.5 bg-red-600 text-white text-sm rounded-xl font-semibold hover:bg-red-700 cursor-pointer"><Plus size={15} /> New Request</button>
       </div>
 
       <div className="grid grid-cols-7 gap-2">
@@ -76,7 +76,7 @@ function AmbulanceInner() {
       </div>
 
       <div className="flex gap-1">{(['dispatch', 'fleet', 'history'] as Tab[]).map(t => (
-        <button key={t} onClick={() => setTab(t)} className={`px-3.5 py-2 text-xs font-medium rounded-xl capitalize ${tab === t ? 'bg-teal-600 text-white shadow-sm' : 'bg-white text-gray-500 border border-gray-100'}`}>{t === 'dispatch' ? 'Active Dispatch' : t}</button>
+        <button key={t} onClick={() => setTab(t)} className={`px-3.5 py-2 text-xs font-medium rounded-xl capitalize ${tab === t ? 'bg-teal-600 text-white shadow-sm' : 'bg-white text-gray-500 border border-gray-100'} cursor-pointer`}>{t === 'dispatch' ? 'Active Dispatch' : t}</button>
       ))}</div>
 
       {/* FLEET */}
@@ -135,13 +135,13 @@ function AmbulanceInner() {
                 <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${STATUS_BADGE[r.status] || 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-100 text-gray-600'} capitalize`}>{r.status.replace('_', ' ')}</span>
                 <div className="flex gap-1">
                   {r.status === 'requested' && (
-                    <button onClick={() => setShowDispatch(r.id)} className="px-3 py-1.5 bg-teal-600 text-white text-[10px] rounded-lg font-semibold hover:bg-teal-700">Dispatch</button>
+                    <button onClick={() => setShowDispatch(r.id)} className="px-3 py-1.5 bg-teal-600 text-white text-[10px] rounded-lg font-semibold hover:bg-teal-700 cursor-pointer">Dispatch</button>
                   )}
-                  {r.status === 'dispatched' && <button onClick={() => amb.updateRequestStatus(r.id, 'en_route')} className="px-2.5 py-1.5 bg-blue-50 text-blue-700 text-[10px] rounded-lg font-medium">En Route</button>}
-                  {r.status === 'en_route' && <button onClick={() => amb.updateRequestStatus(r.id, 'arrived')} className="px-2.5 py-1.5 bg-purple-50 text-purple-700 text-[10px] rounded-lg font-medium">Arrived</button>}
-                  {r.status === 'arrived' && <button onClick={() => amb.updateRequestStatus(r.id, 'patient_loaded')} className="px-2.5 py-1.5 bg-purple-50 text-purple-700 text-[10px] rounded-lg font-medium">Loaded</button>}
-                  {['patient_loaded', 'returning'].includes(r.status) && <button onClick={() => amb.updateRequestStatus(r.id, 'completed')} className="px-2.5 py-1.5 bg-emerald-50 text-emerald-700 text-[10px] rounded-lg font-medium">Complete</button>}
-                  {!['completed', 'cancelled'].includes(r.status) && <button onClick={() => amb.updateRequestStatus(r.id, 'cancelled', { cancellation_reason: 'Cancelled' })} className="px-2 py-1.5 text-red-500 text-[10px] hover:bg-red-50 rounded-lg">Cancel</button>}
+                  {r.status === 'dispatched' && <button onClick={() => amb.updateRequestStatus(r.id, 'en_route')} className="px-2.5 py-1.5 bg-blue-50 text-blue-700 text-[10px] rounded-lg font-medium cursor-pointer">En Route</button>}
+                  {r.status === 'en_route' && <button onClick={() => amb.updateRequestStatus(r.id, 'arrived')} className="px-2.5 py-1.5 bg-purple-50 text-purple-700 text-[10px] rounded-lg font-medium cursor-pointer">Arrived</button>}
+                  {r.status === 'arrived' && <button onClick={() => amb.updateRequestStatus(r.id, 'patient_loaded')} className="px-2.5 py-1.5 bg-purple-50 text-purple-700 text-[10px] rounded-lg font-medium cursor-pointer">Loaded</button>}
+                  {['patient_loaded', 'returning'].includes(r.status) && <button onClick={() => amb.updateRequestStatus(r.id, 'completed')} className="px-2.5 py-1.5 bg-emerald-50 text-emerald-700 text-[10px] rounded-lg font-medium cursor-pointer">Complete</button>}
+                  {!['completed', 'cancelled'].includes(r.status) && <button onClick={() => amb.updateRequestStatus(r.id, 'cancelled', { cancellation_reason: 'Cancelled' })} className="px-2 py-1.5 text-red-500 text-[10px] hover:bg-red-50 rounded-lg cursor-pointer">Cancel</button>}
                 </div>
               </div>
             </div>
@@ -176,13 +176,13 @@ function AmbulanceInner() {
             <div className="flex justify-between"><h2 className="text-lg font-bold">Transport Request</h2><button onClick={() => setShowNew(false)}><X size={18} className="text-gray-400" /></button></div>
             <div className="grid grid-cols-2 gap-3">
               <div><label className="text-[10px] text-gray-500 uppercase font-semibold">Type</label><select className="w-full mt-1 px-3 py-2 border rounded-xl text-sm" value={form.request_type} onChange={e => setForm(f => ({ ...f, request_type: e.target.value }))}>{['emergency_pickup', 'inter_hospital_transfer', 'discharge', 'dialysis_shuttle', 'opd_pickup', 'dead_body'].map(t => <option key={t} value={t}>{t.replace(/_/g, ' ')}</option>)}</select></div>
-              <div><label className="text-[10px] text-gray-500 uppercase font-semibold">Priority</label><div className="flex gap-1 mt-1">{['emergency', 'urgent', 'routine'].map(p => <button key={p} onClick={() => setForm(f => ({ ...f, priority: p }))} className={`flex-1 py-2 rounded-lg text-[10px] font-semibold capitalize ${form.priority === p ? (p === 'emergency' ? 'bg-red-600 text-white' : 'bg-teal-600 text-white') : 'bg-gray-100 text-gray-500'}`}>{p}</button>)}</div></div>
+              <div><label className="text-[10px] text-gray-500 uppercase font-semibold">Priority</label><div className="flex gap-1 mt-1">{['emergency', 'urgent', 'routine'].map(p => <button key={p} onClick={() => setForm(f => ({ ...f, priority: p }))} className={`flex-1 py-2 rounded-lg text-[10px] font-semibold capitalize ${form.priority === p ? (p === 'emergency' ? 'bg-red-600 text-white' : 'bg-teal-600 text-white') : 'bg-gray-100 text-gray-500'} cursor-pointer`}>{p}</button>)}</div></div>
               <div><label className="text-[10px] text-gray-500 uppercase font-semibold">Patient Name *</label><input className="w-full mt-1 px-3 py-2 border rounded-xl text-sm" value={form.patient_name} onChange={e => setForm(f => ({ ...f, patient_name: e.target.value }))} /></div>
               <div><label className="text-[10px] text-gray-500 uppercase font-semibold">Phone</label><input className="w-full mt-1 px-3 py-2 border rounded-xl text-sm" value={form.patient_phone} onChange={e => setForm(f => ({ ...f, patient_phone: e.target.value }))} /></div>
               <div className="col-span-2"><label className="text-[10px] text-gray-500 uppercase font-semibold">Pickup Location *</label><input className="w-full mt-1 px-3 py-2 border rounded-xl text-sm" value={form.pickup_location} onChange={e => setForm(f => ({ ...f, pickup_location: e.target.value }))} placeholder="Full address" /></div>
               <div className="col-span-2"><label className="text-[10px] text-gray-500 uppercase font-semibold">Drop Location</label><input className="w-full mt-1 px-3 py-2 border rounded-xl text-sm" value={form.drop_location} onChange={e => setForm(f => ({ ...f, drop_location: e.target.value }))} /></div>
             </div>
-            <button onClick={handleCreate} disabled={!form.patient_name || !form.pickup_location} className="w-full py-2.5 bg-red-600 text-white text-sm rounded-xl font-semibold disabled:opacity-40 hover:bg-red-700">Create Request</button>
+            <button onClick={handleCreate} disabled={!form.patient_name || !form.pickup_location} className="w-full py-2.5 bg-red-600 text-white text-sm rounded-xl font-semibold disabled:opacity-40 hover:bg-red-700 cursor-pointer">Create Request</button>
           </div>
         </div>
       )}
@@ -195,7 +195,7 @@ function AmbulanceInner() {
             <div className="space-y-2">
               {amb.vehicles.filter(v => v.status === 'available').map(v => (
                 <button key={v.id} onClick={() => { amb.dispatch(showDispatch, v.id); setShowDispatch(null); flash(`${v.vehicle_number} dispatched`); }}
-                  className="w-full flex items-center gap-3 p-3 border rounded-xl hover:bg-teal-50 hover:border-teal-200 transition-colors text-left">
+                  className="w-full flex items-center gap-3 p-3 border rounded-xl hover:bg-teal-50 hover:border-teal-200 transition-colors text-left cursor-pointer">
                   <Truck size={18} className="text-emerald-600" />
                   <div><div className="font-bold text-sm">{v.vehicle_number}</div><div className="text-[10px] text-gray-400">{TYPE_LABELS[v.type]} · {v.driver_name || 'No driver'} · {v.driver_phone || ''}</div></div>
                 </button>

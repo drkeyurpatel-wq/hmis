@@ -49,8 +49,8 @@ function SignaturePad({ onSave, label }: { onSave: (data: string) => void; label
         onMouseDown={startDraw} onMouseMove={draw} onMouseUp={stopDraw} onMouseLeave={stopDraw}
         onTouchStart={startDraw} onTouchMove={draw} onTouchEnd={stopDraw} />
       <div className="flex gap-2 mt-2">
-        <button onClick={save} disabled={!hasContent} className="bg-blue-600 text-white px-3 py-1 rounded text-xs disabled:opacity-50">Capture</button>
-        <button onClick={clear} className="text-xs text-gray-500">Clear</button>
+        <button onClick={save} disabled={!hasContent} className="bg-blue-600 text-white px-3 py-1 rounded text-xs disabled:opacity-50 cursor-pointer">Capture</button>
+        <button onClick={clear} className="text-xs text-gray-500 cursor-pointer">Clear</button>
       </div>
     </div>
   );
@@ -135,7 +135,7 @@ function Inner() {
         <h1 className="text-2xl font-bold">Digital Consent</h1>
         <div className="flex gap-1">
           {(['consents','new','templates'] as Tab[]).map(t => (
-            <button key={t} onClick={() => { setTab(t); setSelected(null); }} className={`px-3 py-1.5 rounded text-sm font-medium ${tab === t ? 'bg-blue-600 text-white' : 'bg-gray-100'}`}>
+            <button key={t} onClick={() => { setTab(t); setSelected(null); }} className={`px-3 py-1.5 rounded text-sm font-medium ${tab === t ? 'bg-blue-600 text-white' : 'bg-gray-100'} cursor-pointer`}>
               {t === 'consents' ? 'Consents' : t === 'new' ? '+ New' : 'Templates'}
             </button>
           ))}
@@ -226,14 +226,14 @@ function Inner() {
               </select>
             </div>
           </div>
-          <button onClick={handleCreate} disabled={!nf.patient_id || !nf.template_id} className="bg-blue-600 text-white px-4 py-2 rounded text-sm font-medium disabled:opacity-50">Create Consent</button>
+          <button onClick={handleCreate} disabled={!nf.patient_id || !nf.template_id} className="bg-blue-600 text-white px-4 py-2 rounded text-sm font-medium disabled:opacity-50 cursor-pointer">Create Consent</button>
         </div>
       )}
 
       {/* Detail View */}
       {tab === 'detail' && selected && (
         <div>
-          <button onClick={() => { setTab('consents'); setSelected(null); }} className="text-sm text-blue-600 mb-4">← Back</button>
+          <button onClick={() => { setTab('consents'); setSelected(null); }} className="text-sm text-blue-600 mb-4 cursor-pointer">← Back</button>
           <div className="bg-white border rounded-lg p-6">
             <div className="flex items-start justify-between mb-4">
               <div>
@@ -337,7 +337,7 @@ function Inner() {
             {/* Existing signatures display */}
             {selected.consent_given && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                {selected.patient_signature_data && <div className="border rounded p-3"><div className="text-xs text-gray-500 mb-1">Patient Signature</div><img src={selected.patient_signature_data} alt="sig" className="max-h-24" /> </div>}
+                {selected.patient_signature_data && <div className="border rounded p-3"><div className="text-xs text-gray-500 mb-1">Patient Signature</div><img src={selected.patient_signature_data} alt="Patient signature" className="max-h-24" /> </div>}
                 {selected.witness_signature_data && <div className="border rounded p-3"><div className="text-xs text-gray-500 mb-1">Witness: {selected.witness_name}</div><img src={selected.witness_signature_data} alt="witness" className="max-h-24" /> </div>}
               </div>
             )}
@@ -346,11 +346,11 @@ function Inner() {
             <div className="flex gap-2 pt-4 border-t">
               {!selected.consent_given && !selected.revoked && selected.patient_signature_data && (
                 <button onClick={async () => { await dc.finalizeConsent(selected.id, staffId); flash('Consent obtained ✓'); dc.loadConsents(); setSelected(prev => prev ? { ...prev, consent_given: true } : null); const a = await dc.loadAudit(selected.id); setAudit(a); }}
-                  className="bg-green-600 text-white px-4 py-2 rounded text-sm font-medium">Finalize Consent ✓</button>
+                  className="bg-green-600 text-white px-4 py-2 rounded text-sm font-medium cursor-pointer">Finalize Consent ✓</button>
               )}
               {selected.consent_given && !selected.revoked && (
                 <button onClick={async () => { const reason = prompt('Withdrawal reason?'); if (reason) { await dc.withdrawConsent(selected.id, staffId, reason); flash('Consent withdrawn'); dc.loadConsents(); setSelected(prev => prev ? { ...prev, revoked: true, withdrawal_reason: reason } : null); const a = await dc.loadAudit(selected.id); setAudit(a); } }}
-                  className="bg-red-600 text-white px-3 py-2 rounded text-sm">Withdraw Consent</button>
+                  className="bg-red-600 text-white px-3 py-2 rounded text-sm cursor-pointer">Withdraw Consent</button>
               )}
             </div>
 
@@ -381,7 +381,7 @@ function Inner() {
       {/* Templates Tab */}
       {tab === 'templates' && (
         <div>
-          <button onClick={() => setShowTplForm(!showTplForm)} className="mb-4 bg-blue-600 text-white px-3 py-1.5 rounded text-sm font-medium">
+          <button onClick={() => setShowTplForm(!showTplForm)} className="mb-4 bg-blue-600 text-white px-3 py-1.5 rounded text-sm font-medium cursor-pointer">
             {showTplForm ? 'Cancel' : '+ New Template'}
           </button>
           {showTplForm && (
@@ -405,7 +405,7 @@ function Inner() {
                 <div><label className="text-xs text-gray-500">Benefits</label><textarea className="w-full border rounded px-3 py-2 text-sm" rows={2} value={tf.benefits_en} onChange={e => setTf(p => ({ ...p, benefits_en: e.target.value }))} /></div>
                 <div><label className="text-xs text-gray-500">Alternatives</label><textarea className="w-full border rounded px-3 py-2 text-sm" rows={2} value={tf.alternatives_en} onChange={e => setTf(p => ({ ...p, alternatives_en: e.target.value }))} /></div>
               </div>
-              <button onClick={handleSaveTemplate} className="bg-blue-600 text-white px-4 py-2 rounded text-sm font-medium">Save Template</button>
+              <button onClick={handleSaveTemplate} className="bg-blue-600 text-white px-4 py-2 rounded text-sm font-medium cursor-pointer">Save Template</button>
             </div>
           )}
           <div className="overflow-x-auto bg-white border rounded-lg">

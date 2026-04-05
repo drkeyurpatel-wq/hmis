@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { createClient } from '@/lib/supabase/client';
 
 // Convert user ID to internal auth email
@@ -54,7 +55,7 @@ export default function LoginPage() {
         {/* Logo */}
         <div className="text-center mb-8">
           <div className="flex justify-center mb-4">
-            <img src="/images/health1-logo.svg" alt="Health1 Super Speciality Hospitals" className="w-56 h-auto" /> 
+            <Image src="/images/health1-logo.svg" alt="Health1 Super Speciality Hospitals" width={224} height={48} className="w-56 h-auto" />
           </div>
           <h1 className="font-bold text-lg text-gray-900">Hospital Management System</h1>
           <p className="text-sm text-gray-500 mt-1">Sign in to continue</p>

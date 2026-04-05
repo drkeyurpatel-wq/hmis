@@ -99,7 +99,7 @@ function Patient360Inner() {
       <div className="bg-white rounded-xl border shadow-sm mb-3 overflow-hidden">
         <div className="flex items-center justify-between px-4 py-3 border-b">
           <div className="flex items-center gap-3">
-            <button onClick={() => router.back()} className="p-1 hover:bg-gray-100 rounded-lg"><ArrowLeft size={18} className="text-gray-400" /></button>
+            <button onClick={() => router.back()} className="p-1 hover:bg-gray-100 rounded-lg cursor-pointer"><ArrowLeft size={18} className="text-gray-400" /></button>
             <div>
               <div className="flex items-center gap-2">
                 <h1 className="text-lg font-bold text-gray-900">{pt.first_name} {pt.last_name || ''}</h1>
@@ -124,7 +124,7 @@ function Patient360Inner() {
             {p.news2Score !== null && p.news2Score >= 5 && (
               <div className={`${news2Color} text-white text-xs px-2 py-1 rounded-lg`}>NEWS2: {p.news2Score}</div>
             )}
-            <button onClick={p.reload} className="p-1.5 hover:bg-gray-100 rounded-lg"><RefreshCw size={14} className="text-gray-400" /></button>
+            <button onClick={p.reload} className="p-1.5 hover:bg-gray-100 rounded-lg cursor-pointer"><RefreshCw size={14} className="text-gray-400" /></button>
           </div>
         </div>
 
@@ -155,7 +155,7 @@ function Patient360Inner() {
             { label: 'Order Imaging', icon: ScanLine, color: 'bg-indigo-50 text-indigo-700 border-indigo-200', action: () => router.push('/radiology') },
             { label: 'Billing', icon: IndianRupee, color: 'bg-amber-50 text-amber-700 border-amber-200', action: () => router.push('/billing') },
           ].map((a) => (
-            <button key={a.label} onClick={a.action} className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border text-xs font-medium hover:shadow-sm transition-all ${a.color}`}>
+            <button key={a.label} onClick={a.action} className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border text-xs font-medium hover:shadow-sm transition-all ${a.color} cursor-pointer`}>
               <a.icon size={13} /> {a.label}
             </button>
           ))}
@@ -165,21 +165,21 @@ function Patient360Inner() {
       {/* INLINE VITALS FORM */}
       {showVitals && (
         <div className="bg-white rounded-xl border shadow-sm mb-3 p-4">
-          <div className="flex items-center justify-between mb-3"><h3 className="font-semibold text-sm">Record Vitals</h3><button onClick={() => setShowVitals(false)} className="text-gray-400 text-xs">Close</button></div>
+          <div className="flex items-center justify-between mb-3"><h3 className="font-semibold text-sm">Record Vitals</h3><button onClick={() => setShowVitals(false)} className="text-gray-400 text-xs cursor-pointer">Close</button></div>
           <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
             {([['heart_rate','HR (bpm)','72'],['systolic_bp','SBP','120'],['diastolic_bp','DBP','80'],['temperature','Temp (°C)','37.0'],['spo2','SpO₂ (%)','98'],['respiratory_rate','RR (/min)','16']] as const).map(([key,label,ph]) => (
               <div key={key}><label className="text-[10px] text-gray-500 block mb-1">{label}</label>
               <input type="number" step="0.1" placeholder={ph} value={(vf as any)[key]} onChange={(e: any) => setVf(prev => ({...prev,[key]:e.target.value}))} className="w-full px-2 py-1.5 border rounded-lg text-sm text-center" /></div>
             ))}
           </div>
-          <button onClick={saveVitals} className="mt-3 px-4 py-2 bg-teal-600 text-white text-sm rounded-lg">Save Vitals</button>
+          <button onClick={saveVitals} className="mt-3 px-4 py-2 bg-teal-600 text-white text-sm rounded-lg cursor-pointer">Save Vitals</button>
         </div>
       )}
       {showNote && (
         <div className="bg-white rounded-xl border shadow-sm mb-3 p-4">
-          <div className="flex items-center justify-between mb-2"><h3 className="font-semibold text-sm">Quick Note</h3><button onClick={() => setShowNote(false)} className="text-gray-400 text-xs">Close</button></div>
+          <div className="flex items-center justify-between mb-2"><h3 className="font-semibold text-sm">Quick Note</h3><button onClick={() => setShowNote(false)} className="text-gray-400 text-xs cursor-pointer">Close</button></div>
           <textarea value={noteText} onChange={(e: any) => setNoteText(e.target.value)} className="w-full px-3 py-2 border rounded-lg text-sm h-20 resize-none" placeholder="Assessment, plan, progress note..." autoFocus />
-          <button onClick={saveNote} className="mt-2 px-4 py-2 bg-blue-600 text-white text-sm rounded-lg">Save Note</button>
+          <button onClick={saveNote} className="mt-2 px-4 py-2 bg-blue-600 text-white text-sm rounded-lg cursor-pointer">Save Note</button>
         </div>
       )}
 
@@ -245,7 +245,7 @@ function Patient360Inner() {
                 return <div key={m.id} className={`flex items-center justify-between py-1.5 px-2 rounded-lg text-xs ${isDue?'bg-amber-50 border border-amber-200':'bg-gray-50'}`}>
                   <div><span className="font-semibold">{m.drug_name}</span><span className="text-gray-500 ml-1">{m.dose} {m.route} {m.frequency}</span></div>
                   <div className="flex items-center gap-2">
-                    {isDue && <button onClick={() => giveMed(dueMAR.id, m.drug_name)} className="px-2 py-0.5 bg-green-600 text-white rounded text-[10px] font-bold hover:bg-green-700">Give ✓</button>}
+                    {isDue && <button onClick={() => giveMed(dueMAR.id, m.drug_name)} className="px-2 py-0.5 bg-green-600 text-white rounded text-[10px] font-bold hover:bg-green-700 cursor-pointer">Give ✓</button>}
                     {isDue && !dueMAR && <span className="text-amber-600 font-semibold">DUE</span>}
                     {m.is_stat && <span className="bg-red-100 text-red-600 px-1 py-0.5 rounded text-[10px] font-bold">STAT</span>}
                   </div>

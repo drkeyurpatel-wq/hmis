@@ -93,11 +93,11 @@ function CRMInner() {
         </div>
         <div className="flex items-center gap-2">
           {followUps.stats.overdue > 0 && (
-            <button onClick={() => setTab('followups')} className="flex items-center gap-1.5 px-3 py-2 bg-red-50 text-red-700 text-xs rounded-xl border border-red-200 font-semibold animate-pulse">
+            <button onClick={() => setTab('followups')} className="flex items-center gap-1.5 px-3 py-2 bg-red-50 text-red-700 text-xs rounded-xl border border-red-200 font-semibold animate-pulse cursor-pointer">
               <Clock size={13} /> {followUps.stats.overdue} overdue
             </button>
           )}
-          <button onClick={() => setShowNewLead(true)} className="flex items-center gap-1.5 px-4 py-2.5 bg-teal-600 text-white text-sm rounded-xl font-semibold hover:bg-teal-700 transition-colors">
+          <button onClick={() => setShowNewLead(true)} className="flex items-center gap-1.5 px-4 py-2.5 bg-teal-600 text-white text-sm rounded-xl font-semibold hover:bg-teal-700 transition-colors cursor-pointer">
             <Plus size={15} /> New Lead
           </button>
         </div>
@@ -127,7 +127,7 @@ function CRMInner() {
           <button key={t.key} onClick={() => setTab(t.key)}
             className={`flex items-center gap-1.5 px-3.5 py-2 text-xs font-medium rounded-xl whitespace-nowrap transition-all ${
               tab === t.key ? 'bg-teal-600 text-white shadow-sm' : 'bg-white text-gray-500 border border-gray-100 hover:bg-gray-50'
-            }`}>
+            } cursor-pointer`}>
             <t.icon size={13} /> {t.label}
             {t.badge !== undefined && t.badge > 0 && <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${tab === t.key ? 'bg-white/20' : 'bg-gray-100'}`}>{t.badge}</span>}
           </button>
@@ -158,8 +158,8 @@ function CRMInner() {
                     <div className="flex items-center justify-between mt-2">
                       <span className="text-[9px] text-gray-300">{timeAgo(lead.created_at)} ago</span>
                       <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button onClick={e => { e.stopPropagation(); handleCall(lead.phone, lead.id); }} className="p-1 bg-green-50 rounded text-green-600 hover:bg-green-100"><Phone size={10} /></button>
-                        <button onClick={e => { e.stopPropagation(); window.open(`https://wa.me/91${lead.phone.replace(/[^0-9]/g, '').slice(-10)}`, '_blank'); }} className="p-1 bg-emerald-50 rounded text-emerald-600 hover:bg-emerald-100"><MessageCircle size={10} /></button>
+                        <button onClick={e => { e.stopPropagation(); handleCall(lead.phone, lead.id); }} className="p-1 bg-green-50 rounded text-green-600 hover:bg-green-100 cursor-pointer"><Phone size={10} /></button>
+                        <button onClick={e => { e.stopPropagation(); window.open(`https://wa.me/91${lead.phone.replace(/[^0-9]/g, '').slice(-10)}`, '_blank'); }} className="p-1 bg-emerald-50 rounded text-emerald-600 hover:bg-emerald-100 cursor-pointer"><MessageCircle size={10} /></button>
                       </div>
                     </div>
                   </div>
@@ -183,7 +183,7 @@ function CRMInner() {
             </div>
             {['all', 'new', 'contacted', 'qualified', 'appointment_booked', 'converted', 'lost'].map(s => (
               <button key={s} onClick={() => { setLeadFilter(f => ({ ...f, status: s })); leads.load({ ...leadFilter, status: s }); }}
-                className={`px-2.5 py-1.5 text-[10px] font-medium rounded-lg ${leadFilter.status === s ? 'bg-teal-50 text-teal-700 border border-teal-200' : 'bg-gray-50 text-gray-500'}`}>
+                className={`px-2.5 py-1.5 text-[10px] font-medium rounded-lg ${leadFilter.status === s ? 'bg-teal-50 text-teal-700 border border-teal-200' : 'bg-gray-50 text-gray-500'} cursor-pointer`}>
                 {s === 'all' ? 'All' : s.replace('_', ' ')}
               </button>
             ))}
@@ -206,8 +206,8 @@ function CRMInner() {
                   <td className="text-[10px] text-gray-400">{timeAgo(l.created_at)}</td>
                   <td>
                     <div className="flex gap-1" onClick={e => e.stopPropagation()}>
-                      <button onClick={() => handleCall(l.phone, l.id)} className="p-1.5 bg-green-50 rounded-lg text-green-600 hover:bg-green-100" title="Call"><Phone size={12} /></button>
-                      <button onClick={() => window.open(`https://wa.me/91${l.phone.replace(/[^0-9]/g, '').slice(-10)}`, '_blank')} className="p-1.5 bg-emerald-50 rounded-lg text-emerald-600 hover:bg-emerald-100" title="WhatsApp"><MessageCircle size={12} /></button>
+                      <button onClick={() => handleCall(l.phone, l.id)} className="p-1.5 bg-green-50 rounded-lg text-green-600 hover:bg-green-100 cursor-pointer" title="Call"><Phone size={12} /></button>
+                      <button onClick={() => window.open(`https://wa.me/91${l.phone.replace(/[^0-9]/g, '').slice(-10)}`, '_blank')} className="p-1.5 bg-emerald-50 rounded-lg text-emerald-600 hover:bg-emerald-100 cursor-pointer" title="WhatsApp"><MessageCircle size={12} /></button>
                     </div>
                   </td>
                 </tr>
@@ -239,8 +239,8 @@ function CRMInner() {
                   <div className="text-[10px] text-gray-400 mt-0.5">Due: {new Date(f.follow_up_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</div>
                 </div>
                 <div className="flex gap-2 shrink-0">
-                  <button onClick={() => handleCall(f.lead?.phone, f.lead_id)} className="px-3 py-2 bg-emerald-600 text-white text-xs rounded-xl font-medium hover:bg-emerald-700"><Phone size={12} className="inline mr-1" />Call</button>
-                  <button onClick={() => followUps.markDone(f.id)} className="px-3 py-2 bg-gray-100 text-gray-600 text-xs rounded-xl font-medium hover:bg-gray-200">Done</button>
+                  <button onClick={() => handleCall(f.lead?.phone, f.lead_id)} className="px-3 py-2 bg-emerald-600 text-white text-xs rounded-xl font-medium hover:bg-emerald-700 cursor-pointer"><Phone size={12} className="inline mr-1" />Call</button>
+                  <button onClick={() => followUps.markDone(f.id)} className="px-3 py-2 bg-gray-100 text-gray-600 text-xs rounded-xl font-medium hover:bg-gray-200 cursor-pointer">Done</button>
                 </div>
               </div>
             );
@@ -355,13 +355,13 @@ function CRMInner() {
               <div><label className="text-[10px] font-semibold text-gray-500 uppercase">Priority</label>
                 <div className="flex gap-1 mt-1">{['hot', 'warm', 'medium', 'cold'].map(p => (
                   <button key={p} onClick={() => setNewLead(f => ({ ...f, priority: p }))}
-                    className={`flex-1 py-2 rounded-lg text-[10px] font-semibold capitalize ${newLead.priority === p ? 'bg-teal-600 text-white' : 'bg-gray-100 text-gray-500'}`}>{p}</button>
+                    className={`flex-1 py-2 rounded-lg text-[10px] font-semibold capitalize ${newLead.priority === p ? 'bg-teal-600 text-white' : 'bg-gray-100 text-gray-500'} cursor-pointer`}>{p}</button>
                 ))}</div></div>
               <div><label className="text-[10px] font-semibold text-gray-500 uppercase">Procedure</label><input className="w-full mt-1 px-3 py-2 border rounded-xl text-sm" value={newLead.interested_procedure} onChange={e => setNewLead(f => ({ ...f, interested_procedure: e.target.value }))} placeholder="e.g. TKR, PTCA" /></div>
             </div>
             <div><label className="text-[10px] font-semibold text-gray-500 uppercase">Notes</label><textarea className="w-full mt-1 px-3 py-2 border rounded-xl text-sm h-16 resize-none" value={newLead.notes} onChange={e => setNewLead(f => ({ ...f, notes: e.target.value }))} /></div>
             <button onClick={handleCreateLead} disabled={!newLead.first_name || !newLead.phone}
-              className="w-full py-2.5 bg-teal-600 text-white text-sm rounded-xl font-semibold disabled:opacity-40 hover:bg-teal-700 transition-colors">Create Lead</button>
+              className="w-full py-2.5 bg-teal-600 text-white text-sm rounded-xl font-semibold disabled:opacity-40 hover:bg-teal-700 transition-colors cursor-pointer">Create Lead</button>
           </div>
         </div>
       )}
@@ -407,7 +407,7 @@ function LeadDetail({ lead, centreId, staffId, doctors, onCall, onUpdate, onConv
       {/* Header */}
       <div className="p-5 border-b border-gray-100 shrink-0">
         <div className="flex items-center justify-between mb-3">
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xs">← Back</button>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xs cursor-pointer">← Back</button>
           {lead.leadsquared_id && <a href={`https://app.leadsquared.com/Leads/${lead.leadsquared_id}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-[10px] text-teal-600"><ExternalLink size={10} />LeadSquared</a>}
         </div>
         <div className="flex items-center gap-3">
@@ -424,9 +424,9 @@ function LeadDetail({ lead, centreId, staffId, doctors, onCall, onUpdate, onConv
         </div>
         {/* Action buttons */}
         <div className="flex gap-2 mt-3">
-          <button onClick={() => onCall(lead.phone, lead.id)} className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-emerald-600 text-white text-xs rounded-xl font-semibold hover:bg-emerald-700"><Phone size={13} /> Call</button>
-          <button onClick={() => window.open(`https://wa.me/91${lead.phone.replace(/[^0-9]/g, '').slice(-10)}`, '_blank')} className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-emerald-600 text-white text-xs rounded-xl font-semibold hover:bg-emerald-700"><MessageCircle size={13} /> WhatsApp</button>
-          <button onClick={() => window.open(`mailto:${lead.email}`, '_blank')} disabled={!lead.email} className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-teal-600 text-white text-xs rounded-xl font-semibold hover:bg-teal-700 disabled:opacity-40"><Mail size={13} /> Email</button>
+          <button onClick={() => onCall(lead.phone, lead.id)} className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-emerald-600 text-white text-xs rounded-xl font-semibold hover:bg-emerald-700 cursor-pointer"><Phone size={13} /> Call</button>
+          <button onClick={() => window.open(`https://wa.me/91${lead.phone.replace(/[^0-9]/g, '').slice(-10)}`, '_blank')} className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-emerald-600 text-white text-xs rounded-xl font-semibold hover:bg-emerald-700 cursor-pointer"><MessageCircle size={13} /> WhatsApp</button>
+          <button onClick={() => window.open(`mailto:${lead.email}`, '_blank')} disabled={!lead.email} className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-teal-600 text-white text-xs rounded-xl font-semibold hover:bg-teal-700 disabled:opacity-40 cursor-pointer"><Mail size={13} /> Email</button>
         </div>
       </div>
 
@@ -459,7 +459,7 @@ function LeadDetail({ lead, centreId, staffId, doctors, onCall, onUpdate, onConv
         <div className="text-[10px] font-semibold text-gray-400 uppercase mb-2">Log Call Result</div>
         <div className="flex gap-1">
           {['answered', 'no_answer', 'busy', 'voicemail', 'wrong_number'].map(d => (
-            <button key={d} onClick={() => logCall(d)} className="px-2.5 py-1.5 text-[10px] font-medium rounded-lg bg-gray-50 text-gray-600 hover:bg-gray-100 capitalize">{d.replace('_', ' ')}</button>
+            <button key={d} onClick={() => logCall(d)} className="px-2.5 py-1.5 text-[10px] font-medium rounded-lg bg-gray-50 text-gray-600 hover:bg-gray-100 capitalize cursor-pointer">{d.replace('_', ' ')}</button>
           ))}
         </div>
       </div>
@@ -474,7 +474,7 @@ function LeadDetail({ lead, centreId, staffId, doctors, onCall, onUpdate, onConv
           <select value={followUpType} onChange={e => setFollowUpType(e.target.value)} className="px-2 py-1.5 border rounded-lg text-[10px]">
             <option value="call">Call</option><option value="whatsapp">WhatsApp</option><option value="visit">Visit</option>
           </select>
-          <button onClick={addNote} disabled={!noteText} className="px-3 py-1.5 bg-teal-600 text-white text-[10px] rounded-lg font-semibold disabled:opacity-40">Add</button>
+          <button onClick={addNote} disabled={!noteText} className="px-3 py-1.5 bg-teal-600 text-white text-[10px] rounded-lg font-semibold disabled:opacity-40 cursor-pointer">Add</button>
         </div>
       </div>
 

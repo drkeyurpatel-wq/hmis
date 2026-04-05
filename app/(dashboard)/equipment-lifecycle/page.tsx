@@ -79,7 +79,7 @@ function Inner() {
         <h1 className="text-2xl font-bold">Equipment Lifecycle</h1>
         <div className="flex gap-1 flex-wrap">
           {(['equipment','breakdowns','alerts','calibrations','costs'] as Tab[]).map(t => (
-            <button key={t} onClick={() => setTab(t)} className={`px-3 py-1.5 rounded text-sm font-medium ${tab === t ? 'bg-blue-600 text-white' : 'bg-gray-100'}`}>
+            <button key={t} onClick={() => setTab(t)} className={`px-3 py-1.5 rounded text-sm font-medium ${tab === t ? 'bg-blue-600 text-white' : 'bg-gray-100'} cursor-pointer`}>
               {t === 'equipment' ? 'Equipment' : t === 'breakdowns' ? 'Breakdowns' : t === 'alerts' ? `Alerts (${totalAlerts})` : t === 'calibrations' ? 'Calibrations' : 'Cost Analysis'}
             </button>
           ))}
@@ -114,8 +114,8 @@ function Inner() {
               <option value="all">All Statuses</option>
               <option value="active">Active</option><option value="maintenance">Maintenance</option><option value="out_of_order">Out of Order</option>
             </select>
-            <button onClick={() => setShowBreakdown(true)} className="bg-red-600 text-white px-3 py-1.5 rounded text-sm font-medium">+ Log Breakdown</button>
-            <button onClick={() => setShowCalib(true)} className="bg-blue-600 text-white px-3 py-1.5 rounded text-sm font-medium">+ Log Calibration</button>
+            <button onClick={() => setShowBreakdown(true)} className="bg-red-600 text-white px-3 py-1.5 rounded text-sm font-medium cursor-pointer">+ Log Breakdown</button>
+            <button onClick={() => setShowCalib(true)} className="bg-blue-600 text-white px-3 py-1.5 rounded text-sm font-medium cursor-pointer">+ Log Calibration</button>
           </div>
 
           {/* Breakdown form */}
@@ -137,8 +137,8 @@ function Inner() {
               </div>
               <textarea className="w-full border rounded px-2 py-1.5 text-sm mb-2" rows={2} placeholder="Issue description *" value={bf.issue_description} onChange={e => setBf(p => ({ ...p, issue_description: e.target.value }))} />
               <div className="flex gap-2">
-                <button onClick={handleLogBreakdown} className="bg-red-600 text-white px-4 py-1.5 rounded text-sm">Log Breakdown</button>
-                <button onClick={() => setShowBreakdown(false)} className="text-sm text-gray-500">Cancel</button>
+                <button onClick={handleLogBreakdown} className="bg-red-600 text-white px-4 py-1.5 rounded text-sm cursor-pointer">Log Breakdown</button>
+                <button onClick={() => setShowBreakdown(false)} className="text-sm text-gray-500 cursor-pointer">Cancel</button>
               </div>
             </div>
           )}
@@ -164,8 +164,8 @@ function Inner() {
                 <input type="number" className="border rounded px-2 py-1.5 text-sm" placeholder="Cost ₹" value={cf.cost} onChange={e => setCf(p => ({ ...p, cost: e.target.value }))} />
               </div>
               <div className="flex gap-2">
-                <button onClick={handleCalib} className="bg-blue-600 text-white px-4 py-1.5 rounded text-sm">Save Calibration</button>
-                <button onClick={() => setShowCalib(false)} className="text-sm text-gray-500">Cancel</button>
+                <button onClick={handleCalib} className="bg-blue-600 text-white px-4 py-1.5 rounded text-sm cursor-pointer">Save Calibration</button>
+                <button onClick={() => setShowCalib(false)} className="text-sm text-gray-500 cursor-pointer">Cancel</button>
               </div>
             </div>
           )}
@@ -235,7 +235,7 @@ function Inner() {
                     <td className="p-3 text-center">{m.patients_impacted > 0 ? <span className="text-red-600">{m.patients_impacted} ({m.patients_rescheduled} resched)</span> : '-'}</td>
                     <td className="p-3 text-center">{m.status === 'completed' ? (m.sla_met ? <span className="text-green-600">Met ✓</span> : <span className="text-red-600">Breached</span>) : slaBreach ? <span className="text-red-600 font-bold">BREACH</span> : <span className="text-green-600">{m.sla_target_hours ? `${m.sla_target_hours - hoursElapsed}h left` : '-'}</span>}</td>
                     <td className="p-3">{m.status !== 'completed' && (
-                      <button onClick={() => { setResolving(m); setRf({ resolution: '', cost: '0' }); }} className="text-xs bg-green-600 text-white px-2 py-1 rounded">Resolve</button>
+                      <button onClick={() => { setResolving(m); setRf({ resolution: '', cost: '0' }); }} className="text-xs bg-green-600 text-white px-2 py-1 rounded cursor-pointer">Resolve</button>
                     )}</td>
                   </tr>
                 );
@@ -254,8 +254,8 @@ function Inner() {
             <textarea className="w-full border rounded px-3 py-2 text-sm mb-2" rows={3} placeholder="Resolution *" value={rf.resolution} onChange={e => setRf(p => ({ ...p, resolution: e.target.value }))} />
             <input type="number" className="w-full border rounded px-3 py-2 text-sm mb-3" placeholder="Repair cost ₹" value={rf.cost} onChange={e => setRf(p => ({ ...p, cost: e.target.value }))} />
             <div className="flex gap-2">
-              <button onClick={handleResolve} className="bg-green-600 text-white px-4 py-2 rounded text-sm">Resolve</button>
-              <button onClick={() => setResolving(null)} className="text-sm text-gray-500">Cancel</button>
+              <button onClick={handleResolve} className="bg-green-600 text-white px-4 py-2 rounded text-sm cursor-pointer">Resolve</button>
+              <button onClick={() => setResolving(null)} className="text-sm text-gray-500 cursor-pointer">Cancel</button>
             </div>
           </div>
         </div>

@@ -68,7 +68,7 @@ function PkgInner() {
 
       <div className="flex items-center justify-between">
         <div><h1 className="text-xl font-bold">Packages & Accounting</h1><p className="text-xs text-gray-500">{pkg.stats.total} packages · {pkg.stats.activeUtils} active utilizations</p></div>
-        <button onClick={() => setShowNew(true)} className="px-4 py-2 bg-teal-600 text-white text-xs rounded-lg font-medium hover:bg-teal-700">+ New Package</button>
+        <button onClick={() => setShowNew(true)} className="px-4 py-2 bg-teal-600 text-white text-xs rounded-lg font-medium hover:bg-teal-700 cursor-pointer">+ New Package</button>
       </div>
 
       <div className="grid grid-cols-4 lg:grid-cols-8 gap-2">
@@ -85,7 +85,7 @@ function PkgInner() {
 
       <div className="flex gap-1">
         {(['packages', 'utilization', 'analytics'] as Tab[]).map(t =>
-          <button key={t} onClick={() => setTab(t)} className={`px-4 py-2 text-xs font-medium rounded-lg ${tab === t ? 'bg-teal-600 text-white' : 'bg-white border'}`}>
+          <button key={t} onClick={() => setTab(t)} className={`px-4 py-2 text-xs font-medium rounded-lg ${tab === t ? 'bg-teal-600 text-white' : 'bg-white border'} cursor-pointer`}>
             {t === 'packages' ? `Packages (${pkg.packages.length})` : t === 'utilization' ? `Utilization (${pkg.utilizations.length})` : 'Analytics'}
           </button>
         )}
@@ -95,7 +95,7 @@ function PkgInner() {
       {tab === 'packages' && <>
         <div className="flex gap-2 items-center">
           <input value={search} onChange={e => setSearch(e.target.value)} className="px-3 py-1.5 border rounded-lg text-xs w-64" placeholder="Search packages..." />
-          <div className="flex gap-1">{['all', ...CATEGORIES.slice(0, 6)].map(c => <button key={c} onClick={() => setCatFilter(c)} className={`px-2 py-1 text-[10px] rounded-lg capitalize ${catFilter === c ? 'bg-teal-100 text-teal-700 font-bold' : 'bg-white border'}`}>{c}</button>)}</div>
+          <div className="flex gap-1">{['all', ...CATEGORIES.slice(0, 6)].map(c => <button key={c} onClick={() => setCatFilter(c)} className={`px-2 py-1 text-[10px] rounded-lg capitalize ${catFilter === c ? 'bg-teal-100 text-teal-700 font-bold' : 'bg-white border'} cursor-pointer`}>{c}</button>)}</div>
         </div>
         <div className="bg-white rounded-xl border overflow-x-auto">
           <table className="w-full text-xs"><thead><tr className="bg-gray-50 border-b">
@@ -174,7 +174,7 @@ function PkgInner() {
       {/* NEW PACKAGE MODAL */}
       {showNew && <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center" onClick={() => setShowNew(false)}>
         <div className="bg-white rounded-xl w-[650px] max-h-[90vh] overflow-y-auto p-5 space-y-4" onClick={e => e.stopPropagation()}>
-          <div className="flex justify-between"><h3 className="font-bold text-sm">New package</h3><button onClick={() => setShowNew(false)} className="text-gray-400 text-lg">×</button></div>
+          <div className="flex justify-between"><h3 className="font-bold text-sm">New package</h3><button onClick={() => setShowNew(false)} className="text-gray-400 text-lg cursor-pointer">×</button></div>
           <div className="grid grid-cols-2 gap-3">
             <div className="col-span-2"><label className="text-[9px] text-gray-500">Package name *</label><input value={f.package_name} onChange={e => setF(p => ({...p, package_name: e.target.value}))} className="w-full px-3 py-2 border rounded-lg text-sm" placeholder="e.g. Laparoscopic Cholecystectomy — General Ward" /></div>
             <div><label className="text-[9px] text-gray-500">Procedure</label><input value={f.procedure_name} onChange={e => setF(p => ({...p, procedure_name: e.target.value}))} className="w-full px-3 py-2 border rounded-lg text-sm" placeholder="e.g. Lap Chole" /></div>
@@ -207,18 +207,18 @@ function PkgInner() {
             <div className="grid grid-cols-4 gap-2">
               <select value={incForm.category} onChange={e => setIncForm(f => ({...f, category: e.target.value}))} className="px-2 py-1.5 border rounded text-[10px]">{INCLUSION_CATS.map(c => <option key={c} value={c}>{c}</option>)}</select>
               <input value={incForm.description} onChange={e => setIncForm(f => ({...f, description: e.target.value}))} className="px-2 py-1.5 border rounded text-[10px] col-span-2" placeholder="Description" />
-              <div className="flex gap-1"><input type="number" value={incForm.amount} onChange={e => setIncForm(f => ({...f, amount: e.target.value}))} className="w-full px-2 py-1.5 border rounded text-[10px]" placeholder="₹" /><button onClick={addInclusion} className="px-2 bg-teal-600 text-white rounded text-[10px]">+</button></div>
+              <div className="flex gap-1"><input type="number" value={incForm.amount} onChange={e => setIncForm(f => ({...f, amount: e.target.value}))} className="w-full px-2 py-1.5 border rounded text-[10px]" placeholder="₹" /><button onClick={addInclusion} className="px-2 bg-teal-600 text-white rounded text-[10px] cursor-pointer">+</button></div>
             </div>
           </div>
           <div><label className="text-[9px] text-gray-500">Exclusions (comma-separated)</label><input value={f.exclusions} onChange={e => setF(p => ({...p, exclusions: e.target.value}))} className="w-full px-3 py-2 border rounded-lg text-sm" placeholder="Implant cost, Blood products, ICU stay, Extended stay" /></div>
-          <button onClick={handleCreate} disabled={!f.package_name || !f.package_rate} className="w-full py-2.5 bg-teal-600 text-white text-sm rounded-lg font-medium disabled:opacity-40">Create Package</button>
+          <button onClick={handleCreate} disabled={!f.package_name || !f.package_rate} className="w-full py-2.5 bg-teal-600 text-white text-sm rounded-lg font-medium disabled:opacity-40 cursor-pointer">Create Package</button>
         </div>
       </div>}
 
       {/* DETAIL DRAWER */}
       {showDetail && <div className="fixed inset-0 bg-black/50 z-50 flex justify-end" onClick={() => setShowDetail(null)}>
         <div className="w-[500px] bg-white h-full overflow-y-auto shadow-xl p-5 space-y-4" onClick={e => e.stopPropagation()}>
-          <div className="flex justify-between"><h3 className="font-bold text-sm">{showDetail.package_name || showDetail.name}</h3><button onClick={() => setShowDetail(null)} className="text-gray-400 text-lg">×</button></div>
+          <div className="flex justify-between"><h3 className="font-bold text-sm">{showDetail.package_name || showDetail.name}</h3><button onClick={() => setShowDetail(null)} className="text-gray-400 text-lg cursor-pointer">×</button></div>
           <div className="flex gap-2"><span className={`text-[9px] px-1.5 py-0.5 rounded capitalize ${CAT_COLORS[showDetail.category] || 'bg-gray-100'}`}>{showDetail.category}</span><span className="text-[9px] bg-gray-100 px-1.5 py-0.5 rounded capitalize">{showDetail.room_category?.replace('_', ' ')} · {showDetail.los_days}d</span></div>
           <div className="grid grid-cols-2 gap-3 text-xs">
             {[['Self', showDetail.package_rate], ['Insurance', showDetail.rate_insurance], ['PMJAY', showDetail.rate_pmjay], ['CGHS', showDetail.rate_cghs]].map(([label, val]) => val && <div key={label as string}><span className="text-gray-400">{label}</span>: <b>₹{fmt(val as number)}</b></div>)}

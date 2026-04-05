@@ -6,9 +6,7 @@ import { sb } from '@/lib/supabase/browser';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import { TrendingUp, TrendingDown, Minus, PlusCircle, ChevronDown, ChevronRight } from 'lucide-react';
 import { useCostCentres, usePnL } from '@/lib/billing/cost-centre-hooks';
-
-const fmt = (n: number) => Math.round(n).toLocaleString('en-IN');
-const INR = (n: number) => n >= 10000000 ? `Rs.${(n/10000000).toFixed(2)} Cr` : n >= 100000 ? `Rs.${(n/100000).toFixed(1)}L` : `Rs.${fmt(n)}`;
+import { fmtNum, fmtINRCompact } from '@/lib/utils/format';
 const mColor = (pct: number) => pct >= 40 ? 'text-green-700' : pct >= 20 ? 'text-teal-600' : pct >= 0 ? 'text-amber-600' : 'text-red-600';
 const mBg = (pct: number) => pct >= 40 ? 'bg-green-50' : pct >= 20 ? 'bg-teal-50' : pct >= 0 ? 'bg-amber-50' : 'bg-red-50';
 
@@ -224,26 +222,26 @@ function PnLInner() {
       <div className="grid grid-cols-6 gap-3 mb-6">
         <div className="bg-white rounded-xl border p-4">
           <div className="text-[9px] text-gray-500 uppercase font-semibold">Revenue</div>
-          <div className="text-xl font-bold text-teal-700 mt-1">{INR(totals.revenue)}</div>
+          <div className="text-xl font-bold text-teal-700 mt-1">{fmtINRCompact(totals.revenue)}</div>
           <div className="text-[9px] text-gray-400">{totals.bills} bills</div>
         </div>
         <div className="bg-white rounded-xl border p-4">
           <div className="text-[9px] text-gray-500 uppercase font-semibold">Direct Cost</div>
-          <div className="text-xl font-bold text-orange-600 mt-1">{INR(totals.directCost)}</div>
+          <div className="text-xl font-bold text-orange-600 mt-1">{fmtINRCompact(totals.directCost)}</div>
           <div className="text-[9px] text-gray-400">From tariff/pharmacy/implant</div>
         </div>
         <div className="bg-white rounded-xl border p-4">
           <div className="text-[9px] text-gray-500 uppercase font-semibold">Overhead</div>
-          <div className="text-xl font-bold text-purple-600 mt-1">{INR(totals.overhead)}</div>
+          <div className="text-xl font-bold text-purple-600 mt-1">{fmtINRCompact(totals.overhead)}</div>
           <div className="text-[9px] text-gray-400">Salary, rent, etc.</div>
         </div>
         <div className="bg-white rounded-xl border p-4">
           <div className="text-[9px] text-gray-500 uppercase font-semibold">Total Cost</div>
-          <div className="text-xl font-bold text-red-600 mt-1">{INR(totals.cost)}</div>
+          <div className="text-xl font-bold text-red-600 mt-1">{fmtINRCompact(totals.cost)}</div>
         </div>
         <div className={`rounded-xl border p-4 ${mBg(totals.marginPct)}`}>
           <div className="text-[9px] text-gray-500 uppercase font-semibold">Net Margin</div>
-          <div className={`text-xl font-bold mt-1 ${mColor(totals.marginPct)}`}>{INR(totals.margin)}</div>
+          <div className={`text-xl font-bold mt-1 ${mColor(totals.marginPct)}`}>{fmtINRCompact(totals.margin)}</div>
         </div>
         <div className={`rounded-xl border p-4 ${mBg(totals.marginPct)}`}>
           <div className="text-[9px] text-gray-500 uppercase font-semibold">Margin %</div>
@@ -275,7 +273,7 @@ function PnLInner() {
                   <XAxis dataKey="date" tick={{ fontSize: 9, fill: '#94a3b8' }} axisLine={false} tickLine={false}
                     tickFormatter={(d: string) => new Date(d+'T12:00:00').toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })} />
                   <YAxis tick={{ fontSize: 9, fill: '#94a3b8' }} axisLine={false} tickLine={false} tickFormatter={(v: number) => v >= 100000 ? `${(v/100000).toFixed(0)}L` : `${(v/1000).toFixed(0)}K`} />
-                  <Tooltip contentStyle={{ fontSize: 11, borderRadius: 12, border: '1px solid #e2e8f0' }} formatter={(v: number) => `Rs.${fmt(v)}`} />
+                  <Tooltip contentStyle={{ fontSize: 11, borderRadius: 12, border: '1px solid #e2e8f0' }} formatter={(v: number) => `Rs.${fmtNum(v)}`} />
                   <Bar dataKey="revenue" fill="#0d9488" radius={[4, 4, 0, 0]} name="Revenue" />
                   <Bar dataKey="cost" fill="#ea580c" radius={[4, 4, 0, 0]} name="Cost" />
                 </BarChart>
@@ -300,9 +298,9 @@ function PnLInner() {
                   <tr key={t.type} className="border-b hover:bg-gray-50">
                     <td className="p-3"><span className="px-2 py-0.5 bg-gray-100 rounded text-xs font-medium uppercase">{t.type}</span></td>
                     <td className="p-3 text-center text-gray-500">{t.count}</td>
-                    <td className="p-3 text-right font-medium text-teal-700">{INR(t.revenue)}</td>
-                    <td className="p-3 text-right text-orange-600">{t.cost > 0 ? INR(t.cost) : <span className="text-gray-300">—</span>}</td>
-                    <td className={`p-3 text-right font-bold ${mColor(t.margin_pct)}`}>{INR(t.margin)}</td>
+                    <td className="p-3 text-right font-medium text-teal-700">{fmtINRCompact(t.revenue)}</td>
+                    <td className="p-3 text-right text-orange-600">{t.cost > 0 ? fmtINRCompact(t.cost) : <span className="text-gray-300">—</span>}</td>
+                    <td className={`p-3 text-right font-bold ${mColor(t.margin_pct)}`}>{fmtINRCompact(t.margin)}</td>
                     <td className="p-3 text-center">
                       <span className={`font-bold ${mColor(t.margin_pct)}`}>{t.margin_pct}%</span>
                     </td>
@@ -351,9 +349,9 @@ function PnLInner() {
                       </td>
                       <td className="p-3 text-center"><span className="px-1.5 py-0.5 bg-gray-100 rounded text-[9px] uppercase">{b.bill_type}</span></td>
                       <td className="p-3 text-center"><span className="text-[9px] text-gray-500 capitalize">{b.payor_type?.replace('_', ' ')}</span></td>
-                      <td className="p-3 text-right font-medium">{INR(b.net_amount)}</td>
-                      <td className="p-3 text-right text-orange-600">{b.total_cost > 0 ? INR(b.total_cost) : <span className="text-gray-300">—</span>}</td>
-                      <td className={`p-3 text-right font-bold ${mColor(b.margin_pct)}`}>{b.total_cost > 0 ? INR(b.margin) : '—'}</td>
+                      <td className="p-3 text-right font-medium">{fmtINRCompact(b.net_amount)}</td>
+                      <td className="p-3 text-right text-orange-600">{b.total_cost > 0 ? fmtINRCompact(b.total_cost) : <span className="text-gray-300">—</span>}</td>
+                      <td className={`p-3 text-right font-bold ${mColor(b.margin_pct)}`}>{b.total_cost > 0 ? fmtINRCompact(b.margin) : '—'}</td>
                       <td className="p-3 text-center">
                         {b.total_cost > 0 ? <span className={`font-bold ${mColor(b.margin_pct)}`}>{b.margin_pct}%</span> : <span className="text-gray-300">—</span>}
                       </td>
@@ -374,9 +372,9 @@ function PnLInner() {
                             <tbody>{b.items.map((item, idx) => (
                               <tr key={idx} className="border-b border-gray-100 last:border-0">
                                 <td className="py-1.5">{item.description}</td>
-                                <td className="py-1.5 text-right">Rs.{fmt(item.net_amount)}</td>
-                                <td className="py-1.5 text-right text-orange-600">{item.cost_amount > 0 ? `Rs.${fmt(item.cost_amount)}` : '—'}</td>
-                                <td className={`py-1.5 text-right font-medium ${mColor(item.margin_pct)}`}>{item.cost_amount > 0 ? `Rs.${fmt(item.margin)}` : '—'}</td>
+                                <td className="py-1.5 text-right">Rs.{fmtNum(item.net_amount)}</td>
+                                <td className="py-1.5 text-right text-orange-600">{item.cost_amount > 0 ? `Rs.${fmtNum(item.cost_amount)}` : '—'}</td>
+                                <td className={`py-1.5 text-right font-medium ${mColor(item.margin_pct)}`}>{item.cost_amount > 0 ? `Rs.${fmtNum(item.margin)}` : '—'}</td>
                                 <td className="py-1.5 text-center">
                                   {item.cost_amount > 0 ? <span className={`font-bold ${mColor(item.margin_pct)}`}>{item.margin_pct}%</span> : '—'}
                                 </td>
@@ -414,14 +412,14 @@ function PnLInner() {
                   {ccRows.map(row => (
                     <tr key={row.costCentreId} className="border-b hover:bg-gray-50">
                       <td className="p-3"><span className="font-medium">{row.costCentreName}</span> <span className="font-mono text-xs text-gray-400 ml-1">{row.costCentreCode}</span></td>
-                      <td className="p-3 text-right text-teal-700 font-medium">{row.revenue > 0 ? INR(row.revenue) : '—'}</td>
-                      <td className="p-3 text-right text-orange-600">{row.expenses > 0 ? INR(row.expenses) : '—'}</td>
-                      <td className={`p-3 text-right font-bold ${mColor(row.marginPct)}`}>{INR(row.margin)}</td>
+                      <td className="p-3 text-right text-teal-700 font-medium">{row.revenue > 0 ? fmtINRCompact(row.revenue) : '—'}</td>
+                      <td className="p-3 text-right text-orange-600">{row.expenses > 0 ? fmtINRCompact(row.expenses) : '—'}</td>
+                      <td className={`p-3 text-right font-bold ${mColor(row.marginPct)}`}>{fmtINRCompact(row.margin)}</td>
                       <td className="p-3 text-center"><span className={`font-bold ${mColor(row.marginPct)}`}>{row.marginPct}%</span></td>
                       <td className="p-3 text-right">
                         {row.budgetMonthly > 0 ? (
                           <span className={`text-xs font-medium ${row.budgetVariance >= 0 ? 'text-green-600' : 'text-red-500'}`}>
-                            {row.budgetVariance >= 0 ? '+' : ''}{INR(row.budgetVariance)}
+                            {row.budgetVariance >= 0 ? '+' : ''}{fmtINRCompact(row.budgetVariance)}
                           </span>
                         ) : <span className="text-gray-300">—</span>}
                       </td>

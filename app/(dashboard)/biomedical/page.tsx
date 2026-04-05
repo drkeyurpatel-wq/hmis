@@ -7,8 +7,7 @@ import {
   useEquipment, useMaintenance, usePMSchedule,
   type Equipment, type MaintenanceTicket, type PMSchedule,
 } from '@/lib/biomedical/biomedical-hooks';
-
-const fmt = (n: number) => `₹${Math.round(n).toLocaleString('en-IN')}`;
+import { fmtINR } from '@/lib/utils/format';
 type Tab = 'equipment' | 'maintenance' | 'pm' | 'analytics';
 const CATEGORIES = ['imaging', 'laboratory', 'icu', 'ot', 'monitoring', 'sterilization', 'dental', 'ophthalmic', 'physiotherapy', 'general'];
 const STATUS_COLORS: Record<string, string> = {
@@ -324,7 +323,7 @@ function BiomedicalInner() {
               <div className="flex justify-between"><span className="text-gray-500">Pending Parts</span><span className="font-bold text-amber-600">{mt.stats.pendingParts}</span></div>
               <div className="flex justify-between"><span className="text-gray-500">Completed</span><span className="font-bold text-green-600">{mt.stats.completed}</span></div>
               <div className="flex justify-between border-t pt-2"><span className="text-gray-500">Active Breakdowns</span><span className="font-bold text-red-600">{mt.stats.breakdowns}</span></div>
-              <div className="flex justify-between"><span className="text-gray-500">Total Maintenance Cost</span><span className="font-bold">{fmt(mt.stats.totalCost)}</span></div>
+              <div className="flex justify-between"><span className="text-gray-500">Total Maintenance Cost</span><span className="font-bold">{fmtINR(mt.stats.totalCost)}</span></div>
               <div className="flex justify-between"><span className="text-gray-500">Avg Downtime</span><span className="font-bold">{mt.stats.avgDowntime.toFixed(1)} hrs</span></div>
             </div>
           </div>

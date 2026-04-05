@@ -154,8 +154,8 @@ function RefInner() {
         <div><h1 className="text-xl font-bold">Referral Management</h1>
           <p className="text-xs text-gray-500">External & internal referrals, fee tracking, settlements</p></div>
         <div className="flex gap-2">
-          <button onClick={() => setShowNewDoc(true)} className="px-4 py-2 bg-white border text-xs rounded-lg hover:bg-gray-50">+ Referring Doctor</button>
-          <button onClick={() => setShowNewRef(true)} className="px-4 py-2 bg-teal-600 text-white text-xs rounded-lg font-medium hover:bg-teal-700">+ Log Referral</button>
+          <button onClick={() => setShowNewDoc(true)} className="px-4 py-2 bg-white border text-xs rounded-lg hover:bg-gray-50 cursor-pointer">+ Referring Doctor</button>
+          <button onClick={() => setShowNewRef(true)} className="px-4 py-2 bg-teal-600 text-white text-xs rounded-lg font-medium hover:bg-teal-700 cursor-pointer">+ Log Referral</button>
         </div>
       </div>
 
@@ -181,7 +181,7 @@ function RefInner() {
       {/* Tabs */}
       <div className="flex gap-1">
         {(['referrals', 'doctors', 'payments', 'analytics'] as Tab[]).map(t =>
-          <button key={t} onClick={() => setTab(t)} className={`px-4 py-2 text-xs font-medium rounded-lg transition-colors capitalize ${tab === t ? 'bg-teal-600 text-white' : 'bg-white border hover:bg-gray-50'}`}>
+          <button key={t} onClick={() => setTab(t)} className={`px-4 py-2 text-xs font-medium rounded-lg transition-colors capitalize ${tab === t ? 'bg-teal-600 text-white' : 'bg-white border hover:bg-gray-50'} cursor-pointer`}>
             {t === 'referrals' ? `Referrals (${ref.referrals.length})` : t === 'doctors' ? `Doctor Master (${refDocs.doctors.length})` : t === 'payments' ? `Pending Payments (${unpaidRefs.length})` : 'Analytics'}
           </button>
         )}
@@ -236,13 +236,13 @@ function RefInner() {
               <td className="p-2 text-center">
                 {r.referral_fee_amount > 0 ? (r.fee_paid
                   ? <span className="text-[9px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded font-medium">Paid ✓</span>
-                  : <button onClick={() => { setShowPayment(r); setPf({ mode: 'neft', utr: '', date: new Date().toISOString().split('T')[0] }); }} className="text-[9px] bg-red-50 text-red-600 px-1.5 py-0.5 rounded font-medium hover:bg-red-100">Pay</button>
+                  : <button onClick={() => { setShowPayment(r); setPf({ mode: 'neft', utr: '', date: new Date().toISOString().split('T')[0] }); }} className="text-[9px] bg-red-50 text-red-600 px-1.5 py-0.5 rounded font-medium hover:bg-red-100 cursor-pointer">Pay</button>
                 ) : '—'}
               </td>
               <td className="p-2">
                 <div className="flex gap-0.5">
-                  <button onClick={() => ref.calculateFee(r.id).then(() => flash('Fee recalculated'))} className="text-[9px] px-1.5 py-0.5 bg-gray-100 rounded hover:bg-blue-50" title="Recalculate fee from bill">⟳ Calc</button>
-                  <button onClick={() => setShowDetail(r)} className="text-[9px] px-1.5 py-0.5 bg-gray-100 rounded hover:bg-gray-200">Detail</button>
+                  <button onClick={() => ref.calculateFee(r.id).then(() => flash('Fee recalculated'))} className="text-[9px] px-1.5 py-0.5 bg-gray-100 rounded hover:bg-blue-50 cursor-pointer" title="Recalculate fee from bill">⟳ Calc</button>
+                  <button onClick={() => setShowDetail(r)} className="text-[9px] px-1.5 py-0.5 bg-gray-100 rounded hover:bg-gray-200 cursor-pointer">Detail</button>
                 </div>
               </td>
             </tr>
@@ -296,7 +296,7 @@ function RefInner() {
               <td className="p-2 text-right text-gray-500">{INR(r.tds_amount)}</td>
               <td className="p-2 text-right font-bold text-red-600">{INR(r.net_fee_payable)}</td>
               <td className="p-2"><button onClick={() => { setShowPayment(r); setPf({ mode: 'neft', utr: '', date: new Date().toISOString().split('T')[0] }); }}
-                className="px-2 py-1 bg-green-100 text-green-700 rounded text-[9px] font-medium hover:bg-green-200">Mark Paid</button></td>
+                className="px-2 py-1 bg-green-100 text-green-700 rounded text-[9px] font-medium hover:bg-green-200 cursor-pointer">Mark Paid</button></td>
             </tr>
           ))}</tbody></table>
           <div className="px-4 py-3 border-t bg-gray-50 flex justify-between text-xs">
@@ -348,18 +348,18 @@ function RefInner() {
       {/* ═══ NEW REFERRAL MODAL ═══ */}
       {showNewRef && <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center" onClick={() => setShowNewRef(false)}>
         <div className="bg-white rounded-xl w-[600px] max-h-[90vh] overflow-y-auto p-5 space-y-4" onClick={e => e.stopPropagation()}>
-          <div className="flex justify-between"><h3 className="font-bold text-sm">Log Referral</h3><button onClick={() => setShowNewRef(false)} className="text-gray-400 text-lg">×</button></div>
+          <div className="flex justify-between"><h3 className="font-bold text-sm">Log Referral</h3><button onClick={() => setShowNewRef(false)} className="text-gray-400 text-lg cursor-pointer">×</button></div>
 
           {/* Referral type */}
           <div className="flex gap-1">{[{v:'external_in',l:'External Incoming'},{v:'internal',l:'Internal'},{v:'external_out',l:'External Outgoing'}].map(t =>
-            <button key={t.v} onClick={() => setRf(f => ({...f, referral_type: t.v}))} className={`flex-1 py-2 text-xs rounded-lg font-medium ${rf.referral_type === t.v ? 'bg-teal-600 text-white' : 'bg-gray-100'}`}>{t.l}</button>
+            <button key={t.v} onClick={() => setRf(f => ({...f, referral_type: t.v}))} className={`flex-1 py-2 text-xs rounded-lg font-medium ${rf.referral_type === t.v ? 'bg-teal-600 text-white' : 'bg-gray-100'} cursor-pointer`}>{t.l}</button>
           )}</div>
 
           {/* Patient */}
-          {selPat ? <div className="flex items-center gap-3 bg-blue-50 rounded-lg p-3"><div className="font-medium text-sm">{selPat.first_name} {selPat.last_name}</div><div className="text-xs text-gray-500">{selPat.uhid} · {selPat.age_years}y {selPat.gender?.charAt(0)}</div><button onClick={() => setSelPat(null)} className="ml-auto text-xs text-red-500">×</button></div>
+          {selPat ? <div className="flex items-center gap-3 bg-blue-50 rounded-lg p-3"><div className="font-medium text-sm">{selPat.first_name} {selPat.last_name}</div><div className="text-xs text-gray-500">{selPat.uhid} · {selPat.age_years}y {selPat.gender?.charAt(0)}</div><button onClick={() => setSelPat(null)} className="ml-auto text-xs text-red-500 cursor-pointer">×</button></div>
           : <div className="relative"><input value={patSearch} onChange={e => setPatSearch(e.target.value)} className="w-full px-3 py-2 border rounded-lg text-sm" placeholder="Search patient..." autoFocus />
             {patResults.length > 0 && <div className="absolute z-10 mt-1 w-full bg-white border rounded-lg shadow-lg max-h-40 overflow-y-auto">{patResults.map(p =>
-              <button key={p.id} onClick={() => { setSelPat(p); setPatSearch(''); setPatResults([]); }} className="w-full text-left px-3 py-2 text-xs hover:bg-blue-50 border-b">{p.first_name} {p.last_name} · {p.uhid} · {p.phone_primary}</button>
+              <button key={p.id} onClick={() => { setSelPat(p); setPatSearch(''); setPatResults([]); }} className="w-full text-left px-3 py-2 text-xs hover:bg-blue-50 border-b cursor-pointer">{p.first_name} {p.last_name} · {p.uhid} · {p.phone_primary}</button>
             )}</div>}</div>}
 
           {/* Referring Doctor (external) */}
@@ -408,14 +408,14 @@ function RefInner() {
           </div>
           {rf.expected_revenue && rf.referral_fee_pct && <div className="text-xs text-gray-500 bg-gray-50 rounded-lg p-2">Estimated fee: <b>₹{fmt(parseFloat(rf.expected_revenue) * parseFloat(rf.referral_fee_pct) / 100)}</b> (recalculated from actual bill on finalization)</div>}
 
-          <button onClick={handleCreateRef} disabled={!selPat} className="w-full py-2.5 bg-teal-600 text-white text-sm rounded-lg font-medium disabled:opacity-40 hover:bg-teal-700">Log Referral</button>
+          <button onClick={handleCreateRef} disabled={!selPat} className="w-full py-2.5 bg-teal-600 text-white text-sm rounded-lg font-medium disabled:opacity-40 hover:bg-teal-700 cursor-pointer">Log Referral</button>
         </div>
       </div>}
 
       {/* ═══ NEW DOCTOR MODAL ═══ */}
       {showNewDoc && <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center" onClick={() => setShowNewDoc(false)}>
         <div className="bg-white rounded-xl w-[500px] max-h-[90vh] overflow-y-auto p-5 space-y-4" onClick={e => e.stopPropagation()}>
-          <div className="flex justify-between"><h3 className="font-bold text-sm">Add Referring Doctor</h3><button onClick={() => setShowNewDoc(false)} className="text-gray-400 text-lg">×</button></div>
+          <div className="flex justify-between"><h3 className="font-bold text-sm">Add Referring Doctor</h3><button onClick={() => setShowNewDoc(false)} className="text-gray-400 text-lg cursor-pointer">×</button></div>
           <div className="grid grid-cols-2 gap-3">
             <div><label className="text-[10px] text-gray-500">Name *</label><input value={df.name} onChange={e => setDf(f => ({...f, name: e.target.value}))} className="w-full px-3 py-2 border rounded-lg text-sm" /></div>
             <div><label className="text-[10px] text-gray-500">Phone</label><input value={df.phone} onChange={e => setDf(f => ({...f, phone: e.target.value}))} className="w-full px-3 py-2 border rounded-lg text-sm" /></div>
@@ -436,7 +436,7 @@ function RefInner() {
               {df.default_fee_type === 'flat' && <div><label className="text-[10px] text-gray-500">Flat ₹</label><input type="number" value={df.default_flat_amount} onChange={e => setDf(f => ({...f, default_flat_amount: e.target.value}))} className="w-full px-3 py-2 border rounded-lg text-sm" /></div>}
             </div>
           </div>
-          <button onClick={handleCreateDoc} disabled={!df.name} className="w-full py-2.5 bg-teal-600 text-white text-sm rounded-lg font-medium disabled:opacity-40 hover:bg-teal-700">Add Doctor</button>
+          <button onClick={handleCreateDoc} disabled={!df.name} className="w-full py-2.5 bg-teal-600 text-white text-sm rounded-lg font-medium disabled:opacity-40 hover:bg-teal-700 cursor-pointer">Add Doctor</button>
         </div>
       </div>}
 
@@ -456,14 +456,14 @@ function RefInner() {
             <div><label className="text-[10px] text-gray-500">Date</label><input type="date" value={pf.date} onChange={e => setPf(f => ({...f, date: e.target.value}))} className="w-full px-3 py-2 border rounded-lg text-sm" /></div>
           </div>
           <div><label className="text-[10px] text-gray-500">UTR / Reference</label><input value={pf.utr} onChange={e => setPf(f => ({...f, utr: e.target.value}))} className="w-full px-3 py-2 border rounded-lg text-sm" placeholder="NEFT UTR number" /></div>
-          <button onClick={handlePayment} className="w-full py-2.5 bg-green-600 text-white text-sm rounded-lg font-medium hover:bg-green-700">Confirm Payment — ₹{fmt(showPayment.net_fee_payable)}</button>
+          <button onClick={handlePayment} className="w-full py-2.5 bg-green-600 text-white text-sm rounded-lg font-medium hover:bg-green-700 cursor-pointer">Confirm Payment — ₹{fmt(showPayment.net_fee_payable)}</button>
         </div>
       </div>}
 
       {/* ═══ DETAIL MODAL ═══ */}
       {showDetail && <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center" onClick={() => setShowDetail(null)}>
         <div className="bg-white rounded-xl w-[500px] max-h-[90vh] overflow-y-auto p-5 space-y-3" onClick={e => e.stopPropagation()}>
-          <div className="flex justify-between"><h3 className="font-bold text-sm">Referral Detail</h3><button onClick={() => setShowDetail(null)} className="text-gray-400 text-lg">×</button></div>
+          <div className="flex justify-between"><h3 className="font-bold text-sm">Referral Detail</h3><button onClick={() => setShowDetail(null)} className="text-gray-400 text-lg cursor-pointer">×</button></div>
           <div className="grid grid-cols-2 gap-2 text-xs">
             {[
               ['Type', showDetail.referral_type.replace('_', ' ')], ['Status', showDetail.status],

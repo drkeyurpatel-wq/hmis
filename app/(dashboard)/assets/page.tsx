@@ -5,9 +5,7 @@ import { useAuthStore } from '@/lib/store/auth';
 import { useAssets } from '@/lib/assets/asset-hooks';
 import { Plus, X, Search, Package, AlertTriangle, Download } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-
-const fmt = (n: number) => Math.round(n).toLocaleString('en-IN');
-const INR = (n: number) => n >= 10000000 ? `₹${(n / 10000000).toFixed(2)}Cr` : n >= 100000 ? `₹${(n / 100000).toFixed(1)}L` : `₹${fmt(n)}`;
+import { fmtINR, fmtINRCompact } from '@/lib/utils/format';
 const CAT_COLORS: Record<string, string> = { medical_equipment: '#0d9488', it_hardware: '#3b82f6', furniture: '#f59e0b', surgical_instrument: '#ef4444', electrical: '#8b5cf6', vehicle: '#06b6d4', building: '#475569', other: '#94a3b8' };
 const STATUS_BADGE: Record<string, string> = { in_use: 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700', in_storage: 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-50 text-blue-700', under_maintenance: 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-700', condemned: 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-red-50 text-red-700', disposed: 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-100 text-gray-600', lost: 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-red-50 text-red-700', transferred: 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-purple-50 text-purple-700' };
 const COND_BADGE: Record<string, string> = { new: 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700', good: 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700', fair: 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-700', poor: 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-red-50 text-red-700', non_functional: 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-red-50 text-red-700' };
@@ -52,16 +50,16 @@ function AssetInner() {
       {toast && <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-teal-600 text-white px-5 py-2.5 rounded-xl shadow-lg text-sm font-medium">{toast}</div>}
 
       <div className="flex items-center justify-between">
-        <div><h1 className="text-xl font-bold tracking-tight">Asset Management</h1><p className="text-xs text-gray-400">{ast.stats.totalAssets} assets · {INR(ast.stats.totalBook)} book value</p></div>
+        <div><h1 className="text-xl font-bold tracking-tight">Asset Management</h1><p className="text-xs text-gray-400">{ast.stats.totalAssets} assets · {fmtINRCompact(ast.stats.totalBook)} book value</p></div>
         <button onClick={() => setShowNew(true)} className="flex items-center gap-2 px-4 py-2.5 bg-teal-600 text-white text-sm rounded-xl font-semibold hover:bg-teal-700"><Plus size={15} /> Register Asset</button>
       </div>
 
       <div className="grid grid-cols-8 gap-2">
         {[
           { l: 'Total Assets', v: ast.stats.totalAssets, c: 'text-gray-800' },
-          { l: 'Cost', v: INR(ast.stats.totalCost), c: 'text-gray-800' },
-          { l: 'Book Value', v: INR(ast.stats.totalBook), c: 'text-teal-700' },
-          { l: 'Depreciation', v: INR(ast.stats.totalDepreciation), c: 'text-red-600' },
+          { l: 'Cost', v: fmtINRCompact(ast.stats.totalCost), c: 'text-gray-800' },
+          { l: 'Book Value', v: fmtINRCompact(ast.stats.totalBook), c: 'text-teal-700' },
+          { l: 'Depreciation', v: fmtINRCompact(ast.stats.totalDepreciation), c: 'text-red-600' },
           { l: 'In Use', v: ast.stats.inUse, c: 'text-emerald-700' },
           { l: 'Maintenance', v: ast.stats.maintenance, c: 'text-amber-700' },
           { l: 'AMC Expiring', v: ast.stats.amcExpiring, c: ast.stats.amcExpiring > 0 ? 'text-amber-700' : 'text-gray-400' },
@@ -99,8 +97,8 @@ function AssetInner() {
                   <td><span className="text-[10px] font-medium capitalize" style={{ color: CAT_COLORS[a.category] || '#475569' }}>{a.category?.replace(/_/g, ' ')}</span></td>
                   <td className="text-[11px]">{a.department || '—'}</td>
                   <td className="text-[11px] text-gray-500">{a.location || '—'}</td>
-                  <td className="text-right text-[11px]">{a.purchase_cost ? `₹${fmt(a.purchase_cost)}` : '—'}</td>
-                  <td className="text-right font-semibold text-[11px]">{a.current_book_value ? `₹${fmt(a.current_book_value)}` : '—'}</td>
+                  <td className="text-right text-[11px]">{a.purchase_cost ? `${fmtINR(a.purchase_cost)}` : '—'}</td>
+                  <td className="text-right font-semibold text-[11px]">{a.current_book_value ? `${fmtINR(a.current_book_value)}` : '—'}</td>
                   <td className="text-[10px]">{a.warranty_expiry ? <span className={warrantyExpired ? 'text-red-600 font-bold' : ''}>{new Date(a.warranty_expiry).toLocaleDateString('en-IN', { month: 'short', year: '2-digit' })}</span> : '—'}{amcExpired && <div className="text-[8px] text-red-500 font-bold">AMC EXPIRED</div>}</td>
                   <td><span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${COND_BADGE[a.condition] || 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-100 text-gray-600'} capitalize text-[8px]`}>{a.condition}</span></td>
                   <td><span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${STATUS_BADGE[a.status] || 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-100 text-gray-600'} capitalize text-[8px]`}>{a.status?.replace(/_/g, ' ')}</span></td>
@@ -129,7 +127,7 @@ function AssetInner() {
                 <div className="flex-1 space-y-2">{catData.slice(0, 6).map(d => (
                   <div key={d.name} className="flex items-center justify-between">
                     <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full" style={{ background: d.fill }} /><span className="text-[10px] capitalize">{d.name}</span></div>
-                    <div className="text-right"><span className="text-[10px] font-bold">{INR(d.value)}</span><span className="text-[9px] text-gray-400 ml-1">({d.count})</span></div>
+                    <div className="text-right"><span className="text-[10px] font-bold">{fmtINRCompact(d.value)}</span><span className="text-[9px] text-gray-400 ml-1">({d.count})</span></div>
                   </div>
                 ))}</div>
               </div>
@@ -149,9 +147,9 @@ function AssetInner() {
           <div className="col-span-2 bg-white rounded-2xl border p-5">
             <h3 className="text-sm font-bold mb-3">Depreciation Summary</h3>
             <div className="grid grid-cols-4 gap-4 text-center">
-              <div><div className="text-[9px] text-gray-400 uppercase font-semibold">Total Purchase Cost</div><div className="text-xl font-black text-gray-800">{INR(ast.stats.totalCost)}</div></div>
-              <div><div className="text-[9px] text-gray-400 uppercase font-semibold">Current Book Value</div><div className="text-xl font-black text-teal-700">{INR(ast.stats.totalBook)}</div></div>
-              <div><div className="text-[9px] text-gray-400 uppercase font-semibold">Accumulated Depreciation</div><div className="text-xl font-black text-red-600">{INR(ast.stats.totalDepreciation)}</div></div>
+              <div><div className="text-[9px] text-gray-400 uppercase font-semibold">Total Purchase Cost</div><div className="text-xl font-black text-gray-800">{fmtINRCompact(ast.stats.totalCost)}</div></div>
+              <div><div className="text-[9px] text-gray-400 uppercase font-semibold">Current Book Value</div><div className="text-xl font-black text-teal-700">{fmtINRCompact(ast.stats.totalBook)}</div></div>
+              <div><div className="text-[9px] text-gray-400 uppercase font-semibold">Accumulated Depreciation</div><div className="text-xl font-black text-red-600">{fmtINRCompact(ast.stats.totalDepreciation)}</div></div>
               <div><div className="text-[9px] text-gray-400 uppercase font-semibold">Depreciation %</div><div className="text-xl font-black text-amber-700">{ast.stats.totalCost > 0 ? Math.round((ast.stats.totalDepreciation / ast.stats.totalCost) * 100) : 0}%</div></div>
             </div>
             <div className="h-3 bg-gray-100 rounded-full mt-4 overflow-hidden flex">
