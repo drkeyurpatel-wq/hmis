@@ -8,7 +8,6 @@ import { ErrorBoundary } from '@/components/ui/error-boundary';
 import { useAuthStore } from '@/lib/store/auth';
 import { createClient } from '@/lib/supabase/client';
 import { useKeyboardShortcuts, ShortcutHelpModal } from '@/components/ui/keyboard-shortcuts';
-// import { registerServiceWorker } from '@/lib/offline/sync-manager'; // disabled — was blocking navigation
 import { CommandPalette } from '@/components/ui/command-palette';
 import { SafetyTicker } from '@/components/layout/safety-ticker';
 import { SessionTimeoutWarning } from '@/components/ui/session-timeout-warning';
@@ -67,10 +66,6 @@ export default function DashboardLayout({
 
     loadProfile();
   }, [setStaff, setCentres, setEnabledModules]);
-
-  // Service worker disabled — was intercepting Next.js navigation
-  // Re-enable after proper testing with /_next/ exclusions
-  // useEffect(() => { registerServiceWorker(); }, []);
 
   // Online/offline status
   const [online, setOnline] = useState(true);

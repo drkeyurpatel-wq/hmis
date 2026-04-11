@@ -26,6 +26,12 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
+      <head>
+        {/* Auto-unregister stale service workers that break navigation */}
+        <script dangerouslySetInnerHTML={{ __html: `
+          if('serviceWorker' in navigator){navigator.serviceWorker.getRegistrations().then(function(r){r.forEach(function(reg){reg.unregister()})});caches.keys().then(function(k){k.forEach(function(c){caches.delete(c)})});}
+        `}} />
+      </head>
       <body>{children}</body>
     </html>
   );

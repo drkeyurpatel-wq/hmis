@@ -3,7 +3,6 @@ import React, { useState, useEffect } from 'react';
 import { useAuthStore } from '@/lib/store/auth';
 import { useMyWorkQueue } from '@/lib/patient/my-workqueue-hooks';
 import { sb } from '@/lib/supabase/browser';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
   AlertTriangle, Heart, Pill, FlaskConical, ScanLine, BedDouble,
