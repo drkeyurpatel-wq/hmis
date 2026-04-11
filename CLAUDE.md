@@ -71,3 +71,24 @@
 - Charts: visible legends, tooltips, axis labels with units
 - No neon/AI gradients/gamification on medical data
 - Disable button + spinner on async operations
+
+## ECC v4 Additions (Apr 2026)
+
+13. **Spec-First Flow**: /brainstorm → /write-plan → /execute-plan before coding.
+14. **Error-to-Lesson Pipeline**: Every bug fix → LESSONS.md entry. Read LESSONS.md on session start.
+15. **Progressive Skill Disclosure**: Load EMR skills for EMR files, Lab skills for lab, Pharmacy for pharmacy.
+16. **Injection Scanning**: All tool I/O scanned for secrets and injection patterns.
+17. **Safe Bash**: Auto-approve reads, prompt for destructive ops.
+18. **Drift Detection**: Weekly schema/security/dead-code checks.
+19. **Multi-Agent Review**: db-reviewer + security-reviewer in parallel on PRs.
+
+## CRITICAL RULE (NEVER OVERRIDE)
+
+- NEVER apply RLS or schema changes in bulk. One table, one test, one verify.
+- RLS hardening status: 9 RCM tables secured (Apr 11, 2026). 50+ PHI tables need policy tightening.
+
+## Deploy Rules
+
+1. `npx next build` before EVERY push. Build fail = DO NOT push.
+2. One fix, one push, one verify. Never batch.
+3. Never declare "✅ Fixed" without verifying on live URL.
