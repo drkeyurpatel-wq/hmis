@@ -108,43 +108,6 @@ export async function syncAll(supabaseClient: any): Promise<{ synced: number; fa
   return { synced, failed };
 }
 
-// ---- REGISTER SERVICE WORKER ----
-export async function registerServiceWorker(): Promise<void> {
-  if (typeof window === 'undefined' || !('serviceWorker' in navigator)) return;
-  try {
-    const reg = await navigator.serviceWorker.register('/sw.js');
-
-    // Listen for sync messages from SW
-    navigator.serviceWorker.addEventListener('message', async (event) => {
-      if (event.data?.type === 'SYNC_ENCOUNTERS') {
-        // Triggered by background sync — import supabase and sync
-        const { createClient } = await import('@/lib/supabase/client');
-        const sb = createClient();
-        const result = await syncAll(sb);
-      }
-    });
-
-    // Auto-sync when coming back online
-    window.addEventListener('online', async () => {
-      const { createClient } = await import('@/lib/supabase/client');
-      const sb = createClient();
-      const result = await syncAll(sb);
-      if (result.synced > 0) {
-      }
-    });
-
-    // Request background sync capability
-    if ('sync' in reg) {
-      const pending = await getPendingCount();
-      if (pending > 0) {
-        await (reg as any).sync.register('sync-encounters');
-      }
-    }
-  } catch (e) {
-    console.warn('[SW] Registration failed:', e);
-  }
-}
-
 // ---- ONLINE STATUS HOOK ----
 export function isOnline(): boolean {
   return typeof navigator !== 'undefined' ? navigator.onLine : true;

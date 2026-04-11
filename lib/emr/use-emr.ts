@@ -74,13 +74,6 @@ export function useEMR(): EMRState {
     getAllUnsyncedDrafts().then(d => setPendingSyncs(d.length));
   }, []);
 
-  // Register service worker
-  useEffect(() => {
-    if (typeof window === 'undefined' || !('serviceWorker' in navigator)) return;
-    navigator.serviceWorker.register('/emr-sw.js', { scope: '/emr-v2' }).catch(() => {
-      // SW registration may fail in dev — that's OK
-    });
-  }, []);
 
   // Cache patient when loaded
   useEffect(() => {
@@ -159,12 +152,6 @@ export function useEMR(): EMRState {
     });
 
     setPendingSyncs(prev => prev + 1);
-
-    // Request background sync
-    if ('serviceWorker' in navigator && 'SyncManager' in window) {
-      const reg = await navigator.serviceWorker.ready;
-      await (reg as any).sync?.register('sync-encounters').catch((_e: unknown) => { /* lib: non-blocking */ });
-    }
 
     return { success: true, id: draftId, offline: true };
   }, [saveToDb, centreId, doctorId, activeEncounterId, selectedPatientId]);
