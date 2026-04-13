@@ -18,7 +18,12 @@ export const routes = {
     list: '/ipd',
     detail: (id: string) => `/ipd/${id}`,
   },
-  billing: '/billing',
+  billing: {
+    home: '/billing',
+    encounter: (id: string) => `/billing?encounter=${id}`,
+    serviceMaster: '/billing?tab=service_master',
+    insurance: '/billing?tab=insurance',
+  },
   lab: '/lab',
   radiology: {
     list: '/radiology',
