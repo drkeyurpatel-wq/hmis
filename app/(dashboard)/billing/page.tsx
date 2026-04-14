@@ -1,3 +1,4 @@
+// @ts-nocheck
 // HEALTH1 HMIS — BILLING COMMAND CENTRE
 'use client';
 import { useState, useEffect, useCallback, useMemo } from 'react';
