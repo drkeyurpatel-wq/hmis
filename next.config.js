@@ -3,8 +3,8 @@ const { withSentryConfig } = require('@sentry/nextjs');
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   typescript: {
-    // TEMPORARY: billing revolution v2 uses untyped billingDb() — fix types in Sprint 2
-    ignoreBuildErrors: true,
+    // Billing v2 files use @ts-nocheck — proper types in Sprint 3
+    // ignoreBuildErrors: false (default)
   },
   images: {
     remotePatterns: [
