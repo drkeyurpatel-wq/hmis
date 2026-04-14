@@ -1,35 +1,8 @@
 {
-  "framework": "nextjs",
-  "buildCommand": "npm run build",
-  "installCommand": "npm install",
   "crons": [
     {
-      "path": "/api/cron/auto-charges",
+      "path": "/api/billing/cron/bed-charges",
       "schedule": "30 18 * * *"
-    },
-    {
-      "path": "/api/cron/daily-report",
-      "schedule": "30 2 * * *"
-    },
-    {
-      "path": "/api/alerts/check",
-      "schedule": "*/15 * * * *"
-    },
-    {
-      "path": "/api/cron/leakage-scan",
-      "schedule": "0 3 * * *"
-    },
-    {
-      "path": "/api/integrations/push-revenue",
-      "schedule": "30 17 * * *"
-    },
-    {
-      "path": "/api/cron/quality-snapshot",
-      "schedule": "0 3 * * *"
-    },
-    {
-      "path": "/api/cron/release-holds",
-      "schedule": "30 0 * * *"
     }
   ]
 }
