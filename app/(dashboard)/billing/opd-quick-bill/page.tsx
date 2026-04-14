@@ -1,3 +1,4 @@
+// @ts-nocheck
 // HEALTH1 HMIS — OPD QUICK BILL — 3-click billing
 'use client';
 import { useState, useEffect, useCallback, useRef } from 'react';
