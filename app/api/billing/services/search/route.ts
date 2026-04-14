@@ -1,9 +1,5 @@
-// ═══════════════════════════════════════════════════════════════════════
-// src/app/api/billing/services/search/route.ts
-// ═══════════════════════════════════════════════════════════════════════
 import { NextRequest, NextResponse } from 'next/server';
 import { billingDb } from '@/lib/billing/api-helpers';
-
 
 export async function GET(request: NextRequest) {
   const supabase = billingDb();
