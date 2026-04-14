@@ -16,6 +16,7 @@ const qualityNav = [
   { href: '/quality/credentials', label: 'Credentialing', icon: '🎓' },
   { href: '/quality/documents', label: 'Document Control', icon: '📄' },
   { href: '/quality/drills', label: 'FMS Compliance', icon: '🔥' },
+  { href: '/quality/mock-survey', label: 'Mock Survey', icon: '🎯' },
 ];
 
 export default function QualityLayout({ children }: { children: React.ReactNode }) {
