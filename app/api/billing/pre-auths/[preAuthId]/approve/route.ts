@@ -1,9 +1,5 @@
-// ═══════════════════════════════════════════════════════════════════════
-// src/app/api/billing/pre-auths/[preAuthId]/approve/route.ts
-// ═══════════════════════════════════════════════════════════════════════
 import { NextRequest, NextResponse } from 'next/server';
 import { billingDb } from '@/lib/billing/api-helpers';
-
 
 export async function POST(
   request: NextRequest,
@@ -12,10 +8,9 @@ export async function POST(
   const supabase = billingDb();
   const body = await request.json();
   const user = { id: 'service-role' };
-  
 
-  const status = body.approved_amount < (await supabase.from('billing_pre_auths').select('requested_amount').eq('id', params.preAuthId).single()).data?.requested_amount
-    ? 'PARTIALLY_APPROVED' : 'APPROVED';
+  const paData = (await supabase.from('billing_pre_auths').select('requested_amount').eq('id', params.preAuthId).single()).data;
+  const status = body.approved_amount < (paData?.requested_amount || 0) ? 'PARTIALLY_APPROVED' : 'APPROVED';
 
   const { error } = await supabase
     .from('billing_pre_auths')
@@ -32,7 +27,6 @@ export async function POST(
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  // Update encounter
   const { data: pa } = await supabase.from('billing_pre_auths').select('encounter_id').eq('id', params.preAuthId).single();
   if (pa) {
     await supabase.from('billing_encounters').update({
