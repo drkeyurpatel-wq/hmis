@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { billingDb } from '@/lib/billing/api-helpers';
+import { billingDb, billingRpc } from '@/lib/billing/api-helpers';
 
 export async function GET(request: NextRequest, { params }: { params: { encounterId: string } }) {
   const supabase = billingDb();
@@ -21,7 +21,7 @@ export async function POST(request: NextRequest, { params }: { params: { encount
       .select('centre_id, patient_id').eq('id', params.encounterId).single();
     if (!encounter) return NextResponse.json({ error: 'Encounter not found' }, { status: 404 });
 
-    const { data: receiptNumber } = await supabase.rpc('billing_next_number', {
+    const { data: receiptNumber } = await billingRpc('billing_next_number', {
       p_centre_id: encounter.centre_id, p_sequence_type: 'RECEIPT', p_prefix: 'H1-RCP',
     });
 
