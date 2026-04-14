@@ -37,7 +37,7 @@ export default function QualityCommandCentre() {
     <div className="p-6 space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Quality Command Centre</h1>
-        <p className="text-sm text-gray-500 mt-1">NABH 6th Edition — Excellence Target: 80% of 639 OEs (2556/3195)</p>
+        <p className="text-sm text-gray-500 mt-1">NABH 6th Edition Excellence — Target: 80% of 639 OEs ≥ 2556/3195 points</p>
       </div>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {cards.map(c => (
