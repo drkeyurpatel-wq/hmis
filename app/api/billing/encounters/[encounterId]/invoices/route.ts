@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { billingDb } from '@/lib/billing/api-helpers';
+import { billingDb, billingRpc } from '@/lib/billing/api-helpers';
 
 function roundTwo(n: number): number { return Math.round((n + Number.EPSILON) * 100) / 100; }
 
@@ -27,7 +27,7 @@ export async function POST(request: NextRequest, { params }: { params: { encount
     const amountPaid = encounter.total_paid || 0;
     const balanceDue = roundTwo(grandTotal - amountPaid);
 
-    const { data: invoiceNumber } = await supabase.rpc('billing_next_number', {
+    const { data: invoiceNumber } = await billingRpc('billing_next_number', {
       p_centre_id: encounter.centre_id, p_sequence_type: 'INVOICE', p_prefix: 'H1-INV',
     });
 
