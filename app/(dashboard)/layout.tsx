@@ -11,6 +11,7 @@ import { useKeyboardShortcuts, ShortcutHelpModal } from '@/components/ui/keyboar
 import { CommandPalette } from '@/components/ui/command-palette';
 import { SafetyTicker } from '@/components/layout/safety-ticker';
 import { SessionTimeoutWarning } from '@/components/ui/session-timeout-warning';
+import RouteTransition from '@/components/motion/RouteTransition';
 
 export default function DashboardLayout({
   children,
@@ -100,7 +101,7 @@ export default function DashboardLayout({
           <GlobalHeader />
           <SafetyTicker />
           <div className="px-4 sm:px-6 py-4 sm:py-6 max-w-full overflow-x-hidden">
-            <ErrorBoundary>{children}</ErrorBoundary>
+            <ErrorBoundary><RouteTransition>{children}</RouteTransition></ErrorBoundary>
           </div>
         </main>
       </div>
