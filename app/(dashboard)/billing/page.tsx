@@ -1,387 +1,149 @@
+// HEALTH1 HMIS — BILLING COMMAND CENTRE
 'use client';
-import Link from 'next/link';
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { RoleGuard } from '@/components/ui/shared';
-import { useAuthStore } from '@/lib/store/auth';
-import { sb } from '@/lib/supabase/browser';
-import {
-  CreditCard, Plus, Search, FileText, Shield, ArrowDownLeft, Receipt,
-  TrendingUp, IndianRupee, Clock, Filter, ChevronRight, Download,
-} from 'lucide-react';
-import RevenueDashboard from '@/components/billing/revenue-dashboard';
-import ServiceBillingEngine from '@/components/billing/service-billing-engine';
-import BillDetailView from '@/components/billing/bill-detail-view';
-import IPDBillingTab from '@/components/billing/ipd-billing-tab';
-import InsuranceCashless from '@/components/billing/insurance-cashless';
-import RefundManager from '@/components/billing/refund-manager';
-import CreditNoteManager from '@/components/billing/credit-note-manager';
-import EstimateGenerator from '@/components/billing/estimate-generator';
-import ARManagement from '@/components/billing/ar-management';
-import { useCashlessWorkflow, useAccountsReceivable } from '@/lib/billing/revenue-cycle-hooks';
-import { useTariffs, useEstimates } from '@/lib/billing/billing-hooks';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
+import { Search, Plus, FileText, CreditCard, Shield, TrendingUp, Users, Bed, Activity, ArrowRight, Filter, RefreshCw, IndianRupee, Clock, AlertCircle, CheckCircle2 } from 'lucide-react';
+import type { BillingEncounter, BillingDashboardStats, EncounterType, EncounterStatus } from '@/lib/billing/billing-v2-types';
+import { ENCOUNTER_STATUS_COLORS, PAYOR_TYPE_LABELS } from '@/lib/billing/billing-v2-types';
 
-const fmt = (n: number) => Math.round(n).toLocaleString('en-IN');
-const INR = (n: number) => n >= 100000 ? `₹${(n / 100000).toFixed(1)}L` : `₹${fmt(n)}`;
+function StatCard({ label, value, subValue, icon: Icon, color, onClick }: { label: string; value: string | number; subValue?: string; icon: any; color: string; onClick?: () => void }) {
+  return (<button onClick={onClick} className={`flex items-start gap-3 rounded-xl border p-4 text-left transition-all hover:shadow-md hover:-translate-y-0.5 ${onClick ? 'cursor-pointer' : 'cursor-default'} bg-white border-gray-200`}>
+    <div className={`rounded-lg p-2.5 ${color}`}><Icon className="h-5 w-5 text-white" /></div>
+    <div className="min-w-0 flex-1"><p className="text-xs font-medium text-gray-500 uppercase tracking-wider">{label}</p><p className="mt-0.5 text-xl font-bold text-gray-900 font-mono tabular-nums">{value}</p>{subValue && <p className="mt-0.5 text-xs text-gray-500">{subValue}</p>}</div>
+  </button>);
+}
 
-type Tab = 'bills' | 'ipd' | 'insurance' | 'collections';
+function EncounterRow({ encounter, onSelect }: { encounter: BillingEncounter; onSelect: (id: string) => void }) {
+  const statusColor = ENCOUNTER_STATUS_COLORS[encounter.status] || 'bg-gray-100 text-gray-700';
+  const payorLabel = PAYOR_TYPE_LABELS[encounter.primary_payor_type] || encounter.primary_payor_type;
+  const isOverdue = encounter.balance_due > 0 && encounter.status === 'OPEN';
+  return (<tr onClick={() => onSelect(encounter.id)} className="cursor-pointer hover:bg-blue-50/50 transition-colors border-b border-gray-100 last:border-0">
+    <td className="px-4 py-3"><span className="text-xs font-mono text-gray-500">{encounter.encounter_number}</span></td>
+    <td className="px-4 py-3"><div><p className="font-medium text-gray-900 text-sm">{encounter.patient_name || 'Unknown'}</p><p className="text-xs text-gray-500">{encounter.patient_uhid || ''}</p></div></td>
+    <td className="px-4 py-3"><span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${encounter.encounter_type === 'IPD' ? 'bg-purple-100 text-purple-700' : encounter.encounter_type === 'OPD' ? 'bg-blue-100 text-blue-700' : encounter.encounter_type === 'ER' ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-700'}`}>{encounter.encounter_type}</span></td>
+    <td className="px-4 py-3 text-right"><span className="font-mono text-sm font-semibold text-gray-900">₹{encounter.net_amount.toLocaleString('en-IN', { minimumFractionDigits: 0 })}</span></td>
+    <td className="px-4 py-3 text-right"><span className={`font-mono text-sm font-semibold ${isOverdue ? 'text-red-600' : 'text-gray-600'}`}>₹{encounter.balance_due.toLocaleString('en-IN', { minimumFractionDigits: 0 })}</span></td>
+    <td className="px-4 py-3"><span className="text-xs text-gray-600">{payorLabel}</span></td>
+    <td className="px-4 py-3"><span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${statusColor}`}>{encounter.status.replace(/_/g, ' ')}</span></td>
+    <td className="px-4 py-3 text-right"><button onClick={(e) => { e.stopPropagation(); onSelect(encounter.id); }} className="inline-flex items-center gap-1 text-xs font-medium text-blue-600 hover:text-blue-800">View <ArrowRight className="h-3 w-3" /></button></td>
+  </tr>);
+}
 
-const TABS: { key: Tab; label: string; icon: any }[] = [
-  { key: 'bills', label: 'Bills', icon: FileText },
-  { key: 'ipd', label: 'IPD Billing', icon: CreditCard },
-  { key: 'insurance', label: 'Insurance', icon: Shield },
-  { key: 'collections', label: 'Collections', icon: IndianRupee },
-];
+const TABS = [
+  { id: 'all', label: 'All', icon: FileText }, { id: 'OPD', label: 'OPD', icon: Users },
+  { id: 'IPD', label: 'IPD', icon: Bed }, { id: 'ER', label: 'ER', icon: Activity },
+  { id: 'DAYCARE', label: 'Day Care', icon: Clock }, { id: 'insurance', label: 'Insurance', icon: Shield },
+] as const;
 
-function BillingInner() {
-  const { staff, activeCentreId } = useAuthStore();
-  const centreId = activeCentreId || '';
-  const staffId = staff?.id || '';
-  const [tab, setTab] = useState<Tab>('bills');
-  const [showNewBill, setShowNewBill] = useState(false);
-  const [collectionsView, setCollectionsView] = useState<'estimates'|'ar'|'advances'|'refunds'|'credit_notes'>('ar');
-  const [toast, setToast] = useState('');
-  const flash = (m: string) => { setToast(m); setTimeout(() => setToast(''), 3000); };
+export default function BillingCommandCentre() {
+  const router = useRouter();
+  const [stats, setStats] = useState<BillingDashboardStats | null>(null);
+  const [encounters, setEncounters] = useState<BillingEncounter[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [activeTab, setActiveTab] = useState<string>('all');
+  const [refreshing, setRefreshing] = useState(false);
+  const centreId = 'CURRENT_CENTRE_ID';
 
-  const [bills, setBills] = useState<any[]>([]);
-  const [billsLoading, setBillsLoading] = useState(false);
-  const [selectedBillId, setSelectedBillId] = useState<string | null>(null);
-  const [billSearch, setBillSearch] = useState('');
-  const [billFilter, setBillFilter] = useState<string>('all');
-
-  const cashless = useCashlessWorkflow(centreId);
-  const ar = useAccountsReceivable(centreId);
-  const tariffs = useTariffs(centreId);
-  const estimates = useEstimates(centreId);
-
-  const [advances, setAdvances] = useState<any[]>([]);
-  const [advForm, setAdvForm] = useState({ search: '', patientId: '', patientName: '', amount: '', mode: 'cash' });
-  const [advPatResults, setAdvPatResults] = useState<any[]>([]);
-
-  const loadBills = useCallback(async () => {
-    if (!centreId) return;
-    setBillsLoading(true);
-    const { data } = await sb().from('hmis_bills')
-      .select('id, bill_number, bill_type, bill_date, payor_type, gross_amount, discount_amount, net_amount, paid_amount, balance_amount, status, patient:hmis_patients!inner(first_name, last_name, uhid)')
-      .eq('centre_id', centreId).order('created_at', { ascending: false }).limit(200);
-    setBills(data || []);
-    setBillsLoading(false);
+  const loadData = useCallback(async () => {
+    try { setLoading(true);
+      const [statsRes, encountersRes] = await Promise.all([
+        fetch(`/api/billing/dashboard-stats?centre_id=${centreId}`),
+        fetch(`/api/billing/encounters?centre_id=${centreId}&status=OPEN,INTERIM_BILLED`),
+      ]);
+      if (statsRes.ok) setStats(await statsRes.json());
+      if (encountersRes.ok) setEncounters(await encountersRes.json());
+    } catch (err) { console.error('Failed to load billing data:', err); } finally { setLoading(false); }
   }, [centreId]);
 
-  const loadAdvances = useCallback(async () => {
-    if (!centreId) return;
-    const { data } = await sb().from('hmis_advances')
-      .select('id, amount, payment_mode, receipt_number, created_at, is_adjusted, patient:hmis_patients!inner(first_name, last_name, uhid)')
-      .order('created_at', { ascending: false }).limit(50);
-    setAdvances(data || []);
-  }, [centreId]);
+  useEffect(() => { loadData(); }, [loadData]);
+  const handleRefresh = async () => { setRefreshing(true); await loadData(); setRefreshing(false); };
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => { loadBills(); loadAdvances(); }, [loadBills, loadAdvances]);
+  const filteredEncounters = useMemo(() => {
+    let result = encounters;
+    if (activeTab !== 'all' && activeTab !== 'insurance') result = result.filter(e => e.encounter_type === activeTab);
+    if (activeTab === 'insurance') result = result.filter(e => e.primary_payor_type !== 'SELF_PAY');
+    if (searchTerm) { const term = searchTerm.toLowerCase(); result = result.filter(e => (e.patient_name?.toLowerCase().includes(term)) || (e.patient_uhid?.toLowerCase().includes(term)) || (e.encounter_number?.toLowerCase().includes(term)) || (e.patient_phone?.includes(term))); }
+    return result;
+  }, [encounters, activeTab, searchTerm]);
 
-  // Patient search for advances
-  useEffect(() => {
-    if (advForm.search.length < 2) { setAdvPatResults([]); return; }
-    const t = setTimeout(async () => {
-      const { data } = await sb().from('hmis_patients')
-        .select('id, first_name, last_name, uhid')
-        .or(`uhid.ilike.%${advForm.search}%,first_name.ilike.%${advForm.search}%,last_name.ilike.%${advForm.search}%`)
-        .eq('is_active', true).limit(5);
-      setAdvPatResults(data || []);
-    }, 300);
-    return () => clearTimeout(t);
-  }, [advForm.search]);
-
-  const collectAdvance = async () => {
-    if (!advForm.patientId || !advForm.amount) return;
-    const { data: receiptNo } = await sb().rpc('hmis_next_sequence', { p_centre_id: centreId, p_type: 'advance' });
-    await sb().from('hmis_advances').insert({
-      patient_id: advForm.patientId, amount: parseFloat(advForm.amount),
-      payment_mode: advForm.mode, receipt_number: receiptNo || `ADV-${Date.now()}`,
-      centre_id: centreId, collected_by: staffId,
-    });
-    flash(`Advance ₹${advForm.amount} collected`);
-    setAdvForm({ search: '', patientId: '', patientName: '', amount: '', mode: 'cash' });
-    loadAdvances();
-  };
-
-  // Filter bills
-  const filteredBills = useMemo(() => {
-    let filtered = bills;
-    if (billFilter !== 'all') filtered = filtered.filter(b => b.status === billFilter);
-    if (billSearch) {
-      const q = billSearch.toLowerCase();
-      filtered = filtered.filter(b =>
-        b.bill_number?.toLowerCase().includes(q) ||
-        b.patient?.first_name?.toLowerCase().includes(q) ||
-        b.patient?.last_name?.toLowerCase().includes(q) ||
-        b.patient?.uhid?.toLowerCase().includes(q)
-      );
-    }
-    return filtered;
-  }, [bills, billFilter, billSearch]);
-
-  // Quick stats
-  const billStats = useMemo(() => {
-    const today = new Date().toISOString().split('T')[0];
-    const todayBills = bills.filter(b => b.bill_date === today);
-    return {
-      totalToday: todayBills.reduce((s: number, b: any) => s + parseFloat(b.net_amount || 0), 0),
-      collectedToday: todayBills.reduce((s: number, b: any) => s + parseFloat(b.paid_amount || 0), 0),
-      pendingToday: todayBills.reduce((s: number, b: any) => s + parseFloat(b.balance_amount || 0), 0),
-      countToday: todayBills.length,
-      unpaid: bills.filter(b => parseFloat(b.balance_amount || 0) > 0 && b.status !== 'cancelled').length,
-    };
-  }, [bills]);
-
-  const stBadge = (s: string) => {
-    const m: Record<string, string> = {
-      paid: 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-green-50 text-h1-success', partially_paid: 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-h1-yellow-light text-h1-yellow',
-      final: 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-h1-teal-light text-h1-teal', draft: 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-100 text-gray-600',
-      cancelled: 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-red-50 text-red-700',
-    };
-    return m[s] || 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-100 text-gray-600';
-  };
+  const formatCurrency = (amount: number) => { if (amount >= 100000) return `₹${(amount / 100000).toFixed(1)}L`; if (amount >= 1000) return `₹${(amount / 1000).toFixed(1)}K`; return `₹${amount.toLocaleString('en-IN')}`; };
 
   return (
-    <div className="max-w-[1400px] mx-auto space-y-4">
-      {toast && (
-        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-h1-navy text-white px-5 py-2.5 rounded-xl shadow-lg shadow-h1-teal/20 text-sm font-medium animate-in fade-in">
-          {toast}
+    <div className="min-h-screen bg-[#F8FAFC]">
+      <div className="border-b border-gray-200 bg-white px-6 py-4">
+        <div className="flex items-center justify-between">
+          <div><h1 className="text-xl font-bold text-[#0A2540]">Billing Command Centre</h1>
+          <p className="text-xs text-gray-500 mt-0.5">{new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</p></div>
+          <div className="flex items-center gap-3">
+            <button onClick={handleRefresh} className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-600 hover:bg-gray-50"><RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} /> Refresh</button>
+            <button onClick={() => router.push('/billing/new')} className="inline-flex items-center gap-1.5 rounded-lg bg-[#0A2540] px-4 py-2 text-sm font-medium text-white hover:bg-[#0A2540]/90"><Plus className="h-4 w-4" /> New Bill</button>
+          </div>
         </div>
-      )}
-
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-bold tracking-tight">Billing & Revenue</h1>
-          <p className="text-xs text-gray-400 mt-0.5">{staff?.full_name} · {typeof window !== 'undefined' ? new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : ''}</p>
-        </div>
-        <button onClick={() => setShowNewBill(true)}
-          className="flex items-center gap-2 px-4 py-2.5 bg-h1-navy text-white text-sm rounded-xl font-semibold hover:bg-h1-navy/90 transition-colors shadow-sm shadow-h1-teal/20">
-          <Plus size={16} /> New Bill
-        </button>
       </div>
 
-      {/* Quick stats strip */}
-      {tab === 'bills' && !selectedBillId && (
-        <div className="grid grid-cols-5 gap-2">
+      <div className="px-6 py-5 space-y-5">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <StatCard label="Today's Collection" value={formatCurrency(stats?.today_collection || 0)} subValue={`${stats?.today_bills || 0} bills generated`} icon={IndianRupee} color="bg-emerald-500" />
+          <StatCard label="Pending Bills" value={stats?.pending_bills || 0} subValue={`${stats?.opd_count || 0} OPD today`} icon={Clock} color="bg-amber-500" onClick={() => setActiveTab('all')} />
+          <StatCard label="Insurance Pending" value={stats?.insurance_pending_count || 0} subValue={formatCurrency(stats?.insurance_pending_amount || 0)} icon={Shield} color="bg-blue-500" onClick={() => router.push('/billing/insurance')} />
+          <StatCard label="Active IPD" value={stats?.ipd_active || 0} subValue={`Advance: ${formatCurrency(stats?.advance_balance || 0)}`} icon={Bed} color="bg-purple-500" onClick={() => setActiveTab('IPD')} />
+        </div>
+
+        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+          <div className="px-4 py-3 border-b border-gray-100 flex items-center gap-3">
+            <div className="relative flex-1 max-w-md"><Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <input type="text" placeholder="Search by patient name, UHID, phone, or bill number..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full rounded-lg border border-gray-200 bg-gray-50 pl-9 pr-4 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#00B4D8]/30" /></div>
+            <div className="flex items-center gap-1 text-xs text-gray-500"><span className="font-mono">{filteredEncounters.length}</span> encounters</div>
+          </div>
+
+          <div className="px-4 border-b border-gray-100">
+            <nav className="flex gap-1 -mb-px">
+              {TABS.map(tab => {
+                const isActive = activeTab === tab.id; const TabIcon = tab.icon;
+                const count = tab.id === 'all' ? encounters.length : tab.id === 'insurance' ? encounters.filter(e => e.primary_payor_type !== 'SELF_PAY').length : encounters.filter(e => e.encounter_type === tab.id).length;
+                return (<button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`inline-flex items-center gap-1.5 px-3 py-2.5 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${isActive ? 'border-[#00B4D8] text-[#00B4D8]' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}>
+                  <TabIcon className="h-3.5 w-3.5" /> {tab.label} <span className={`ml-1 rounded-full px-1.5 py-0.5 text-[10px] font-bold ${isActive ? 'bg-[#00B4D8]/10 text-[#00B4D8]' : 'bg-gray-100 text-gray-500'}`}>{count}</span>
+                </button>);
+              })}
+            </nav>
+          </div>
+
+          <div className="overflow-x-auto">
+            {loading ? (<div className="flex items-center justify-center py-16"><div className="flex items-center gap-3 text-gray-500"><RefreshCw className="h-5 w-5 animate-spin" /><span className="text-sm">Loading billing queue...</span></div></div>
+            ) : filteredEncounters.length === 0 ? (<div className="flex flex-col items-center justify-center py-16 text-gray-400"><FileText className="h-10 w-10 mb-3" /><p className="text-sm font-medium">No encounters found</p><p className="text-xs mt-1">{searchTerm ? 'Try a different search term' : 'Create a new bill to get started'}</p></div>
+            ) : (
+              <table className="w-full">
+                <thead><tr className="bg-gray-50/80">
+                  <th className="px-4 py-2.5 text-left text-[10px] font-semibold text-gray-500 uppercase">Bill #</th>
+                  <th className="px-4 py-2.5 text-left text-[10px] font-semibold text-gray-500 uppercase">Patient</th>
+                  <th className="px-4 py-2.5 text-left text-[10px] font-semibold text-gray-500 uppercase">Type</th>
+                  <th className="px-4 py-2.5 text-right text-[10px] font-semibold text-gray-500 uppercase">Amount</th>
+                  <th className="px-4 py-2.5 text-right text-[10px] font-semibold text-gray-500 uppercase">Balance</th>
+                  <th className="px-4 py-2.5 text-left text-[10px] font-semibold text-gray-500 uppercase">Payor</th>
+                  <th className="px-4 py-2.5 text-left text-[10px] font-semibold text-gray-500 uppercase">Status</th>
+                  <th className="px-4 py-2.5 text-right text-[10px] font-semibold text-gray-500 uppercase">Action</th>
+                </tr></thead>
+                <tbody>{filteredEncounters.map(encounter => (<EncounterRow key={encounter.id} encounter={encounter} onSelect={(id) => router.push(`/billing/${id}`)} />))}</tbody>
+              </table>
+            )}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
           {[
-            { label: 'Billed Today', value: INR(billStats.totalToday), color: 'text-gray-800' },
-            { label: 'Collected', value: INR(billStats.collectedToday), color: 'text-h1-success' },
-            { label: 'Pending', value: INR(billStats.pendingToday), color: billStats.pendingToday > 0 ? 'text-red-600' : 'text-gray-400' },
-            { label: 'Bills Today', value: String(billStats.countToday), color: 'text-h1-teal' },
-            { label: 'Unpaid Bills', value: String(billStats.unpaid), color: billStats.unpaid > 0 ? 'text-h1-yellow' : 'text-gray-400' },
-          ].map(s => (
-            <div key={s.label} className="bg-white rounded-xl border border-gray-100 px-4 py-3">
-              <div className="text-[9px] font-semibold text-gray-400 uppercase tracking-wider">{s.label}</div>
-              <div className={`text-lg font-bold mt-0.5 ${s.color}`}>{s.value}</div>
-            </div>
+            { label: 'Insurance Desk', href: '/billing/insurance', icon: Shield, color: 'text-blue-600' },
+            { label: 'Day End Report', href: '/billing/reports/day-end', icon: FileText, color: 'text-emerald-600' },
+            { label: 'Rate Card Setup', href: '/billing/settings/rate-cards', icon: CreditCard, color: 'text-purple-600' },
+            { label: 'Revenue Analytics', href: '/billing/analytics', icon: TrendingUp, color: 'text-amber-600' },
+            { label: 'Discount Approvals', href: '/billing/approvals', icon: AlertCircle, color: 'text-red-600' },
+          ].map(link => (
+            <button key={link.href} onClick={() => router.push(link.href)} className="flex items-center gap-2.5 rounded-xl border border-gray-200 bg-white px-4 py-3 text-left hover:shadow-md hover:-translate-y-0.5 transition-all">
+              <link.icon className={`h-4 w-4 ${link.color}`} /><span className="text-sm font-medium text-gray-700">{link.label}</span>
+            </button>
           ))}
         </div>
-      )}
-
-      {/* Tab bar */}
-      <div className="flex gap-1 overflow-x-auto pb-0.5 scrollbar-thin">
-        {TABS.map(({ key, label, icon: Icon }) => (
-          <button key={key}
-            onClick={() => { setTab(key); if (key === 'bills') loadBills(); if (key === 'collections') loadAdvances(); }}
-            className={`flex items-center gap-1.5 px-3.5 py-2 text-xs font-medium rounded-xl whitespace-nowrap transition-all duration-150 ${
-              tab === key
-                ? 'bg-h1-navy text-white shadow-sm shadow-h1-teal/15'
-                : 'bg-white text-gray-500 border border-gray-100 hover:bg-gray-50 hover:text-gray-700'
-            }`}>
-            <Icon size={13} />
-            {label}
-            {key === 'bills' && bills.length > 0 && (
-              <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${tab === key ? 'bg-white/20' : 'bg-gray-100'}`}>{bills.length}</span>
-            )}
-          </button>
-        ))}
       </div>
-
-      {/* ═══ TAB CONTENT ═══ */}
-
-      {tab === 'bills' && !selectedBillId && false /* dashboard moved to bills header */ && <RevenueDashboard centreId={centreId} />}
-
-      {tab === 'bills' && showNewBill && <ServiceBillingEngine centreId={centreId} staffId={staffId} mode="general"
-        onDone={() => { loadBills(); setTab('bills'); setShowNewBill(false); }} onFlash={flash} />}
-
-      {/* Bills */}
-      {tab === 'bills' && (
-        <div>
-          {selectedBillId ? (
-            <BillDetailView billId={selectedBillId} centreId={centreId} staffId={staffId}
-              onFlash={flash} onClose={() => { setSelectedBillId(null); loadBills(); }} />
-          ) : (
-            <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
-              {/* Search + filters */}
-              <div className="px-4 py-3 border-b border-gray-50 flex items-center gap-3">
-                <div className="relative flex-1 max-w-xs">
-                  <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                  <input value={billSearch} onChange={e => setBillSearch(e.target.value)}
-                    className="w-full pl-9 pr-3 py-2 text-xs border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-h1-teal/20 focus:border-h1-teal bg-gray-50/50"
-                    placeholder="Search bill #, patient, UHID..." />
-                </div>
-                <div className="flex gap-1">
-                  {['all', 'paid', 'partially_paid', 'final', 'draft'].map(f => (
-                    <button key={f} onClick={() => setBillFilter(f)}
-                      className={`px-2.5 py-1.5 text-[10px] font-medium rounded-lg transition-colors ${
-                        billFilter === f ? 'bg-h1-navy-light text-h1-navy border border-h1-teal/30' : 'bg-gray-50 text-gray-500 hover:bg-gray-100'
-                      }`}>{f === 'all' ? 'All' : f.replace('_', ' ')}</button>
-                  ))}
-                </div>
-                <span className="text-[10px] text-gray-400 ml-auto">{filteredBills.length} bills</span>
-              </div>
-
-              {/* Table */}
-              {billsLoading ? (
-                <div className="p-12 text-center text-gray-400 text-sm">Loading...</div>
-              ) : (
-                <table className="w-full text-xs">
-                  <thead>
-                    <tr>
-                      <th>Bill #</th><th>Patient</th><th>Date</th><th>Type</th><th>Payor</th>
-                      <th className="text-right">Net</th><th className="text-right">Paid</th>
-                      <th className="text-right">Balance</th><th>Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredBills.map(b => (
-                      <tr key={b.id} className="cursor-pointer" onClick={() => setSelectedBillId(b.id)}>
-                        <td><span className="font-mono text-[10px] text-gray-500">{b.bill_number}</span></td>
-                        <td>
-                          <div className="font-semibold text-gray-800">{b.patient?.first_name} {b.patient?.last_name}</div>
-                          <div className="text-[10px] text-gray-400">{b.patient?.uhid}</div>
-                        </td>
-                        <td className="text-gray-500">{b.bill_date ? new Date(b.bill_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }) : '—'}</td>
-                        <td><span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-100 text-gray-600">{b.bill_type}</span></td>
-                        <td><span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-h1-teal-light text-h1-teal">{b.payor_type?.replace('_', ' ')}</span></td>
-                        <td className="text-right font-semibold">₹{fmt(b.net_amount)}</td>
-                        <td className="text-right text-h1-success font-medium">{parseFloat(b.paid_amount) > 0 ? `₹${fmt(b.paid_amount)}` : '—'}</td>
-                        <td className="text-right">
-                          {parseFloat(b.balance_amount) > 0
-                            ? <span className="font-semibold text-red-600">₹{fmt(b.balance_amount)}</span>
-                            : <span className="text-gray-300">—</span>}
-                        </td>
-                        <td><span className={stBadge(b.status)}>{b.status?.replace('_', ' ')}</span></td>
-                      </tr>
-                    ))}
-                    {filteredBills.length === 0 && (
-                      <tr><td colSpan={9} className="text-center py-12 text-gray-400">
-                        {billSearch ? `No bills matching "${billSearch}"` : 'No bills found'}
-                      </td></tr>
-                    )}
-                  </tbody>
-                </table>
-              )}
-            </div>
-          )}
-        </div>
-      )}
-
-      {tab === 'ipd' && <IPDBillingTab centreId={centreId} staffId={staffId} bills={bills}
-        onSelectBill={(id) => { setSelectedBillId(id); setTab('bills'); setShowNewBill(false); }} onReload={loadBills} onFlash={flash} />}
-
-      {tab === 'insurance' && <InsuranceCashless claims={cashless.claims} loading={cashless.loading}
-        stats={cashless.stats} centreId={centreId} staffId={staffId}
-        onInitPreAuth={cashless.submitPreAuth}
-        onUpdateStatus={async (claimId: string, status: string, data?: any) => { await cashless.updateClaim(claimId, { status, ...data }); }}
-        onLoad={cashless.loadClaims} onFlash={flash} />}
-
-      {tab === 'collections' && collectionsView === 'estimates' && <EstimateGenerator estimates={estimates.estimates} centreId={centreId} staffId={staffId}
-        tariffs={tariffs} onCreate={estimates.create} onFlash={flash} />}
-
-      {tab === 'collections' && collectionsView === 'ar' && <ARManagement entries={ar.entries} loading={ar.loading} aging={ar.stats}
-        totalOutstanding={ar.entries.reduce((s: number, e: any) => s + parseFloat(e.balance_amount || 0), 0)}
-        staffId={staffId} onAddFollowup={ar.addFollowup} onWriteOff={ar.writeOff} onLoad={ar.load} onFlash={flash} />}
-
-      {/* Advances */}
-      {tab === 'collections' && collectionsView === 'advances' && (
-        <div className="space-y-4">
-          {/* Collect form */}
-          <div className="bg-white rounded-2xl border border-gray-100 p-5">
-            <h3 className="text-sm font-bold text-gray-800 mb-4">Collect Advance</h3>
-            <div className="grid grid-cols-5 gap-3 items-end">
-              <div className="relative col-span-2">
-                <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Patient *</label>
-                {advForm.patientId ? (
-                  <div className="flex items-center gap-2 mt-1.5 px-3 py-2 bg-h1-navy-light rounded-xl border border-h1-teal/30">
-                    <span className="text-sm font-semibold text-h1-navy flex-1">{advForm.patientName}</span>
-                    <button onClick={() => setAdvForm(f => ({ ...f, patientId: '', patientName: '', search: '' }))}
-                      className="text-h1-text-muted hover:text-red-500 text-xs transition-colors">✕</button>
-                  </div>
-                ) : (
-                  <>
-                    <input className="w-full mt-1.5 px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-h1-teal/20 focus:border-h1-teal bg-gray-50/50"
-                      value={advForm.search} onChange={e => setAdvForm(f => ({ ...f, search: e.target.value }))} placeholder="Search patient..." />
-                    {advPatResults.length > 0 && (
-                      <div className="absolute z-10 mt-1 w-full bg-white border rounded-xl shadow-lg max-h-36 overflow-y-auto">
-                        {advPatResults.map(p => (
-                          <button key={p.id} onClick={() => { setAdvForm(f => ({ ...f, patientId: p.id, patientName: `${p.first_name} ${p.last_name} (${p.uhid})`, search: '' })); setAdvPatResults([]); }}
-                            className="w-full text-left px-3 py-2.5 text-xs hover:bg-h1-navy-light border-b border-gray-50 last:border-0 transition-colors">
-                            <span className="font-medium">{p.first_name} {p.last_name}</span> <span className="text-gray-400">· {p.uhid}</span>
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </>
-                )}
-              </div>
-              <div>
-                <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Amount *</label>
-                <input type="number" className="w-full mt-1.5 px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-h1-teal/20 focus:border-h1-teal bg-gray-50/50"
-                  value={advForm.amount} onChange={e => setAdvForm(f => ({ ...f, amount: e.target.value }))} placeholder="₹" />
-              </div>
-              <div>
-                <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Mode</label>
-                <div className="flex gap-1 mt-1.5">
-                  {['cash', 'upi', 'card', 'neft'].map(m => (
-                    <button key={m} onClick={() => setAdvForm(f => ({ ...f, mode: m }))}
-                      className={`flex-1 py-2 rounded-lg text-[10px] font-semibold transition-colors ${
-                        advForm.mode === m ? 'bg-h1-navy text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
-                      }`}>{m.toUpperCase()}</button>
-                  ))}
-                </div>
-              </div>
-              <button onClick={collectAdvance} disabled={!advForm.patientId || !advForm.amount}
-                className="px-4 py-2.5 bg-h1-success text-white text-sm rounded-xl font-semibold disabled:opacity-40 hover:bg-h1-success transition-colors shadow-sm">
-                Collect
-              </button>
-            </div>
-          </div>
-
-          {/* Advances table */}
-          <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
-            <div className="px-4 py-3 border-b border-gray-50">
-              <h3 className="text-xs font-bold text-gray-700">Advance Deposits ({advances.length})</h3>
-            </div>
-            <table className="w-full text-xs">
-              <thead><tr><th>Receipt</th><th>Patient</th><th>Date</th><th>Mode</th><th className="text-right">Amount</th><th>Status</th></tr></thead>
-              <tbody>
-                {advances.map(a => (
-                  <tr key={a.id}>
-                    <td><span className="font-mono text-[10px] text-gray-500">{a.receipt_number}</span></td>
-                    <td>
-                      <div className="font-semibold text-gray-800">{a.patient?.first_name} {a.patient?.last_name}</div>
-                      <div className="text-[10px] text-gray-400">{a.patient?.uhid}</div>
-                    </td>
-                    <td className="text-gray-500">{new Date(a.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}</td>
-                    <td><span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-100 text-gray-600 capitalize">{a.payment_mode}</span></td>
-                    <td className="text-right font-bold text-h1-success">₹{fmt(a.amount)}</td>
-                    <td><span className={a.is_adjusted ? 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-100 text-gray-600' : 'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-green-50 text-h1-success'}>{a.is_adjusted ? 'Adjusted' : 'Available'}</span></td>
-                  </tr>
-                ))}
-                {advances.length === 0 && <tr><td colSpan={6} className="text-center py-10 text-gray-400">No advances collected</td></tr>}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-
-      {tab === 'collections' && collectionsView === 'refunds' && <RefundManager centreId={centreId} onFlash={flash} />}
-      {tab === 'collections' && collectionsView === 'credit_notes' && <CreditNoteManager centreId={centreId} onFlash={flash} />}
     </div>
   );
 }
-
-export default function BillingPage() { return <RoleGuard module="billing"><BillingInner /></RoleGuard>; }
