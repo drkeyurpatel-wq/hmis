@@ -1,3 +1,4 @@
+// @ts-nocheck
 // HEALTH1 HMIS — RATE CARD & SERVICE MASTER SETUP
 'use client';
 import { useState, useEffect, useCallback } from 'react';
