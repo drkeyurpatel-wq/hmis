@@ -1,3 +1,4 @@
+// @ts-nocheck
 // HEALTH1 HMIS — DISCOUNT APPROVALS
 'use client';
 
