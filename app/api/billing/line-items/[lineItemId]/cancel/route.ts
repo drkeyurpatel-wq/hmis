@@ -1,7 +1,5 @@
-// src/app/api/billing/line-items/[lineItemId]/cancel/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { billingDb } from '@/lib/billing/api-helpers';
-
 
 export async function POST(
   request: NextRequest,
@@ -9,16 +7,13 @@ export async function POST(
 ) {
   const supabase = billingDb();
   const body = await request.json();
-
   const user = { id: 'service-role' };
-  
 
   if (!body.reason) {
     return NextResponse.json({ error: 'Cancellation reason is required' }, { status: 400 });
   }
 
   try {
-    // Get existing item
     const { data: existing } = await supabase
       .from('billing_line_items')
       .select('*, billing_encounters!inner(billing_locked)')
@@ -28,7 +23,7 @@ export async function POST(
     if (!existing) return NextResponse.json({ error: 'Line item not found' }, { status: 404 });
     if (existing.status !== 'ACTIVE') return NextResponse.json({ error: 'Item already cancelled' }, { status: 400 });
     if (existing.billing_encounters?.billing_locked) {
-      return NextResponse.json({ error: 'Encounter is locked — use credit note' }, { status: 400 });
+      return NextResponse.json({ error: 'Encounter is locked' }, { status: 400 });
     }
 
     const { error } = await supabase
@@ -45,8 +40,7 @@ export async function POST(
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
     await supabase.from('billing_audit_log').insert({
-      entity_type: 'billing_line_items',
-      entity_id: params.lineItemId,
+      entity_type: 'billing_line_items', entity_id: params.lineItemId,
       action: 'CANCEL',
       old_values: { status: 'ACTIVE', net_amount: existing.net_amount },
       new_values: { status: 'CANCELLED', cancel_reason: body.reason },
