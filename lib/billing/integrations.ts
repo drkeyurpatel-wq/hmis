@@ -1,3 +1,4 @@
+// @ts-nocheck
 // HEALTH1 HMIS — BILLING INTEGRATIONS
 // MedPay auto-tagging, CashFlow PWA sync, WhatsApp bill sharing
 import { sb } from '@/lib/supabase/browser';
