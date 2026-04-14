@@ -1,9 +1,5 @@
-// ═══════════════════════════════════════════════════════════════════════
-// src/app/api/billing/pre-auths/[preAuthId]/submit/route.ts
-// ═══════════════════════════════════════════════════════════════════════
 import { NextRequest, NextResponse } from 'next/server';
 import { billingDb } from '@/lib/billing/api-helpers';
-
 
 export async function POST(
   request: NextRequest,
@@ -11,7 +7,6 @@ export async function POST(
 ) {
   const supabase = billingDb();
   const user = { id: 'service-role' };
-  
 
   const { error } = await supabase
     .from('billing_pre_auths')
