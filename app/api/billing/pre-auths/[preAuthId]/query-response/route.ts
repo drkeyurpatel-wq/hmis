@@ -1,9 +1,5 @@
-// ═══════════════════════════════════════════════════════════════════════
-// src/app/api/billing/pre-auths/[preAuthId]/query-response/route.ts
-// ═══════════════════════════════════════════════════════════════════════
 import { NextRequest, NextResponse } from 'next/server';
 import { billingDb } from '@/lib/billing/api-helpers';
-
 
 export async function POST(
   request: NextRequest,
@@ -12,7 +8,6 @@ export async function POST(
   const supabase = billingDb();
   const body = await request.json();
   const user = { id: 'service-role' };
-  
 
   if (!body.response?.trim()) {
     return NextResponse.json({ error: 'Response text is required' }, { status: 400 });
@@ -21,7 +16,7 @@ export async function POST(
   const { error } = await supabase
     .from('billing_pre_auths')
     .update({
-      status: 'SUBMITTED', // Back to submitted after responding
+      status: 'SUBMITTED',
       query_response: body.response,
       updated_at: new Date().toISOString(),
     })
