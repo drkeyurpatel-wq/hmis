@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
+import { motion } from 'framer-motion';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/lib/store/auth';
@@ -247,7 +248,8 @@ export function Sidebar({ mobileOpen, onMobileClose }: { mobileOpen?: boolean; o
                   const active = isActive(item.href);
                   const Icon = item.icon;
                   return (
-                    <a key={item.href + gi} href={item.href}
+                    <motion.div key={item.href + gi} whileHover={{ x: 2 }} transition={{ type: 'spring', stiffness: 400, damping: 30 }}>
+                    <a href={item.href}
                       className={cn(
                         'flex items-center gap-2.5 px-2.5 py-[6px] rounded-md text-[12px] font-medium transition-all duration-100 relative group cursor-pointer',
                         collapsed && 'justify-center px-0 py-2',
@@ -260,6 +262,7 @@ export function Sidebar({ mobileOpen, onMobileClose }: { mobileOpen?: boolean; o
                       <Icon size={collapsed ? 17 : 14} strokeWidth={active ? 2.2 : 1.8} className={cn('shrink-0', active ? 'text-teal-400' : 'text-white/25 group-hover:text-white/50')} />
                       {!collapsed && <span className="truncate">{item.label}</span>}
                     </a>
+                    </motion.div>
                   );
                 })}
               </div>
