@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { billingDb } from '@/lib/billing/api-helpers';
+import { billingDb, billingRpc } from '@/lib/billing/api-helpers';
 
 export async function POST(request: NextRequest) {
   const supabase = billingDb();
@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
       .eq('id', original_invoice_id).single();
     if (!invoice) return NextResponse.json({ error: 'Invoice not found' }, { status: 404 });
 
-    const { data: cnNumber } = await supabase.rpc('billing_next_number', {
+    const { data: cnNumber } = await billingRpc('billing_next_number', {
       p_centre_id: invoice.centre_id, p_sequence_type: 'CREDIT_NOTE', p_prefix: 'H1-CN',
     });
 
