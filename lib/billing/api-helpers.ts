@@ -49,3 +49,8 @@ export function billingError(message: string, status: number = 400) {
 export function billingSuccess(data: any, status: number = 200) {
   return NextResponse.json(data, { status });
 }
+
+// Typed RPC wrapper — bypasses strict generated types for custom billing functions
+export function billingRpc(fnName: string, params: Record<string, any>) {
+  return (billingDb() as any).rpc(fnName, params);
+}
