@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { billingDb } from '@/lib/billing/api-helpers';
+import { billingDb, billingRpc } from '@/lib/billing/api-helpers';
 
 export async function GET(request: NextRequest) {
   const supabase = billingDb();
@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'centre_id, patient_id, encounter_type required' }, { status: 400 });
 
   try {
-    const { data: encNumber } = await supabase.rpc('billing_next_number', {
+    const { data: encNumber } = await billingRpc('billing_next_number', {
       p_centre_id: body.centre_id, p_sequence_type: 'ENCOUNTER', p_prefix: `H1-${body.encounter_type}`,
     });
     const isIPD = ['IPD', 'ER', 'DAYCARE'].includes(body.encounter_type);
