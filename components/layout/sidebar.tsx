@@ -70,14 +70,14 @@ const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
 
   // ---------- REVENUE ----------
   { label: 'BILLING', items: [
-    { href: '/billing', label: 'Billing', icon: CreditCard, moduleKey: 'billing', modes: ['hospital', 'clinic'] },
-    { href: '/insurance', label: 'Insurance', icon: Shield, moduleKey: 'billing', modes: ['hospital'] },
-    { href: '/packages', label: 'Packages', icon: Package, moduleKey: 'billing', modes: ['hospital'] },
-    { href: '/pnl', label: 'P&L', icon: BarChart3, moduleKey: 'billing', modes: ['hospital'] },
-    { href: '/accounting', label: 'Accounting', icon: BarChart3, moduleKey: 'billing', modes: ['hospital'] },
-    { href: '/revenue-leakage', label: 'Leakage Audit', icon: AlertTriangle, moduleKey: 'revenue_leakage', modes: ['hospital'] },
+    { href: '/billing', label: 'Billing Hub', icon: CreditCard, moduleKey: 'billing', modes: ['hospital', 'clinic'] },
+    { href: '/billing/insurance', label: 'Insurance Desk', icon: Shield, moduleKey: 'billing', modes: ['hospital'] },
+    { href: '/billing/settings/rate-cards', label: 'Rate Cards', icon: Settings, moduleKey: 'billing', modes: ['hospital'] },
+    { href: '/billing/analytics', label: 'Revenue Analytics', icon: BarChart3, moduleKey: 'billing', modes: ['hospital'] },
+    { href: '/billing/reports/day-end', label: 'Day-End Report', icon: BarChart3, moduleKey: 'billing', modes: ['hospital'] },
+    { href: '/billing/approvals', label: 'Discount Approvals', icon: AlertTriangle, moduleKey: 'revenue_leakage', modes: ['hospital'] },
     { href: '/referrals', label: 'Referrals', icon: GitBranch, moduleKey: 'referrals', modes: ['hospital'] },
-    { href: '/collect', label: 'Collect (AR)', icon: IndianRupee, moduleKey: 'billing', modes: ['hospital'] },
+    { href: '/billing/opd-quick-bill', label: 'Quick Bill (OPD)', icon: Receipt, moduleKey: 'billing', modes: ['hospital'] },
     { href: '/convert', label: 'Convert (OPD→IPD)', icon: UserPlus, modes: ['hospital'] },
   ]},
 
