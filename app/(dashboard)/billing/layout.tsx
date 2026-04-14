@@ -1,4 +1,8 @@
+// ═══════════════════════════════════════════════════════════════════════
 // HEALTH1 HMIS — BILLING MODULE LAYOUT
+// src/app/(dashboard)/billing/layout.tsx
+// ═══════════════════════════════════════════════════════════════════════
+
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
