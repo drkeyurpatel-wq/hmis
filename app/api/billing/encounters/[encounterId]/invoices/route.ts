@@ -20,10 +20,10 @@ export async function POST(request: NextRequest, { params }: { params: { encount
     const { data: lineItems } = await liQuery;
     if (!lineItems || lineItems.length === 0) return NextResponse.json({ error: 'No billable items' }, { status: 400 });
 
-    const subtotal = roundTwo(lineItems.reduce((s, li) => s + li.gross_amount, 0));
-    const totalDiscount = roundTwo(lineItems.reduce((s, li) => s + li.discount_amount, 0));
-    const totalTax = roundTwo(lineItems.reduce((s, li) => s + li.tax_amount, 0));
-    const grandTotal = roundTwo(lineItems.reduce((s, li) => s + li.net_amount, 0));
+    const subtotal = roundTwo(lineItems.reduce((s: number, li: any) => s + li.gross_amount, 0));
+    const totalDiscount = roundTwo(lineItems.reduce((s: number, li: any) => s + li.discount_amount, 0));
+    const totalTax = roundTwo(lineItems.reduce((s: number, li: any) => s + li.tax_amount, 0));
+    const grandTotal = roundTwo(lineItems.reduce((s: number, li: any) => s + li.net_amount, 0));
     const amountPaid = encounter.total_paid || 0;
     const balanceDue = roundTwo(grandTotal - amountPaid);
 
