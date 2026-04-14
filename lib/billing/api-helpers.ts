@@ -1,5 +1,5 @@
 // lib/billing/api-helpers.ts
-// Shared billing API helpers — service-role client + auth guard
+// Shared billing API helpers — untyped client for billing tables not in generated types
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse, type NextRequest } from 'next/server';
 import { requireAuth, requireCronSecret } from '@/lib/api/auth-guard';
@@ -7,9 +7,10 @@ import { requireAuth, requireCronSecret } from '@/lib/api/auth-guard';
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const key = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 
-let _client: ReturnType<typeof createClient> | null = null;
+let _client: any = null;
 
-export function billingDb() {
+// Returns untyped Supabase client — billing_ tables are not in generated types
+export function billingDb(): any {
   if (!_client) {
     if (!url || !key) throw new Error('Missing Supabase env vars');
     _client = createClient(url, key, {
@@ -42,15 +43,15 @@ export function billingCronAuth(request: NextRequest) {
   return requireCronSecret(request);
 }
 
+// Typed RPC wrapper
+export function billingRpc(fnName: string, params: Record<string, any>) {
+  return billingDb().rpc(fnName, params);
+}
+
 export function billingError(message: string, status: number = 400) {
   return NextResponse.json({ error: message }, { status });
 }
 
 export function billingSuccess(data: any, status: number = 200) {
   return NextResponse.json(data, { status });
-}
-
-// Typed RPC wrapper — bypasses strict generated types for custom billing functions
-export function billingRpc(fnName: string, params: Record<string, any>) {
-  return (billingDb() as any).rpc(fnName, params);
 }
