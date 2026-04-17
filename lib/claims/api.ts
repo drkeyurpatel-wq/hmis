@@ -145,25 +145,38 @@ export async function fetchClaimTimeline(claimId: string) {
 export async function searchHMISPatients(search: string, centreId: string) {
   const { data, error } = await supabase()
     .from('hmis_patients')
-    .select('id, name, phone, uhid, dob, gender, centre_id, abha_id')
-    .eq('centre_id', centreId)
-    .or(`name.ilike.%${search}%,uhid.ilike.%${search}%,phone.ilike.%${search}%`)
+    .select('id, first_name, last_name, phone_primary, uhid, date_of_birth, gender, registration_centre_id, abha_id')
+    .eq('registration_centre_id', centreId)
+    .or(`first_name.ilike.%${search}%,last_name.ilike.%${search}%,uhid.ilike.%${search}%,phone_primary.ilike.%${search}%`)
     .limit(10);
   if (error) throw error;
-  return data || [];
+  // Map to expected format
+  return (data || []).map(p => ({
+    ...p,
+    name: [p.first_name, p.last_name].filter(Boolean).join(' '),
+    phone: p.phone_primary,
+    dob: p.date_of_birth,
+    centre_id: p.registration_centre_id,
+  }));
 }
 
 // ─── HMIS Active Admissions (for linking claim to admission) ───
 export async function fetchActiveAdmissions(patientId: string) {
   const { data, error } = await supabase()
     .from('hmis_admissions')
-    .select('id, admission_number, admission_date, department_id, treating_doctor_id, status, hmis_staff!treating_doctor_id(name), hmis_departments(name)')
+    .select('id, ipd_number, admission_date, department_id, primary_doctor_id, status, provisional_diagnosis, final_diagnosis, icd_codes, hmis_staff!primary_doctor_id(name, full_name), hmis_departments(name)')
     .eq('patient_id', patientId)
     .in('status', ['active', 'discharged'])
     .order('admission_date', { ascending: false })
     .limit(5);
   if (error) throw error;
-  return data || [];
+  // Map to expected format
+  return (data || []).map(a => ({
+    ...a,
+    admission_number: a.ipd_number,
+    treating_doctor_id: a.primary_doctor_id,
+    hmis_staff: a.hmis_staff,
+  }));
 }
 
 // ─── HMIS Patient Insurance (for auto-populate policy) ───
