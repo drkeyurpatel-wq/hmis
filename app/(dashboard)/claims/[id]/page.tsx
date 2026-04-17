@@ -5,15 +5,21 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuthStore } from '@/lib/store/auth';
+import { sb } from '@/lib/supabase/browser';
 import Link from 'next/link';
 import {
-  ArrowLeft, Shield, Clock, FileText, AlertTriangle, IndianRupee,
-  CheckCircle, XCircle, MessageSquare, Send, ChevronRight, Zap,
-  User, Building2, Stethoscope, Calendar, ExternalLink, Loader2,
-  Upload, RefreshCw, ArrowRight, Copy, Phone, Hash, Activity,
+  Shield, Clock, FileText, AlertTriangle, IndianRupee,
+  CheckCircle2, XCircle, MessageSquare, Send, User,
+  Building2, Stethoscope, Calendar, Loader2, Upload,
+  RefreshCw, ArrowRight, Phone, Hash, Activity,
+  ChevronRight, Eye, Zap, Copy, ExternalLink,
 } from 'lucide-react';
 import { STATUS_CONFIG, CLAIM_TYPE_LABELS, PRIORITY_CONFIG, type ClaimStatus, type ClaimType } from '@/lib/claims/types';
-import { fetchClaim, fetchClaimTimeline, updateClaim, addClaimQuery, fetchClaimQueries, fetchClaimDocuments, uploadClaimDocument } from '@/lib/claims/api';
+import {
+  fetchClaim, fetchClaimTimeline, updateClaim,
+  addClaimQuery, fetchClaimQueries, fetchClaimDocuments,
+  uploadClaimDocument, recordSettlement, fetchDocChecklist,
+} from '@/lib/claims/api';
 import { notifyClaimStatusChange } from '@/lib/claims/notifications';
 
 // ─── Formatters ───
@@ -21,129 +27,129 @@ const INR = (n: number | null | undefined) => {
   if (!n) return '—';
   return n >= 100000 ? `₹${(n / 100000).toFixed(2)}L` : `₹${Math.round(n).toLocaleString('en-IN')}`;
 };
-const daysBetween = (a: string | null, b?: string) => {
+const shortDate = (d: string | null) => d ? new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: '2-digit' }) : '—';
+const daysBetween = (a: string | null, b: string | null) => {
   if (!a) return null;
   const end = b ? new Date(b) : new Date();
   return Math.ceil((end.getTime() - new Date(a).getTime()) / 86400000);
 };
-const fmtDate = (d: string | null) => d ? new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
-const fmtDateTime = (d: string | null) => d ? new Date(d).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—';
 
-// ─── State Machine ───
-const TRANSITIONS: Record<string, { label: string; status: ClaimStatus; color: string; icon: any }[]> = {
+// ─── Status Transitions ───
+const TRANSITIONS: Record<string, { label: string; status: ClaimStatus; color: string; needsAmount?: boolean }[]> = {
   draft: [
-    { label: 'Submit Pre-Auth', status: 'preauth_pending', color: 'bg-amber-600 hover:bg-amber-700', icon: Shield },
-    { label: 'Direct Claim', status: 'claim_submitted', color: 'bg-blue-600 hover:bg-blue-700', icon: Send },
+    { label: 'Submit Pre-Auth', status: 'preauth_pending', color: 'bg-amber-600' },
+    { label: 'Submit Claim Directly', status: 'claim_submitted', color: 'bg-blue-600' },
   ],
   preauth_pending: [
-    { label: 'Approved', status: 'preauth_approved', color: 'bg-green-600 hover:bg-green-700', icon: CheckCircle },
-    { label: 'Query', status: 'preauth_query', color: 'bg-orange-600 hover:bg-orange-700', icon: MessageSquare },
-    { label: 'Rejected', status: 'preauth_rejected', color: 'bg-red-600 hover:bg-red-700', icon: XCircle },
+    { label: 'Approved', status: 'preauth_approved', color: 'bg-green-600', needsAmount: true },
+    { label: 'Query Raised', status: 'preauth_query', color: 'bg-orange-600' },
+    { label: 'Rejected', status: 'preauth_rejected', color: 'bg-red-600' },
   ],
   preauth_approved: [
-    { label: 'Submit Claim', status: 'claim_submitted', color: 'bg-blue-600 hover:bg-blue-700', icon: Send },
-    { label: 'Enhancement', status: 'preauth_enhanced', color: 'bg-purple-600 hover:bg-purple-700', icon: ArrowRight },
+    { label: 'Submit Final Claim', status: 'claim_submitted', color: 'bg-blue-600' },
+    { label: 'Enhancement', status: 'preauth_enhanced', color: 'bg-purple-600', needsAmount: true },
   ],
   preauth_query: [
-    { label: 'Resubmit', status: 'preauth_pending', color: 'bg-amber-600 hover:bg-amber-700', icon: RefreshCw },
-    { label: 'Rejected', status: 'preauth_rejected', color: 'bg-red-600 hover:bg-red-700', icon: XCircle },
+    { label: 'Resubmit Pre-Auth', status: 'preauth_pending', color: 'bg-amber-600' },
+    { label: 'Rejected', status: 'preauth_rejected', color: 'bg-red-600' },
   ],
   preauth_enhanced: [
-    { label: 'Submit Claim', status: 'claim_submitted', color: 'bg-blue-600 hover:bg-blue-700', icon: Send },
+    { label: 'Submit Final Claim', status: 'claim_submitted', color: 'bg-blue-600' },
+  ],
+  preauth_rejected: [
+    { label: 'Appeal / Resubmit', status: 'preauth_pending', color: 'bg-amber-600' },
   ],
   claim_submitted: [
-    { label: 'Under Review', status: 'claim_under_review', color: 'bg-blue-600 hover:bg-blue-700', icon: Clock },
-    { label: 'Approved', status: 'claim_approved', color: 'bg-green-600 hover:bg-green-700', icon: CheckCircle },
-    { label: 'Query', status: 'claim_query', color: 'bg-orange-600 hover:bg-orange-700', icon: MessageSquare },
+    { label: 'Under Review', status: 'claim_under_review', color: 'bg-blue-600' },
+    { label: 'Query Raised', status: 'claim_query', color: 'bg-orange-600' },
+    { label: 'Approved', status: 'claim_approved', color: 'bg-green-600', needsAmount: true },
   ],
   claim_under_review: [
-    { label: 'Approved', status: 'claim_approved', color: 'bg-green-600 hover:bg-green-700', icon: CheckCircle },
-    { label: 'Partial', status: 'claim_partial', color: 'bg-yellow-600 hover:bg-yellow-700', icon: Activity },
-    { label: 'Query', status: 'claim_query', color: 'bg-orange-600 hover:bg-orange-700', icon: MessageSquare },
-    { label: 'Rejected', status: 'claim_rejected', color: 'bg-red-600 hover:bg-red-700', icon: XCircle },
+    { label: 'Approved', status: 'claim_approved', color: 'bg-green-600', needsAmount: true },
+    { label: 'Partial', status: 'claim_partial', color: 'bg-yellow-600', needsAmount: true },
+    { label: 'Query', status: 'claim_query', color: 'bg-orange-600' },
+    { label: 'Rejected', status: 'claim_rejected', color: 'bg-red-600' },
   ],
   claim_query: [
-    { label: 'Resubmit', status: 'claim_submitted', color: 'bg-blue-600 hover:bg-blue-700', icon: RefreshCw },
-    { label: 'Rejected', status: 'claim_rejected', color: 'bg-red-600 hover:bg-red-700', icon: XCircle },
+    { label: 'Resubmit Claim', status: 'claim_submitted', color: 'bg-blue-600' },
+    { label: 'Rejected', status: 'claim_rejected', color: 'bg-red-600' },
   ],
-  claim_approved: [
-    { label: 'Await Settlement', status: 'settlement_pending', color: 'bg-purple-600 hover:bg-purple-700', icon: IndianRupee },
-  ],
-  claim_partial: [
-    { label: 'Await Settlement', status: 'settlement_pending', color: 'bg-purple-600 hover:bg-purple-700', icon: IndianRupee },
-  ],
-  settlement_pending: [
-    { label: 'Mark Settled', status: 'settled', color: 'bg-emerald-600 hover:bg-emerald-700', icon: CheckCircle },
-  ],
-  settled: [
-    { label: 'Close', status: 'closed', color: 'bg-gray-600 hover:bg-gray-700', icon: XCircle },
-  ],
+  claim_approved: [{ label: 'Awaiting Settlement', status: 'settlement_pending', color: 'bg-purple-600' }],
+  claim_partial: [{ label: 'Awaiting Settlement', status: 'settlement_pending', color: 'bg-purple-600' }],
+  settlement_pending: [{ label: 'Record Settlement', status: 'settled', color: 'bg-emerald-600', needsAmount: true }],
+  settled: [{ label: 'Close Claim', status: 'closed', color: 'bg-gray-600' }],
   claim_rejected: [
-    { label: 'Appeal', status: 'claim_submitted', color: 'bg-blue-600 hover:bg-blue-700', icon: RefreshCw },
-    { label: 'Write Off', status: 'written_off', color: 'bg-red-800 hover:bg-red-900', icon: XCircle },
+    { label: 'Appeal', status: 'claim_submitted', color: 'bg-blue-600' },
+    { label: 'Write Off', status: 'written_off', color: 'bg-red-800' },
   ],
 };
 
-// ─── Tab Type ───
-type DetailTab = 'overview' | 'queries' | 'documents' | 'timeline';
+type DetailTab = 'overview' | 'timeline' | 'queries' | 'documents' | 'settlement';
 
 export default function ClaimDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const { staff } = useAuthStore();
 
-  // Data
   const [claim, setClaim] = useState<any>(null);
   const [timeline, setTimeline] = useState<any[]>([]);
   const [queries, setQueries] = useState<any[]>([]);
   const [documents, setDocuments] = useState<any[]>([]);
+  const [checklist, setChecklist] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-
-  // UI state
   const [tab, setTab] = useState<DetailTab>('overview');
-  const [transitioning, setTransitioning] = useState(false);
   const [toast, setToast] = useState('');
-  const flash = (m: string) => { setToast(m); setTimeout(() => setToast(''), 2500); };
+  const [transitioning, setTransitioning] = useState(false);
 
-  // Modals
-  const [showAmountModal, setShowAmountModal] = useState<ClaimStatus | null>(null);
+  // Modal state
+  const [showAmountModal, setShowAmountModal] = useState<{ status: ClaimStatus; label: string } | null>(null);
   const [amountInput, setAmountInput] = useState('');
   const [utrInput, setUtrInput] = useState('');
+  const [modeInput, setModeInput] = useState('neft');
+  const [deductionInput, setDeductionInput] = useState('');
 
   // Query form
-  const [showAddQuery, setShowAddQuery] = useState(false);
-  const [queryForm, setQueryForm] = useState({ text: '', category: 'other', priority: 'medium', routed_to_role: '' });
+  const [showQueryForm, setShowQueryForm] = useState(false);
+  const [qForm, setQForm] = useState({ text: '', category: 'other', priority: 'medium', role: '' });
   const [savingQuery, setSavingQuery] = useState(false);
 
-  // Upload
+  // Doc upload
   const [uploading, setUploading] = useState(false);
 
-  // ─── Load ───
+  const flash = (m: string) => { setToast(m); setTimeout(() => setToast(''), 2500); };
+
+  // ─── Load Everything ───
   const load = useCallback(async () => {
     if (!id) return;
     setLoading(true);
     try {
       const [c, t, q, d] = await Promise.all([
-        fetchClaim(id), fetchClaimTimeline(id), fetchClaimQueries(id), fetchClaimDocuments(id),
+        fetchClaim(id), fetchClaimTimeline(id),
+        fetchClaimQueries(id), fetchClaimDocuments(id),
       ]);
-      setClaim(c); setTimeline(t); setQueries(q); setDocuments(d);
+      setClaim(c);
+      setTimeline(t);
+      setQueries(q);
+      setDocuments(d);
+      // Load doc checklist based on payer + type
+      if (c?.payer_id && c?.claim_type) {
+        const cl = await fetchDocChecklist(c.payer_id, c.claim_type);
+        setChecklist(cl);
+      }
     } catch (e) { console.error(e); }
     setLoading(false);
   }, [id]);
 
   useEffect(() => { load(); }, [load]);
 
-  // ─── Actions ───
-  const handleTransition = async (newStatus: ClaimStatus) => {
-    if (['claim_approved', 'claim_partial', 'settled'].includes(newStatus)) {
-      setShowAmountModal(newStatus);
-      return;
-    }
+  // ─── Status Transition ───
+  const handleTransition = async (t: { status: ClaimStatus; label: string; needsAmount?: boolean }) => {
+    if (t.needsAmount) { setShowAmountModal(t); return; }
     setTransitioning(true);
     try {
-      await updateClaim(id, { status: newStatus });
-      notifyClaimStatusChange(id, newStatus).catch(() => {});
-      flash(`Status → ${STATUS_CONFIG[newStatus]?.label || newStatus}`);
+      await updateClaim(id, { status: t.status });
+      notifyClaimStatusChange(id, t.status).catch(() => {});
+      flash(`Status → ${STATUS_CONFIG[t.status]?.label || t.status}`);
       await load();
     } catch (e) { console.error(e); flash('Error updating status'); }
     setTransitioning(false);
@@ -152,527 +158,689 @@ export default function ClaimDetailPage() {
   const handleAmountSubmit = async () => {
     if (!showAmountModal || !amountInput) return;
     setTransitioning(true);
-    const updates: any = { status: showAmountModal };
-    if (showAmountModal === 'claim_approved' || showAmountModal === 'claim_partial') {
-      updates.approved_amount = parseFloat(amountInput) || 0;
-    } else if (showAmountModal === 'settled') {
-      updates.settled_amount = parseFloat(amountInput) || 0;
-      updates.settlement_date = new Date().toISOString().split('T')[0];
-      updates.settlement_utr = utrInput || null;
-      updates.medpay_synced = true;
-      updates.medpay_synced_at = new Date().toISOString();
-    }
     try {
-      await updateClaim(id, updates);
-      notifyClaimStatusChange(id, showAmountModal).catch(() => {});
-      flash(showAmountModal === 'settled' ? 'Settlement recorded' : 'Amount approved');
-      setShowAmountModal(null); setAmountInput(''); setUtrInput('');
+      if (showAmountModal.status === 'settled') {
+        await recordSettlement({
+          claim_id: id,
+          settlement_amount: parseFloat(amountInput),
+          deduction_amount: parseFloat(deductionInput) || 0,
+          utr_number: utrInput || undefined,
+          payment_mode: modeInput,
+        });
+      } else {
+        await updateClaim(id, {
+          status: showAmountModal.status,
+          approved_amount: parseFloat(amountInput),
+        });
+      }
+      notifyClaimStatusChange(id, showAmountModal.status).catch(() => {});
+      flash(`Status → ${STATUS_CONFIG[showAmountModal.status]?.label}`);
+      setShowAmountModal(null);
+      setAmountInput(''); setUtrInput(''); setDeductionInput('');
       await load();
-    } catch (e) { console.error(e); flash('Error'); }
+    } catch (e) { console.error(e); flash('Error recording'); }
     setTransitioning(false);
   };
 
+  // ─── Add Query ───
   const handleAddQuery = async () => {
-    if (!queryForm.text.trim()) return;
+    if (!qForm.text.trim()) return;
     setSavingQuery(true);
     try {
-      await addClaimQuery({ claim_id: id, query_text: queryForm.text, query_category: queryForm.category, priority: queryForm.priority, routed_to_role: queryForm.routed_to_role || undefined });
-      setShowAddQuery(false); setQueryForm({ text: '', category: 'other', priority: 'medium', routed_to_role: '' });
+      await addClaimQuery({ claim_id: id, query_text: qForm.text, query_category: qForm.category, priority: qForm.priority, routed_to_role: qForm.role || undefined });
+      setShowQueryForm(false);
+      setQForm({ text: '', category: 'other', priority: 'medium', role: '' });
       flash('Query added');
       await load();
     } catch (e) { console.error(e); flash('Error adding query'); }
     setSavingQuery(false);
   };
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  // ─── Respond to Query ───
+  const handleRespondQuery = async (queryId: string, response: string) => {
+    try {
+      await sb().from('clm_queries').update({
+        response_text: response,
+        responded_by: staff?.id,
+        responded_at: new Date().toISOString(),
+        status: 'responded',
+      }).eq('id', queryId);
+      flash('Response submitted');
+      await load();
+    } catch (e) { console.error(e); }
+  };
+
+  // ─── Upload Document ───
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>, docName: string, docCat: string) => {
     const file = e.target.files?.[0];
     if (!file) return;
     setUploading(true);
     try {
-      await uploadClaimDocument({ claim_id: id, file, document_name: file.name.replace(/\.[^/.]+$/, ''), document_category: 'clinical' });
+      await uploadClaimDocument({ claim_id: id, file, document_name: docName || file.name, document_category: docCat || 'clinical' });
       flash('Document uploaded');
       await load();
     } catch (err) { console.error(err); flash('Upload failed'); }
     setUploading(false);
-    e.target.value = '';
   };
 
-  const handleInlineEdit = async (field: string, value: any) => {
-    try {
-      await updateClaim(id, { [field]: value });
-      flash(`${field.replace(/_/g, ' ')} updated`);
-      await load();
-    } catch (e) { console.error(e); }
+  // ─── Inline Edit ───
+  const inlineUpdate = async (field: string, value: any) => {
+    try { await updateClaim(id, { [field]: value }); flash('Updated'); await load(); }
+    catch { flash('Update failed'); }
   };
 
   // ─── Loading / Not Found ───
   if (loading) return (
     <div className="flex items-center justify-center min-h-[60vh]">
-      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600" />
+      <div className="text-center">
+        <Loader2 className="w-8 h-8 text-teal-600 animate-spin mx-auto" />
+        <p className="text-sm text-gray-400 mt-2">Loading claim...</p>
+      </div>
     </div>
   );
   if (!claim) return (
     <div className="text-center py-20">
       <Shield className="w-12 h-12 text-gray-300 mx-auto mb-3" />
       <p className="text-sm text-gray-500">Claim not found</p>
-      <Link href="/claims" className="text-xs text-teal-600 hover:underline mt-2 inline-block">← Back to Claims</Link>
+      <Link href="/claims" className="text-teal-600 text-sm hover:underline mt-2 inline-block">← Back to Claims</Link>
     </div>
   );
 
   const sc = STATUS_CONFIG[claim.status as ClaimStatus] || STATUS_CONFIG.draft;
   const transitions = TRANSITIONS[claim.status] || [];
-  const daysPending = daysBetween(claim.discharge_date || claim.admission_date);
-  const openQueryCount = queries.filter(q => ['open', 'in_progress', 'escalated'].includes(q.status)).length;
+  const pc = PRIORITY_CONFIG[claim.priority] || PRIORITY_CONFIG.medium;
+  const los = daysBetween(claim.admission_date, claim.discharge_date);
+  const daysPending = daysBetween(claim.discharge_date || claim.created_at, null);
+  const openQueries = queries.filter(q => ['open', 'in_progress', 'escalated'].includes(q.status));
 
-  const detailTabs: [DetailTab, string, number | null][] = [
+  const tabConfig: [DetailTab, string, number | null][] = [
     ['overview', 'Overview', null],
+    ['timeline', 'Timeline', timeline.length],
     ['queries', 'Queries', queries.length],
     ['documents', 'Documents', documents.length],
-    ['timeline', 'Timeline', timeline.length],
+    ['settlement', 'Settlement', null],
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50/50">
+    <div className="max-w-6xl mx-auto pb-8">
       {/* Toast */}
-      {toast && <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-teal-600 text-white px-5 py-2.5 rounded-xl shadow-lg text-sm font-medium">{toast}</div>}
+      {toast && <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-teal-600 text-white px-5 py-2.5 rounded-xl shadow-lg text-sm font-medium animate-in fade-in">{toast}</div>}
 
-      {/* ═══ CLAIM HEADER ═══ */}
-      <div className="bg-white border-b">
-        <div className="max-w-6xl mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              {/* Avatar */}
-              <div className="w-12 h-12 rounded-full bg-teal-100 flex items-center justify-center text-teal-700 font-bold text-lg">
-                {claim.patient_name?.split(' ').map((w: string) => w[0]).slice(0, 2).join('')}
-              </div>
-              <div>
-                <h1 className="text-xl font-bold">{claim.patient_name}</h1>
-                <div className="flex items-center gap-2 text-xs text-gray-500 flex-wrap mt-0.5">
-                  <span className="font-mono bg-gray-100 px-1.5 py-0.5 rounded">{claim.claim_number}</span>
-                  {claim.patient_uhid && <span className="font-mono">{claim.patient_uhid}</span>}
-                  <span className={`px-1.5 py-0.5 rounded-full font-semibold text-[10px] ${sc.bg} ${sc.color}`}>{sc.label}</span>
-                  <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${
-                    claim.claim_type === 'pmjay' ? 'bg-green-100 text-green-700' :
-                    claim.claim_type === 'corporate' ? 'bg-purple-100 text-purple-700' :
-                    'bg-blue-50 text-blue-700'
-                  }`}>{CLAIM_TYPE_LABELS[claim.claim_type as ClaimType] || claim.claim_type}</span>
-                  {claim.clm_payers?.name && <span className="bg-gray-50 px-1.5 py-0.5 rounded">{claim.clm_payers.name}</span>}
-                  {daysPending && daysPending > 0 && (
-                    <span className={`px-1.5 py-0.5 rounded font-bold text-[10px] ${daysPending > 90 ? 'bg-red-100 text-red-700' : daysPending > 30 ? 'bg-orange-100 text-orange-700' : 'bg-gray-100 text-gray-600'}`}>
-                      Day {daysPending}
-                    </span>
-                  )}
-                  {openQueryCount > 0 && (
-                    <button onClick={() => setTab('queries')} className="px-1.5 py-0.5 rounded font-bold text-[10px] bg-orange-500 text-white animate-pulse">
-                      {openQueryCount} Query
-                    </button>
-                  )}
-                  {claim.is_sla_breached && <span className="px-1.5 py-0.5 rounded font-bold text-[10px] bg-red-600 text-white">SLA BREACH</span>}
-                </div>
-                {claim.primary_diagnosis && (
-                  <div className="text-xs text-gray-600 mt-1">
-                    <span className="font-medium">Dx:</span> {claim.primary_diagnosis}
-                    {claim.icd_code && <span className="font-mono text-gray-400 ml-1">({claim.icd_code})</span>}
-                  </div>
+      {/* ══════ CLAIM HEADER ══════ */}
+      <div className="bg-white rounded-xl border p-4 mb-4">
+        <div className="flex items-start justify-between">
+          <div className="flex items-center gap-4">
+            {/* Patient Avatar */}
+            <div className="w-12 h-12 rounded-full bg-teal-100 flex items-center justify-center text-teal-700 font-bold text-lg shrink-0">
+              {claim.patient_name?.split(' ').map((n: string) => n[0]).join('').slice(0, 2)}
+            </div>
+            <div>
+              <h1 className="text-xl font-bold text-gray-900">{claim.patient_name}</h1>
+              <div className="flex items-center gap-1.5 text-xs text-gray-500 flex-wrap mt-1">
+                <span className="font-mono bg-gray-100 px-1.5 py-0.5 rounded">{claim.claim_number}</span>
+                {claim.patient_uhid && <span className="bg-gray-100 px-1.5 py-0.5 rounded">{claim.patient_uhid}</span>}
+                <span className={`px-1.5 py-0.5 rounded-full font-semibold ${sc.bg} ${sc.color}`}>{sc.label}</span>
+                <span className={`px-1.5 py-0.5 rounded font-medium ${
+                  claim.claim_type === 'pmjay' ? 'bg-green-100 text-green-700' :
+                  claim.claim_type === 'corporate' ? 'bg-purple-100 text-purple-700' :
+                  'bg-blue-50 text-blue-700'
+                }`}>{CLAIM_TYPE_LABELS[claim.claim_type as ClaimType] || claim.claim_type}</span>
+                <span className={`px-1.5 py-0.5 rounded font-medium ${pc.bg} ${pc.color}`}>{pc.label}</span>
+                {claim.treating_doctor_name && <span className="text-gray-600">{claim.treating_doctor_name}</span>}
+                {claim.department_name && <span className="bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded">{claim.department_name}</span>}
+                {daysPending && daysPending > 30 && (
+                  <span className={`px-1.5 py-0.5 rounded font-bold ${daysPending > 90 ? 'bg-red-600 text-white' : daysPending > 60 ? 'bg-orange-100 text-orange-700' : 'bg-amber-50 text-amber-700'}`}>
+                    {daysPending}d pending
+                  </span>
+                )}
+                {openQueries.length > 0 && (
+                  <button onClick={() => setTab('queries')} className="px-1.5 py-0.5 rounded font-bold text-[10px] bg-orange-600 text-white animate-pulse">
+                    {openQueries.length} Query{openQueries.length > 1 ? 's' : ''}
+                  </button>
                 )}
               </div>
+              {claim.primary_diagnosis && (
+                <div className="text-xs text-gray-600 mt-1">
+                  <span className="font-medium">Dx:</span> {claim.primary_diagnosis}
+                  {claim.icd_code && <span className="font-mono text-gray-400 ml-1">({claim.icd_code})</span>}
+                  {claim.procedure_name && <> · <span className="font-medium">Proc:</span> {claim.procedure_name}</>}
+                </div>
+              )}
             </div>
-            {/* Action Buttons */}
-            <div className="flex flex-col gap-1.5 items-end">
-              {/* Financial quick view */}
-              <div className="flex gap-2 text-[10px]">
-                {claim.estimated_amount && <span className="bg-gray-50 px-1.5 py-0.5 rounded">Est <b className="font-mono">{INR(claim.estimated_amount)}</b></span>}
-                {claim.approved_amount && <span className="bg-blue-50 px-1.5 py-0.5 rounded text-blue-700">Appr <b className="font-mono">{INR(claim.approved_amount)}</b></span>}
-                {claim.settled_amount && <span className="bg-emerald-50 px-1.5 py-0.5 rounded text-emerald-700">Settled <b className="font-mono">{INR(claim.settled_amount)}</b></span>}
-              </div>
-              <div className="flex gap-2">
-                {transitions.map(t => (
-                  <button key={t.status} onClick={() => handleTransition(t.status)} disabled={transitioning}
-                    className={`flex items-center gap-1 px-3 py-1.5 text-white text-xs rounded-lg font-medium ${t.color} disabled:opacity-50 transition-colors`}>
-                    <t.icon className="w-3 h-3" /> {t.label}
-                  </button>
-                ))}
-                <Link href="/claims" className="px-3 py-1.5 bg-gray-100 text-gray-600 text-xs rounded-lg hover:bg-gray-200">Back</Link>
-              </div>
+          </div>
+
+          {/* Right: Actions */}
+          <div className="flex flex-col gap-1.5 items-end shrink-0">
+            <div className="flex items-center gap-2 text-[10px] text-gray-500">
+              <span>Payer: <b className="text-gray-700">{claim.clm_payers?.name || '—'}</b></span>
+              {claim.clm_payers?.type && <span className="bg-gray-100 px-1.5 py-0.5 rounded">{claim.clm_payers.type}</span>}
+            </div>
+            <div className="flex gap-1.5 flex-wrap justify-end">
+              {transitions.map(t => (
+                <button key={t.status} onClick={() => handleTransition(t)} disabled={transitioning}
+                  className={`px-3 py-1.5 text-white text-xs rounded-lg font-medium transition-all hover:opacity-90 disabled:opacity-50 ${t.color}`}>
+                  {t.label}
+                </button>
+              ))}
+              {claim.patient_id && (
+                <Link href={`/patients/${claim.patient_id}`}
+                  className="px-3 py-1.5 bg-gray-100 text-gray-600 text-xs rounded-lg hover:bg-gray-200">Patient</Link>
+              )}
+              <Link href="/claims" className="px-3 py-1.5 bg-gray-100 text-gray-600 text-xs rounded-lg hover:bg-gray-200">Back</Link>
             </div>
           </div>
         </div>
       </div>
 
-      {/* ═══ TABS ═══ */}
-      <div className="max-w-6xl mx-auto px-6">
-        <div className="flex gap-0.5 border-b pb-px">
-          {detailTabs.map(([k, l, count]) => (
-            <button key={k} onClick={() => setTab(k)}
-              className={`px-3 py-2.5 text-[11px] font-medium whitespace-nowrap border-b-2 -mb-px flex items-center gap-1 transition-colors ${
-                tab === k ? 'border-teal-600 text-teal-700' : 'border-transparent text-gray-500 hover:text-gray-700'
-              }`}>
-              {l}
-              {count !== null && count > 0 && (
-                <span className={`text-[9px] px-1.5 rounded-full ${tab === k ? 'bg-teal-100 text-teal-600' : 'bg-gray-100 text-gray-400'}`}>{count}</span>
-              )}
-            </button>
-          ))}
-        </div>
+      {/* ══════ FINANCIAL STRIP ══════ */}
+      <div className="grid grid-cols-6 gap-2 mb-4">
+        {[
+          { label: 'Estimated', value: claim.estimated_amount, color: 'text-gray-700', bg: 'bg-white' },
+          { label: 'Approved', value: claim.approved_amount, color: 'text-blue-700', bg: 'bg-blue-50' },
+          { label: 'Claimed', value: claim.claimed_amount, color: 'text-purple-700', bg: 'bg-purple-50' },
+          { label: 'Settled', value: claim.settled_amount, color: 'text-emerald-700', bg: 'bg-emerald-50' },
+          { label: 'Deductions', value: claim.deduction_amount, color: 'text-red-700', bg: 'bg-red-50' },
+          { label: 'Patient Due', value: claim.patient_payable, color: 'text-orange-700', bg: 'bg-orange-50' },
+        ].map((f, i) => (
+          <div key={f.label} className={`${f.bg} rounded-xl border p-3 text-center relative`}>
+            <p className="text-[10px] text-gray-500 uppercase tracking-wider font-medium">{f.label}</p>
+            <p className={`text-lg font-bold font-mono tabular-nums ${f.color} mt-0.5`}>{INR(f.value)}</p>
+            {i < 5 && <ChevronRight className="absolute -right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-300 z-10" />}
+          </div>
+        ))}
       </div>
 
-      {/* ═══ TAB CONTENT ═══ */}
-      <div className="max-w-6xl mx-auto px-6 py-4">
-
-        {/* ── OVERVIEW ── */}
-        {tab === 'overview' && (
-          <div className="grid grid-cols-3 gap-4">
-            {/* Left 2 cols */}
-            <div className="col-span-2 space-y-4">
-              {/* Financial Summary */}
-              <div className="bg-white rounded-xl border p-5">
-                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-1.5"><IndianRupee className="w-3.5 h-3.5" /> Financial Summary</h3>
-                <div className="grid grid-cols-3 gap-3">
-                  {[
-                    { label: 'Estimated', value: claim.estimated_amount, color: 'text-gray-700', bg: 'bg-gray-50' },
-                    { label: 'Approved', value: claim.approved_amount, color: 'text-blue-700', bg: 'bg-blue-50' },
-                    { label: 'Claimed', value: claim.claimed_amount, color: 'text-purple-700', bg: 'bg-purple-50' },
-                    { label: 'Settled', value: claim.settled_amount, color: 'text-emerald-700', bg: 'bg-emerald-50' },
-                    { label: 'Deductions', value: claim.deduction_amount, color: 'text-red-700', bg: 'bg-red-50' },
-                    { label: 'Patient Payable', value: claim.patient_payable, color: 'text-orange-700', bg: 'bg-orange-50' },
-                  ].map(f => (
-                    <div key={f.label} className={`${f.bg} rounded-lg p-3`}>
-                      <p className="text-[10px] text-gray-500 uppercase tracking-wider">{f.label}</p>
-                      <p className={`text-lg font-bold font-mono tabular-nums ${f.color}`}>{INR(f.value)}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Clinical Details */}
-              <div className="bg-white rounded-xl border p-5">
-                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-1.5"><Stethoscope className="w-3.5 h-3.5" /> Clinical Details</h3>
-                <div className="grid grid-cols-2 gap-y-2.5 gap-x-6 text-sm">
-                  {[
-                    ['Diagnosis', claim.primary_diagnosis, 'font-medium'],
-                    ['ICD-10', claim.icd_code, 'font-mono text-xs'],
-                    ['Procedure', claim.procedure_name, 'font-medium'],
-                    ['Department', claim.department_name, ''],
-                    ['Doctor', claim.treating_doctor_name ? `Dr. ${claim.treating_doctor_name}` : null, ''],
-                    ['Package', claim.package_name, ''],
-                  ].map(([label, value, cls]) => (
-                    <div key={label as string} className="flex items-baseline gap-2">
-                      <span className="text-xs text-gray-400 w-20 shrink-0">{label}</span>
-                      <span className={`text-gray-800 ${cls}`}>{(value as string) || '—'}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Patient & Policy */}
-              <div className="bg-white rounded-xl border p-5">
-                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-1.5"><User className="w-3.5 h-3.5" /> Patient & Policy</h3>
-                <div className="grid grid-cols-2 gap-y-2.5 gap-x-6 text-sm">
-                  {[
-                    ['Patient', claim.patient_name, 'font-medium'],
-                    ['UHID', claim.patient_uhid, 'font-mono text-xs'],
-                    ['Phone', claim.patient_phone, ''],
-                    ['ABHA', claim.abha_id, 'font-mono text-xs'],
-                    ['Policy #', claim.policy_number, 'font-mono text-xs'],
-                    ['Holder', claim.policy_holder_name, ''],
-                    ['Admission', fmtDate(claim.admission_date), ''],
-                    ['Discharge', fmtDate(claim.discharge_date), ''],
-                  ].map(([label, value, cls]) => (
-                    <div key={label as string} className="flex items-baseline gap-2">
-                      <span className="text-xs text-gray-400 w-20 shrink-0">{label}</span>
-                      <span className={`text-gray-800 ${cls}`}>{(value as string) || '—'}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* Right col — Payer + Refs + Quick actions */}
-            <div className="space-y-4">
-              {/* Payer Card */}
-              <div className="bg-white rounded-xl border p-5">
-                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-1.5"><Building2 className="w-3.5 h-3.5" /> Payer & References</h3>
-                <p className="font-semibold text-sm text-gray-900">{claim.clm_payers?.name || '—'}</p>
-                <p className="text-[10px] text-gray-500 mt-0.5 uppercase">{claim.clm_payers?.type}</p>
-
-                <div className="mt-3 space-y-2">
-                  <div>
-                    <label className="text-[10px] text-gray-400 uppercase tracking-wider">TPA Claim Ref</label>
-                    <input type="text" key={`tpa_${claim.tpa_claim_number}`} defaultValue={claim.tpa_claim_number || ''}
-                      onBlur={e => { if (e.target.value !== (claim.tpa_claim_number || '')) handleInlineEdit('tpa_claim_number', e.target.value); }}
-                      placeholder="Enter TPA claim #" className="w-full px-2.5 py-1.5 text-xs font-mono border rounded-lg mt-0.5 focus:ring-2 focus:ring-teal-500 focus:border-transparent" />
-                  </div>
-                  <div>
-                    <label className="text-[10px] text-gray-400 uppercase tracking-wider">Pre-Auth Ref</label>
-                    <input type="text" key={`pa_${claim.tpa_preauth_number}`} defaultValue={claim.tpa_preauth_number || ''}
-                      onBlur={e => { if (e.target.value !== (claim.tpa_preauth_number || '')) handleInlineEdit('tpa_preauth_number', e.target.value); }}
-                      placeholder="Enter pre-auth #" className="w-full px-2.5 py-1.5 text-xs font-mono border rounded-lg mt-0.5 focus:ring-2 focus:ring-teal-500 focus:border-transparent" />
-                  </div>
-                  <div>
-                    <label className="text-[10px] text-gray-400 uppercase tracking-wider">Claimed Amount</label>
-                    <input type="number" key={`ca_${claim.claimed_amount}`} defaultValue={claim.claimed_amount || ''}
-                      onBlur={e => { const v = parseFloat(e.target.value); if (v && v !== claim.claimed_amount) handleInlineEdit('claimed_amount', v); }}
-                      placeholder="₹" className="w-full px-2.5 py-1.5 text-xs font-mono border rounded-lg mt-0.5 focus:ring-2 focus:ring-teal-500 focus:border-transparent" />
-                  </div>
-                </div>
-
-                {claim.settlement_utr && (
-                  <div className="mt-3 p-2 bg-emerald-50 rounded-lg">
-                    <span className="text-[10px] text-emerald-600 uppercase tracking-wider">UTR</span>
-                    <p className="font-mono text-xs text-emerald-700 font-medium">{claim.settlement_utr}</p>
-                  </div>
-                )}
-                {claim.medpay_synced && (
-                  <p className="text-[10px] text-green-600 mt-2 flex items-center gap-1"><CheckCircle className="w-3 h-3" /> MedPay synced {fmtDateTime(claim.medpay_synced_at)}</p>
-                )}
-              </div>
-
-              {/* Query Alert */}
-              {openQueryCount > 0 && (
-                <div className={`border rounded-xl p-4 ${claim.is_sla_breached ? 'bg-red-50 border-red-300' : 'bg-orange-50 border-orange-200'}`}>
-                  <div className="flex items-center gap-2 mb-1">
-                    <AlertTriangle className={`w-4 h-4 ${claim.is_sla_breached ? 'text-red-600' : 'text-orange-600'}`} />
-                    <span className={`text-sm font-semibold ${claim.is_sla_breached ? 'text-red-800' : 'text-orange-800'}`}>
-                      {openQueryCount} Open {openQueryCount === 1 ? 'Query' : 'Queries'}
-                    </span>
-                  </div>
-                  <p className={`text-xs ${claim.is_sla_breached ? 'text-red-700' : 'text-orange-700'}`}>
-                    {claim.is_sla_breached ? 'SLA breached — escalate immediately' : 'Response pending'}
-                  </p>
-                  <button onClick={() => setTab('queries')} className={`mt-2 text-xs font-medium ${claim.is_sla_breached ? 'text-red-700' : 'text-orange-700'} hover:underline`}>
-                    View queries →
-                  </button>
-                </div>
-              )}
-
-              {/* Notes */}
-              <div className="bg-white rounded-xl border p-5">
-                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Notes</h3>
-                <textarea key={`notes_${claim.notes}`} defaultValue={claim.notes || ''}
-                  onBlur={e => { if (e.target.value !== (claim.notes || '')) handleInlineEdit('notes', e.target.value); }}
-                  placeholder="Add notes..." rows={3}
-                  className="w-full px-2.5 py-2 text-xs border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-none" />
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ── QUERIES ── */}
-        {tab === 'queries' && (
-          <div className="max-w-3xl space-y-3">
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-gray-900">TPA Queries ({queries.length})</h3>
-              <button onClick={() => setShowAddQuery(!showAddQuery)}
-                className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors">
-                <MessageSquare className="w-3 h-3" /> Log Query
-              </button>
-            </div>
-
-            {showAddQuery && (
-              <div className="border rounded-xl p-4 bg-orange-50/50 space-y-3">
-                <textarea value={queryForm.text} onChange={e => setQueryForm(f => ({...f, text: e.target.value}))}
-                  placeholder="What did the TPA query?" rows={3} autoFocus
-                  className="w-full px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-teal-500" />
-                <div className="grid grid-cols-3 gap-2">
-                  <select value={queryForm.category} onChange={e => setQueryForm(f => ({...f, category: e.target.value}))}
-                    className="px-2.5 py-1.5 text-xs border rounded-lg bg-white">
-                    <option value="clinical">Clinical</option><option value="billing">Billing</option>
-                    <option value="documentation">Documentation</option><option value="policy">Policy</option><option value="other">Other</option>
-                  </select>
-                  <select value={queryForm.priority} onChange={e => setQueryForm(f => ({...f, priority: e.target.value}))}
-                    className="px-2.5 py-1.5 text-xs border rounded-lg bg-white">
-                    <option value="low">Low</option><option value="medium">Medium</option>
-                    <option value="high">High</option><option value="critical">Critical</option>
-                  </select>
-                  <select value={queryForm.routed_to_role} onChange={e => setQueryForm(f => ({...f, routed_to_role: e.target.value}))}
-                    className="px-2.5 py-1.5 text-xs border rounded-lg bg-white">
-                    <option value="">Route to...</option><option value="doctor">Doctor</option>
-                    <option value="insurance_desk">Insurance Desk</option><option value="billing">Billing</option><option value="accounts">Accounts</option>
-                  </select>
-                </div>
-                <div className="flex gap-2 justify-end">
-                  <button onClick={() => setShowAddQuery(false)} className="px-3 py-1.5 text-xs border rounded-lg hover:bg-gray-50">Cancel</button>
-                  <button onClick={handleAddQuery} disabled={savingQuery || !queryForm.text.trim()}
-                    className="px-4 py-1.5 text-xs bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50 flex items-center gap-1">
-                    {savingQuery ? <Loader2 className="w-3 h-3 animate-spin" /> : <Send className="w-3 h-3" />} Submit
-                  </button>
-                </div>
-              </div>
+      {/* ══════ TABS ══════ */}
+      <div className="flex gap-0.5 mb-4 overflow-x-auto border-b pb-px">
+        {tabConfig.map(([k, l, count]) => (
+          <button key={k} onClick={() => setTab(k)}
+            className={`px-3 py-2 text-[11px] font-medium whitespace-nowrap border-b-2 -mb-px flex items-center gap-1.5 transition-colors ${
+              tab === k ? 'border-teal-600 text-teal-700' : 'border-transparent text-gray-500 hover:text-gray-700'
+            }`}>
+            {l}
+            {count !== null && count > 0 && (
+              <span className={`text-[9px] px-1.5 rounded-full ${tab === k ? 'bg-teal-100 text-teal-600' : 'bg-gray-100 text-gray-400'}`}>{count}</span>
             )}
+          </button>
+        ))}
+      </div>
 
-            {queries.length === 0 ? (
-              <div className="text-center py-12 bg-white rounded-xl border">
-                <CheckCircle className="w-10 h-10 text-green-300 mx-auto mb-2" />
-                <p className="text-sm text-gray-500">No queries on this claim</p>
+      {/* ══════ TAB CONTENT ══════ */}
+
+      {/* ── OVERVIEW ── */}
+      {tab === 'overview' && (
+        <div className="grid grid-cols-3 gap-4">
+          {/* Left 2 cols */}
+          <div className="col-span-2 space-y-4">
+            {/* Clinical Details */}
+            <div className="bg-white rounded-xl border p-4">
+              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                <Stethoscope className="w-3.5 h-3.5" /> Clinical Details
+              </h3>
+              <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
+                <div><span className="text-gray-400 text-xs">Diagnosis</span><p className="font-medium text-gray-900">{claim.primary_diagnosis || '—'}</p></div>
+                <div><span className="text-gray-400 text-xs">ICD-10</span><p className="font-mono text-gray-700">{claim.icd_code || '—'}</p></div>
+                <div><span className="text-gray-400 text-xs">Procedure</span><p className="font-medium text-gray-900">{claim.procedure_name || '—'}</p></div>
+                <div><span className="text-gray-400 text-xs">Department</span><p className="text-gray-700">{claim.department_name || '—'}</p></div>
+                <div><span className="text-gray-400 text-xs">Treating Doctor</span><p className="text-gray-700">{claim.treating_doctor_name || '—'}</p></div>
+                <div><span className="text-gray-400 text-xs">Package</span><p className="text-gray-700">{claim.package_name || '—'} {claim.package_amount ? `(${INR(claim.package_amount)})` : ''}</p></div>
+                <div><span className="text-gray-400 text-xs">Admission</span><p className="text-gray-700">{shortDate(claim.admission_date)} {los ? `(${los}d LOS)` : ''}</p></div>
+                <div><span className="text-gray-400 text-xs">Discharge</span><p className="text-gray-700">{shortDate(claim.discharge_date)}</p></div>
               </div>
-            ) : (
-              queries.map(q => {
-                const isOpen = ['open', 'in_progress', 'escalated'].includes(q.status);
+            </div>
+
+            {/* Patient & Policy */}
+            <div className="bg-white rounded-xl border p-4">
+              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                <User className="w-3.5 h-3.5" /> Patient & Policy
+              </h3>
+              <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
+                <div><span className="text-gray-400 text-xs">Patient</span><p className="font-medium text-gray-900">{claim.patient_name}</p></div>
+                <div><span className="text-gray-400 text-xs">UHID</span><p className="font-mono text-gray-700">{claim.patient_uhid || '—'}</p></div>
+                <div><span className="text-gray-400 text-xs">Phone</span><p className="text-gray-700">{claim.patient_phone || '—'}</p></div>
+                <div><span className="text-gray-400 text-xs">ABHA ID</span><p className="font-mono text-gray-700">{claim.abha_id || '—'}</p></div>
+                <div><span className="text-gray-400 text-xs">Policy #</span><p className="font-mono text-gray-700">{claim.policy_number || '—'}</p></div>
+                <div><span className="text-gray-400 text-xs">Policyholder</span><p className="text-gray-700">{claim.policy_holder_name || '—'}</p></div>
+              </div>
+            </div>
+          </div>
+
+          {/* Right col — Editable fields + Payer */}
+          <div className="space-y-4">
+            {/* Payer & References */}
+            <div className="bg-white rounded-xl border p-4">
+              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                <Building2 className="w-3.5 h-3.5" /> Payer & References
+              </h3>
+              <p className="font-medium text-sm text-gray-900">{claim.clm_payers?.name}</p>
+              <p className="text-xs text-gray-500 mt-0.5">{claim.clm_payers?.type?.toUpperCase()}</p>
+              {claim.clm_payers?.portal_url && (
+                <a href={claim.clm_payers.portal_url} target="_blank" rel="noopener noreferrer"
+                  className="text-xs text-blue-600 hover:underline flex items-center gap-1 mt-1">
+                  <ExternalLink className="w-3 h-3" /> Open Portal
+                </a>
+              )}
+              <div className="mt-3 space-y-2">
+                <div>
+                  <label className="text-[10px] text-gray-400 uppercase tracking-wider">TPA Claim Reference</label>
+                  <input type="text" defaultValue={claim.tpa_claim_number || ''}
+                    onBlur={e => { if (e.target.value !== (claim.tpa_claim_number || '')) inlineUpdate('tpa_claim_number', e.target.value); }}
+                    placeholder="Enter TPA claim #"
+                    className="w-full px-2.5 py-1.5 text-xs font-mono border rounded-lg mt-0.5 focus:ring-2 focus:ring-teal-500 focus:border-transparent" />
+                </div>
+                <div>
+                  <label className="text-[10px] text-gray-400 uppercase tracking-wider">TPA Pre-Auth Reference</label>
+                  <input type="text" defaultValue={claim.tpa_preauth_number || ''}
+                    onBlur={e => { if (e.target.value !== (claim.tpa_preauth_number || '')) inlineUpdate('tpa_preauth_number', e.target.value); }}
+                    placeholder="Enter pre-auth #"
+                    className="w-full px-2.5 py-1.5 text-xs font-mono border rounded-lg mt-0.5 focus:ring-2 focus:ring-teal-500 focus:border-transparent" />
+                </div>
+                <div>
+                  <label className="text-[10px] text-gray-400 uppercase tracking-wider">Claimed Amount (₹)</label>
+                  <input type="number" defaultValue={claim.claimed_amount || ''}
+                    onBlur={e => { const v = parseFloat(e.target.value); if (v && v !== claim.claimed_amount) inlineUpdate('claimed_amount', v); }}
+                    placeholder="Final claim amount"
+                    className="w-full px-2.5 py-1.5 text-xs font-mono border rounded-lg mt-0.5 focus:ring-2 focus:ring-teal-500 focus:border-transparent" />
+                </div>
+              </div>
+              {claim.settlement_utr && (
+                <div className="mt-3 p-2 bg-emerald-50 rounded-lg">
+                  <p className="text-[10px] text-emerald-600 uppercase tracking-wider font-medium">Settlement UTR</p>
+                  <p className="font-mono text-sm text-emerald-800 font-bold">{claim.settlement_utr}</p>
+                  <p className="text-[10px] text-emerald-600 mt-0.5">{shortDate(claim.settlement_date)}</p>
+                </div>
+              )}
+              {claim.medpay_synced && (
+                <div className="flex items-center gap-1.5 text-[10px] text-green-600 mt-2">
+                  <CheckCircle2 className="w-3 h-3" /> MedPay synced {claim.medpay_synced_at ? shortDate(claim.medpay_synced_at) : ''}
+                </div>
+              )}
+            </div>
+
+            {/* Notes */}
+            <div className="bg-white rounded-xl border p-4">
+              <label className="text-[10px] text-gray-400 uppercase tracking-wider font-medium">Notes</label>
+              <textarea defaultValue={claim.notes || ''} rows={3}
+                onBlur={e => { if (e.target.value !== (claim.notes || '')) inlineUpdate('notes', e.target.value); }}
+                placeholder="Internal notes..."
+                className="w-full px-2.5 py-1.5 text-xs border rounded-lg mt-1 focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-none" />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── TIMELINE ── */}
+      {tab === 'timeline' && (
+        <div className="bg-white rounded-xl border p-4">
+          <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4">Claim Timeline</h3>
+          {timeline.length === 0 ? (
+            <p className="text-center text-sm text-gray-400 py-8">No events recorded yet</p>
+          ) : (
+            <div className="space-y-0">
+              {timeline.map((evt, i) => {
+                const isStatus = evt.event_type === 'status_change';
+                const isQuery = evt.event_type === 'query' || evt.event_type === 'query_response';
+                const isSettlement = evt.event_type === 'settlement';
+                const isDoc = evt.event_type === 'document';
+                const dotColor = isStatus ? 'bg-blue-500' : isQuery ? 'bg-orange-500' : isSettlement ? 'bg-emerald-500' : 'bg-gray-400';
+                const bgColor = isSettlement ? 'bg-emerald-50' : isQuery ? 'bg-orange-50' : '';
                 return (
-                  <div key={q.id} className={`bg-white rounded-xl border p-4 ${isOpen ? 'border-l-4 border-l-orange-500' : ''}`}>
-                    <div className="flex items-center gap-2 mb-2 flex-wrap">
-                      <span className="text-xs font-bold text-gray-900">Q{q.query_number}</span>
-                      <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-semibold ${
-                        q.status === 'open' ? 'bg-orange-100 text-orange-700' :
-                        q.status === 'responded' ? 'bg-blue-100 text-blue-700' :
-                        q.status === 'resolved' ? 'bg-green-100 text-green-700' :
-                        q.status === 'escalated' ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-600'
-                      }`}>{q.status}</span>
-                      <span className="text-[10px] bg-gray-100 px-1.5 py-0.5 rounded text-gray-600">{q.query_category}</span>
-                      <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${PRIORITY_CONFIG[q.priority]?.bg || ''} ${PRIORITY_CONFIG[q.priority]?.color || ''}`}>
-                        {q.priority}
-                      </span>
-                      {q.is_sla_breached && <span className="text-[10px] font-bold text-red-600 bg-red-50 px-1.5 py-0.5 rounded">SLA BREACHED</span>}
-                      {q.routed_to_role && <span className="text-[10px] text-gray-400">→ {q.routed_to_role}</span>}
-                      <span className="text-[10px] text-gray-400 ml-auto">{fmtDateTime(q.raised_at)}</span>
+                  <div key={i} className="flex gap-3">
+                    <div className="flex flex-col items-center">
+                      <div className={`w-2.5 h-2.5 rounded-full mt-2 ${dotColor} shrink-0`} />
+                      {i < timeline.length - 1 && <div className="w-px flex-1 bg-gray-200 mt-1" />}
                     </div>
-                    <p className="text-sm text-gray-800 leading-relaxed">{q.query_text}</p>
-                    {q.response_text && (
-                      <div className="mt-3 p-3 bg-blue-50 rounded-lg border border-blue-100">
-                        <p className="text-[10px] text-blue-600 font-semibold uppercase tracking-wider mb-1">Response</p>
-                        <p className="text-sm text-blue-800">{q.response_text}</p>
-                        <p className="text-[10px] text-blue-500 mt-1">{fmtDateTime(q.responded_at)}</p>
+                    <div className={`pb-4 flex-1 rounded-lg ${bgColor} ${bgColor ? 'p-2 mb-1' : ''}`}>
+                      <div className="flex items-center justify-between">
+                        <p className="text-sm font-medium text-gray-800">{evt.event_text}</p>
+                        <span className="text-[10px] text-gray-400 shrink-0">
+                          {new Date(evt.created_at).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', hour12: true })}
+                        </span>
                       </div>
-                    )}
+                      {evt.notes && <p className="text-xs text-gray-500 mt-0.5 italic">{evt.notes}</p>}
+                      {evt.source && evt.source !== 'manual' && evt.source !== 'system' && (
+                        <span className="text-[9px] text-gray-400 mt-0.5 inline-block">via {evt.source}</span>
+                      )}
+                    </div>
                   </div>
                 );
-              })
-            )}
-          </div>
-        )}
-
-        {/* ── DOCUMENTS ── */}
-        {tab === 'documents' && (
-          <div className="max-w-3xl space-y-3">
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-gray-900">Claim Documents ({documents.length})</h3>
-              <label className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium bg-teal-600 text-white rounded-lg hover:bg-teal-700 cursor-pointer transition-colors">
-                <Upload className="w-3 h-3" /> {uploading ? 'Uploading...' : 'Upload Document'}
-                <input type="file" className="hidden" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" onChange={handleFileUpload} disabled={uploading} />
-              </label>
+              })}
             </div>
+          )}
+        </div>
+      )}
 
-            {documents.length === 0 ? (
-              <div className="text-center py-12 bg-white rounded-xl border">
-                <FileText className="w-10 h-10 text-gray-300 mx-auto mb-2" />
-                <p className="text-sm text-gray-500">No documents uploaded</p>
-                <p className="text-xs text-gray-400 mt-1">Upload discharge summary, lab reports, and other claim documents</p>
+      {/* ── QUERIES ── */}
+      {tab === 'queries' && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+              TPA Queries ({queries.length}) {openQueries.length > 0 && <span className="text-orange-600 normal-case">· {openQueries.length} open</span>}
+            </h3>
+            <button onClick={() => setShowQueryForm(!showQueryForm)}
+              className="px-3 py-1.5 bg-orange-600 text-white text-xs rounded-lg font-medium hover:bg-orange-700">
+              {showQueryForm ? 'Cancel' : '+ Log Query'}
+            </button>
+          </div>
+
+          {/* Add Query Form */}
+          {showQueryForm && (
+            <div className="bg-orange-50 border border-orange-200 rounded-xl p-4 space-y-3">
+              <textarea value={qForm.text} onChange={e => setQForm(f => ({...f, text: e.target.value}))}
+                placeholder="Describe the TPA query in detail..." rows={3}
+                className="w-full px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent" autoFocus />
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="text-[10px] text-gray-500 uppercase">Category</label>
+                  <select value={qForm.category} onChange={e => setQForm(f => ({...f, category: e.target.value}))}
+                    className="w-full px-2 py-1.5 text-xs border rounded-lg mt-0.5">
+                    <option value="clinical">Clinical</option>
+                    <option value="billing">Billing</option>
+                    <option value="documentation">Documentation</option>
+                    <option value="policy">Policy</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-[10px] text-gray-500 uppercase">Priority</label>
+                  <select value={qForm.priority} onChange={e => setQForm(f => ({...f, priority: e.target.value}))}
+                    className="w-full px-2 py-1.5 text-xs border rounded-lg mt-0.5">
+                    <option value="low">Low</option>
+                    <option value="medium">Medium</option>
+                    <option value="high">High</option>
+                    <option value="critical">Critical</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-[10px] text-gray-500 uppercase">Route To</label>
+                  <select value={qForm.role} onChange={e => setQForm(f => ({...f, role: e.target.value}))}
+                    className="w-full px-2 py-1.5 text-xs border rounded-lg mt-0.5">
+                    <option value="">Auto</option>
+                    <option value="doctor">Doctor</option>
+                    <option value="insurance_desk">Insurance Desk</option>
+                    <option value="billing">Billing</option>
+                    <option value="accounts">Accounts</option>
+                  </select>
+                </div>
               </div>
-            ) : (
-              documents.map(doc => (
-                <div key={doc.id} className="bg-white rounded-xl border p-4 flex items-center justify-between hover:border-teal-300 transition-colors">
-                  <div className="flex items-center gap-3">
-                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                      doc.document_category === 'clinical' ? 'bg-blue-100 text-blue-600' :
-                      doc.document_category === 'billing' ? 'bg-purple-100 text-purple-600' :
-                      doc.document_category === 'identity' ? 'bg-amber-100 text-amber-600' :
-                      'bg-gray-100 text-gray-500'
-                    }`}>
-                      <FileText className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">{doc.document_name}</p>
-                      <div className="flex items-center gap-2 text-[10px] text-gray-500 mt-0.5">
-                        <span className="uppercase">{doc.document_category}</span>
-                        <span className={`px-1.5 py-0.5 rounded-full font-medium ${
-                          doc.status === 'uploaded' ? 'bg-blue-100 text-blue-700' :
-                          doc.status === 'verified' ? 'bg-green-100 text-green-700' :
-                          doc.status === 'rejected' ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-600'
-                        }`}>{doc.status}</span>
-                        {doc.file_size_bytes && <span>{(doc.file_size_bytes / 1024).toFixed(0)} KB</span>}
+              <div className="flex justify-end gap-2">
+                <button onClick={() => setShowQueryForm(false)} className="px-3 py-1.5 text-xs border rounded-lg hover:bg-gray-50">Cancel</button>
+                <button onClick={handleAddQuery} disabled={savingQuery || !qForm.text.trim()}
+                  className="px-4 py-1.5 text-xs bg-orange-600 text-white rounded-lg hover:bg-orange-700 disabled:opacity-50 font-medium">
+                  {savingQuery ? 'Adding...' : 'Add Query'}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Query List */}
+          {queries.length === 0 ? (
+            <div className="bg-white rounded-xl border p-8 text-center">
+              <CheckCircle2 className="w-10 h-10 text-green-300 mx-auto mb-2" />
+              <p className="text-sm text-gray-500">No queries on this claim</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {queries.map(q => {
+                const isOpen = ['open', 'in_progress', 'escalated'].includes(q.status);
+                const hrs = Math.round((Date.now() - new Date(q.raised_at).getTime()) / 3600000);
+                const prc = PRIORITY_CONFIG[q.priority] || PRIORITY_CONFIG.medium;
+                return (
+                  <QueryCard key={q.id} q={q} isOpen={isOpen} hrs={hrs} prc={prc}
+                    onRespond={handleRespondQuery} staff={staff} />
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── DOCUMENTS ── */}
+      {tab === 'documents' && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+              Documents ({documents.length}/{checklist.length} checklist items)
+            </h3>
+            <label className="px-3 py-1.5 bg-teal-600 text-white text-xs rounded-lg font-medium hover:bg-teal-700 cursor-pointer inline-flex items-center gap-1.5">
+              <Upload className="w-3.5 h-3.5" /> {uploading ? 'Uploading...' : 'Upload'}
+              <input type="file" className="hidden" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                onChange={e => handleUpload(e, '', 'clinical')} disabled={uploading} />
+            </label>
+          </div>
+
+          {/* Document Checklist */}
+          {checklist.length > 0 && (
+            <div className="bg-white rounded-xl border p-4">
+              <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
+                Required Documents ({claim.clm_payers?.name})
+              </h4>
+              <div className="space-y-1.5">
+                {checklist.map(item => {
+                  const uploaded = documents.find(d => d.document_name === item.document_name);
+                  return (
+                    <div key={item.id} className={`flex items-center justify-between px-3 py-2 rounded-lg ${uploaded ? 'bg-green-50' : item.is_mandatory ? 'bg-red-50' : 'bg-gray-50'}`}>
+                      <div className="flex items-center gap-2">
+                        {uploaded ? <CheckCircle2 className="w-4 h-4 text-green-600" /> : <div className={`w-4 h-4 rounded-full border-2 ${item.is_mandatory ? 'border-red-400' : 'border-gray-300'}`} />}
+                        <span className={`text-xs ${uploaded ? 'text-green-800' : 'text-gray-700'}`}>{item.document_name}</span>
+                        {item.is_mandatory && !uploaded && <span className="text-[9px] text-red-500 font-bold">REQUIRED</span>}
+                        {item.hmis_auto_source && !uploaded && <span className="text-[9px] text-blue-500">Auto from HMIS</span>}
                       </div>
+                      {!uploaded && (
+                        <label className="text-[10px] text-teal-600 hover:underline cursor-pointer font-medium">
+                          Upload
+                          <input type="file" className="hidden" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                            onChange={e => handleUpload(e, item.document_name, item.document_category)} />
+                        </label>
+                      )}
+                      {uploaded && <span className="text-[10px] text-green-600">{uploaded.status}</span>}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Uploaded Documents */}
+          {documents.length > 0 && (
+            <div className="bg-white rounded-xl border p-4">
+              <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Uploaded Files</h4>
+              <div className="space-y-1.5">
+                {documents.map(doc => (
+                  <div key={doc.id} className="flex items-center justify-between px-3 py-2 bg-gray-50 rounded-lg">
+                    <div className="flex items-center gap-2">
+                      <FileText className="w-4 h-4 text-gray-400" />
+                      <div>
+                        <p className="text-xs font-medium text-gray-800">{doc.document_name}</p>
+                        <p className="text-[10px] text-gray-400">{doc.document_category} · {doc.mime_type} · {doc.file_size_bytes ? `${(doc.file_size_bytes / 1024).toFixed(0)}KB` : ''}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded ${doc.status === 'uploaded' ? 'bg-blue-100 text-blue-600' : doc.status === 'verified' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>{doc.status}</span>
+                      {doc.file_url && <a href={doc.file_url} target="_blank" rel="noopener noreferrer" className="text-[10px] text-blue-600 hover:underline">View</a>}
                     </div>
                   </div>
-                  {doc.file_url && (
-                    <a href={doc.file_url} target="_blank" rel="noopener noreferrer"
-                      className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-teal-600 bg-teal-50 rounded-lg hover:bg-teal-100 transition-colors">
-                      <ExternalLink className="w-3 h-3" /> View
-                    </a>
-                  )}
-                </div>
-              ))
-            )}
-          </div>
-        )}
-
-        {/* ── TIMELINE ── */}
-        {tab === 'timeline' && (
-          <div className="max-w-3xl">
-            {timeline.length === 0 ? (
-              <div className="text-center py-12 bg-white rounded-xl border">
-                <Clock className="w-10 h-10 text-gray-300 mx-auto mb-2" />
-                <p className="text-sm text-gray-500">No events recorded</p>
+                ))}
               </div>
-            ) : (
-              <div className="bg-white rounded-xl border p-5">
-                <div className="space-y-0">
-                  {timeline.map((evt, i) => (
-                    <div key={i} className="flex gap-4">
-                      <div className="flex flex-col items-center">
-                        <div className={`w-3 h-3 rounded-full mt-1 ring-4 ring-white ${
-                          evt.event_type === 'status_change' ? 'bg-blue-500' :
-                          evt.event_type === 'query' ? 'bg-orange-500' :
-                          evt.event_type === 'query_response' ? 'bg-teal-500' :
-                          evt.event_type === 'settlement' ? 'bg-emerald-500' :
-                          evt.event_type === 'document' ? 'bg-purple-500' : 'bg-gray-400'
-                        }`} />
-                        {i < timeline.length - 1 && <div className="w-px flex-1 bg-gray-200 my-1" />}
-                      </div>
-                      <div className="pb-5 flex-1">
-                        <p className="text-sm font-medium text-gray-800">{evt.event_text}</p>
-                        <p className="text-[10px] text-gray-400 mt-0.5">{fmtDateTime(evt.created_at)}</p>
-                        {evt.notes && <p className="text-xs text-gray-500 mt-1 italic">{evt.notes}</p>}
-                      </div>
-                    </div>
-                  ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── SETTLEMENT ── */}
+      {tab === 'settlement' && (
+        <div className="space-y-4">
+          {claim.status === 'settled' || claim.status === 'closed' ? (
+            <div className="bg-emerald-50 rounded-xl border border-emerald-200 p-6 text-center">
+              <CheckCircle2 className="w-12 h-12 text-emerald-500 mx-auto mb-3" />
+              <p className="text-lg font-bold text-emerald-800">{INR(claim.settled_amount)}</p>
+              <p className="text-sm text-emerald-600 mt-1">Settled on {shortDate(claim.settlement_date)}</p>
+              {claim.settlement_utr && <p className="font-mono text-sm text-emerald-700 mt-1">UTR: {claim.settlement_utr}</p>}
+              {claim.deduction_amount > 0 && <p className="text-xs text-red-600 mt-2">Deductions: {INR(claim.deduction_amount)}</p>}
+              {claim.medpay_synced && <p className="text-xs text-green-600 mt-1 flex items-center justify-center gap-1"><CheckCircle2 className="w-3 h-3" /> MedPay Synced</p>}
+            </div>
+          ) : ['claim_approved', 'claim_partial', 'settlement_pending'].includes(claim.status) ? (
+            <div className="bg-white rounded-xl border p-6">
+              <h3 className="text-sm font-semibold text-gray-900 mb-4">Record Settlement</h3>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-[10px] text-gray-500 uppercase tracking-wider">Settlement Amount (₹) *</label>
+                  <input type="number" value={amountInput} onChange={e => setAmountInput(e.target.value)}
+                    placeholder={String(claim.approved_amount || claim.claimed_amount || '')}
+                    className="w-full px-3 py-2 text-sm font-mono border rounded-lg mt-1 focus:ring-2 focus:ring-teal-500" />
+                </div>
+                <div>
+                  <label className="text-[10px] text-gray-500 uppercase tracking-wider">UTR Number</label>
+                  <input type="text" value={utrInput} onChange={e => setUtrInput(e.target.value)}
+                    placeholder="NEFT/RTGS reference"
+                    className="w-full px-3 py-2 text-sm font-mono border rounded-lg mt-1 focus:ring-2 focus:ring-teal-500" />
+                </div>
+                <div>
+                  <label className="text-[10px] text-gray-500 uppercase tracking-wider">Payment Mode</label>
+                  <select value={modeInput} onChange={e => setModeInput(e.target.value)}
+                    className="w-full px-3 py-2 text-sm border rounded-lg mt-1">
+                    <option value="neft">NEFT</option><option value="rtgs">RTGS</option>
+                    <option value="cheque">Cheque</option><option value="upi">UPI</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-[10px] text-gray-500 uppercase tracking-wider">Deduction (₹)</label>
+                  <input type="number" value={deductionInput} onChange={e => setDeductionInput(e.target.value)}
+                    placeholder="0"
+                    className="w-full px-3 py-2 text-sm font-mono border rounded-lg mt-1 focus:ring-2 focus:ring-teal-500" />
                 </div>
               </div>
-            )}
-          </div>
-        )}
-      </div>
+              <button onClick={() => {
+                if (!amountInput) return;
+                setShowAmountModal({ status: 'settled', label: 'Record Settlement' });
+              }} disabled={!amountInput || transitioning}
+                className="mt-4 px-6 py-2.5 bg-emerald-600 text-white rounded-xl font-semibold text-sm hover:bg-emerald-700 disabled:opacity-50 flex items-center gap-2">
+                <IndianRupee className="w-4 h-4" /> Record Settlement
+              </button>
+            </div>
+          ) : (
+            <div className="bg-gray-50 rounded-xl border p-8 text-center">
+              <Clock className="w-10 h-10 text-gray-300 mx-auto mb-2" />
+              <p className="text-sm text-gray-500">Claim needs to be approved before settlement can be recorded</p>
+              <p className="text-xs text-gray-400 mt-1">Current status: {sc.label}</p>
+            </div>
+          )}
+        </div>
+      )}
 
-      {/* ═══ AMOUNT / SETTLEMENT MODAL ═══ */}
+      {/* ══════ AMOUNT MODAL ══════ */}
       {showAmountModal && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 backdrop-blur-sm">
           <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl">
-            <h3 className="font-bold text-gray-900 text-lg mb-1">
-              {showAmountModal === 'settled' ? 'Record Settlement' : 'Enter Approved Amount'}
-            </h3>
-            <p className="text-xs text-gray-500 mb-4">
-              {showAmountModal === 'settled' ? 'Enter the amount received from payer' : 'Enter the amount approved by TPA/insurer'}
-            </p>
-
-            <div className="space-y-3">
-              <div>
-                <label className="text-[10px] text-gray-400 uppercase tracking-wider">Amount *</label>
-                <div className="relative mt-1">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-medium">₹</span>
+            <h3 className="font-bold text-gray-900 text-lg mb-1">{showAmountModal.label}</h3>
+            <p className="text-xs text-gray-500 mb-4">Claim: {claim.claim_number} · {claim.patient_name}</p>
+            {showAmountModal.status === 'settled' ? (
+              <div className="space-y-3">
+                <div>
+                  <label className="text-[10px] text-gray-500 uppercase">Settlement Amount (₹)</label>
                   <input type="number" value={amountInput} onChange={e => setAmountInput(e.target.value)}
-                    placeholder={claim.approved_amount ? String(claim.approved_amount) : 'Amount'} autoFocus
-                    className="w-full pl-8 pr-3 py-3 text-lg font-mono border rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-transparent" />
+                    placeholder={String(claim.approved_amount || '')} autoFocus
+                    className="w-full px-3 py-2.5 text-lg font-mono border rounded-lg mt-0.5 focus:ring-2 focus:ring-teal-500" />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-[10px] text-gray-500 uppercase">UTR</label>
+                    <input type="text" value={utrInput} onChange={e => setUtrInput(e.target.value)}
+                      className="w-full px-3 py-2 text-sm font-mono border rounded-lg mt-0.5" />
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-gray-500 uppercase">Deduction (₹)</label>
+                    <input type="number" value={deductionInput} onChange={e => setDeductionInput(e.target.value)}
+                      placeholder="0" className="w-full px-3 py-2 text-sm font-mono border rounded-lg mt-0.5" />
+                  </div>
                 </div>
               </div>
-
-              {showAmountModal === 'settled' && (
-                <div>
-                  <label className="text-[10px] text-gray-400 uppercase tracking-wider">UTR / Reference Number</label>
-                  <input type="text" value={utrInput} onChange={e => setUtrInput(e.target.value)}
-                    placeholder="NEFT/RTGS UTR number"
-                    className="w-full px-3 py-2.5 text-sm font-mono border rounded-xl mt-1 focus:ring-2 focus:ring-teal-500 focus:border-transparent" />
-                </div>
-              )}
-            </div>
-
-            <div className="flex gap-2 mt-5">
-              <button onClick={() => { setShowAmountModal(null); setAmountInput(''); setUtrInput(''); }}
-                className="flex-1 py-2.5 text-sm font-medium border rounded-xl hover:bg-gray-50 transition-colors">Cancel</button>
+            ) : (
+              <div>
+                <label className="text-[10px] text-gray-500 uppercase">Approved Amount (₹)</label>
+                <input type="number" value={amountInput} onChange={e => setAmountInput(e.target.value)}
+                  placeholder={String(claim.estimated_amount || '')} autoFocus
+                  className="w-full px-3 py-2.5 text-lg font-mono border rounded-lg mt-0.5 focus:ring-2 focus:ring-teal-500" />
+              </div>
+            )}
+            <div className="flex gap-3 mt-5">
+              <button onClick={() => { setShowAmountModal(null); setAmountInput(''); setUtrInput(''); setDeductionInput(''); }}
+                className="flex-1 py-2.5 text-sm border rounded-xl hover:bg-gray-50 font-medium">Cancel</button>
               <button onClick={handleAmountSubmit} disabled={!amountInput || transitioning}
-                className="flex-1 py-2.5 text-sm font-medium bg-teal-600 text-white rounded-xl hover:bg-teal-700 disabled:opacity-50 flex items-center justify-center gap-2 transition-colors">
-                {transitioning ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
-                {transitioning ? 'Saving...' : 'Confirm'}
+                className="flex-1 py-2.5 text-sm bg-teal-600 text-white rounded-xl hover:bg-teal-700 disabled:opacity-50 font-semibold">
+                {transitioning ? 'Processing...' : 'Confirm'}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Query Card Component ───
+function QueryCard({ q, isOpen, hrs, prc, onRespond, staff }: any) {
+  const [responding, setResponding] = useState(false);
+  const [response, setResponse] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  const submit = async () => {
+    if (!response.trim()) return;
+    setSaving(true);
+    await onRespond(q.id, response);
+    setResponding(false);
+    setResponse('');
+    setSaving(false);
+  };
+
+  return (
+    <div className={`bg-white rounded-xl border p-4 ${isOpen ? 'border-orange-200' : ''}`}>
+      <div className="flex items-start justify-between">
+        <div className="flex-1">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="text-xs font-bold text-gray-500">Q{q.query_number}</span>
+            <span className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${prc.bg} ${prc.color}`}>{prc.label}</span>
+            <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-600">{q.query_category}</span>
+            <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${
+              isOpen ? 'bg-orange-100 text-orange-700' : q.status === 'responded' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'
+            }`}>{q.status}</span>
+            {q.is_sla_breached && <span className="text-[10px] font-bold text-red-600 bg-red-50 px-1.5 py-0.5 rounded">SLA BREACHED</span>}
+            {q.routed_to_role && <span className="text-[10px] text-gray-400">→ {q.routed_to_role}</span>}
+          </div>
+          <p className="text-sm text-gray-800 mt-2 leading-relaxed">{q.query_text}</p>
+          {q.response_text && (
+            <div className="mt-2 p-2.5 bg-blue-50 rounded-lg border border-blue-100">
+              <p className="text-[10px] text-blue-600 uppercase font-medium mb-0.5">Response</p>
+              <p className="text-sm text-blue-900">{q.response_text}</p>
+              <p className="text-[10px] text-blue-500 mt-1">{q.responded_at ? shortDate(q.responded_at) : ''}</p>
+            </div>
+          )}
+        </div>
+        <div className="text-right ml-4 shrink-0">
+          <span className={`text-sm font-bold ${hrs > 48 ? 'text-red-600' : hrs > 24 ? 'text-orange-600' : 'text-gray-600'}`}>{hrs}h</span>
+          <p className="text-[10px] text-gray-400">open</p>
+        </div>
+      </div>
+
+      {/* Response form */}
+      {isOpen && !responding && (
+        <button onClick={() => setResponding(true)}
+          className="mt-3 px-3 py-1.5 text-xs font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-1">
+          <MessageSquare className="w-3 h-3" /> Respond
+        </button>
+      )}
+      {responding && (
+        <div className="mt-3 border-t pt-3 space-y-2">
+          <textarea value={response} onChange={e => setResponse(e.target.value)}
+            placeholder="Type response to TPA query..." rows={3}
+            className="w-full px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500" autoFocus />
+          <div className="flex gap-2 justify-end">
+            <button onClick={() => { setResponding(false); setResponse(''); }}
+              className="px-3 py-1.5 text-xs border rounded-lg hover:bg-gray-50">Cancel</button>
+            <button onClick={submit} disabled={saving || !response.trim()}
+              className="px-4 py-1.5 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center gap-1 font-medium">
+              {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Send className="w-3 h-3" />} Submit Response
+            </button>
           </div>
         </div>
       )}
