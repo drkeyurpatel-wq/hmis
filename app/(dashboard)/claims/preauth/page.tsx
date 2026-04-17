@@ -27,7 +27,7 @@ export default function PreauthPage() {
     const load = async () => {
       setLoading(true);
       let q = sb().from('clm_claims')
-        .select('*, clm_payers(name, type)')
+        .select('*, clm_payers!clm_claims_payer_id_fkey(name, type)')
         .eq('centre_id', activeCentreId)
         .in('status', PREAUTH_STATUSES)
         .order('created_at', { ascending: false });

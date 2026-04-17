@@ -3,7 +3,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/lib/store/auth';
-import { sb } from '@/lib/supabase/browser';
 import {
   Shield, FileText, AlertTriangle, IndianRupee, Clock,
   Search, Filter, Plus, ChevronDown, ExternalLink,
@@ -75,24 +74,14 @@ export default function ClaimsPage() {
     if (!centreId) return;
     const loadClaims = async () => {
       try {
-        const s = sb();
-        let q = s
-          .from('clm_claims')
-          .select('*, clm_payers(id, code, name, type)')
-          .eq('centre_id', centreId)
-          .order('created_at', { ascending: false })
-          .limit(100);
-
-        const statuses = TAB_STATUS_MAP[tab];
-        if (statuses) q = q.in('status', statuses);
-        if (payerFilter) q = q.eq('payer_id', payerFilter);
-        if (typeFilter) q = q.eq('claim_type', typeFilter);
-        if (search) {
-          q = q.or(`patient_name.ilike.%${search}%,claim_number.ilike.%${search}%,tpa_claim_number.ilike.%${search}%`);
-        }
-
-        const { data } = await q;
-        setClaims(data || []);
+        const statuses = TAB_STATUS_MAP[tab] || undefined;
+        const data = await fetchClaims(centreId, {
+          statuses: statuses || undefined,
+          payer_id: payerFilter || undefined,
+          claim_type: (typeFilter || undefined) as ClaimType | undefined,
+          search: search || undefined,
+        });
+        setClaims(data);
       } catch (e) {
         console.error('Failed to load claims:', e);
       }

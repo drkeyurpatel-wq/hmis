@@ -10,6 +10,7 @@ import {
   User, Stethoscope, IndianRupee, FileText, Filter,
 } from 'lucide-react';
 import { PRIORITY_CONFIG, type QueryPriority, type QueryCategory } from '@/lib/claims/types';
+import { fetchOpenQueries, fetchRejections } from '@/lib/claims/api';
 
 export default function QueriesPage() {
   const router = useRouter();
@@ -26,21 +27,12 @@ export default function QueriesPage() {
     if (!activeCentreId) return;
     const load = async () => {
       setLoading(true);
-      const s = sb();
-      // Open queries
-      const { data: q } = await s.from('clm_queries')
-        .select('*, clm_claims!inner(claim_number, patient_name, centre_id, payer_id, clm_payers(name))')
-        .in('status', ['open', 'in_progress', 'escalated'])
-        .order('raised_at', { ascending: true });
-      setQueries((q || []).filter((r: any) => r.clm_claims?.centre_id === activeCentreId));
-
-      // Recent rejections
-      const { data: rej } = await s.from('clm_rejections')
-        .select('*, clm_claims!inner(claim_number, patient_name, centre_id, claimed_amount, clm_payers(name))')
-        .order('rejected_at', { ascending: false })
-        .limit(50);
-      setRejections((rej || []).filter((r: any) => r.clm_claims?.centre_id === activeCentreId));
-
+      const [q, r] = await Promise.all([
+        fetchOpenQueries(activeCentreId),
+        fetchRejections(activeCentreId),
+      ]);
+      setQueries(q);
+      setRejections(r);
       setLoading(false);
     };
     load();
@@ -58,12 +50,9 @@ export default function QueriesPage() {
       }).eq('id', queryId);
       setRespondingTo(null);
       setResponseText('');
-      // Reload
-      const { data } = await sb().from('clm_queries')
-        .select('*, clm_claims!inner(claim_number, patient_name, centre_id, payer_id, clm_payers(name))')
-        .in('status', ['open', 'in_progress', 'escalated'])
-        .order('raised_at', { ascending: true });
-      setQueries((data || []).filter((r: any) => r.clm_claims?.centre_id === activeCentreId));
+      // Reload using API
+      const q = await fetchOpenQueries(activeCentreId || '');
+      setQueries(q);
     } catch (e) { console.error(e); }
     setSaving(false);
   };
@@ -115,7 +104,7 @@ export default function QueriesPage() {
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="font-mono text-xs font-medium text-blue-600 cursor-pointer hover:underline"
                             onClick={() => router.push(`/claims/${q.claim_id}`)}>
-                            {q.clm_claims?.claim_number}
+                            {q.claim_number}
                           </span>
                           <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${pc.bg} ${pc.color}`}>{pc.label}</span>
                           <span className="text-xs text-gray-400">Q{q.query_number}</span>
@@ -125,8 +114,8 @@ export default function QueriesPage() {
                             <span className="text-xs font-medium text-red-500">Escalation L{q.escalation_level}</span>
                           )}
                         </div>
-                        <p className="text-sm font-medium text-gray-900 mt-1">{q.clm_claims?.patient_name}</p>
-                        <p className="text-xs text-gray-500">{q.clm_claims?.clm_payers?.name}</p>
+                        <p className="text-sm font-medium text-gray-900 mt-1">{q.patient_name}</p>
+                        <p className="text-xs text-gray-500">{q.payer_name}</p>
                         <div className="mt-2 p-3 bg-orange-50 rounded-lg border border-orange-100">
                           <p className="text-sm text-gray-800">{q.query_text}</p>
                         </div>
@@ -189,19 +178,19 @@ export default function QueriesPage() {
                   <div className="flex items-center justify-between">
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="font-mono text-xs font-medium text-blue-600">{rej.clm_claims?.claim_number}</span>
+                        <span className="font-mono text-xs font-medium text-blue-600">{rej.claim_number}</span>
                         <span className="text-xs px-2 py-0.5 rounded bg-red-100 text-red-700">{rej.rejection_stage}</span>
                         {rej.is_appealed && <span className="text-xs px-2 py-0.5 rounded bg-purple-100 text-purple-700">Appealed</span>}
                       </div>
-                      <p className="text-sm font-medium text-gray-900 mt-1">{rej.clm_claims?.patient_name}</p>
+                      <p className="text-sm font-medium text-gray-900 mt-1">{rej.patient_name}</p>
                       <p className="text-sm text-red-700 mt-1">{rej.rejection_reason}</p>
                       {rej.rejection_details && <p className="text-xs text-gray-500 mt-1">{rej.rejection_details}</p>}
                     </div>
                     <div className="text-right">
                       <p className="text-xs text-gray-400">{new Date(rej.rejected_at).toLocaleDateString('en-IN')}</p>
-                      {rej.clm_claims?.claimed_amount && (
+                      {rej.claimed_amount && (
                         <p className="text-sm font-medium text-gray-700 mt-1">
-                          ₹{Math.round(rej.clm_claims.claimed_amount).toLocaleString('en-IN')}
+                          ₹{Math.round(rej.claimed_amount).toLocaleString('en-IN')}
                         </p>
                       )}
                     </div>

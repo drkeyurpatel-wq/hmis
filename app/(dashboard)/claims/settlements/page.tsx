@@ -27,17 +27,19 @@ export default function SettlementsPage() {
     if (!activeCentreId) return;
     const load = async () => {
       setLoading(true);
-      let q = sb().from('clm_claims')
-        .select('*, clm_payers(name, type), clm_settlements(id, settlement_amount, net_amount, utr_number, payment_date, payment_mode, is_reconciled, medpay_synced)')
-        .eq('centre_id', activeCentreId)
-        .order('updated_at', { ascending: false });
+      try {
+        let q = sb().from('clm_claims')
+          .select('*, clm_payers!clm_claims_payer_id_fkey(name, type)')
+          .eq('centre_id', activeCentreId)
+          .order('updated_at', { ascending: false });
 
-      if (tab === 'pending') q = q.in('status', ['claim_approved', 'claim_partial', 'settlement_pending']);
-      else if (tab === 'settled') q = q.eq('status', 'settled');
-      else q = q.in('status', ['claim_approved', 'claim_partial', 'settlement_pending', 'settled']);
+        if (tab === 'pending') q = q.in('status', ['claim_approved', 'claim_partial', 'settlement_pending']);
+        else if (tab === 'settled') q = q.eq('status', 'settled');
+        else q = q.in('status', ['claim_approved', 'claim_partial', 'settlement_pending', 'settled']);
 
-      const { data } = await q.limit(100);
-      setClaims(data || []);
+        const { data } = await q.limit(100);
+        setClaims(data || []);
+      } catch (e) { console.error('Settlements load error:', e); }
       setLoading(false);
     };
     load();
@@ -85,10 +87,11 @@ export default function SettlementsPage() {
       setRecordingId(null);
       setSettlementForm({ amount: '', utr: '', mode: 'neft', deduction: '', deduction_reason: '' });
       // Reload
+      const statuses = tab === 'pending' ? ['claim_approved', 'claim_partial', 'settlement_pending'] : tab === 'settled' ? ['settled'] : ['claim_approved', 'claim_partial', 'settlement_pending', 'settled'];
       const { data } = await sb().from('clm_claims')
-        .select('*, clm_payers(name, type), clm_settlements(*)')
+        .select('*, clm_payers!clm_claims_payer_id_fkey(name, type)')
         .eq('centre_id', activeCentreId)
-        .in('status', tab === 'pending' ? ['claim_approved', 'claim_partial', 'settlement_pending'] : tab === 'settled' ? ['settled'] : ['claim_approved', 'claim_partial', 'settlement_pending', 'settled'])
+        .in('status', statuses)
         .order('updated_at', { ascending: false }).limit(100);
       setClaims(data || []);
     } catch (e) { console.error(e); }
