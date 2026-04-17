@@ -10,7 +10,7 @@ import {
   User, Building2, Stethoscope, Calendar, ExternalLink, Loader2, Upload,
 } from 'lucide-react';
 import { STATUS_CONFIG, CLAIM_TYPE_LABELS, PRIORITY_CONFIG, type ClaimStatus, type ClaimType } from '@/lib/claims/types';
-import { fetchClaim, fetchClaimTimeline, updateClaim, addClaimQuery, fetchClaimQueries, fetchClaimDocuments, uploadClaimDocument, recordSettlementWithMedPay } from '@/lib/claims/api';
+import { fetchClaim, fetchClaimTimeline, updateClaim, addClaimQuery, fetchClaimQueries, fetchClaimDocuments, uploadClaimDocument, recordSettlement } from '@/lib/claims/api';
 import { notifyClaimStatusChange } from '@/lib/claims/notifications';
 
 const INR = (n: number | null | undefined) => {
