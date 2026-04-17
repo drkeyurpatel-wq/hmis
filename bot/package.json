@@ -1,0 +1,32 @@
+{
+  "name": "h1-claims-bot",
+  "version": "1.0.0",
+  "description": "H1 Claims TPA Portal Bot — Playwright-based automation for pre-auth submission, claim tracking, and document download",
+  "private": true,
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/scheduler.js",
+    "engine": "node dist/engine.js",
+    "test:hdfc": "node dist/engine.js --tpa=hdfc_ergo --mode=test",
+    "test:mediassist": "node dist/engine.js --tpa=medi_assist --mode=test",
+    "test:abhi": "node dist/engine.js --tpa=aditya_birla --mode=test",
+    "poll": "node dist/engine.js --action=poll_all",
+    "install:browser": "npx playwright install chromium --with-deps"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.0",
+    "playwright": "^1.44.0",
+    "node-cron": "^3.0.3",
+    "dotenv": "^16.4.0",
+    "pino": "^9.0.0",
+    "pino-pretty": "^11.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "@types/node-cron": "^3.0.11",
+    "typescript": "^5.4.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
