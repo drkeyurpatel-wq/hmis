@@ -238,7 +238,7 @@ export default function ClaimsMISPage() {
                 </tr>
               </thead>
               <tbody>
-                {scorecard.map(p => (
+                {scorecard.filter(p => p.total_claims > 0).map(p => (
                   <tr key={p.payer_id} className="border-b border-gray-100 last:border-0 hover:bg-blue-50/50">
                     <td className="px-4 py-2.5 text-sm font-medium text-gray-900">{p.payer_name}</td>
                     <td className="px-4 py-2.5">
