@@ -46,6 +46,7 @@ export const routes = {
     settlements: '/claims/settlements',
     mis: '/claims/mis',
     payers: '/claims/payers',
+    bot: '/claims/bot',
   },
   crm: '/crm',
   vpms: '/vpms',

@@ -14,7 +14,7 @@ import {
   ClipboardList, UtensilsCrossed, Dumbbell, AlertTriangle,
   Package, Eye, UserPlus, MessageSquare, Star, Home, Mic,
   GitBranch, IndianRupee, TestTube, ArrowUpRight, Video,
-  Receipt, ShoppingCart, MapPin, BrainCircuit, Timer,
+  Receipt, ShoppingCart, MapPin, BrainCircuit, Timer, Bot,
 } from 'lucide-react';
 import type { CentreType } from '@/types/database';
 
@@ -90,6 +90,7 @@ const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
     { href: '/claims/settlements', label: 'Settlements', icon: IndianRupee, moduleKey: 'billing', modes: ['hospital'] },
     { href: '/claims/mis', label: 'Claims MIS', icon: BarChart3, moduleKey: 'billing', modes: ['hospital'] },
     { href: '/claims/payers', label: 'Payer Master', icon: Building2, moduleKey: 'billing', modes: ['hospital'] },
+    { href: '/claims/bot', label: 'Bot Monitor', icon: Bot, moduleKey: 'billing', modes: ['hospital'] },
   ]},
 
   // ---------- REFERRAL (clinic) ----------
