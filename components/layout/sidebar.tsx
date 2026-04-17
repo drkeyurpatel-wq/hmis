@@ -82,6 +82,16 @@ const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
     { href: '/convert', label: 'Convert (OPD→IPD)', icon: UserPlus, modes: ['hospital'] },
   ]},
 
+  // ---------- CLAIMS ----------
+  { label: 'CLAIMS', items: [
+    { href: '/claims', label: 'Claims Dashboard', icon: Shield, moduleKey: 'billing', modes: ['hospital'] },
+    { href: '/claims/preauth', label: 'Pre-Authorization', icon: FileText, moduleKey: 'billing', modes: ['hospital'] },
+    { href: '/claims/queries', label: 'Queries & Rejections', icon: AlertTriangle, moduleKey: 'billing', modes: ['hospital'] },
+    { href: '/claims/settlements', label: 'Settlements', icon: IndianRupee, moduleKey: 'billing', modes: ['hospital'] },
+    { href: '/claims/mis', label: 'Claims MIS', icon: BarChart3, moduleKey: 'billing', modes: ['hospital'] },
+    { href: '/claims/payers', label: 'Payer Master', icon: Building2, moduleKey: 'billing', modes: ['hospital'] },
+  ]},
+
   // ---------- REFERRAL (clinic) ----------
   { label: 'REFERRAL', items: [
     { href: '/clinic/referral', label: 'Refer to Hospital', icon: ArrowUpRight, modes: ['clinic'] },
