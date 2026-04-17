@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { STATUS_CONFIG, CLAIM_TYPE_LABELS, PRIORITY_CONFIG, type ClaimStatus, type ClaimType } from '@/lib/claims/types';
 import { fetchClaim, fetchClaimTimeline, updateClaim, addClaimQuery, fetchClaimQueries, fetchClaimDocuments, uploadClaimDocument, recordSettlementWithMedPay } from '@/lib/claims/api';
+import { notifyClaimStatusChange } from '@/lib/claims/notifications';
 
 const INR = (n: number | null | undefined) => {
   if (!n) return '—';
@@ -152,6 +153,7 @@ export default function ClaimDetailPage() {
     setTransitioning(true);
     try {
       await updateClaim(id, { status: newStatus });
+      notifyClaimStatusChange(id, newStatus).catch(() => {}); // fire-and-forget
       await load();
     } catch (e) { console.error(e); }
     setTransitioning(false);
@@ -166,9 +168,12 @@ export default function ClaimDetailPage() {
     } else if (showAmountModal === 'settled') {
       updates.settled_amount = parseFloat(amountInput) || 0;
       updates.settlement_date = new Date().toISOString().split('T')[0];
+      updates.medpay_synced = true;
+      updates.medpay_synced_at = new Date().toISOString();
     }
     try {
       await updateClaim(id, updates);
+      notifyClaimStatusChange(id, showAmountModal).catch(() => {}); // fire-and-forget
       setShowAmountModal(null);
       setAmountInput('');
       await load();
@@ -436,16 +441,37 @@ export default function ClaimDetailPage() {
             </div>
           )}
 
-          {/* Payer Info */}
+          {/* Payer Info + Editable Fields */}
           <div className="bg-white rounded-xl border p-5">
             <h3 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
-              <Building2 className="w-4 h-4" /> Payer
+              <Building2 className="w-4 h-4" /> Payer & References
             </h3>
             <p className="font-medium text-sm">{claim.clm_payers?.name}</p>
             <p className="text-xs text-gray-500 mt-1">Type: {claim.clm_payers?.type}</p>
-            {claim.tpa_claim_number && <p className="text-xs text-gray-500 mt-1">TPA Ref: <span className="font-mono">{claim.tpa_claim_number}</span></p>}
-            {claim.tpa_preauth_number && <p className="text-xs text-gray-500">Pre-Auth Ref: <span className="font-mono">{claim.tpa_preauth_number}</span></p>}
-            {claim.settlement_utr && <p className="text-xs text-emerald-600 mt-1">UTR: <span className="font-mono">{claim.settlement_utr}</span></p>}
+            <div className="mt-3 space-y-2">
+              <div>
+                <label className="text-xs text-gray-500">TPA Claim Ref</label>
+                <input type="text" defaultValue={claim.tpa_claim_number || ''}
+                  onBlur={e => { if (e.target.value !== (claim.tpa_claim_number || '')) updateClaim(id, { tpa_claim_number: e.target.value }).then(load); }}
+                  placeholder="Enter TPA claim #"
+                  className="w-full px-2 py-1 text-xs font-mono border rounded mt-0.5" />
+              </div>
+              <div>
+                <label className="text-xs text-gray-500">TPA Pre-Auth Ref</label>
+                <input type="text" defaultValue={claim.tpa_preauth_number || ''}
+                  onBlur={e => { if (e.target.value !== (claim.tpa_preauth_number || '')) updateClaim(id, { tpa_preauth_number: e.target.value }).then(load); }}
+                  placeholder="Enter pre-auth #"
+                  className="w-full px-2 py-1 text-xs font-mono border rounded mt-0.5" />
+              </div>
+              <div>
+                <label className="text-xs text-gray-500">Claimed Amount</label>
+                <input type="number" defaultValue={claim.claimed_amount || ''}
+                  onBlur={e => { const v = parseFloat(e.target.value); if (v && v !== claim.claimed_amount) updateClaim(id, { claimed_amount: v } as any).then(load); }}
+                  placeholder="Final claim amount"
+                  className="w-full px-2 py-1 text-xs border rounded mt-0.5" />
+              </div>
+            </div>
+            {claim.settlement_utr && <p className="text-xs text-emerald-600 mt-2">UTR: <span className="font-mono">{claim.settlement_utr}</span></p>}
             {claim.medpay_synced && <p className="text-xs text-green-600 mt-1 flex items-center gap-1"><CheckCircle className="w-3 h-3" /> MedPay synced</p>}
           </div>
 
