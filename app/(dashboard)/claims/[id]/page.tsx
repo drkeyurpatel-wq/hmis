@@ -7,10 +7,10 @@ import { useAuthStore } from '@/lib/store/auth';
 import {
   ArrowLeft, Shield, Clock, FileText, AlertTriangle, IndianRupee,
   CheckCircle, XCircle, MessageSquare, Send, ChevronRight,
-  User, Building2, Stethoscope, Calendar, ExternalLink, Loader2,
+  User, Building2, Stethoscope, Calendar, ExternalLink, Loader2, Upload,
 } from 'lucide-react';
 import { STATUS_CONFIG, CLAIM_TYPE_LABELS, PRIORITY_CONFIG, type ClaimStatus, type ClaimType } from '@/lib/claims/types';
-import { fetchClaim, fetchClaimTimeline, updateClaim } from '@/lib/claims/api';
+import { fetchClaim, fetchClaimTimeline, updateClaim, addClaimQuery, fetchClaimQueries, fetchClaimDocuments, uploadClaimDocument, recordSettlementWithMedPay } from '@/lib/claims/api';
 
 const INR = (n: number | null | undefined) => {
   if (!n) return '—';
@@ -85,18 +85,63 @@ export default function ClaimDetailPage() {
   const [showAmountModal, setShowAmountModal] = useState<ClaimStatus | null>(null);
   const [amountInput, setAmountInput] = useState('');
 
+  // Queries & Documents
+  const [queries, setQueries] = useState<any[]>([]);
+  const [documents, setDocuments] = useState<any[]>([]);
+  const [showAddQuery, setShowAddQuery] = useState(false);
+  const [queryForm, setQueryForm] = useState({ text: '', category: 'other', priority: 'medium', routed_to_role: '' });
+  const [savingQuery, setSavingQuery] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [activeSection, setActiveSection] = useState<'timeline' | 'queries' | 'documents'>('timeline');
+
   const load = useCallback(async () => {
     if (!id) return;
     setLoading(true);
     try {
-      const [c, t] = await Promise.all([fetchClaim(id), fetchClaimTimeline(id)]);
+      const [c, t, q, d] = await Promise.all([
+        fetchClaim(id),
+        fetchClaimTimeline(id),
+        fetchClaimQueries(id),
+        fetchClaimDocuments(id),
+      ]);
       setClaim(c);
       setTimeline(t);
+      setQueries(q);
+      setDocuments(d);
     } catch (e) { console.error(e); }
     setLoading(false);
   }, [id]);
 
   useEffect(() => { load(); }, [load]);
+
+  const handleAddQuery = async () => {
+    if (!queryForm.text.trim()) return;
+    setSavingQuery(true);
+    try {
+      await addClaimQuery({
+        claim_id: id,
+        query_text: queryForm.text,
+        query_category: queryForm.category,
+        priority: queryForm.priority,
+        routed_to_role: queryForm.routed_to_role || undefined,
+      });
+      setShowAddQuery(false);
+      setQueryForm({ text: '', category: 'other', priority: 'medium', routed_to_role: '' });
+      await load();
+    } catch (e) { console.error(e); }
+    setSavingQuery(false);
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, docName: string, docCategory: string) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      await uploadClaimDocument({ claim_id: id, file, document_name: docName || file.name, document_category: docCategory || 'clinical' });
+      await load();
+    } catch (err) { console.error(err); }
+    setUploading(false);
+  };
 
   const handleTransition = async (newStatus: ClaimStatus) => {
     // If transitioning to approved/settled, ask for amount
@@ -224,42 +269,172 @@ export default function ClaimDetailPage() {
           </div>
         </div>
 
-        {/* Right: Timeline */}
+        {/* Right: Timeline + Queries + Documents */}
         <div className="space-y-4">
-          <div className="bg-white rounded-xl border p-5">
-            <h3 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
-              <Clock className="w-4 h-4" /> Claim Timeline
-            </h3>
-            {timeline.length === 0 ? (
-              <p className="text-xs text-gray-400 text-center py-4">No events yet</p>
-            ) : (
-              <div className="space-y-3">
-                {timeline.map((evt, i) => (
-                  <div key={i} className="flex gap-3">
-                    <div className="flex flex-col items-center">
-                      <div className={`w-2 h-2 rounded-full mt-1.5 ${
-                        evt.event_type === 'status_change' ? 'bg-blue-500' :
-                        evt.event_type === 'query' ? 'bg-orange-500' :
-                        evt.event_type === 'settlement' ? 'bg-emerald-500' :
-                        'bg-gray-400'
-                      }`} />
-                      {i < timeline.length - 1 && <div className="w-px flex-1 bg-gray-200 mt-1" />}
-                    </div>
-                    <div className="pb-3">
-                      <p className="text-xs font-medium text-gray-700">{evt.event_text}</p>
-                      <p className="text-xs text-gray-400 mt-0.5">
-                        {new Date(evt.created_at).toLocaleString('en-IN', {
-                          day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit'
-                        })}
-                        {evt.source !== 'manual' && ` • ${evt.source}`}
-                      </p>
-                      {evt.notes && <p className="text-xs text-gray-500 mt-0.5 italic">{evt.notes}</p>}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+          {/* Tab switcher */}
+          <div className="flex gap-1 bg-white rounded-xl border p-1">
+            {[
+              { key: 'timeline', label: 'Timeline', icon: Clock, count: timeline.length },
+              { key: 'queries', label: 'Queries', icon: AlertTriangle, count: queries.length },
+              { key: 'documents', label: 'Documents', icon: FileText, count: documents.length },
+            ].map(t => (
+              <button key={t.key} onClick={() => setActiveSection(t.key as any)}
+                className={`flex-1 flex items-center justify-center gap-1 py-1.5 text-xs font-medium rounded-lg ${
+                  activeSection === t.key ? 'bg-blue-600 text-white' : 'text-gray-500 hover:bg-gray-100'
+                }`}>
+                <t.icon className="w-3 h-3" /> {t.label} ({t.count})
+              </button>
+            ))}
           </div>
+
+          {/* Timeline */}
+          {activeSection === 'timeline' && (
+            <div className="bg-white rounded-xl border p-5">
+              {timeline.length === 0 ? (
+                <p className="text-xs text-gray-400 text-center py-4">No events yet</p>
+              ) : (
+                <div className="space-y-3 max-h-96 overflow-y-auto">
+                  {timeline.map((evt, i) => (
+                    <div key={i} className="flex gap-3">
+                      <div className="flex flex-col items-center">
+                        <div className={`w-2 h-2 rounded-full mt-1.5 ${
+                          evt.event_type === 'status_change' ? 'bg-blue-500' :
+                          evt.event_type === 'query' ? 'bg-orange-500' :
+                          evt.event_type === 'settlement' ? 'bg-emerald-500' :
+                          'bg-gray-400'
+                        }`} />
+                        {i < timeline.length - 1 && <div className="w-px flex-1 bg-gray-200 mt-1" />}
+                      </div>
+                      <div className="pb-3">
+                        <p className="text-xs font-medium text-gray-700">{evt.event_text}</p>
+                        <p className="text-xs text-gray-400 mt-0.5">
+                          {new Date(evt.created_at).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Queries */}
+          {activeSection === 'queries' && (
+            <div className="bg-white rounded-xl border p-5 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-semibold text-gray-900">Queries ({queries.length})</span>
+                <button onClick={() => setShowAddQuery(!showAddQuery)}
+                  className="px-2.5 py-1 text-xs font-medium bg-orange-600 text-white rounded-lg hover:bg-orange-700">
+                  + Add Query
+                </button>
+              </div>
+
+              {showAddQuery && (
+                <div className="border rounded-lg p-3 bg-orange-50 space-y-2">
+                  <textarea value={queryForm.text} onChange={e => setQueryForm(f => ({...f, text: e.target.value}))}
+                    placeholder="Describe the TPA query..." rows={3}
+                    className="w-full px-3 py-2 text-sm border rounded-lg" autoFocus />
+                  <div className="grid grid-cols-3 gap-2">
+                    <select value={queryForm.category} onChange={e => setQueryForm(f => ({...f, category: e.target.value}))}
+                      className="px-2 py-1.5 text-xs border rounded">
+                      <option value="clinical">Clinical</option>
+                      <option value="billing">Billing</option>
+                      <option value="documentation">Documentation</option>
+                      <option value="policy">Policy</option>
+                      <option value="other">Other</option>
+                    </select>
+                    <select value={queryForm.priority} onChange={e => setQueryForm(f => ({...f, priority: e.target.value}))}
+                      className="px-2 py-1.5 text-xs border rounded">
+                      <option value="low">Low</option>
+                      <option value="medium">Medium</option>
+                      <option value="high">High</option>
+                      <option value="critical">Critical</option>
+                    </select>
+                    <select value={queryForm.routed_to_role} onChange={e => setQueryForm(f => ({...f, routed_to_role: e.target.value}))}
+                      className="px-2 py-1.5 text-xs border rounded">
+                      <option value="">Route to...</option>
+                      <option value="doctor">Doctor</option>
+                      <option value="insurance_desk">Insurance Desk</option>
+                      <option value="billing">Billing</option>
+                      <option value="accounts">Accounts</option>
+                    </select>
+                  </div>
+                  <div className="flex gap-2">
+                    <button onClick={() => setShowAddQuery(false)} className="px-3 py-1 text-xs border rounded hover:bg-gray-50">Cancel</button>
+                    <button onClick={handleAddQuery} disabled={savingQuery || !queryForm.text.trim()}
+                      className="px-3 py-1 text-xs bg-orange-600 text-white rounded hover:bg-orange-700 disabled:opacity-50">
+                      {savingQuery ? 'Saving...' : 'Add Query'}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {queries.length === 0 ? (
+                <p className="text-xs text-gray-400 text-center py-4">No queries yet</p>
+              ) : (
+                <div className="space-y-2 max-h-80 overflow-y-auto">
+                  {queries.map(q => (
+                    <div key={q.id} className={`border rounded-lg p-3 ${q.status === 'open' || q.status === 'escalated' ? 'border-orange-200 bg-orange-50/50' : 'bg-gray-50'}`}>
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-xs font-bold text-gray-500">Q{q.query_number}</span>
+                        <span className={`text-xs px-1.5 py-0.5 rounded ${q.status === 'open' ? 'bg-orange-100 text-orange-700' : q.status === 'responded' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'}`}>
+                          {q.status}
+                        </span>
+                        <span className="text-xs text-gray-400">{q.query_category}</span>
+                        {q.is_sla_breached && <span className="text-xs text-red-600 font-medium">SLA breached</span>}
+                      </div>
+                      <p className="text-xs text-gray-800">{q.query_text}</p>
+                      {q.response_text && (
+                        <div className="mt-2 p-2 bg-blue-50 rounded text-xs text-blue-800">
+                          <span className="font-medium">Response: </span>{q.response_text}
+                        </div>
+                      )}
+                      <p className="text-xs text-gray-400 mt-1">
+                        {new Date(q.raised_at).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                        {q.routed_to_role && ` • → ${q.routed_to_role}`}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Documents */}
+          {activeSection === 'documents' && (
+            <div className="bg-white rounded-xl border p-5 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-semibold text-gray-900">Documents ({documents.length})</span>
+                <label className="px-2.5 py-1 text-xs font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700 cursor-pointer">
+                  {uploading ? 'Uploading...' : '+ Upload'}
+                  <input type="file" className="hidden" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                    onChange={e => handleFileUpload(e, '', 'clinical')} disabled={uploading} />
+                </label>
+              </div>
+
+              {documents.length === 0 ? (
+                <p className="text-xs text-gray-400 text-center py-4">No documents uploaded yet</p>
+              ) : (
+                <div className="space-y-2 max-h-80 overflow-y-auto">
+                  {documents.map(doc => (
+                    <div key={doc.id} className="flex items-center justify-between border rounded-lg p-3 hover:bg-gray-50">
+                      <div className="flex items-center gap-2">
+                        <FileText className="w-4 h-4 text-gray-400" />
+                        <div>
+                          <p className="text-xs font-medium text-gray-800">{doc.document_name}</p>
+                          <p className="text-xs text-gray-400">{doc.document_category} • {doc.status}</p>
+                        </div>
+                      </div>
+                      {doc.file_url && (
+                        <a href={doc.file_url} target="_blank" rel="noopener noreferrer"
+                          className="text-xs text-blue-600 hover:underline">View</a>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Payer Info */}
           <div className="bg-white rounded-xl border p-5">
@@ -271,6 +446,7 @@ export default function ClaimDetailPage() {
             {claim.tpa_claim_number && <p className="text-xs text-gray-500 mt-1">TPA Ref: <span className="font-mono">{claim.tpa_claim_number}</span></p>}
             {claim.tpa_preauth_number && <p className="text-xs text-gray-500">Pre-Auth Ref: <span className="font-mono">{claim.tpa_preauth_number}</span></p>}
             {claim.settlement_utr && <p className="text-xs text-emerald-600 mt-1">UTR: <span className="font-mono">{claim.settlement_utr}</span></p>}
+            {claim.medpay_synced && <p className="text-xs text-green-600 mt-1 flex items-center gap-1"><CheckCircle className="w-3 h-3" /> MedPay synced</p>}
           </div>
 
           {/* Query Alert */}
@@ -281,8 +457,10 @@ export default function ClaimDetailPage() {
                 <span className="text-sm font-semibold text-orange-800">{claim.query_count} Open Query</span>
               </div>
               <p className="text-xs text-orange-700">
-                {claim.is_sla_breached ? '⚠️ SLA breached — escalate immediately' : 'Response pending from clinical/billing team'}
+                {claim.is_sla_breached ? 'SLA breached — escalate immediately' : 'Response pending from clinical/billing team'}
               </p>
+              <button onClick={() => setActiveSection('queries')}
+                className="mt-2 text-xs font-medium text-orange-700 hover:underline">View queries →</button>
             </div>
           )}
         </div>

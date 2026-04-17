@@ -218,3 +218,153 @@ export async function fetchPayerScorecard() {
   if (error) throw error;
   return data || [];
 }
+
+// ─── Add Query to Claim ───
+export async function addClaimQuery(params: {
+  claim_id: string;
+  query_text: string;
+  query_category: string;
+  priority: string;
+  routed_to_role?: string;
+  source?: string;
+}) {
+  // Get next query number
+  const { data: existing } = await supabase()
+    .from('clm_queries')
+    .select('query_number')
+    .eq('claim_id', params.claim_id)
+    .order('query_number', { ascending: false })
+    .limit(1);
+  const nextNum = (existing?.[0]?.query_number || 0) + 1;
+
+  // Default SLA: 48h from now
+  const sla = new Date(Date.now() + 48 * 3600000).toISOString();
+
+  const { data, error } = await supabase()
+    .from('clm_queries')
+    .insert({
+      claim_id: params.claim_id,
+      query_number: nextNum,
+      query_text: params.query_text,
+      query_category: params.query_category,
+      priority: params.priority,
+      routed_to_role: params.routed_to_role || null,
+      source: params.source || 'manual',
+      sla_deadline: sla,
+    })
+    .select()
+    .single();
+  if (error) throw error;
+
+  // Update claim status to query
+  const claim = await fetchClaim(params.claim_id);
+  if (claim && ['preauth_pending', 'preauth_approved'].includes(claim.status)) {
+    await updateClaim(params.claim_id, { status: 'preauth_query' as ClaimStatus });
+  } else if (claim && ['claim_submitted', 'claim_under_review'].includes(claim.status)) {
+    await updateClaim(params.claim_id, { status: 'claim_query' as ClaimStatus });
+  }
+
+  return data;
+}
+
+// ─── Fetch Claim Queries ───
+export async function fetchClaimQueries(claimId: string) {
+  const { data, error } = await supabase()
+    .from('clm_queries')
+    .select('*')
+    .eq('claim_id', claimId)
+    .order('query_number', { ascending: true });
+  if (error) throw error;
+  return data || [];
+}
+
+// ─── Upload Document ───
+export async function uploadClaimDocument(params: {
+  claim_id: string;
+  file: File;
+  document_name: string;
+  document_category: string;
+}) {
+  const s = supabase();
+  const ext = params.file.name.split('.').pop();
+  const path = `claims/${params.claim_id}/${Date.now()}_${params.document_name.replace(/\s+/g, '_')}.${ext}`;
+
+  // Upload to Supabase Storage
+  const { data: uploadData, error: uploadError } = await s.storage
+    .from('claim-documents')
+    .upload(path, params.file);
+  if (uploadError) throw uploadError;
+
+  // Get public URL
+  const { data: urlData } = s.storage
+    .from('claim-documents')
+    .getPublicUrl(path);
+
+  // Create document record
+  const { data, error } = await s
+    .from('clm_documents')
+    .insert({
+      claim_id: params.claim_id,
+      document_name: params.document_name,
+      document_category: params.document_category,
+      file_path: path,
+      file_url: urlData?.publicUrl || path,
+      file_size_bytes: params.file.size,
+      mime_type: params.file.type,
+      source: 'manual',
+      status: 'uploaded',
+    })
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+// ─── Record Settlement with MedPay Bridge ───
+export async function recordSettlementWithMedPay(params: {
+  claim_id: string;
+  settlement_amount: number;
+  deduction_amount?: number;
+  deduction_reason?: string;
+  utr_number?: string;
+  payment_mode?: string;
+  staff_id?: string;
+}) {
+  const s = supabase();
+  const net = params.settlement_amount - (params.deduction_amount || 0);
+
+  // 1. Create settlement record
+  const { error: settError } = await s.from('clm_settlements').insert({
+    claim_id: params.claim_id,
+    settlement_amount: params.settlement_amount,
+    tds_amount: 0,
+    net_amount: net,
+    deduction_amount: params.deduction_amount || 0,
+    deduction_reason: params.deduction_reason || null,
+    utr_number: params.utr_number || null,
+    payment_date: new Date().toISOString().split('T')[0],
+    payment_mode: params.payment_mode || 'neft',
+    source: 'manual',
+  });
+  if (settError) throw settError;
+
+  // 2. Update claim status to settled
+  const { error: clmError } = await s.from('clm_claims').update({
+    status: 'settled' as ClaimStatus,
+    settled_amount: params.settlement_amount,
+    deduction_amount: params.deduction_amount || 0,
+    settlement_utr: params.utr_number || null,
+    settlement_date: new Date().toISOString().split('T')[0],
+  }).eq('id', params.claim_id);
+  if (clmError) throw clmError;
+
+  // 3. MedPay bridge — write settlement info
+  // MedPay reads from HMIS Supabase (same DB), so we just flag it
+  await s.from('clm_claims').update({
+    medpay_synced: true,
+    medpay_synced_at: new Date().toISOString(),
+  }).eq('id', params.claim_id);
+
+  return { success: true, net_amount: net };
+}
+
