@@ -87,25 +87,36 @@ export default function ClaimsCommandCentre() {
   const [typeFilter, setTypeFilter] = useState('');
   const [refreshing, setRefreshing] = useState(false);
   const [toast, setToast] = useState('');
+  const [initializing, setInitializing] = useState(true);
 
   // ─── Store ───
-  const { stats, payers, claims, claimsLoading: loading, init, loadClaims, refreshStats } = useClaimsStore();
+  const { stats, payers, claims, claimsLoading, init, loadClaims, refreshStats } = useClaimsStore();
+  const loading = initializing || claimsLoading;
 
   const flash = (m: string) => { setToast(m); setTimeout(() => setToast(''), 2500); };
 
-  // ─── Init store (once per session) ───
-  useEffect(() => { if (centreId) init(centreId); }, [centreId, init]);
-
-  // ─── Load claims on tab/filter change ───
+  // ─── Init store + load first batch ───
   useEffect(() => {
     if (!centreId) return;
+    const run = async () => {
+      setInitializing(true);
+      await init(centreId);
+      await loadClaims({ statuses: TAB_STATUSES[tab] });
+      setInitializing(false);
+    };
+    run();
+  }, [centreId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ─── Reload claims on tab/filter change (after init) ───
+  useEffect(() => {
+    if (!centreId || initializing) return;
     loadClaims({
       statuses: TAB_STATUSES[tab],
       payer_id: payerFilter || undefined,
       claim_type: (typeFilter || undefined) as ClaimType | undefined,
       search: search || undefined,
     });
-  }, [centreId, tab, payerFilter, typeFilter, search, loadClaims]);
+  }, [tab, payerFilter, typeFilter, search]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -119,6 +130,17 @@ export default function ClaimsCommandCentre() {
     setRefreshing(false);
     flash('Refreshed');
   };
+
+  if (initializing) return (
+    <div className="min-h-screen bg-gray-50/50">
+      <div className="bg-white border-b px-6 py-4"><div className="h-6 w-48 bg-gray-200 rounded animate-pulse" /></div>
+      <div className="px-6 pt-4 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+        {Array.from({ length: 6 }).map((_, i) => <div key={i} className="h-24 bg-white border rounded-xl animate-pulse" />)}
+      </div>
+      <div className="px-6 pt-4"><div className="h-10 bg-gray-100 rounded-xl animate-pulse" /></div>
+      <div className="px-6 pt-2"><div className="h-96 bg-white border rounded-xl animate-pulse" /></div>
+    </div>
+  );
 
   return (
     <div className="min-h-screen bg-gray-50/50">

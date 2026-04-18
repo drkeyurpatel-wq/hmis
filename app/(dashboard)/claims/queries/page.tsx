@@ -72,8 +72,8 @@ export default function QueryResponseCentre() {
   const { activeCentreId, staff } = useAuthStore();
 
   // Store
-  const { openQueries: queries, rejections, queriesLoading, loadQueryCentre, respondToQuery, init } = useClaimsStore();
-  const loading = queriesLoading;
+  const { openQueries: queries, rejections, loadQueryCentre, respondToQuery, init } = useClaimsStore();
+  const [initializing, setInitializing] = useState(true);
 
   const [tab, setTab] = useState<Tab>('queries');
   const [refreshing, setRefreshing] = useState(false);
@@ -94,9 +94,14 @@ export default function QueryResponseCentre() {
   // ─── Load via Store ───
   useEffect(() => {
     if (!activeCentreId) return;
-    init(activeCentreId);
-    loadQueryCentre();
-  }, [activeCentreId, init, loadQueryCentre]);
+    const run = async () => {
+      setInitializing(true);
+      await init(activeCentreId);
+      await loadQueryCentre();
+      setInitializing(false);
+    };
+    run();
+  }, [activeCentreId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleRefresh = async () => { setRefreshing(true); await loadQueryCentre(); setRefreshing(false); flash('Refreshed'); };
 
@@ -130,7 +135,7 @@ export default function QueryResponseCentre() {
   const avgHrs = queries.length > 0 ? Math.round(queries.reduce((s, q) => s + (Date.now() - new Date(q.raised_at).getTime()) / 3600000, 0) / queries.length) : 0;
 
   // ─── Skeleton ───
-  if (loading) return (
+  if (initializing) return (
     <div className="min-h-screen bg-gray-50/50">
       <div className="bg-white border-b px-6 py-4"><div className="h-6 w-64 bg-gray-200 rounded animate-pulse" /></div>
       <div className="px-6 pt-4 grid grid-cols-4 gap-3">
