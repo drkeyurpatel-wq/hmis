@@ -1,5 +1,5 @@
 // app/api/staff/create/route.ts
-// Creates a staff account: auth user (username@hmis.h1) + staff record + centre mapping
+// Creates a staff account: auth user (username@health1.in) + staff record + centre mapping
 // Must be called by an authenticated admin
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
 
   try {
     // 1. Create auth user with internal email
-    const authEmail = `${cleanUsername}@hmis.h1`;
+    const authEmail = `${cleanUsername}@health1.in`;
     const { data: authUser, error: authError } = await sb.auth.admin.createUser({
       email: authEmail,
       password,

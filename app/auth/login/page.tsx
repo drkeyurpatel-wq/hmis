@@ -6,12 +6,12 @@ import Image from 'next/image';
 import { createClient } from '@/lib/supabase/client';
 
 // Convert user ID to internal auth email
-// "nisha" → "nisha@hmis.h1"
+// "nisha" → "nisha@health1.in"
 // "nisha@health1.co.in" → kept as-is (legacy support)
 function toAuthEmail(input: string): string {
   const trimmed = input.trim().toLowerCase();
   if (trimmed.includes('@')) return trimmed; // Already an email — legacy support
-  return `${trimmed}@hmis.h1`; // Username → internal auth email
+  return `${trimmed}@health1.in`; // Username → auth email (matches Supabase Auth)
 }
 
 export default function LoginPage() {
