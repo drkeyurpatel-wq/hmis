@@ -5,7 +5,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuthStore } from '@/lib/store/auth';
-import { sb } from '@/lib/supabase/browser';
 import Link from 'next/link';
 import {
   Shield, Clock, FileText, AlertTriangle, IndianRupee,
@@ -15,12 +14,7 @@ import {
   ChevronRight, Eye, Zap, Copy, ExternalLink,
 } from 'lucide-react';
 import { STATUS_CONFIG, CLAIM_TYPE_LABELS, PRIORITY_CONFIG, type ClaimStatus, type ClaimType } from '@/lib/claims/types';
-import {
-  fetchClaim, fetchClaimTimeline, updateClaim,
-  addClaimQuery, fetchClaimQueries, fetchClaimDocuments,
-  uploadClaimDocument, recordSettlement, fetchDocChecklist,
-} from '@/lib/claims/api';
-import { notifyClaimStatusChange } from '@/lib/claims/notifications';
+import { useClaimsStore } from '@/lib/claims/store';
 
 // ─── Formatters ───
 const INR = (n: number | null | undefined) => {
@@ -91,15 +85,18 @@ export default function ClaimDetailPage() {
   const router = useRouter();
   const { staff } = useAuthStore();
 
-  const [claim, setClaim] = useState<any>(null);
-  const [timeline, setTimeline] = useState<any[]>([]);
-  const [queries, setQueries] = useState<any[]>([]);
-  const [documents, setDocuments] = useState<any[]>([]);
-  const [checklist, setChecklist] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<DetailTab>('overview');
   const [toast, setToast] = useState('');
   const [transitioning, setTransitioning] = useState(false);
+
+  // Store — shared state
+  const store = useClaimsStore();
+  const claim = store.activeClaim;
+  const timeline = store.activeTimeline;
+  const queries = store.activeQueries;
+  const documents = store.activeDocuments;
+  const checklist = store.activeChecklist;
 
   // Modal state
   const [showAmountModal, setShowAmountModal] = useState<{ status: ClaimStatus; label: string } | null>(null);
@@ -118,115 +115,80 @@ export default function ClaimDetailPage() {
 
   const flash = (m: string) => { setToast(m); setTimeout(() => setToast(''), 2500); };
 
-  // ─── Load Everything ───
+  // ─── Load via Store ───
   const load = useCallback(async () => {
     if (!id) return;
     setLoading(true);
-    try {
-      const [c, t, q, d] = await Promise.all([
-        fetchClaim(id), fetchClaimTimeline(id),
-        fetchClaimQueries(id), fetchClaimDocuments(id),
-      ]);
-      setClaim(c);
-      setTimeline(t);
-      setQueries(q);
-      setDocuments(d);
-      // Load doc checklist based on payer + type
-      if (c?.payer_id && c?.claim_type) {
-        const cl = await fetchDocChecklist(c.payer_id, c.claim_type);
-        setChecklist(cl);
-      }
-    } catch (e) { console.error(e); }
+    await store.loadClaimDetail(id);
     setLoading(false);
-  }, [id]);
+  }, [id, store.loadClaimDetail]);
 
   useEffect(() => { load(); }, [load]);
 
-  // ─── Status Transition ───
+  // ─── Status Transition (via store — auto-invalidates dashboard + queries) ───
   const handleTransition = async (t: { status: ClaimStatus; label: string; needsAmount?: boolean }) => {
     if (t.needsAmount) { setShowAmountModal(t); return; }
     setTransitioning(true);
-    try {
-      await updateClaim(id, { status: t.status });
-      notifyClaimStatusChange(id, t.status).catch(() => {});
-      flash(`Status → ${STATUS_CONFIG[t.status]?.label || t.status}`);
-      await load();
-    } catch (e) { console.error(e); flash('Error updating status'); }
+    const ok = await store.transitionStatus(id, t.status);
+    if (ok) flash(`Status → ${STATUS_CONFIG[t.status]?.label || t.status}`);
+    else flash('Error updating status');
     setTransitioning(false);
   };
 
   const handleAmountSubmit = async () => {
     if (!showAmountModal || !amountInput) return;
     setTransitioning(true);
-    try {
-      if (showAmountModal.status === 'settled') {
-        await recordSettlement({
-          claim_id: id,
-          settlement_amount: parseFloat(amountInput),
-          deduction_amount: parseFloat(deductionInput) || 0,
-          utr_number: utrInput || undefined,
-          payment_mode: modeInput,
-        });
-      } else {
-        await updateClaim(id, {
-          status: showAmountModal.status,
-          approved_amount: parseFloat(amountInput),
-        });
-      }
-      notifyClaimStatusChange(id, showAmountModal.status).catch(() => {});
-      flash(`Status → ${STATUS_CONFIG[showAmountModal.status]?.label}`);
-      setShowAmountModal(null);
-      setAmountInput(''); setUtrInput(''); setDeductionInput('');
-      await load();
-    } catch (e) { console.error(e); flash('Error recording'); }
+    let ok = false;
+    if (showAmountModal.status === 'settled') {
+      ok = await store.settleClaimAction({
+        claim_id: id, settlement_amount: parseFloat(amountInput),
+        deduction_amount: parseFloat(deductionInput) || 0,
+        utr_number: utrInput || undefined, payment_mode: modeInput,
+      });
+    } else {
+      ok = await store.transitionStatus(id, showAmountModal.status, { approved_amount: parseFloat(amountInput) });
+    }
+    if (ok) flash(`Status → ${STATUS_CONFIG[showAmountModal.status]?.label}`);
+    else flash('Error recording');
+    setShowAmountModal(null);
+    setAmountInput(''); setUtrInput(''); setDeductionInput('');
     setTransitioning(false);
   };
 
-  // ─── Add Query ───
+  // ─── Add Query (via store — auto-invalidates query centre) ───
   const handleAddQuery = async () => {
     if (!qForm.text.trim()) return;
     setSavingQuery(true);
-    try {
-      await addClaimQuery({ claim_id: id, query_text: qForm.text, query_category: qForm.category, priority: qForm.priority, routed_to_role: qForm.role || undefined });
-      setShowQueryForm(false);
-      setQForm({ text: '', category: 'other', priority: 'medium', role: '' });
-      flash('Query added');
-      await load();
-    } catch (e) { console.error(e); flash('Error adding query'); }
+    const ok = await store.submitQuery({ claim_id: id, query_text: qForm.text, query_category: qForm.category, priority: qForm.priority, routed_to_role: qForm.role || undefined });
+    if (ok) { setShowQueryForm(false); setQForm({ text: '', category: 'other', priority: 'medium', role: '' }); flash('Query added'); }
+    else flash('Error adding query');
     setSavingQuery(false);
   };
 
-  // ─── Respond to Query ───
+  // ─── Respond to Query (via store — auto-invalidates query centre) ───
   const handleRespondQuery = async (queryId: string, response: string) => {
-    try {
-      await sb().from('clm_queries').update({
-        response_text: response,
-        responded_by: staff?.id,
-        responded_at: new Date().toISOString(),
-        status: 'responded',
-      }).eq('id', queryId);
-      flash('Response submitted');
+    const ok = await store.respondToQuery(queryId, response, staff?.id);
+    if (ok) flash('Response submitted');
+    else flash('Error responding');
       await load();
-    } catch (e) { console.error(e); }
   };
 
-  // ─── Upload Document ───
+  // ─── Upload Document (via store) ───
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>, docName: string, docCat: string) => {
     const file = e.target.files?.[0];
     if (!file) return;
     setUploading(true);
-    try {
-      await uploadClaimDocument({ claim_id: id, file, document_name: docName || file.name, document_category: docCat || 'clinical' });
-      flash('Document uploaded');
-      await load();
-    } catch (err) { console.error(err); flash('Upload failed'); }
+    const ok = await store.uploadDoc({ claim_id: id, file, document_name: docName || file.name, document_category: docCat || 'clinical' });
+    if (ok) flash('Document uploaded');
+    else flash('Upload failed');
     setUploading(false);
   };
 
-  // ─── Inline Edit ───
+  // ─── Inline Edit (via store) ───
   const inlineUpdate = async (field: string, value: any) => {
-    try { await updateClaim(id, { [field]: value }); flash('Updated'); await load(); }
-    catch { flash('Update failed'); }
+    const ok = await store.inlineUpdateClaim(id, field, value);
+    if (ok) flash('Updated');
+    else flash('Update failed');
   };
 
   // ─── Loading / Not Found ───

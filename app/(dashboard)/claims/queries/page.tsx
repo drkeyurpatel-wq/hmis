@@ -2,17 +2,16 @@
 // HEALTH1 HMIS — QUERY RESPONSE CENTRE (SLA Workstation)
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/lib/store/auth';
-import { sb } from '@/lib/supabase/browser';
 import {
   AlertTriangle, Clock, MessageSquare, XCircle, Send, Shield,
   Search, ArrowUpRight, CheckCircle2, Loader2, User, RefreshCw,
   Filter, Zap, FileText, IndianRupee, Timer, Bell, ArrowRight,
 } from 'lucide-react';
 import { PRIORITY_CONFIG, type QueryPriority } from '@/lib/claims/types';
-import { fetchOpenQueries, fetchRejections } from '@/lib/claims/api';
+import { useClaimsStore } from '@/lib/claims/store';
 
 // ─── StatCard (matches dashboard pattern) ───
 function StatCard({ label, value, icon: Icon, color, sub }: {
@@ -72,10 +71,11 @@ export default function QueryResponseCentre() {
   const router = useRouter();
   const { activeCentreId, staff } = useAuthStore();
 
-  const [queries, setQueries] = useState<any[]>([]);
-  const [rejections, setRejections] = useState<any[]>([]);
+  // Store
+  const { openQueries: queries, rejections, queriesLoading, loadQueryCentre, respondToQuery, init } = useClaimsStore();
+  const loading = queriesLoading;
+
   const [tab, setTab] = useState<Tab>('queries');
-  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [toast, setToast] = useState('');
   const flash = (m: string) => { setToast(m); setTimeout(() => setToast(''), 2500); };
@@ -91,42 +91,22 @@ export default function QueryResponseCentre() {
   const [responseText, setResponseText] = useState('');
   const [saving, setSaving] = useState(false);
 
-  // ─── Load Data ───
-  const load = useCallback(async () => {
+  // ─── Load via Store ───
+  useEffect(() => {
     if (!activeCentreId) return;
-    setLoading(true);
-    try {
-      const [q, r] = await Promise.all([
-        fetchOpenQueries(activeCentreId),
-        fetchRejections(activeCentreId),
-      ]);
-      setQueries(q);
-      setRejections(r);
-    } catch (e) { console.error(e); }
-    setLoading(false);
-  }, [activeCentreId]);
+    init(activeCentreId);
+    loadQueryCentre();
+  }, [activeCentreId, init, loadQueryCentre]);
 
-  useEffect(() => { load(); }, [load]);
+  const handleRefresh = async () => { setRefreshing(true); await loadQueryCentre(); setRefreshing(false); flash('Refreshed'); };
 
-  const handleRefresh = async () => { setRefreshing(true); await load(); setRefreshing(false); flash('Refreshed'); };
-
-  // ─── Submit Response ───
+  // ─── Submit Response (via store — auto-invalidates dashboard + detail) ───
   const submitResponse = async (queryId: string) => {
     if (!responseText.trim()) return;
     setSaving(true);
-    try {
-      await sb().from('clm_queries').update({
-        response_text: responseText,
-        responded_by: staff?.id,
-        responded_at: new Date().toISOString(),
-        status: 'responded',
-      }).eq('id', queryId);
-      setRespondingTo(null);
-      setResponseText('');
-      flash('Response submitted');
-      const q = await fetchOpenQueries(activeCentreId || '');
-      setQueries(q);
-    } catch (e) { console.error(e); flash('Error submitting'); }
+    const ok = await respondToQuery(queryId, responseText, staff?.id);
+    if (ok) { setRespondingTo(null); setResponseText(''); flash('Response submitted'); }
+    else flash('Error submitting');
     setSaving(false);
   };
 

@@ -2,7 +2,7 @@
 // HEALTH1 HMIS — CLAIMS COMMAND CENTRE
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/lib/store/auth';
 import {
@@ -12,7 +12,7 @@ import {
   BarChart3, MessageSquare, Zap,
 } from 'lucide-react';
 import { STATUS_CONFIG, CLAIM_TYPE_LABELS, PRIORITY_CONFIG, type ClaimStatus, type ClaimType } from '@/lib/claims/types';
-import { fetchClaimStats, fetchClaims, fetchPayers } from '@/lib/claims/api';
+import { useClaimsStore } from '@/lib/claims/store';
 
 // ─── Formatters ───
 const fmt = (n: number) => Math.round(n).toLocaleString('en-IN');
@@ -85,49 +85,37 @@ export default function ClaimsCommandCentre() {
   const [search, setSearch] = useState('');
   const [payerFilter, setPayerFilter] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
-  const [claims, setClaims] = useState<any[]>([]);
-  const [payers, setPayers] = useState<any[]>([]);
-  const [stats, setStats] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [toast, setToast] = useState('');
 
+  // ─── Store ───
+  const { stats, payers, claims, claimsLoading: loading, init, loadClaims, refreshStats } = useClaimsStore();
+
   const flash = (m: string) => { setToast(m); setTimeout(() => setToast(''), 2500); };
 
-  // ─── Load stats + payers ───
-  const loadData = useCallback(async () => {
-    if (!centreId) return;
-    try {
-      setLoading(true);
-      const [s, p] = await Promise.all([fetchClaimStats(centreId), fetchPayers()]);
-      setStats(s);
-      setPayers(p);
-    } catch (e) { console.error('Failed to load:', e); }
-    setLoading(false);
-  }, [centreId]);
-
-  useEffect(() => { loadData(); }, [loadData]);
+  // ─── Init store (once per session) ───
+  useEffect(() => { if (centreId) init(centreId); }, [centreId, init]);
 
   // ─── Load claims on tab/filter change ───
   useEffect(() => {
     if (!centreId) return;
-    const load = async () => {
-      try {
-        const data = await fetchClaims(centreId, {
-          statuses: TAB_STATUSES[tab],
-          payer_id: payerFilter || undefined,
-          claim_type: (typeFilter || undefined) as ClaimType | undefined,
-          search: search || undefined,
-        });
-        setClaims(data);
-      } catch (e) { console.error(e); }
-    };
-    load();
-  }, [centreId, tab, payerFilter, typeFilter, search]);
+    loadClaims({
+      statuses: TAB_STATUSES[tab],
+      payer_id: payerFilter || undefined,
+      claim_type: (typeFilter || undefined) as ClaimType | undefined,
+      search: search || undefined,
+    });
+  }, [centreId, tab, payerFilter, typeFilter, search, loadClaims]);
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    await loadData();
+    await refreshStats();
+    await loadClaims({
+      statuses: TAB_STATUSES[tab],
+      payer_id: payerFilter || undefined,
+      claim_type: (typeFilter || undefined) as ClaimType | undefined,
+      search: search || undefined,
+    });
     setRefreshing(false);
     flash('Refreshed');
   };
