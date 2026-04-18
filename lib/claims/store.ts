@@ -239,7 +239,7 @@ export const useClaimsStore = create<ClaimsState>((set, get) => ({
           set({ lastUpdate: now });
           get().refreshStats();
           // If we're looking at the changed claim, refresh its detail
-          const changedId = payload.new?.id || payload.old?.id;
+          const changedId = (payload.new as any)?.id || (payload.old as any)?.id;
           if (changedId && get().activeClaim?.id === changedId) {
             get()._invalidateDetail(changedId);
           }
