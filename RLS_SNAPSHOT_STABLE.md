@@ -1,331 +1,148 @@
-# RLS Snapshot — Production Stable (2026-03-23)
-# DO NOT MODIFY DATABASE RLS WITHOUT TESTING AGAINST A REAL USER SESSION FIRST
+# RLS Snapshot — Production State
 
-## Tables WITH RLS (109)
-- hmis_appointments
-- hmis_ar_entries
-- hmis_ar_followups
-- hmis_audit_trail
-- hmis_auto_charge_runs
-- hmis_bb_components
-- hmis_bb_crossmatch
-- hmis_bb_donations
-- hmis_bb_donors
-- hmis_bb_reactions
-- hmis_bb_requests
-- hmis_bb_transfusions
-- hmis_bed_turnover
-- hmis_bed_waitlist
-- hmis_billing_auto_rules
-- hmis_cdss_usage
-- hmis_charge_log
-- hmis_consent_audit
-- hmis_consent_templates
-- hmis_consents
-- hmis_controlled_substance_log
-- hmis_corporate_employees
-- hmis_corporates
-- hmis_cpoe_orders
-- hmis_credit_notes
-- hmis_discount_log
-- hmis_doctor_rounds
-- hmis_doctor_schedules
-- hmis_duty_roster
-- hmis_duty_swap_requests
-- hmis_emr_encounters
-- hmis_emr_templates
-- hmis_equipment
-- hmis_equipment_calibration
-- hmis_equipment_maintenance
-- hmis_equipment_pm_schedule
-- hmis_estimates
-- hmis_govt_scheme_config
-- hmis_hc_bills
-- hmis_hc_enrollments
-- hmis_hc_equipment
-- hmis_hc_med_admin
-- hmis_hc_medications
-- hmis_hc_rates
-- hmis_hc_visits
-- hmis_hc_wound_care
-- hmis_housekeeping_schedules
-- hmis_housekeeping_tasks
-- hmis_icu_charts
-- hmis_icu_scores
-- hmis_imaging_reports
-- hmis_imaging_studies
-- hmis_incidents
-- hmis_integration_bridge
-- hmis_io_chart
-- hmis_ipd_medication_orders
-- hmis_lab_antibiogram
-- hmis_lab_antibiotic_panels
-- hmis_lab_antibiotics
-- hmis_lab_audit_log
-- hmis_lab_critical_alerts
-- hmis_lab_culture_isolates
-- hmis_lab_cultures
-- hmis_lab_histo_cases
-- hmis_lab_instrument_results
-- hmis_lab_ncr
-- hmis_lab_organisms
-- hmis_lab_outsourced
-- hmis_lab_profile_tests
-- hmis_lab_profiles
-- hmis_lab_qc_lots
-- hmis_lab_qc_results
-- hmis_lab_ref_ranges
-- hmis_lab_reflex_rules
-- hmis_lab_sample_log
-- hmis_lab_sensitivity
-- hmis_lab_test_parameters
-- hmis_loyalty_cards
-- hmis_mar
-- hmis_nhcx_transactions
-- hmis_ot_implants
-- hmis_ot_notes
-- hmis_ot_safety_checklist
-- hmis_packages
-- hmis_pacs_config
-- hmis_patient_documents
-- hmis_patient_emergency_contacts
-- hmis_patient_insurance
-- hmis_pharmacy_dispensing
-- hmis_pharmacy_grn
-- hmis_pharmacy_po
-- hmis_pharmacy_returns
-- hmis_pharmacy_stock
-- hmis_pharmacy_transfers
-- hmis_pmjay_packages
-- hmis_portal_access_log
-- hmis_portal_appointments
-- hmis_portal_feedback
-- hmis_portal_tokens
-- hmis_procedural_notes
-- hmis_quality_indicators
-- hmis_radiology_rooms
-- hmis_radiology_templates
-- hmis_refunds
-- hmis_settlements
-- hmis_shift_definitions
-- hmis_staffing_requirements
-- hmis_surgical_checklist_items
-- hmis_surgical_planning
+**Last updated:** 2026-04-22 (post-Phase 1 hardening sweep)
+**Production project:** `bmuupgrzbfmddjwcqlss`
+**Authority:** this file is regenerated from live `pg_policies` state, not hand-edited. If production diverges from this file, production wins.
 
-## Tables WITHOUT RLS (100)
-- hmis_admissions
-- hmis_advances
-- hmis_ambulances
-- hmis_anaesthesia_records
-- hmis_antibiogram
-- hmis_appointment_slots
-- hmis_assets
-- hmis_bed_transfers
-- hmis_beds
-- hmis_bill_items
-- hmis_billing_category_map
-- hmis_bills
-- hmis_cathlab_inventory
-- hmis_cathlab_monitoring
-- hmis_cathlab_procedures
-- hmis_centres
-- hmis_chart_of_accounts
-- hmis_claims
-- hmis_crm_activities
-- hmis_crm_campaigns
-- hmis_crm_leads
-- hmis_cssd_autoclaves
-- hmis_cssd_cycles
-- hmis_cssd_instrument_sets
-- hmis_cssd_issue_return
-- hmis_cssd_recall_log
-- hmis_departments
-- hmis_dialysis_machines
-- hmis_dialysis_monitoring
-- hmis_dialysis_patients
-- hmis_dialysis_sessions
-- hmis_diet_orders
-- hmis_doctor_leaves
-- hmis_documents
-- hmis_drug_master
-- hmis_endoscopy_procedures
-- hmis_endoscopy_scopes
-- hmis_er_visits
-- hmis_fiscal_periods
-- hmis_grievances
-- hmis_hai_surveillance
-- hmis_hand_hygiene_audit
-- hmis_insurers
-- hmis_integration_config
-- hmis_integration_sync_log
-- hmis_journal_entries
-- hmis_journal_lines
-- hmis_lab_orders
-- hmis_lab_results
-- hmis_lab_samples
-- hmis_lab_test_master
-- hmis_meal_service
-- hmis_medpay_doctor_map
-- hmis_medpay_sync_log
-- hmis_menu_master
-- hmis_module_config
-- hmis_needle_stick_injuries
-- hmis_notification_log
-- hmis_notification_templates
-- hmis_nursing_notes
-- hmis_opd_visits
-- hmis_orders
-- hmis_ot_bookings
-- hmis_ot_rooms
-- hmis_package_master
-- hmis_package_utilization
-- hmis_patient_allergies
-- hmis_patient_contacts
-- hmis_patients
-- hmis_payments
-- hmis_physio_fms
-- hmis_physio_outcomes
-- hmis_physio_plans
-- hmis_physio_prevention_programs
-- hmis_physio_sessions
-- hmis_pre_auth_requests
-- hmis_prescriptions
-- hmis_purchase_indents
-- hmis_radiology_orders
-- hmis_radiology_reports
-- hmis_radiology_test_master
-- hmis_referrals
-- hmis_referring_doctors
-- hmis_role_permissions
-- hmis_roles
-- hmis_rooms
-- hmis_scope_decontamination
-- hmis_sequences
-- hmis_settings
-- hmis_staff
-- hmis_staff_centres
-- hmis_surgery_notes
-- hmis_tariff_master
-- hmis_teleconsults
-- hmis_tpas
-- hmis_transport_requests
-- hmis_vendors
-- hmis_visitor_passes
-- hmis_vitals
-- hmis_wards
+---
 
-## All Policies (112)
-| Table | Policy | Command | Permissive |
-|---|---|---|---|
-| hmis_appointments | hmis_appointments_pol | ALL | PERMISSIVE |
-| hmis_ar_entries | hmis_ar_entries_pol | ALL | PERMISSIVE |
-| hmis_ar_followups | hmis_ar_followups_pol | ALL | PERMISSIVE |
-| hmis_audit_trail | hmis_audit_trail_pol | ALL | PERMISSIVE |
-| hmis_auto_charge_runs | hmis_auto_charge_runs_pol | ALL | PERMISSIVE |
-| hmis_bb_components | hmis_bb_components_pol_auth | ALL | PERMISSIVE |
-| hmis_bb_crossmatch | hmis_bb_crossmatch_pol_auth | ALL | PERMISSIVE |
-| hmis_bb_donations | hmis_bb_donations_pol_auth | ALL | PERMISSIVE |
-| hmis_bb_donors | hmis_bb_donors_pol_auth | ALL | PERMISSIVE |
-| hmis_bb_reactions | hmis_bb_reactions_pol_auth | ALL | PERMISSIVE |
-| hmis_bb_requests | hmis_bb_requests_pol_auth | ALL | PERMISSIVE |
-| hmis_bb_transfusions | hmis_bb_transfusions_pol_auth | ALL | PERMISSIVE |
-| hmis_bed_turnover | bed_turnover_tenant | ALL | PERMISSIVE |
-| hmis_bed_waitlist | bed_waitlist_tenant | ALL | PERMISSIVE |
-| hmis_billing_auto_rules | hmis_billing_auto_rules_pol_auth | ALL | PERMISSIVE |
-| hmis_cdss_usage | hmis_cdss_usage_pol | ALL | PERMISSIVE |
-| hmis_charge_log | hmis_charge_log_pol | ALL | PERMISSIVE |
-| hmis_consent_audit | consent_audit_tenant | ALL | PERMISSIVE |
-| hmis_consent_templates | consent_tpl_tenant | ALL | PERMISSIVE |
-| hmis_consents | hmis_consents_pol_auth | ALL | PERMISSIVE |
-| hmis_controlled_substance_log | hmis_controlled_substance_log_pol | ALL | PERMISSIVE |
-| hmis_corporate_employees | hmis_corporate_employees_pol | ALL | PERMISSIVE |
-| hmis_corporates | hmis_corporates_pol | ALL | PERMISSIVE |
-| hmis_cpoe_orders | hmis_cpoe_orders_pol | ALL | PERMISSIVE |
-| hmis_credit_notes | hmis_credit_notes_pol_auth | ALL | PERMISSIVE |
-| hmis_discount_log | hmis_discount_log_pol_auth | ALL | PERMISSIVE |
-| hmis_doctor_rounds | hmis_doctor_rounds_pol_auth | ALL | PERMISSIVE |
-| hmis_doctor_schedules | hmis_doctor_schedules_pol | ALL | PERMISSIVE |
-| hmis_duty_roster | duty_roster_tenant | ALL | PERMISSIVE |
-| hmis_duty_swap_requests | duty_swap_tenant | ALL | PERMISSIVE |
-| hmis_emr_encounters | emr_encounters_centre_read | SELECT | PERMISSIVE |
-| hmis_emr_encounters | emr_encounters_doctor_all | ALL | PERMISSIVE |
-| hmis_emr_templates | emr_templates_own | ALL | PERMISSIVE |
-| hmis_emr_templates | emr_templates_shared_read | SELECT | PERMISSIVE |
-| hmis_equipment | Access equipment | ALL | PERMISSIVE |
-| hmis_equipment_calibration | calib_access | ALL | PERMISSIVE |
-| hmis_equipment_maintenance | Access maintenance | ALL | PERMISSIVE |
-| hmis_equipment_pm_schedule | Access pm schedule | ALL | PERMISSIVE |
-| hmis_estimates | hmis_estimates_pol_auth | ALL | PERMISSIVE |
-| hmis_govt_scheme_config | hmis_govt_scheme_config_pol | ALL | PERMISSIVE |
-| hmis_hc_bills | hmis_hc_bills_pol_auth | ALL | PERMISSIVE |
-| hmis_hc_enrollments | hmis_hc_enrollments_pol_auth | ALL | PERMISSIVE |
-| hmis_hc_equipment | hmis_hc_equipment_pol_auth | ALL | PERMISSIVE |
-| hmis_hc_med_admin | hmis_hc_med_admin_pol_auth | ALL | PERMISSIVE |
-| hmis_hc_medications | hmis_hc_medications_pol_auth | ALL | PERMISSIVE |
-| hmis_hc_rates | hmis_hc_rates_pol_auth | ALL | PERMISSIVE |
-| hmis_hc_visits | hmis_hc_visits_pol_auth | ALL | PERMISSIVE |
-| hmis_hc_wound_care | hmis_hc_wound_care_pol_auth | ALL | PERMISSIVE |
-| hmis_housekeeping_schedules | Access housekeeping schedules | ALL | PERMISSIVE |
-| hmis_housekeeping_tasks | Access housekeeping tasks | ALL | PERMISSIVE |
-| hmis_icu_charts | hmis_icu_charts_pol_auth | ALL | PERMISSIVE |
-| hmis_icu_scores | hmis_icu_scores_pol_auth | ALL | PERMISSIVE |
-| hmis_imaging_reports | hmis_imaging_reports_pol | ALL | PERMISSIVE |
-| hmis_imaging_studies | hmis_imaging_studies_pol | ALL | PERMISSIVE |
-| hmis_incidents | hmis_incidents_pol | ALL | PERMISSIVE |
-| hmis_integration_bridge | hmis_integration_bridge_pol | ALL | PERMISSIVE |
-| hmis_io_chart | hmis_io_chart_pol_auth | ALL | PERMISSIVE |
-| hmis_ipd_medication_orders | hmis_ipd_medication_orders_pol_auth | ALL | PERMISSIVE |
-| hmis_lab_antibiogram | hmis_lab_antibiogram_pol_auth | ALL | PERMISSIVE |
-| hmis_lab_antibiotic_panels | hmis_lab_antibiotic_panels_pol_auth | ALL | PERMISSIVE |
-| hmis_lab_antibiotics | hmis_lab_antibiotics_pol_auth | ALL | PERMISSIVE |
-| hmis_lab_audit_log | hmis_lab_audit_log_pol_auth | ALL | PERMISSIVE |
-| hmis_lab_critical_alerts | hmis_lab_critical_alerts_pol_auth | ALL | PERMISSIVE |
-| hmis_lab_culture_isolates | hmis_lab_culture_isolates_pol_auth | ALL | PERMISSIVE |
-| hmis_lab_cultures | hmis_lab_cultures_pol_auth | ALL | PERMISSIVE |
-| hmis_lab_histo_cases | hmis_lab_histo_cases_pol_auth | ALL | PERMISSIVE |
-| hmis_lab_instrument_results | hmis_lab_instrument_results_pol | ALL | PERMISSIVE |
-| hmis_lab_ncr | hmis_lab_ncr_pol_auth | ALL | PERMISSIVE |
-| hmis_lab_organisms | hmis_lab_organisms_pol_auth | ALL | PERMISSIVE |
-| hmis_lab_outsourced | hmis_lab_outsourced_pol_auth | ALL | PERMISSIVE |
-| hmis_lab_profile_tests | hmis_lab_profile_tests_pol_auth | ALL | PERMISSIVE |
-| hmis_lab_profiles | hmis_lab_profiles_pol_auth | ALL | PERMISSIVE |
-| hmis_lab_qc_lots | hmis_lab_qc_lots_pol_auth | ALL | PERMISSIVE |
-| hmis_lab_qc_results | hmis_lab_qc_results_pol_auth | ALL | PERMISSIVE |
-| hmis_lab_ref_ranges | hmis_lab_ref_ranges_pol_auth | ALL | PERMISSIVE |
-| hmis_lab_reflex_rules | hmis_lab_reflex_rules_pol_auth | ALL | PERMISSIVE |
-| hmis_lab_sample_log | hmis_lab_sample_log_pol_auth | ALL | PERMISSIVE |
-| hmis_lab_sensitivity | hmis_lab_sensitivity_pol_auth | ALL | PERMISSIVE |
-| hmis_lab_test_parameters | hmis_lab_test_parameters_pol_auth | ALL | PERMISSIVE |
-| hmis_loyalty_cards | hmis_loyalty_cards_pol | ALL | PERMISSIVE |
-| hmis_mar | hmis_mar_pol_auth | ALL | PERMISSIVE |
-| hmis_module_config | module_config_tenant | ALL | PERMISSIVE |
-| hmis_nhcx_transactions | nhcx_txn_pol | ALL | PERMISSIVE |
-| hmis_ot_implants | hmis_ot_implants_pol | ALL | PERMISSIVE |
-| hmis_ot_notes | hmis_ot_notes_pol_auth | ALL | PERMISSIVE |
-| hmis_ot_safety_checklist | hmis_ot_safety_checklist_pol | ALL | PERMISSIVE |
-| hmis_packages | hmis_packages_pol | ALL | PERMISSIVE |
-| hmis_pacs_config | hmis_pacs_config_pol | ALL | PERMISSIVE |
-| hmis_patient_documents | hmis_patient_documents_pol | ALL | PERMISSIVE |
-| hmis_patient_emergency_contacts | hmis_patient_emergency_contacts_pol | ALL | PERMISSIVE |
-| hmis_patient_insurance | hmis_patient_insurance_pol | ALL | PERMISSIVE |
-| hmis_pharmacy_dispensing | pharm_disp_centre | ALL | PERMISSIVE |
-| hmis_pharmacy_grn | hmis_pharmacy_grn_pol | ALL | PERMISSIVE |
-| hmis_pharmacy_po | hmis_pharmacy_po_pol | ALL | PERMISSIVE |
-| hmis_pharmacy_returns | hmis_pharmacy_returns_pol | ALL | PERMISSIVE |
-| hmis_pharmacy_stock | pharm_stock_centre | ALL | PERMISSIVE |
-| hmis_pharmacy_transfers | hmis_pharmacy_transfers_pol | ALL | PERMISSIVE |
-| hmis_pmjay_packages | hmis_pmjay_packages_pol | ALL | PERMISSIVE |
-| hmis_portal_access_log | hmis_portal_access_log_pol_auth | ALL | PERMISSIVE |
-| hmis_portal_appointments | hmis_portal_appointments_pol_auth | ALL | PERMISSIVE |
-| hmis_portal_feedback | hmis_portal_feedback_pol_auth | ALL | PERMISSIVE |
-| hmis_portal_tokens | hmis_portal_tokens_pol_auth | ALL | PERMISSIVE |
-| hmis_procedural_notes | hmis_procedural_notes_pol_auth | ALL | PERMISSIVE |
-| hmis_quality_indicators | hmis_quality_indicators_pol | ALL | PERMISSIVE |
-| hmis_radiology_rooms | hmis_radiology_rooms_pol | ALL | PERMISSIVE |
-| hmis_radiology_templates | hmis_radiology_templates_pol | ALL | PERMISSIVE |
-| hmis_refunds | hmis_refunds_pol | ALL | PERMISSIVE |
-| hmis_settlements | hmis_settlements_pol | ALL | PERMISSIVE |
-| hmis_shift_definitions | shift_def_tenant | ALL | PERMISSIVE |
-| hmis_staffing_requirements | staffing_req_tenant | ALL | PERMISSIVE |
-| hmis_surgical_checklist_items | surgical_checklist_tenant | ALL | PERMISSIVE |
-| hmis_surgical_planning | surgical_planning_tenant | ALL | PERMISSIVE |
+## Executive summary
+
+| Metric | Value |
+|---|---|
+| Total `hmis_*` tables | 261 |
+| Tables with RLS enabled | **261 (100%)** |
+| Tables with RLS disabled | 0 |
+| Tables without any policy (effectively closed) | 0 |
+| Tables with at least one **strong** policy | 160 |
+| Tables with at least one **weak** policy present | 128 |
+| Tables hardened in Phase 1 (Apr 22, 2026) | 27 |
+
+### Reading the numbers
+
+- "Strong policy" = uses `hmis_get_user_centre_ids()`, `hmis_is_super_admin()`, or `has_role()`.
+- "Weak policy" = uses `qual = 'true'` or `qual = '(auth.uid() IS NOT NULL)'`.
+- **`160 strong + 128 weak` exceeds `261`** because some tables have BOTH a strong and a weak policy (PERMISSIVE overlap — the weaker one effectively wins). These are exactly the targets for Phase 1b.
+
+---
+
+## Phase 1 hardening — 27 tables moved to strong policies (Apr 22, 2026)
+
+All 27 live as migrations in `bmuupgrzbfmddjwcqlss`. Mirror files in `sql/policies/<table>.rls.sql`.
+
+### Group 1 — canonical centre scope (11 tables)
+`hmis_controlled_substance_log`, `hmis_appointments`, `hmis_charge_log`, `hmis_consents`, `hmis_credit_notes`, `hmis_doctor_rounds`, `hmis_estimates`, `hmis_imaging_reports`, `hmis_imaging_studies`, `hmis_lab_critical_alerts`, `hmis_ipd_medication_orders`
+
+### Group 2 — overlapping policy cleanup / append-only semantics (3 tables)
+`hmis_audit_trail`, `hmis_diagnoses`, `hmis_consent_audit`
+
+### Group 3 — join-based centre scope (8 tables, all empty pre-migration)
+`hmis_icu_charts`, `hmis_icu_scores`, `hmis_io_chart` (via `admission`),
+`hmis_lab_cultures`, `hmis_lab_histo_cases`, `hmis_lab_instrument_results` (via `lab_order`),
+`hmis_anaesthesia_records` (via OT booking → OT room),
+`hmis_discount_log` (via `bill`)
+
+### Group 4 — business-sensitive, role-gated (5 tables)
+`hmis_doctor_contracts`, `hmis_doctor_payout_items`, `hmis_doctor_hold_bucket`, `hmis_doctor_aliases`, `hmis_department_payout_map`
+
+---
+
+## Still weak — Phase 1b follow-on (128 tables)
+
+Below tables still have ≥1 weak policy in production. Some also have a strong policy (PERMISSIVE overlap — weak one wins). Prioritized by clinical/PHI severity.
+
+### 🔴 HIGH — clinical PHI / medication / monitoring
+
+These should be next. Same canonical centre-scoped pattern applies.
+
+- `hmis_vitals` — patient vitals
+- `hmis_mar` — medication administration record
+- `hmis_cpoe_orders` — physician order entry
+- `hmis_cathlab_monitoring` — cath lab real-time monitoring
+- `hmis_dialysis_monitoring` — dialysis session monitoring
+- `hmis_surgery_notes`, `hmis_procedural_notes`, `hmis_ot_notes`, `hmis_ot_implants`, `hmis_ot_safety_checklist` — surgical record tables
+- `hmis_bb_components`, `hmis_bb_crossmatch`, `hmis_bb_donations`, `hmis_bb_donors`, `hmis_bb_reactions`, `hmis_bb_requests`, `hmis_bb_transfusions` — blood bank (clinical PHI)
+- `hmis_patient_allergies`, `hmis_patient_consents`, `hmis_patient_contacts`, `hmis_patient_documents`, `hmis_patient_emergency_contacts`, `hmis_patient_feedback`, `hmis_patient_insurance` — patient PHI sub-tables
+- `hmis_bed_transfers`
+- `hmis_incidents` — patient-safety incident reports
+
+### 🟠 MEDIUM — money / settlements / claims periphery
+
+- `hmis_refunds`, `hmis_settlements`, `hmis_doctor_settlements`, `hmis_fixed_payouts`, `hmis_payout_audit_log`
+- `hmis_journal_lines`, `hmis_auto_charge_runs`, `hmis_billing_auto_rules`, `hmis_billing_category_map`, `hmis_cashless_case_formulas`, `hmis_govt_scheme_config`, `hmis_pmjay_packages`
+- `hmis_packages`, `hmis_package_utilization`, `hmis_referral_fee_slabs`, `hmis_referring_doctors`
+- `hmis_ar_entries`, `hmis_ar_followups`, `hmis_loyalty_cards`
+- `hmis_insurance_documents`, `hmis_insurers`, `hmis_tpas`, `hmis_corporate_employees`, `hmis_corporates`
+- `hmis_pharmacy_grn`, `hmis_pharmacy_po`, `hmis_pharmacy_returns`, `hmis_pharmacy_transfers`
+- `hmis_prescription_refill_requests`
+- `hmis_physio_fms`, `hmis_physio_outcomes` — clinical
+
+### 🟡 MEDIUM — homecare (all patient-facing, same pattern)
+
+`hmis_hc_bills`, `hmis_hc_enrollments`, `hmis_hc_equipment`, `hmis_hc_med_admin`, `hmis_hc_medications`, `hmis_hc_rates`, `hmis_hc_visits`, `hmis_hc_wound_care`
+
+### 🟡 MEDIUM — lab reference / audit / quality
+
+- `hmis_lab_antibiogram`, `hmis_lab_antibiotic_panels`, `hmis_lab_antibiotics`, `hmis_lab_audit_log`, `hmis_lab_culture_isolates`, `hmis_lab_ncr`, `hmis_lab_organisms`, `hmis_lab_outsourced`, `hmis_lab_profile_tests`, `hmis_lab_profiles`, `hmis_lab_qc_lots`, `hmis_lab_qc_results`, `hmis_lab_ref_ranges`, `hmis_lab_reflex_rules`, `hmis_lab_sample_log`, `hmis_lab_sensitivity`, `hmis_lab_test_master`, `hmis_lab_test_parameters`
+- `hmis_cdss_overrides`, `hmis_cdss_usage`
+
+### 🟡 MEDIUM — radiology periphery
+
+`hmis_radiology_reports`, `hmis_radiology_rooms`, `hmis_radiology_templates`, `hmis_radiology_test_master`, `hmis_pacs_config`
+
+### 🟢 LOW — operational / reference tables
+
+- `hmis_appointment_slots`, `hmis_doctor_leaves`, `hmis_doctor_schedules`, `hmis_housekeeping_schedules`, `hmis_linen_exchange`
+- `hmis_equipment`, `hmis_equipment_calibration`, `hmis_equipment_pm_schedule`
+- `hmis_centres`, `hmis_consent_templates`, `hmis_chart_of_accounts`, `hmis_fiscal_periods`, `hmis_rooms`, `hmis_menu_master`, `hmis_module_config`, `hmis_role_permissions`, `hmis_roles`, `hmis_staff`
+- `hmis_integration_bridge`, `hmis_integration_config`, `hmis_notification_log`, `hmis_notification_preferences`, `hmis_notification_templates`, `hmis_medpay_doctor_map`, `hmis_nhcx_transactions`
+- `hmis_cost_centre_expenses`, `hmis_cost_centre_maps`, `hmis_cost_centres`
+- `hmis_orders`
+- `hmis_conversion_followups`
+- `hmis_portal_access_log`, `hmis_portal_appointments`, `hmis_portal_feedback`, `hmis_portal_tokens`
+- `hmis_quality_indicators`, `hmis_report_subscriptions`
+
+---
+
+## Canonical policy patterns (current)
+
+All hardened policies use one of:
+
+```sql
+-- Direct centre scope (most common)
+USING ((centre_id = ANY (hmis_get_user_centre_ids())) OR hmis_is_super_admin())
+WITH CHECK ((centre_id = ANY (hmis_get_user_centre_ids())) OR hmis_is_super_admin())
+
+-- Join-based centre scope (no centre_id on table itself)
+USING (EXISTS (
+  SELECT 1 FROM <parent_table> p
+  WHERE p.id = <this_table>.<fk>
+    AND ((p.centre_id = ANY (hmis_get_user_centre_ids())) OR hmis_is_super_admin())
+))
+
+-- Role-gated (payout / finance tables)
+USING (
+  hmis_is_super_admin()
+  OR ((centre_id = ANY (hmis_get_user_centre_ids())) AND has_role('accountant'))
+  OR (doctor_id = get_my_staff_id())
+)
+
+-- Append-only audit semantics
+-- (scoped INSERT, super-admin-only UPDATE/DELETE, scoped SELECT)
+```
+
+## Helper functions
+
+All production-hosted in `public` schema:
+
+- `hmis_get_user_centre_ids()` → `uuid[]` of current user's assigned centres
+- `hmis_is_super_admin()` → `boolean`
+- `has_role(text)` → `boolean` (true for target role OR admin OR super_admin)
+- `get_my_staff_id()` → `uuid` of current user's staff row
+
+## CRITICAL RULES (non-negotiable)
+
+1. **NEVER apply RLS or schema changes in bulk** — one table, one test, one verify (L006).
+2. Policy changes mirror into `sql/policies/<table>.rls.sql` in the same commit.
+3. Production is source of truth. This file is regenerated from `pg_policies`.
+4. PHI/PII must be tagged with `COMMENT ON COLUMN`.

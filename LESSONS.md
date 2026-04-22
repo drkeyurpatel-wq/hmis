@@ -62,3 +62,8 @@
 
 ---
 # Add new lessons below this line. Increment L-number. Follow the format above.
+
+### L011 — RLS audit was policy theater (Apr 2026)
+- **Root Cause**: RLS_SNAPSHOT_STABLE.md tracked "RLS enabled / disabled" booleans only. All 261 tables had RLS enabled, but 128 tables had policies like `qual='true'` or `auth.uid() IS NOT NULL` — effectively wide-open to any authed user. Snapshot looked clean while production was leaking patient data across centres.
+- **Fix**: Phase 1 hardening sweep (Apr 22, 2026) replaced 27 weak policies on PHI/money/clinical tables with the canonical centre-scoped pattern using `hmis_get_user_centre_ids() + hmis_is_super_admin()` helpers. Mirror files in sql/policies/. RLS_SNAPSHOT_STABLE.md rewritten to track policy STRENGTH, not just RLS toggle.
+- **Prevention**: A weak policy is a hidden RLS failure. Audit `pg_policies.qual` not just `pg_class.relrowsecurity`. Any policy with `qual='true'`, `qual='(auth.uid() IS NOT NULL)'`, or role={public} must be flagged. Add to ECC v4 Rule 18 weekly drift scan. Phase 1b list (128 tables) is the follow-on backlog.
