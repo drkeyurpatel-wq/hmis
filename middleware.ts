@@ -1,7 +1,35 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
+import { checkRateLimit, getClientIp, RATE_LIMIT_TIERS } from '@/lib/rate-limit';
 
 export async function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+
+  // --- Rate limiting ---
+  const ip = getClientIp(request);
+  const tier = pathname.startsWith('/auth') ? 'auth'
+    : pathname.startsWith('/api/webhook') ? 'webhook'
+    : pathname.startsWith('/api') ? 'api'
+    : null;
+
+  if (tier) {
+    const key = `${tier}:${ip}`;
+    const result = checkRateLimit(key, RATE_LIMIT_TIERS[tier]);
+
+    if (!result.success) {
+      return NextResponse.json(
+        { error: 'Too many requests', code: 'RATE_LIMITED' },
+        {
+          status: 429,
+          headers: {
+            'Retry-After': String(Math.ceil(result.resetMs / 1000)),
+            'X-RateLimit-Remaining': '0',
+          },
+        }
+      );
+    }
+  }
+
   // Create the response ONCE — never recreate it
   const response = NextResponse.next({
     request: { headers: request.headers },
