@@ -2,8 +2,9 @@
 // Triggered when a bill is finalized (status → 'final')
 // Computes doctor payout for every billable item in the bill
 
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { requireAuth } from '@/lib/api/auth-guard';
 import { computeBillPayouts } from '@/lib/rcm/payout-engine';
 import {
   getActiveContractsForCentre,
@@ -18,7 +19,10 @@ import {
 export const runtime = 'edge';
 export const dynamic = 'force-dynamic';
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
+  const { error: authError } = await requireAuth(request);
+  if (authError) return authError;
+
   try {
     // Auth: requires service role or authenticated session
     const authHeader = request.headers.get('authorization');

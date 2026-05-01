@@ -1,8 +1,12 @@
 // @ts-nocheck
 import { NextRequest, NextResponse } from 'next/server';
 import { qualityDb } from '@/lib/quality/api-helpers';
+import { requireAuth } from '@/lib/api/auth-guard';
 
 export async function GET(request: NextRequest) {
+  const { error: authError } = await requireAuth(request);
+  if (authError) return authError;
+
   const db = qualityDb();
   const centreId = request.nextUrl.searchParams.get('centre_id');
   const source = request.nextUrl.searchParams.get('source');

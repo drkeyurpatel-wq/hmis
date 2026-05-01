@@ -1,8 +1,12 @@
 // @ts-nocheck
 import { NextRequest, NextResponse } from 'next/server';
 import { billingDb } from '@/lib/billing/api-helpers';
+import { requireAuth } from '@/lib/api/auth-guard';
 
 export async function GET(request: NextRequest) {
+  const { error: authError } = await requireAuth(request);
+  if (authError) return authError;
+
   const supabase = billingDb();
   const centreId = request.nextUrl.searchParams.get('centre_id');
   if (!centreId) return NextResponse.json({ error: 'centre_id required' }, { status: 400 });

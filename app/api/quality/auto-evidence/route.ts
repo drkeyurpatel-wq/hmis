@@ -1,6 +1,7 @@
 // @ts-nocheck
 import { NextRequest, NextResponse } from 'next/server';
 import { qualityDb } from '@/lib/quality/api-helpers';
+import { requireAuth } from '@/lib/api/auth-guard';
 
 // Auto-evidence collection: maps NABH OEs to HMIS data sources
 const EVIDENCE_MAPPINGS: Record<string, { table: string; filter?: string; description: string }> = {
@@ -19,6 +20,9 @@ const EVIDENCE_MAPPINGS: Record<string, { table: string; filter?: string; descri
 };
 
 export async function GET(request: NextRequest) {
+  const { error: authError } = await requireAuth(request);
+  if (authError) return authError;
+
   const db = qualityDb();
   const centreId = request.nextUrl.searchParams.get('centre_id');
   if (!centreId) return NextResponse.json({ error: 'centre_id required' }, { status: 400 });

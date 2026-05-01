@@ -1,13 +1,17 @@
 // app/api/rcm/hold-bucket/route.ts
 // GET: list held amounts with filters and summary by payor
 
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { requireAuth } from '@/lib/api/auth-guard';
 
 export const runtime = 'edge';
 export const dynamic = 'force-dynamic';
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
+  const { error: authError } = await requireAuth(request);
+  if (authError) return authError;
+
   try {
     const sb = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,

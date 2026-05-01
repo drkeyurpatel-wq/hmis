@@ -1,8 +1,12 @@
 // @ts-nocheck
 import { NextRequest, NextResponse } from 'next/server';
 import { billingDb, billingRpc } from '@/lib/billing/api-helpers';
+import { requireAuth } from '@/lib/api/auth-guard';
 
 export async function POST(request: NextRequest) {
+  const { error: authError } = await requireAuth(request);
+  if (authError) return authError;
+
   const supabase = billingDb();
   const body = await request.json();
   const user = { id: 'service-role' };
@@ -40,6 +44,9 @@ export async function POST(request: NextRequest) {
 }
 
 export async function GET(request: NextRequest) {
+  const { error: authError } = await requireAuth(request);
+  if (authError) return authError;
+
   const supabase = billingDb();
   const centreId = request.nextUrl.searchParams.get('centre_id');
   let query = supabase.from('billing_credit_notes')

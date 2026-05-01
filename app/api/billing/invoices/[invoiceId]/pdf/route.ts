@@ -1,8 +1,12 @@
 // @ts-nocheck
 import { NextRequest, NextResponse } from 'next/server';
 import { billingDb } from '@/lib/billing/api-helpers';
+import { requireAuth } from '@/lib/api/auth-guard';
 
 export async function GET(request: NextRequest, { params }: { params: { invoiceId: string } }) {
+  const { error: authError } = await requireAuth(request);
+  if (authError) return authError;
+
   const supabase = billingDb();
   const format = request.nextUrl.searchParams.get('format') || 'pdf';
 

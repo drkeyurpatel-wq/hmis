@@ -2,7 +2,7 @@
 // Compute monthly settlement for a doctor at a centre
 // Aggregates all payout items into pools, applies MGM/retainer/incentive/TDS
 
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { computeSettlement, generateBillBreakdown } from '@/lib/rcm/settlement-engine';
 import {
@@ -12,11 +12,15 @@ import {
   linkPayoutItemsToSettlement,
   logPayoutAudit,
 } from '@/lib/rcm/db';
+import { requireAuth } from '@/lib/api/auth-guard';
 
 export const runtime = 'edge';
 export const dynamic = 'force-dynamic';
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
+  const { error: authError } = await requireAuth(request);
+  if (authError) return authError;
+
   try {
     const sb = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,

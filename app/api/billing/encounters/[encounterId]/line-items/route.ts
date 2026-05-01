@@ -1,10 +1,14 @@
 // @ts-nocheck
 import { NextRequest, NextResponse } from 'next/server';
 import { billingDb } from '@/lib/billing/api-helpers';
+import { requireAuth } from '@/lib/api/auth-guard';
 
 function roundTwo(n: number): number { return Math.round((n + Number.EPSILON) * 100) / 100; }
 
 export async function GET(request: NextRequest, { params }: { params: { encounterId: string } }) {
+  const { error: authError } = await requireAuth(request);
+  if (authError) return authError;
+
   const supabase = billingDb();
   const { data, error } = await supabase.from('billing_line_items').select('*')
     .eq('encounter_id', params.encounterId).eq('status', 'ACTIVE')
@@ -14,6 +18,9 @@ export async function GET(request: NextRequest, { params }: { params: { encounte
 }
 
 export async function POST(request: NextRequest, { params }: { params: { encounterId: string } }) {
+  const { error: authError } = await requireAuth(request);
+  if (authError) return authError;
+
   const supabase = billingDb();
   const body = await request.json();
   const user = { id: 'service-role' };

@@ -3,8 +3,12 @@
 // Keeps WHATSAPP_ACCESS_TOKEN server-side only
 
 import { NextRequest, NextResponse } from 'next/server';
+import { requireAuth } from '@/lib/api/auth-guard';
 
 export async function POST(req: NextRequest) {
+  const { error: authError } = await requireAuth(req);
+  if (authError) return authError;
+
   try {
     const { phone, templateName, params, centreId, claimId } = await req.json();
 

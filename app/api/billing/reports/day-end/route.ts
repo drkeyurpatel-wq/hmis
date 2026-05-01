@@ -1,10 +1,14 @@
 // @ts-nocheck
 import { NextRequest, NextResponse } from 'next/server';
 import { billingDb } from '@/lib/billing/api-helpers';
+import { requireAuth } from '@/lib/api/auth-guard';
 
 function roundTwo(n: number): number { return Math.round((n + Number.EPSILON) * 100) / 100; }
 
 export async function GET(request: NextRequest) {
+  const { error: authError } = await requireAuth(request);
+  if (authError) return authError;
+
   const supabase = billingDb();
   const centreId = request.nextUrl.searchParams.get('centre_id');
   const date = request.nextUrl.searchParams.get('date') || new Date().toISOString().split('T')[0];
