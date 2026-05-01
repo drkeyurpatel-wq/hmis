@@ -4,7 +4,7 @@ import { billingDb } from '@/lib/billing/api-helpers';
 import { requireAuth } from '@/lib/api/auth-guard';
 
 export async function GET(request: NextRequest) {
-  const { error: authError } = await requireAuth(request);
+  const { staff, error: authError } = await requireAuth(request);
   if (authError) return authError;
 
   const supabase = billingDb();
@@ -25,12 +25,12 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const { error: authError } = await requireAuth(request);
+  const { staff, error: authError } = await requireAuth(request);
   if (authError) return authError;
 
   const supabase = billingDb();
   const body = await request.json();
-  const user = { id: 'service-role' };
+  
   const required = ['encounter_id', 'centre_id', 'patient_id', 'insurance_company_id', 'policy_number', 'requested_amount'];
   for (const field of required) {
     if (!body[field]) return NextResponse.json({ error: `${field} is required` }, { status: 400 });
@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
       requested_amount: body.requested_amount, requested_stay_days: body.requested_stay_days || null,
       request_date: new Date().toISOString(),
       pmjay_package_code: body.pmjay_package_code || null, pmjay_package_name: body.pmjay_package_name || null,
-      status: 'DRAFT', created_by: user.id,
+      status: 'DRAFT', created_by: staff?.id || 'unknown',
     }).select().single();
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     await supabase.from('billing_encounters')

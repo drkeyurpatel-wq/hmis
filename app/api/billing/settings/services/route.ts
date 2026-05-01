@@ -4,7 +4,7 @@ import { billingDb } from '@/lib/billing/api-helpers';
 import { requireAuth } from '@/lib/api/auth-guard';
 
 export async function GET(request: NextRequest) {
-  const { error: authError } = await requireAuth(request);
+  const { staff, error: authError } = await requireAuth(request);
   if (authError) return authError;
 
   const supabase = billingDb();
@@ -19,12 +19,12 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const { error: authError } = await requireAuth(request);
+  const { staff, error: authError } = await requireAuth(request);
   if (authError) return authError;
 
   const supabase = billingDb();
   const body = await request.json();
-  const user = { id: 'service-role' };
+  
   if (!body.centre_id || !body.service_code || !body.service_name || !body.department) {
     return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
   }
@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
   await supabase.from('billing_audit_log').insert({
     entity_type: 'billing_service_masters', entity_id: data.id,
     action: 'CREATE', new_values: { service_code: data.service_code, service_name: data.service_name, base_rate: data.base_rate },
-    performed_by: user.id,
+    performed_by: staff?.id || 'unknown',
   });
   return NextResponse.json(data, { status: 201 });
 }

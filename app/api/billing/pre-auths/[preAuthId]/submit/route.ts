@@ -7,11 +7,11 @@ export async function POST(
   request: NextRequest,
   { params }: { params: { preAuthId: string } }
 ) {
-  const { error: authError } = await requireAuth(request);
+  const { staff, error: authError } = await requireAuth(request);
   if (authError) return authError;
 
   const supabase = billingDb();
-  const user = { id: 'service-role' };
+  
 
   const { error } = await supabase
     .from('billing_pre_auths')
@@ -27,7 +27,7 @@ export async function POST(
 
   await supabase.from('billing_audit_log').insert({
     entity_type: 'billing_pre_auths', entity_id: params.preAuthId,
-    action: 'SUBMIT', new_values: { status: 'SUBMITTED' }, performed_by: user.id,
+    action: 'SUBMIT', new_values: { status: 'SUBMITTED' }, performed_by: staff?.id || 'unknown',
   });
 
   return NextResponse.json({ success: true });

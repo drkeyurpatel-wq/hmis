@@ -7,12 +7,12 @@ export async function POST(
   request: NextRequest,
   { params }: { params: { lineItemId: string } }
 ) {
-  const { error: authError } = await requireAuth(request);
+  const { staff, error: authError } = await requireAuth(request);
   if (authError) return authError;
 
   const supabase = billingDb();
   const body = await request.json();
-  const user = { id: 'service-role' };
+  
 
   if (!body.reason) {
     return NextResponse.json({ error: 'Cancellation reason is required' }, { status: 400 });
@@ -36,7 +36,7 @@ export async function POST(
       .update({
         status: 'CANCELLED',
         cancel_reason: body.reason,
-        cancelled_by: user.id,
+        cancelled_by: staff?.id || 'unknown',
         cancelled_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       })
@@ -49,7 +49,7 @@ export async function POST(
       action: 'CANCEL',
       old_values: { status: 'ACTIVE', net_amount: existing.net_amount },
       new_values: { status: 'CANCELLED', cancel_reason: body.reason },
-      performed_by: user.id,
+      performed_by: staff?.id || 'unknown',
     });
 
     return NextResponse.json({ success: true });

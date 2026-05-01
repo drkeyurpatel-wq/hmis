@@ -6,12 +6,12 @@ import { requireAuth } from '@/lib/api/auth-guard';
 function roundTwo(n: number): number { return Math.round((n + Number.EPSILON) * 100) / 100; }
 
 export async function POST(request: NextRequest, { params }: { params: { encounterId: string } }) {
-  const { error: authError } = await requireAuth(request);
+  const { staff, error: authError } = await requireAuth(request);
   if (authError) return authError;
 
   const supabase = billingDb();
   const body = await request.json();
-  const user = { id: 'service-role' };
+  
 
   try {
     const { data: encounter } = await supabase.from('billing_encounters')
@@ -45,7 +45,7 @@ export async function POST(request: NextRequest, { params }: { params: { encount
       grand_total: grandTotal, amount_paid: roundTwo(amountPaid),
       balance_due: roundTwo(Math.max(0, balanceDue)),
       status: balanceDue <= 0 ? 'PAID' : amountPaid > 0 ? 'PARTIALLY_PAID' : 'GENERATED',
-      created_by: user.id,
+      created_by: staff?.id || 'unknown',
     }).select().single();
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
@@ -61,7 +61,7 @@ export async function POST(request: NextRequest, { params }: { params: { encount
     await supabase.from('billing_audit_log').insert({
       entity_type: 'billing_invoices', entity_id: invoice.id, action: 'CREATE',
       new_values: { invoice_number: invoice.invoice_number, grand_total: invoice.grand_total },
-      performed_by: user.id,
+      performed_by: staff?.id || 'unknown',
     });
     return NextResponse.json(invoice, { status: 201 });
   } catch (error: any) { return NextResponse.json({ error: error.message }, { status: 500 }); }

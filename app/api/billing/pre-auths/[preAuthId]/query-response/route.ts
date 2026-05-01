@@ -7,12 +7,12 @@ export async function POST(
   request: NextRequest,
   { params }: { params: { preAuthId: string } }
 ) {
-  const { error: authError } = await requireAuth(request);
+  const { staff, error: authError } = await requireAuth(request);
   if (authError) return authError;
 
   const supabase = billingDb();
   const body = await request.json();
-  const user = { id: 'service-role' };
+  
 
   if (!body.response?.trim()) {
     return NextResponse.json({ error: 'Response text is required' }, { status: 400 });
@@ -31,7 +31,7 @@ export async function POST(
 
   await supabase.from('billing_audit_log').insert({
     entity_type: 'billing_pre_auths', entity_id: params.preAuthId,
-    action: 'UPDATE', new_values: { query_response: body.response }, performed_by: user.id,
+    action: 'UPDATE', new_values: { query_response: body.response }, performed_by: staff?.id || 'unknown',
   });
 
   return NextResponse.json({ success: true });

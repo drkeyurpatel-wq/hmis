@@ -4,7 +4,7 @@ import { billingDb, billingRpc } from '@/lib/billing/api-helpers';
 import { requireAuth } from '@/lib/api/auth-guard';
 
 export async function GET(request: NextRequest, { params }: { params: { encounterId: string } }) {
-  const { error: authError } = await requireAuth(request);
+  const { staff, error: authError } = await requireAuth(request);
   if (authError) return authError;
 
   const supabase = billingDb();
@@ -16,12 +16,12 @@ export async function GET(request: NextRequest, { params }: { params: { encounte
 }
 
 export async function POST(request: NextRequest, { params }: { params: { encounterId: string } }) {
-  const { error: authError } = await requireAuth(request);
+  const { staff, error: authError } = await requireAuth(request);
   if (authError) return authError;
 
   const supabase = billingDb();
   const body = await request.json();
-  const user = { id: 'service-role' };
+  
   if (!body.amount || body.amount <= 0) return NextResponse.json({ error: 'Amount must be > 0' }, { status: 400 });
 
   try {
@@ -43,14 +43,14 @@ export async function POST(request: NextRequest, { params }: { params: { encount
       bank_name: body.bank_name || null, payment_type: body.payment_type || 'COLLECTION',
       is_advance: body.is_advance || false,
       advance_balance: body.is_advance ? body.amount : 0,
-      status: 'COMPLETED', created_by: user.id,
+      status: 'COMPLETED', created_by: staff?.id || 'unknown',
     }).select().single();
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
     await supabase.from('billing_audit_log').insert({
       entity_type: 'billing_payments', entity_id: data.id, action: 'CREATE',
       new_values: { amount: data.amount, payment_mode: data.payment_mode, receipt_number: data.receipt_number },
-      performed_by: user.id,
+      performed_by: staff?.id || 'unknown',
     });
     return NextResponse.json(data, { status: 201 });
   } catch (error: any) { return NextResponse.json({ error: error.message }, { status: 500 }); }

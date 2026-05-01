@@ -7,12 +7,12 @@ export async function POST(
   request: NextRequest,
   { params }: { params: { preAuthId: string } }
 ) {
-  const { error: authError } = await requireAuth(request);
+  const { staff, error: authError } = await requireAuth(request);
   if (authError) return authError;
 
   const supabase = billingDb();
   const body = await request.json();
-  const user = { id: 'service-role' };
+  
 
   const paData = (await supabase.from('billing_pre_auths').select('requested_amount').eq('id', params.preAuthId).single()).data;
   const status = body.approved_amount < (paData?.requested_amount || 0) ? 'PARTIALLY_APPROVED' : 'APPROVED';
@@ -42,7 +42,7 @@ export async function POST(
 
   await supabase.from('billing_audit_log').insert({
     entity_type: 'billing_pre_auths', entity_id: params.preAuthId,
-    action: 'APPROVE', new_values: { status, approved_amount: body.approved_amount }, performed_by: user.id,
+    action: 'APPROVE', new_values: { status, approved_amount: body.approved_amount }, performed_by: staff?.id || 'unknown',
   });
 
   return NextResponse.json({ success: true, status });

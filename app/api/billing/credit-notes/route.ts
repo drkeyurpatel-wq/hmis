@@ -4,12 +4,12 @@ import { billingDb, billingRpc } from '@/lib/billing/api-helpers';
 import { requireAuth } from '@/lib/api/auth-guard';
 
 export async function POST(request: NextRequest) {
-  const { error: authError } = await requireAuth(request);
+  const { staff, error: authError } = await requireAuth(request);
   if (authError) return authError;
 
   const supabase = billingDb();
   const body = await request.json();
-  const user = { id: 'service-role' };
+  
   const { original_invoice_id, amount, reason, line_items, refund_mode } = body;
   if (!original_invoice_id || !amount || !reason)
     return NextResponse.json({ error: 'original_invoice_id, amount, reason required' }, { status: 400 });
@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
     const { data, error } = await supabase.from('billing_credit_notes').insert({
       original_invoice_id, credit_note_number: cnNumber, centre_id: invoice.centre_id,
       patient_id: invoice.patient_id, amount, reason, line_items: line_items || [],
-      refund_mode: refund_mode || null, status: 'DRAFT', created_by: user.id,
+      refund_mode: refund_mode || null, status: 'DRAFT', created_by: staff?.id || 'unknown',
     }).select().single();
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
@@ -37,14 +37,14 @@ export async function POST(request: NextRequest) {
 
     await supabase.from('billing_audit_log').insert({
       entity_type: 'billing_credit_notes', entity_id: data.id, action: 'CREATE',
-      new_values: { credit_note_number: cnNumber, amount, reason }, performed_by: user.id,
+      new_values: { credit_note_number: cnNumber, amount, reason }, performed_by: staff?.id || 'unknown',
     });
     return NextResponse.json(data, { status: 201 });
   } catch (error: any) { return NextResponse.json({ error: error.message }, { status: 500 }); }
 }
 
 export async function GET(request: NextRequest) {
-  const { error: authError } = await requireAuth(request);
+  const { staff, error: authError } = await requireAuth(request);
   if (authError) return authError;
 
   const supabase = billingDb();

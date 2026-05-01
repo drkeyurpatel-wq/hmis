@@ -6,7 +6,7 @@ import { requireAuth } from '@/lib/api/auth-guard';
 function roundTwo(n: number): number { return Math.round((n + Number.EPSILON) * 100) / 100; }
 
 export async function GET(request: NextRequest, { params }: { params: { encounterId: string } }) {
-  const { error: authError } = await requireAuth(request);
+  const { staff, error: authError } = await requireAuth(request);
   if (authError) return authError;
 
   const supabase = billingDb();
@@ -18,12 +18,12 @@ export async function GET(request: NextRequest, { params }: { params: { encounte
 }
 
 export async function POST(request: NextRequest, { params }: { params: { encounterId: string } }) {
-  const { error: authError } = await requireAuth(request);
+  const { staff, error: authError } = await requireAuth(request);
   if (authError) return authError;
 
   const supabase = billingDb();
   const body = await request.json();
-  const user = { id: 'service-role' };
+  
 
   try {
     const { data: encounter } = await supabase.from('billing_encounters')
@@ -82,13 +82,13 @@ export async function POST(request: NextRequest, { params }: { params: { encount
       is_package_item: coveredByPackage, package_id: coveredByPackage ? encounter.package_id : null,
       covered_by_package: coveredByPackage,
       service_date: body.service_date || new Date().toISOString(),
-      status: 'ACTIVE', created_by: user.id,
+      status: 'ACTIVE', created_by: staff?.id || 'unknown',
     }).select().single();
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
     await supabase.from('billing_audit_log').insert({
       entity_type: 'billing_line_items', entity_id: data.id, action: 'CREATE',
-      new_values: { service_code: data.service_code, net_amount: data.net_amount }, performed_by: user.id,
+      new_values: { service_code: data.service_code, net_amount: data.net_amount }, performed_by: staff?.id || 'unknown',
     });
     return NextResponse.json(data, { status: 201 });
   } catch (error: any) { return NextResponse.json({ error: error.message }, { status: 500 }); }

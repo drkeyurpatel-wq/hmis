@@ -4,7 +4,7 @@ import { billingDb, billingRpc } from '@/lib/billing/api-helpers';
 import { requireAuth } from '@/lib/api/auth-guard';
 
 export async function GET(request: NextRequest) {
-  const { error: authError } = await requireAuth(request);
+  const { staff, error: authError } = await requireAuth(request);
   if (authError) return authError;
 
   const supabase = billingDb();
@@ -54,12 +54,12 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const { error: authError } = await requireAuth(request);
+  const { staff, error: authError } = await requireAuth(request);
   if (authError) return authError;
 
   const supabase = billingDb();
   const body = await request.json();
-  const user = { id: 'service-role' };
+  
   if (!body.centre_id || !body.patient_id || !body.encounter_type)
     return NextResponse.json({ error: 'centre_id, patient_id, encounter_type required' }, { status: 400 });
 
@@ -82,13 +82,13 @@ export async function POST(request: NextRequest) {
       bed_id: body.bed_id || null, package_id: body.package_id || null,
       visit_date: !isIPD ? new Date().toISOString() : null,
       admission_date: isIPD ? new Date().toISOString() : null,
-      notes: body.notes || null, status: 'OPEN', created_by: user.id,
+      notes: body.notes || null, status: 'OPEN', created_by: staff?.id || 'unknown',
     }).select().single();
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
     await supabase.from('billing_audit_log').insert({
       entity_type: 'billing_encounters', entity_id: data.id,
-      action: 'CREATE', new_values: data, performed_by: user.id,
+      action: 'CREATE', new_values: data, performed_by: staff?.id || 'unknown',
     });
     return NextResponse.json(data, { status: 201 });
   } catch (error: any) { return NextResponse.json({ error: error.message }, { status: 500 }); }
