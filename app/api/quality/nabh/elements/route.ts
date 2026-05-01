@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { NextRequest, NextResponse } from 'next/server';
 import { qualityDb } from '@/lib/quality/api-helpers';
 import { requireAuth } from '@/lib/api/auth-guard';
@@ -24,11 +23,11 @@ export async function GET(request: NextRequest) {
 
   // Enrich with assessment if centre provided
   if (centreId && elements) {
-    const elementIds = elements.map(e => e.id);
+    const elementIds = elements.map((e: any) => e.id);
     const { data: assessments } = await db.from('quality_nabh_assessments')
       .select('*').eq('centre_id', centreId).in('element_id', elementIds);
-    const aMap = Object.fromEntries((assessments || []).map(a => [a.element_id, a]));
-    elements.forEach(e => { e.assessment = aMap[e.id] || null; });
+    const aMap = Object.fromEntries((assessments || []).map((a: any) => [a.element_id, a]));
+    elements.forEach((e: any) => { e.assessment = aMap[e.id] || null; });
   }
   return NextResponse.json(elements || []);
 }

@@ -1,4 +1,3 @@
-// @ts-nocheck
 // HEALTH1 HMIS — QUERY RESPONSE CENTRE (SLA Workstation)
 'use client';
 

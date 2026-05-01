@@ -1,4 +1,3 @@
-// @ts-nocheck
 // HEALTH1 HMIS — INVOICE PDF TEMPLATE
 import type { BillingEncounter, BillingLineItem, BillingInvoice, BillingPayment } from './billing-v2-types';
 import { PAYOR_TYPE_LABELS, PAYMENT_MODE_LABELS, SERVICE_CATEGORY_LABELS } from './billing-v2-types';

@@ -1,4 +1,3 @@
-// @ts-nocheck
 // HEALTH1 HMIS — CLAIM DETAIL (Insurance Desk Workstation)
 'use client';
 
@@ -210,7 +209,7 @@ export default function ClaimDetailPage() {
 
   const sc = STATUS_CONFIG[claim.status as ClaimStatus] || STATUS_CONFIG.draft;
   const transitions = TRANSITIONS[claim.status] || [];
-  const pc = PRIORITY_CONFIG[claim.priority] || PRIORITY_CONFIG.medium;
+  const pc = PRIORITY_CONFIG[claim.priority as keyof typeof PRIORITY_CONFIG] || PRIORITY_CONFIG.medium;
   const los = daysBetween(claim.admission_date, claim.discharge_date);
   const daysPending = daysBetween(claim.discharge_date || claim.created_at, null);
   const openQueries = queries.filter(q => ['open', 'in_progress', 'escalated'].includes(q.status));
@@ -546,7 +545,7 @@ export default function ClaimDetailPage() {
               {queries.map(q => {
                 const isOpen = ['open', 'in_progress', 'escalated'].includes(q.status);
                 const hrs = Math.round((Date.now() - new Date(q.raised_at).getTime()) / 3600000);
-                const prc = PRIORITY_CONFIG[q.priority] || PRIORITY_CONFIG.medium;
+                const prc = PRIORITY_CONFIG[q.priority as keyof typeof PRIORITY_CONFIG] || PRIORITY_CONFIG.medium;
                 return (
                   <QueryCard key={q.id} q={q} isOpen={isOpen} hrs={hrs} prc={prc}
                     onRespond={handleRespondQuery} staff={staff} />

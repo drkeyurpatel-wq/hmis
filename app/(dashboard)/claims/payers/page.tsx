@@ -1,4 +1,3 @@
-// @ts-nocheck
 // HEALTH1 HMIS — PAYER MASTER
 'use client';
 
@@ -50,7 +49,7 @@ export default function PayerMasterPage() {
 
   // Type counts
   const typeCounts = { tpa: 0, insurer: 0, government: 0, psu: 0 };
-  payers.forEach(p => { if (typeCounts[p.type] !== undefined) typeCounts[p.type]++; });
+  payers.forEach((p: any) => { const t = p.type as keyof typeof typeCounts; if (typeCounts[t] !== undefined) typeCounts[t]++; });
 
   if (loading) return (
     <div className="min-h-screen bg-gray-50/50">
@@ -96,7 +95,7 @@ export default function PayerMasterPage() {
               className={`px-3 py-1.5 text-[11px] font-medium rounded-xl transition-all ${
                 typeFilter === k ? 'bg-purple-600 text-white shadow-sm' : 'bg-white text-gray-500 border border-gray-100 hover:border-gray-300'
               }`}>
-              {v.label} ({typeCounts[k] || 0})
+              {v.label} ({(typeCounts as Record<string, number>)[k] || 0})
             </button>
           ))}
 

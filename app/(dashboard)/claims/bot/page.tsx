@@ -1,4 +1,3 @@
-// @ts-nocheck
 // HEALTH1 HMIS — BOT MONITORING (TPA Portal Automation)
 'use client';
 

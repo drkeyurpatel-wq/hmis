@@ -1,4 +1,3 @@
-// @ts-nocheck
 // HEALTH1 HMIS — CLAIMS MIS (Management Information System)
 'use client';
 

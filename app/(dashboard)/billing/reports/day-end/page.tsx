@@ -1,4 +1,3 @@
-// @ts-nocheck
 // HEALTH1 HMIS — DAY-END REPORT
 'use client';
 

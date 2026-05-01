@@ -1,9 +1,8 @@
-// @ts-nocheck
 // HEALTH1 HMIS — BILLING ENGINE — Core calculation logic, rate lookups, auto-charge
 import { sb } from '@/lib/supabase/browser';
 import type { BillingEncounter, BillingLineItem, ServiceMaster, RateCard, BillingPackage, BedChargeRule, DiscountScheme, PayorType, ServiceCategory, DiscountType, LineSource, EncounterType, AddLineItemForm, RecordPaymentForm, BillingDashboardStats } from '@/lib/billing/billing-v2-types';
 
-const supabase = () => sb;
+const supabase = () => sb();
 
 export async function getServiceRate(centreId: string, serviceMasterId: string, payorType: PayorType = 'SELF_PAY', payorId?: string | null): Promise<{ rate: number; source: 'RATE_CARD' | 'BASE_RATE'; rateCardId?: string }> {
   const today = new Date().toISOString().split('T')[0];

@@ -1,4 +1,3 @@
-// @ts-nocheck
 // HEALTH1 HMIS — CLAIMS COMMAND CENTRE
 'use client';
 

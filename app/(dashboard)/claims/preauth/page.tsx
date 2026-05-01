@@ -1,4 +1,3 @@
-// @ts-nocheck
 // HEALTH1 HMIS — PRE-AUTHORIZATION TRACKER
 'use client';
 
@@ -177,7 +176,7 @@ export default function PreauthTracker() {
           <div className="space-y-2">
             {claims.map(claim => {
               const sc = STATUS_CONFIG[claim.status as ClaimStatus] || STATUS_CONFIG.draft;
-              const pc = PRIORITY_CONFIG[claim.priority] || PRIORITY_CONFIG.medium;
+              const pc = PRIORITY_CONFIG[claim.priority as keyof typeof PRIORITY_CONFIG] || PRIORITY_CONFIG.medium;
               const hrs = Math.round((Date.now() - new Date(claim.created_at).getTime()) / 3600000);
               const isPending = claim.status === 'preauth_pending';
               const isQuery = claim.status === 'preauth_query';

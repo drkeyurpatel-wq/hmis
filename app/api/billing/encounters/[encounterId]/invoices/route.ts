@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { NextRequest, NextResponse } from 'next/server';
 import { billingDb, billingRpc } from '@/lib/billing/api-helpers';
 import { requireAuth } from '@/lib/api/auth-guard';
@@ -25,7 +24,7 @@ export async function POST(request: NextRequest, { params }: { params: { encount
 
     let liQuery = supabase.from('billing_line_items').select('*')
       .eq('encounter_id', params.encounterId).eq('status', 'ACTIVE');
-    if (body.line_item_ids?.length > 0) liQuery = liQuery.in('id', body.line_item_ids);
+    if (body.line_item_ids && body.line_item_ids.length > 0) liQuery = liQuery.in('id', body.line_item_ids);
     const { data: lineItems } = await liQuery;
     if (!lineItems || lineItems.length === 0) return NextResponse.json({ error: 'No billable items' }, { status: 400 });
 
@@ -54,7 +53,7 @@ export async function POST(request: NextRequest, { params }: { params: { encount
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
     await supabase.from('billing_invoice_line_items')
-      .insert(lineItems.map(li => ({ invoice_id: invoice.id, line_item_id: li.id, amount: li.net_amount })));
+      .insert(lineItems.map((li: any) => ({ invoice_id: invoice.id, line_item_id: li.id, amount: li.net_amount })));
 
     const isFinal = invoiceType === 'IPD_FINAL' || invoiceType === 'DISCHARGE';
     await supabase.from('billing_encounters').update({

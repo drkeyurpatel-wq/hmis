@@ -1,4 +1,3 @@
-// @ts-nocheck
 // ═══════════════════════════════════════════════════════════════════════
 // HEALTH1 HMIS — BILLING MODULE LAYOUT
 // src/app/(dashboard)/billing/layout.tsx

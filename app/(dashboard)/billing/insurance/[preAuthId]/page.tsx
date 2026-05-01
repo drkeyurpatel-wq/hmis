@@ -1,4 +1,3 @@
-// @ts-nocheck
 // HEALTH1 HMIS — PRE-AUTH DETAIL
 'use client';
 import { useState, useEffect, useCallback } from 'react';

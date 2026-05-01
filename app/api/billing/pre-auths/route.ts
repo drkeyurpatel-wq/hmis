@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { NextRequest, NextResponse } from 'next/server';
 import { billingDb } from '@/lib/billing/api-helpers';
 import { requireAuth } from '@/lib/api/auth-guard';
@@ -35,10 +34,6 @@ export async function POST(request: NextRequest) {
   if (parsed.error) return parsed.error;
   const body = parsed.data;
   
-  const required = ['encounter_id', 'centre_id', 'patient_id', 'insurance_company_id', 'policy_number', 'requested_amount'];
-  for (const field of required) {
-    if (!body[field]) return NextResponse.json({ error: `${field} is required` }, { status: 400 });
-  }
   try {
     const { data, error } = await supabase.from('billing_pre_auths').insert({
       encounter_id: body.encounter_id, centre_id: body.centre_id, patient_id: body.patient_id,

@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { NextRequest, NextResponse } from 'next/server';
 import { billingDb } from '@/lib/billing/api-helpers';
 import { requireAuth } from '@/lib/api/auth-guard';
@@ -81,7 +80,7 @@ export async function GET(request: NextRequest, { params }: { params: { invoiceI
       return new NextResponse(html, { headers: { 'Content-Type': 'text/html' } });
     }
 
-    return new NextResponse(pdfBuffer, { headers: {
+    return new NextResponse(pdfBuffer as any, { headers: {
       'Content-Type': 'application/pdf',
       'Content-Disposition': `inline; filename="${invoice.invoice_number}.pdf"`,
     } });

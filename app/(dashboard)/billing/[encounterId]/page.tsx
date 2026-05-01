@@ -1,4 +1,3 @@
-// @ts-nocheck
 // HEALTH1 HMIS — ENCOUNTER DETAIL / RUNNING BILL
 'use client';
 import { useState, useEffect, useCallback, useMemo } from 'react';

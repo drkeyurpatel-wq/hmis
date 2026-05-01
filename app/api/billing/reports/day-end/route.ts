@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { NextRequest, NextResponse } from 'next/server';
 import { billingDb } from '@/lib/billing/api-helpers';
 import { requireAuth } from '@/lib/api/auth-guard';
@@ -21,19 +20,19 @@ export async function GET(request: NextRequest) {
       .select('amount, payment_mode, payment_type').eq('centre_id', centreId)
       .eq('status', 'COMPLETED').gte('payment_date', dateStart).lte('payment_date', dateEnd);
 
-    const collections = (payments || []).filter(p => ['COLLECTION', 'ADVANCE', 'DEPOSIT'].includes(p.payment_type));
-    const refunds = (payments || []).filter(p => p.payment_type === 'REFUND');
-    const totalCollection = roundTwo(collections.reduce((s, p) => s + p.amount, 0));
-    const totalRefunds = roundTwo(refunds.reduce((s, p) => s + p.amount, 0));
+    const collections = (payments || []).filter((p: any) => ['COLLECTION', 'ADVANCE', 'DEPOSIT'].includes(p.payment_type));
+    const refunds = (payments || []).filter((p: any) => p.payment_type === 'REFUND');
+    const totalCollection = roundTwo(collections.reduce((s: any, p: any) => s + p.amount, 0));
+    const totalRefunds = roundTwo(refunds.reduce((s: any, p: any) => s + p.amount, 0));
 
     const modeMap: Record<string, { count: number; amount: number }> = {};
-    collections.forEach(p => {
+    collections.forEach((p: any) => {
       if (!modeMap[p.payment_mode]) modeMap[p.payment_mode] = { count: 0, amount: 0 };
       modeMap[p.payment_mode].count++; modeMap[p.payment_mode].amount += p.amount;
     });
     const modeBreakup = Object.entries(modeMap)
       .map(([mode, s]) => ({ payment_mode: mode, count: s.count, amount: roundTwo(s.amount) }))
-      .sort((a, b) => b.amount - a.amount);
+      .sort((a: any, b: any) => b.amount - a.amount);
 
     const { count: billsGenerated } = await supabase.from('billing_invoices')
       .select('id', { count: 'exact', head: true }).eq('centre_id', centreId)
@@ -49,14 +48,14 @@ export async function GET(request: NextRequest) {
       .gte('service_date', dateStart).lte('service_date', dateEnd);
 
     const deptMap: Record<string, { items: number; gross: number; discounts: number; net: number }> = {};
-    (lineItems || []).forEach(li => {
+    (lineItems || []).forEach((li: any) => {
       if (!deptMap[li.department]) deptMap[li.department] = { items: 0, gross: 0, discounts: 0, net: 0 };
       deptMap[li.department].items++; deptMap[li.department].gross += li.gross_amount;
       deptMap[li.department].discounts += li.discount_amount; deptMap[li.department].net += li.net_amount;
     });
     const departmentBreakup = Object.entries(deptMap)
       .map(([dept, s]) => ({ department: dept, items: s.items, gross_revenue: roundTwo(s.gross), discounts: roundTwo(s.discounts), net_revenue: roundTwo(s.net) }))
-      .sort((a, b) => b.net_revenue - a.net_revenue);
+      .sort((a: any, b: any) => b.net_revenue - a.net_revenue);
 
     return NextResponse.json({ date, total_collection: totalCollection, total_refunds: totalRefunds,
       net_collection: roundTwo(totalCollection - totalRefunds), bills_generated: billsGenerated || 0,

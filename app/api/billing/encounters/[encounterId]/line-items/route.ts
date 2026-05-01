@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { NextRequest, NextResponse } from 'next/server';
 import { billingDb } from '@/lib/billing/api-helpers';
 import { requireAuth } from '@/lib/api/auth-guard';
@@ -40,7 +39,7 @@ export async function POST(request: NextRequest, { params }: { params: { encount
       .select('*').eq('id', body.service_master_id).single();
     if (!service) return NextResponse.json({ error: 'Service not found' }, { status: 404 });
 
-    let unitRate = body.unit_rate;
+    let unitRate = body.unit_rate || 0;
     if (unitRate === undefined || unitRate === null) {
       const today = new Date().toISOString().split('T')[0];
       const { data: rateCards } = await supabase.from('billing_rate_cards')

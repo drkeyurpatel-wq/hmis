@@ -1,4 +1,3 @@
-// @ts-nocheck
 // HEALTH1 HMIS — BILLING MODULE TYPES
 
 // Enums

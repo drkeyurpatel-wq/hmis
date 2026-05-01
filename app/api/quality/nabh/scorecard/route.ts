@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { NextRequest, NextResponse } from 'next/server';
 import { qualityDb, qualityRpc } from '@/lib/quality/api-helpers';
 import { requireAuth } from '@/lib/api/auth-guard';

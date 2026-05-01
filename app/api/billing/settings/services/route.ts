@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { NextRequest, NextResponse } from 'next/server';
 import { billingDb } from '@/lib/billing/api-helpers';
 import { requireAuth } from '@/lib/api/auth-guard';
@@ -36,7 +35,7 @@ export async function POST(request: NextRequest) {
     .from('billing_service_masters')
     .insert({
       centre_id: body.centre_id, service_code: body.service_code,
-      service_name: body.service_name, department: body.department,
+      service_name: body.service_name, department: body.department_id,
       service_category: body.service_category || 'MISCELLANEOUS',
       base_rate: body.base_rate || 0, gst_applicable: body.gst_applicable || false,
       gst_percentage: body.gst_percentage || 0, hsn_sac_code: body.hsn_sac_code || null,

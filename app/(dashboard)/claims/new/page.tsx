@@ -1,4 +1,3 @@
-// @ts-nocheck
 // HEALTH1 HMIS — NEW CLAIM WIZARD (Zero Re-Entry from HMIS)
 'use client';
 
@@ -243,7 +242,7 @@ export default function NewClaimPage() {
                     className="w-full text-left px-4 py-3 hover:bg-h1-teal-light flex items-center justify-between transition-colors">
                     <div className="flex items-center gap-3">
                       <div className="w-9 h-9 rounded-full bg-teal-100 flex items-center justify-center text-teal-700 font-bold text-xs shrink-0">
-                        {p.name?.split(' ').map(n => n[0]).join('').slice(0, 2)}
+                        {p.name?.split(' ').map((n: any) => n[0]).join('').slice(0, 2)}
                       </div>
                       <div>
                         <p className="font-semibold text-gray-900 text-sm">{p.name}</p>
@@ -271,7 +270,7 @@ export default function NewClaimPage() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="w-11 h-11 rounded-full bg-teal-100 flex items-center justify-center text-teal-700 font-bold text-sm">
-                    {selectedPatient.name?.split(' ').map(n => n[0]).join('').slice(0, 2)}
+                    {selectedPatient.name?.split(' ').map((n: any) => n[0]).join('').slice(0, 2)}
                   </div>
                   <div>
                     <p className="font-bold text-gray-900">{selectedPatient.name}</p>
@@ -555,7 +554,7 @@ export default function NewClaimPage() {
               {/* Patient */}
               <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
                 <div className="w-10 h-10 rounded-full bg-teal-100 flex items-center justify-center text-teal-700 font-bold text-xs">
-                  {selectedPatient?.name?.split(' ').map(n => n[0]).join('').slice(0, 2)}
+                  {selectedPatient?.name?.split(' ').map((n: any) => n[0]).join('').slice(0, 2)}
                 </div>
                 <div>
                   <p className="font-bold text-gray-900 text-sm">{selectedPatient?.name}</p>

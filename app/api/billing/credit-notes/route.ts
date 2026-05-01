@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { NextRequest, NextResponse } from 'next/server';
 import { billingDb, billingRpc } from '@/lib/billing/api-helpers';
 import { requireAuth } from '@/lib/api/auth-guard';

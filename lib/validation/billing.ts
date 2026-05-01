@@ -64,7 +64,7 @@ export type PaymentCreate = z.infer<typeof paymentCreateSchema>;
 // ─── POST /api/billing/encounters/[id]/invoices ───
 export const invoiceCreateSchema = z.object({
   line_item_ids: z.array(uuid).optional(),
-  invoice_type: z.enum(['OPD', 'IPD', 'ER', 'DAYCARE', 'PHARMACY', 'LAB', 'RADIOLOGY']).default('OPD'),
+  invoice_type: z.enum(['OPD', 'IPD', 'ER', 'DAYCARE', 'PHARMACY', 'LAB', 'RADIOLOGY', 'IPD_FINAL', 'DISCHARGE']).default('OPD'),
 });
 
 export type InvoiceCreate = z.infer<typeof invoiceCreateSchema>;
@@ -111,6 +111,7 @@ export const preAuthApproveSchema = z.object({
   approved_amount: z.number().min(0).optional(),
   remarks: z.string().max(2000).optional().nullable(),
   approved_stay_days: z.number().int().min(0).max(365).optional().nullable(),
+  approval_reference: z.string().max(100).optional().nullable(),
 });
 
 export type PreAuthApprove = z.infer<typeof preAuthApproveSchema>;
@@ -147,13 +148,20 @@ export const serviceCreateSchema = z.object({
   base_rate: z.number().min(0),
   is_active: z.boolean().default(true),
   centre_id: centreId,
+  gst_applicable: z.boolean().default(false),
+  gst_percentage: z.number().min(0).max(100).optional().nullable(),
+  hsn_sac_code: z.string().max(20).optional().nullable(),
+  is_payable_to_doctor: z.boolean().default(false),
+  doctor_payout_type: z.enum(['PERCENTAGE', 'FLAT', 'SLAB']).optional().nullable(),
+  department: z.string().max(100).optional().nullable(),
 });
 
 export type ServiceCreate = z.infer<typeof serviceCreateSchema>;
 
 // ─── POST /api/billing/line-items/[id]/cancel ───
 export const lineItemCancelSchema = z.object({
-  cancellation_reason: z.string().min(1, 'Cancellation reason required').max(500),
-});
+  cancellation_reason: z.string().min(1, 'Cancellation reason required').max(500).optional(),
+  reason: z.string().min(1, 'Reason required').max(500).optional(),
+}).refine(d => d.cancellation_reason || d.reason, { message: 'cancellation_reason or reason required' });
 
 export type LineItemCancel = z.infer<typeof lineItemCancelSchema>;

@@ -1,9 +1,8 @@
-// @ts-nocheck
 // HEALTH1 HMIS — BILLING INTEGRATIONS
 // MedPay auto-tagging, CashFlow PWA sync, WhatsApp bill sharing
 import { sb } from '@/lib/supabase/browser';
 
-const supabase = () => sb;
+const supabase = () => sb();
 
 export async function syncToMedPay(encounterId: string): Promise<{ synced: number; skipped: number; errors: string[]; }> {
   const errors: string[] = []; let synced = 0; let skipped = 0;

@@ -1,4 +1,3 @@
-// @ts-nocheck
 // lib/quality/api-helpers.ts
 // Quality/NABH module — untyped client (same pattern as billing)
 import { createClient } from '@supabase/supabase-js';

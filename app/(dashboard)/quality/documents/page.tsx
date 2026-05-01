@@ -1,4 +1,3 @@
-// @ts-nocheck
 'use client';
 import { useEffect, useState } from 'react';
 const statusColors: Record<string, string> = { DRAFT: 'bg-gray-100', UNDER_REVIEW: 'bg-yellow-100 text-yellow-800', APPROVED: 'bg-blue-100 text-blue-800', ACTIVE: 'bg-green-100 text-green-800', SUPERSEDED: 'bg-red-100 text-red-800' };

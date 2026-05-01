@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { NextRequest, NextResponse } from 'next/server';
 import { billingDb } from '@/lib/billing/api-helpers';
 import { requireAuth } from '@/lib/api/auth-guard';
@@ -15,12 +14,7 @@ export async function POST(
   const supabase = billingDb();
   const parsed = await parseBody(request, lineItemCancelSchema);
   if (parsed.error) return parsed.error;
-  const body = parsed.data;
-  
-
-  if (!body.reason) {
-    return NextResponse.json({ error: 'Cancellation reason is required' }, { status: 400 });
-  }
+  const reason = parsed.data.cancellation_reason || parsed.data.reason;
 
   try {
     const { data: existing } = await supabase
@@ -39,7 +33,7 @@ export async function POST(
       .from('billing_line_items')
       .update({
         status: 'CANCELLED',
-        cancel_reason: body.reason,
+        cancel_reason: reason,
         cancelled_by: staff?.id || 'unknown',
         cancelled_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
@@ -52,7 +46,7 @@ export async function POST(
       entity_type: 'billing_line_items', entity_id: params.lineItemId,
       action: 'CANCEL',
       old_values: { status: 'ACTIVE', net_amount: existing.net_amount },
-      new_values: { status: 'CANCELLED', cancel_reason: body.reason },
+      new_values: { status: 'CANCELLED', cancel_reason: reason },
       performed_by: staff?.id || 'unknown',
     });
 

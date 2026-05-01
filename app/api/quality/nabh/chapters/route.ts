@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { NextRequest, NextResponse } from 'next/server';
 import { qualityDb } from '@/lib/quality/api-helpers';
 import { requireAuth } from '@/lib/api/auth-guard';
@@ -20,7 +19,7 @@ export async function GET(request: NextRequest) {
         .select('id', { count: 'exact' })
         .eq('centre_id', centreId)
         .in('element_id', 
-          (await db.from('quality_nabh_elements').select('id').eq('chapter_id', ch.id)).data?.map(e => e.id) || []
+          (await db.from('quality_nabh_elements').select('id').eq('chapter_id', ch.id)).data?.map((e: any) => e.id) || []
         );
       ch.assessed_count = assessed || 0;
     }

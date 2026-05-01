@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { NextRequest, NextResponse } from 'next/server';
 import { qualityDb } from '@/lib/quality/api-helpers';
 import { requireAuth } from '@/lib/api/auth-guard';
@@ -26,7 +25,7 @@ export async function GET(request: NextRequest) {
   const { data: scoreData } = await db.from('quality_nabh_assessments')
     .select('score').eq('centre_id', centreId).neq('score', '0');
   const totalAssessed = scoreData?.length || 0;
-  const totalScore = scoreData?.reduce((s, r) => s + parseInt(r.score), 0) || 0;
+  const totalScore = scoreData?.reduce((s: any, r: any) => s + parseInt(r.score), 0) || 0;
   const maxScore = totalAssessed * 5;
   const compliancePct = maxScore > 0 ? Math.round(totalScore / maxScore * 100 * 100) / 100 : 0;
 

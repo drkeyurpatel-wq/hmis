@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { NextRequest, NextResponse } from 'next/server';
 import { qualityDb } from '@/lib/quality/api-helpers';
 import { requireAuth } from '@/lib/api/auth-guard';
@@ -30,17 +29,17 @@ export async function GET(request: NextRequest) {
     .in('level', levelFilter);
 
   // Get current assessments
-  const elementIds = (elements || []).map(e => e.id);
+  const elementIds = (elements || []).map((e: any) => e.id);
   const { data: assessments } = await db.from('quality_nabh_assessments')
     .select('element_id, score, status')
     .eq('centre_id', centreId)
     .in('element_id', elementIds);
   
-  const aMap = Object.fromEntries((assessments || []).map(a => [a.element_id, a]));
+  const aMap = Object.fromEntries((assessments || []).map((a: any) => [a.element_id, a]));
 
   // Random sample for mock survey (NABH assessors typically sample ~30-40% of non-core elements)
-  const coreElements = (elements || []).filter(e => e.level === 'CORE');
-  const nonCoreElements = (elements || []).filter(e => e.level !== 'CORE');
+  const coreElements = (elements || []).filter((e: any) => e.level === 'CORE');
+  const nonCoreElements = (elements || []).filter((e: any) => e.level !== 'CORE');
   
   // Shuffle non-core and take 40%
   const shuffled = nonCoreElements.sort(() => Math.random() - 0.5);
@@ -48,7 +47,7 @@ export async function GET(request: NextRequest) {
   const sampled = [...coreElements, ...shuffled.slice(0, sampleSize)];
 
   // Calculate mock scores
-  const scored = sampled.map(e => ({
+  const scored = sampled.map((e: any) => ({
     ...e,
     assessment: aMap[e.id] || null,
     score: aMap[e.id]?.score ? parseInt(aMap[e.id].score) : 0,
@@ -59,8 +58,8 @@ export async function GET(request: NextRequest) {
   const totalScore = scored.reduce((s, e) => s + e.score, 0);
   const maxScore = totalSampled * 5;
   const compliancePct = maxScore > 0 ? Math.round(totalScore / maxScore * 10000) / 100 : 0;
-  const gaps = scored.filter(e => e.gap);
-  const criticalGaps = gaps.filter(e => e.level === 'CORE');
+  const gaps = scored.filter((e: any) => e.gap);
+  const criticalGaps = gaps.filter((e: any) => e.level === 'CORE');
 
   return NextResponse.json({
     survey_type: surveyType,
@@ -72,7 +71,7 @@ export async function GET(request: NextRequest) {
     would_pass: compliancePct >= 80 && criticalGaps.length === 0,
     total_gaps: gaps.length,
     critical_gaps: criticalGaps.length,
-    gap_elements: gaps.slice(0, 20).map(e => ({ code: e.element_code, level: e.level, score: e.score })),
+    gap_elements: gaps.slice(0, 20).map((e: any) => ({ code: e.element_code, level: e.level, score: e.score })),
     sampled_elements: scored.length,
   });
 }

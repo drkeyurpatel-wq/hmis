@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { NextRequest, NextResponse } from 'next/server';
 import { billingDb } from '@/lib/billing/api-helpers';
 import { requireAuth } from '@/lib/api/auth-guard';
@@ -19,13 +18,13 @@ export async function POST(
   
 
   const paData = (await supabase.from('billing_pre_auths').select('requested_amount').eq('id', params.preAuthId).single()).data;
-  const status = body.approved_amount < (paData?.requested_amount || 0) ? 'PARTIALLY_APPROVED' : 'APPROVED';
+  const status = (body.approved_amount ?? 0) < (paData?.requested_amount || 0) ? 'PARTIALLY_APPROVED' : 'APPROVED';
 
   const { error } = await supabase
     .from('billing_pre_auths')
     .update({
       status,
-      approved_amount: body.approved_amount,
+      approved_amount: body.approved_amount || 0,
       approved_stay_days: body.approved_stay_days || null,
       approval_reference: body.approval_reference || null,
       approval_date: new Date().toISOString(),
@@ -39,7 +38,7 @@ export async function POST(
   const { data: pa } = await supabase.from('billing_pre_auths').select('encounter_id').eq('id', params.preAuthId).single();
   if (pa) {
     await supabase.from('billing_encounters').update({
-      insurance_approved_amount: body.approved_amount,
+      insurance_approved_amount: body.approved_amount || 0,
       updated_at: new Date().toISOString(),
     }).eq('id', pa.encounter_id);
   }
