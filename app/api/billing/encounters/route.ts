@@ -2,6 +2,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { billingDb, billingRpc } from '@/lib/billing/api-helpers';
 import { requireAuth } from '@/lib/api/auth-guard';
+import { parseBody } from '@/lib/validation/parse-body';
+import { encounterCreateSchema } from '@/lib/validation/billing';
 
 export async function GET(request: NextRequest) {
   const { staff, error: authError } = await requireAuth(request);
@@ -58,10 +60,9 @@ export async function POST(request: NextRequest) {
   if (authError) return authError;
 
   const supabase = billingDb();
-  const body = await request.json();
-  
-  if (!body.centre_id || !body.patient_id || !body.encounter_type)
-    return NextResponse.json({ error: 'centre_id, patient_id, encounter_type required' }, { status: 400 });
+  const parsed = await parseBody(request, encounterCreateSchema);
+  if (parsed.error) return parsed.error;
+  const body = parsed.data;
 
   try {
     const { data: encNumber } = await billingRpc('billing_next_number', {

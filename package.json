@@ -33,6 +33,7 @@
     "resend": "^6.9.4",
     "tailwind-merge": "^2.5.4",
     "xlsx": "^0.18.5",
+    "zod": "^4.4.1",
     "zustand": "^4.5.5"
   },
   "devDependencies": {

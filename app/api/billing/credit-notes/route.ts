@@ -2,17 +2,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { billingDb, billingRpc } from '@/lib/billing/api-helpers';
 import { requireAuth } from '@/lib/api/auth-guard';
+import { parseBody } from '@/lib/validation/parse-body';
+import { creditNoteCreateSchema } from '@/lib/validation/billing';
 
 export async function POST(request: NextRequest) {
   const { staff, error: authError } = await requireAuth(request);
   if (authError) return authError;
 
   const supabase = billingDb();
-  const body = await request.json();
-  
-  const { original_invoice_id, amount, reason, line_items, refund_mode } = body;
-  if (!original_invoice_id || !amount || !reason)
-    return NextResponse.json({ error: 'original_invoice_id, amount, reason required' }, { status: 400 });
+  const parsed = await parseBody(request, creditNoteCreateSchema);
+  if (parsed.error) return parsed.error;
+  const { original_invoice_id, amount, reason, line_items, refund_mode } = parsed.data;
 
   try {
     const { data: invoice } = await supabase.from('billing_invoices')

@@ -2,6 +2,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { billingDb } from '@/lib/billing/api-helpers';
 import { requireAuth } from '@/lib/api/auth-guard';
+import { parseBody } from '@/lib/validation/parse-body';
+import { serviceCreateSchema } from '@/lib/validation/billing';
 
 export async function GET(request: NextRequest) {
   const { staff, error: authError } = await requireAuth(request);
@@ -23,7 +25,9 @@ export async function POST(request: NextRequest) {
   if (authError) return authError;
 
   const supabase = billingDb();
-  const body = await request.json();
+  const parsed = await parseBody(request, serviceCreateSchema);
+  if (parsed.error) return parsed.error;
+  const body = parsed.data;
   
   if (!body.centre_id || !body.service_code || !body.service_name || !body.department) {
     return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });

@@ -2,6 +2,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { billingDb } from '@/lib/billing/api-helpers';
 import { requireAuth } from '@/lib/api/auth-guard';
+import { parseBody } from '@/lib/validation/parse-body';
+import { lineItemCreateSchema } from '@/lib/validation/billing';
 
 function roundTwo(n: number): number { return Math.round((n + Number.EPSILON) * 100) / 100; }
 
@@ -22,7 +24,9 @@ export async function POST(request: NextRequest, { params }: { params: { encount
   if (authError) return authError;
 
   const supabase = billingDb();
-  const body = await request.json();
+  const parsed = await parseBody(request, lineItemCreateSchema);
+  if (parsed.error) return parsed.error;
+  const body = parsed.data;
   
 
   try {

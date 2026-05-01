@@ -2,6 +2,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { billingDb } from '@/lib/billing/api-helpers';
 import { requireAuth } from '@/lib/api/auth-guard';
+import { parseBody } from '@/lib/validation/parse-body';
+import { preAuthCreateSchema } from '@/lib/validation/billing';
 
 export async function GET(request: NextRequest) {
   const { staff, error: authError } = await requireAuth(request);
@@ -29,7 +31,9 @@ export async function POST(request: NextRequest) {
   if (authError) return authError;
 
   const supabase = billingDb();
-  const body = await request.json();
+  const parsed = await parseBody(request, preAuthCreateSchema);
+  if (parsed.error) return parsed.error;
+  const body = parsed.data;
   
   const required = ['encounter_id', 'centre_id', 'patient_id', 'insurance_company_id', 'policy_number', 'requested_amount'];
   for (const field of required) {

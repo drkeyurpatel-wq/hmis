@@ -2,6 +2,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { billingDb } from '@/lib/billing/api-helpers';
 import { requireAuth } from '@/lib/api/auth-guard';
+import { parseBody } from '@/lib/validation/parse-body';
+import { preAuthQueryResponseSchema } from '@/lib/validation/billing';
 
 export async function POST(
   request: NextRequest,
@@ -11,7 +13,9 @@ export async function POST(
   if (authError) return authError;
 
   const supabase = billingDb();
-  const body = await request.json();
+  const parsed = await parseBody(request, preAuthQueryResponseSchema);
+  if (parsed.error) return parsed.error;
+  const body = parsed.data;
   
 
   if (!body.response?.trim()) {

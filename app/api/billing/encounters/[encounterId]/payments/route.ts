@@ -2,6 +2,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { billingDb, billingRpc } from '@/lib/billing/api-helpers';
 import { requireAuth } from '@/lib/api/auth-guard';
+import { parseBody } from '@/lib/validation/parse-body';
+import { paymentCreateSchema } from '@/lib/validation/billing';
 
 export async function GET(request: NextRequest, { params }: { params: { encounterId: string } }) {
   const { staff, error: authError } = await requireAuth(request);
@@ -20,9 +22,9 @@ export async function POST(request: NextRequest, { params }: { params: { encount
   if (authError) return authError;
 
   const supabase = billingDb();
-  const body = await request.json();
-  
-  if (!body.amount || body.amount <= 0) return NextResponse.json({ error: 'Amount must be > 0' }, { status: 400 });
+  const parsed = await parseBody(request, paymentCreateSchema);
+  if (parsed.error) return parsed.error;
+  const body = parsed.data;
 
   try {
     const { data: encounter } = await supabase.from('billing_encounters')
