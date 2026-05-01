@@ -180,7 +180,7 @@ export default function AutoICUScores({ scores, admissionId, staffId, onSave, on
               <div key={key}><label className="text-xs font-medium text-gray-600">{label}</label>
                 <div className="flex gap-1 mt-1">{options.map(([v, l]: any) => (
                   <button key={`${key}-${v}`} onClick={() => setN2(prev => ({...prev, [key]: v}))}
-                    className={`flex-1 px-2 py-1.5 rounded border text-[10px] text-center ${(n2 as any)[key] === v ? (v === 0 ? 'bg-green-600 text-white' : v >= 3 ? 'bg-red-600 text-white' : 'bg-yellow-500 text-white') : 'bg-white border-gray-200'}`}>
+                    className={`flex-1 px-2 py-1.5 rounded border text-[10px] text-center ${(n2 as Record<string, any>)[key] === v ? (v === 0 ? 'bg-green-600 text-white' : v >= 3 ? 'bg-red-600 text-white' : 'bg-yellow-500 text-white') : 'bg-white border-gray-200'}`}>
                     <div className="font-bold">{v}</div><div className="truncate">{l}</div>
                   </button>
                 ))}</div></div>
@@ -237,7 +237,7 @@ export default function AutoICUScores({ scores, admissionId, staffId, onSave, on
                 <div className="flex gap-1 mt-1">{options.map((o, i) => {
                   const val = i + 1;
                   return <button key={i} onClick={() => setBraden(prev => ({...prev, [key]: val}))}
-                    className={`flex-1 px-1 py-1.5 rounded border text-[10px] text-center ${(braden as any)[key] === val ? 'bg-blue-600 text-white border-blue-600' : 'bg-white border-gray-200'}`}>{o}</button>;
+                    className={`flex-1 px-1 py-1.5 rounded border text-[10px] text-center ${(braden as Record<string, any>)[key] === val ? 'bg-blue-600 text-white border-blue-600' : 'bg-white border-gray-200'}`}>{o}</button>;
                 })}</div></div>
             ))}
             <div className={`text-center p-4 rounded-xl ${getInterpretation('braden', bradenTotal).color}`}>
@@ -273,7 +273,7 @@ function MorseFallCalculator({ onSave }: { onSave: (val: number) => void }) {
       <div key={key}><label className="text-xs font-medium text-gray-600">{label}</label>
         <div className="flex gap-1.5 mt-1">{options.map(([v, l]) => (
           <button key={v} onClick={() => setM(prev => ({...prev, [key]: v}))}
-            className={`flex-1 px-2 py-1.5 rounded border text-[10px] text-center ${(m as any)[key] === v ? 'bg-blue-600 text-white border-blue-600' : 'bg-white border-gray-200'}`}>{l} ({v})</button>
+            className={`flex-1 px-2 py-1.5 rounded border text-[10px] text-center ${(m as Record<string, any>)[key] === v ? 'bg-blue-600 text-white border-blue-600' : 'bg-white border-gray-200'}`}>{l} ({v})</button>
         ))}</div></div>
     ))}
     <div className={`text-center p-4 rounded-xl ${color}`}>

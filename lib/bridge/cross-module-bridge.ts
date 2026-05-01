@@ -53,7 +53,7 @@ export async function lookupTariff(centreId: string, serviceName: string, payorT
 
   const rateMap: Record<string, string> = { self: 'rate_self', insurance: 'rate_insurance', cashless: 'rate_insurance', pmjay: 'rate_pmjay', cghs: 'rate_cghs', echs: 'rate_cghs' };
   const rateField = rateMap[payorType] || 'rate_self';
-  const rate = parseFloat((data as any)[rateField] || data.rate_self || 0);
+  const rate = parseFloat((data as Record<string, any>)[rateField] || data.rate_self || 0);
 
   return { tariffId: data.id, rate, serviceName: data.service_name, category: data.category };
 }

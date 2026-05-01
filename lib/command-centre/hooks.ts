@@ -300,7 +300,7 @@ export function useCommandCentre() {
       'otScheduled','otInProgress','otCompleted','otCancelled','otEmergency','otRobotic',
       'billsCount','grossRevenue','netRevenue','collected','outstanding','insuranceBilled',
       'preauthPending','claimsPending','totalClaimed','totalOutstanding','labPending'];
-    keys.forEach(k => { (acc as any)[k] = ((acc as any)[k] || 0) + (c[k] as number || 0); });
+    keys.forEach(k => { (acc as Record<string, any>)[k] = ((acc as Record<string, any>)[k] || 0) + (c[k] as number || 0); });
     return acc;
   }, {
     totalBeds: 0, occupied: 0, available: 0, maintenance: 0, icuTotal: 0, icuOccupied: 0,

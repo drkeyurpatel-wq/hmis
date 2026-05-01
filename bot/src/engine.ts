@@ -30,7 +30,7 @@ export function listAvailableTPAs(): string[] {
 
 function resolveTemplate(template: string, claim: ClaimData): string {
   return template.replace(/\{\{(\w+(?:\.\w+)?)\}\}/g, (_, key) => {
-    const value = (claim as any)[key];
+    const value = (claim as Record<string, any>)[key];
     return value !== undefined && value !== null ? String(value) : '';
   });
 }

@@ -95,9 +95,9 @@ export function useDigitalConsent(centreId: string | null) {
     if (!tpl) return null;
 
     const lang = input.language || 'en';
-    const contentKey = `content_${lang}` as keyof typeof tpl;
-    const risksKey = `risks_${lang}` as keyof typeof tpl;
-    const altKey = `alternatives_${lang}` as keyof typeof tpl;
+    const contentKey = `content_${lang}`;
+    const risksKey = `risks_${lang}`;
+    const altKey = `alternatives_${lang}`;
 
     const { data: consent, error } = await sb().from('hmis_consents').insert({
       patient_id: input.patient_id,
@@ -108,9 +108,9 @@ export function useDigitalConsent(centreId: string | null) {
       consent_type: tpl.consent_type,
       procedure_name: input.procedure_name,
       language: lang,
-      content_shown: (tpl as any)[contentKey] || tpl.content_en,
-      risks_explained: (tpl as any)[risksKey] || tpl.risks_en,
-      alternatives_explained: (tpl as any)[altKey] || tpl.alternatives_en,
+      content_shown: (tpl as Record<string, any>)[contentKey] || tpl.content_en,
+      risks_explained: (tpl as Record<string, any>)[risksKey] || tpl.risks_en,
+      alternatives_explained: (tpl as Record<string, any>)[altKey] || tpl.alternatives_en,
       obtained_by: input.obtained_by,
       template_version: tpl.version,
       consent_given: false,

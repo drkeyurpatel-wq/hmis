@@ -323,7 +323,7 @@ function CathLabInner() {
             <div className="grid grid-cols-3 gap-3">
               {[['pre_creatinine','Creatinine','mg/dL'],['pre_hb','Hb','g/dL'],['pre_platelet','Platelet','K'],['pre_inr','INR',''],['pre_echo_ef','Echo EF','%']].map(([key,label,unit]) => (
                 <div key={key}><label className="text-[9px] text-gray-500">{label}</label>
-                  <div className="relative"><input type="number" step="any" className="w-full px-2 py-1.5 border rounded text-xs pr-10" defaultValue={(selected as any)[key] || ''} onBlur={e => saveField(key, parseFloat(e.target.value) || null)} />
+                  <div className="relative"><input type="number" step="any" className="w-full px-2 py-1.5 border rounded text-xs pr-10" defaultValue={(selected as Record<string, any>)[key] || ''} onBlur={e => saveField(key, parseFloat(e.target.value) || null)} />
                     {unit && <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] text-gray-400">{unit}</span>}</div></div>
               ))}
             </div>

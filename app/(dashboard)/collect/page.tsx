@@ -207,9 +207,9 @@ function CollectDashboard() {
           className="flex items-center gap-2 text-sm font-medium text-gray-700 cursor-pointer">
           <Filter size={14} /> Filters
           {showFilters ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-          {Object.keys(filters).filter(k => !['page', 'pageSize', 'sortBy', 'sortAsc'].includes(k) && (filters as any)[k]).length > 0 && (
+          {Object.keys(filters).filter(k => !['page', 'pageSize', 'sortBy', 'sortAsc'].includes(k) && (filters as Record<string, any>)[k]).length > 0 && (
             <span className="bg-teal-100 text-teal-700 text-xs px-2 py-0.5 rounded-full">
-              {Object.keys(filters).filter(k => !['page', 'pageSize', 'sortBy', 'sortAsc'].includes(k) && (filters as any)[k]).length} active
+              {Object.keys(filters).filter(k => !['page', 'pageSize', 'sortBy', 'sortAsc'].includes(k) && (filters as Record<string, any>)[k]).length} active
             </span>
           )}
         </button>

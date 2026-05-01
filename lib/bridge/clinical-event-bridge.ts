@@ -191,7 +191,7 @@ export async function acknowledgeAlert(alertId: string, staffId: string) {
     }).eq('id', alertId);
     return { success: true };
   } catch (err) {
-    return { success: false, error: (err as any).message };
+    return { success: false, error: (err instanceof Error ? err.message : String(err)) };
   }
 }
 
@@ -209,6 +209,6 @@ export async function resolveAlert(alertId: string, staffId: string) {
     }).eq('id', alertId);
     return { success: true };
   } catch (err) {
-    return { success: false, error: (err as any).message };
+    return { success: false, error: (err instanceof Error ? err.message : String(err)) };
   }
 }

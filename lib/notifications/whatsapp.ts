@@ -6,7 +6,7 @@ import { validatePhone, type NotificationResult, logNotification } from './notif
 import { createClient } from '@/lib/supabase/client';
 
 let _sb: any = null;
-function sb() { if (typeof window === 'undefined') return null as any; if (!_sb) { try { _sb = createClient(); } catch { return null; } } return _sb; }
+function sb() { if (typeof window === 'undefined') return null as never; if (!_sb) { try { _sb = createClient(); } catch { return null; } } return _sb; }
 
 function getConfig(): { apiUrl: string; token: string } | null {
   const apiUrl = process.env.NEXT_PUBLIC_WHATSAPP_API_URL || process.env.WHATSAPP_API_URL || '';

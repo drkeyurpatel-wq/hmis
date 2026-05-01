@@ -172,7 +172,7 @@ function Patient360Inner() {
           <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
             {([['heart_rate','HR (bpm)','72'],['systolic_bp','SBP','120'],['diastolic_bp','DBP','80'],['temperature','Temp (°C)','37.0'],['spo2','SpO₂ (%)','98'],['respiratory_rate','RR (/min)','16']] as const).map(([key,label,ph]) => (
               <div key={key}><label className="text-[10px] text-gray-500 block mb-1">{label}</label>
-              <input type="number" step="0.1" placeholder={ph} value={(vf as any)[key]} onChange={(e: any) => setVf(prev => ({...prev,[key]:e.target.value}))} className="w-full px-2 py-1.5 border rounded-lg text-sm text-center" /></div>
+              <input type="number" step="0.1" placeholder={ph} value={(vf as Record<string, any>)[key]} onChange={(e: any) => setVf(prev => ({...prev,[key]:e.target.value}))} className="w-full px-2 py-1.5 border rounded-lg text-sm text-center" /></div>
             ))}
           </div>
           <button onClick={saveVitals} className="mt-3 px-4 py-2 bg-teal-600 text-white text-sm rounded-lg cursor-pointer">Save Vitals</button>

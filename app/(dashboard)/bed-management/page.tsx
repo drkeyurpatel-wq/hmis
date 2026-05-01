@@ -118,7 +118,7 @@ export default function BedManagementPage() {
       <div className="grid grid-cols-7 gap-2">
         <div className="bg-white rounded-xl border p-3 text-center"><div className="text-2xl font-bold">{totals.occupancyPct}%</div><div className="text-[10px] text-gray-500">Occupancy</div></div>
         {Object.entries(STATUS_CONFIG).map(([status, cfg]) => {
-          const count = (totals as any)[status] || 0;
+          const count = (totals as Record<string, any>)[status] || 0;
           return (
             <div key={status} onClick={() => setStatusFilter(statusFilter === status ? 'all' : status)}
               className={`rounded-xl border p-3 text-center cursor-pointer transition-all ${statusFilter === status ? 'ring-2 ring-teal-500' : ''} ${cfg.bg}`}>

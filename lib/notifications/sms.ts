@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase/client';
 import { validatePhone, type NotificationResult, logNotification } from './notification-status';
 
 let _sb: any = null;
-function sb() { if (typeof window === 'undefined') return null as any; if (!_sb) { try { _sb = createClient(); } catch { return null; } } return _sb; }
+function sb() { if (typeof window === 'undefined') return null as never; if (!_sb) { try { _sb = createClient(); } catch { return null; } } return _sb; }
 
 const MSG91_API = 'https://control.msg91.com/api/v5/flow/';
 

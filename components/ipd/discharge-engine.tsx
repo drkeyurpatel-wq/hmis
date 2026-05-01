@@ -595,8 +595,8 @@ RULES:
             <div className="space-y-1 mt-2">
               {[['belongingsReturned', 'Patient belongings returned'],['patientEducationDone', 'Discharge instructions explained to patient/family']].map(([k, l]) => (
                 <label key={k} className="flex items-center gap-2 text-xs cursor-pointer">
-                  <input type="checkbox" checked={(clearances as any)[k]} onChange={e => setClearances(c => ({...c, [k]: e.target.checked}))} className="w-4 h-4 rounded" />
-                  <span className={(clearances as any)[k] ? 'text-green-700 font-medium' : 'text-gray-600'}>{l}</span>
+                  <input type="checkbox" checked={(clearances as Record<string, any>)[k]} onChange={e => setClearances(c => ({...c, [k]: e.target.checked}))} className="w-4 h-4 rounded" />
+                  <span className={(clearances as Record<string, any>)[k] ? 'text-green-700 font-medium' : 'text-gray-600'}>{l}</span>
                 </label>
               ))}
             </div>

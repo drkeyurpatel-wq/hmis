@@ -17,7 +17,7 @@ export default function SmartIOChart({ entries, admissionId, staffId, onAdd, onF
     const s = (k: string) => te.reduce((a, e) => a + (parseFloat(e[k])||0), 0);
     return { intake: s('total_intake'), output: s('total_output'), n: te.length };
   }, [entries]);
-  const qa = (k: string, v: number) => setF(p => ({...p, [k]: (p as any)[k]+v}));
+  const qa = (k: string, v: number) => setF(p => ({...p, [k]: (p as Record<string, any>)[k]+v}));
   const sc = (s: string) => s==='morning'?'bg-yellow-100 text-yellow-700':s==='evening'?'bg-orange-100 text-orange-700':'bg-indigo-100 text-indigo-700';
 
   return (<div>
@@ -37,12 +37,12 @@ export default function SmartIOChart({ entries, admissionId, staffId, onAdd, onF
       <div className="grid grid-cols-2 gap-6">
         <div><h3 className="text-xs font-semibold text-green-700 mb-2">INTAKE <span className="float-right text-sm">{tIn} ml</span></h3>
           {[['oral_intake_ml','Oral'],['iv_fluid_ml','IV Fluids'],['blood_products_ml','Blood'],['ryles_tube_ml','RT Feed'],['other_intake_ml','Other']].map(([k,l]) => (
-            <div key={k} className="mb-2"><div className="flex justify-between mb-0.5"><label className="text-[10px] text-gray-500">{l}</label><span className="text-xs font-bold text-green-700">{(f as any)[k]}</span></div>
+            <div key={k} className="mb-2"><div className="flex justify-between mb-0.5"><label className="text-[10px] text-gray-500">{l}</label><span className="text-xs font-bold text-green-700">{(f as Record<string, any>)[k]}</span></div>
               <div className="flex gap-0.5">{QI.map(v => <button key={v} onClick={() => qa(k,v)} className="flex-1 py-1 rounded border text-[10px] bg-green-50 text-green-700 hover:bg-green-100">+{v}</button>)}<button onClick={() => setF(p => ({...p,[k]:0}))} className="px-1.5 py-1 rounded text-[10px] text-red-400 border">C</button></div></div>
           ))}</div>
         <div><h3 className="text-xs font-semibold text-red-700 mb-2">OUTPUT <span className="float-right text-sm">{tOut} ml</span></h3>
           {[['urine_ml','Urine'],['drain_1_ml','Drain 1'],['drain_2_ml','Drain 2'],['ryles_aspirate_ml','RT Aspirate'],['vomit_ml','Vomit'],['other_output_ml','Other']].map(([k,l]) => (
-            <div key={k} className="mb-2"><div className="flex justify-between mb-0.5"><label className="text-[10px] text-gray-500">{l}</label><span className="text-xs font-bold text-red-700">{(f as any)[k]}</span></div>
+            <div key={k} className="mb-2"><div className="flex justify-between mb-0.5"><label className="text-[10px] text-gray-500">{l}</label><span className="text-xs font-bold text-red-700">{(f as Record<string, any>)[k]}</span></div>
               <div className="flex gap-0.5">{QO.map(v => <button key={v} onClick={() => qa(k,v)} className="flex-1 py-1 rounded border text-[10px] bg-red-50 text-red-700 hover:bg-red-100">+{v}</button>)}<button onClick={() => setF(p => ({...p,[k]:0}))} className="px-1.5 py-1 rounded text-[10px] text-gray-400 border">C</button></div></div>
           ))}
           <div className="flex items-center gap-2 mt-1"><label className="text-[10px] text-gray-500">Stool</label>

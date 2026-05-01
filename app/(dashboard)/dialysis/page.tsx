@@ -341,7 +341,7 @@ function DialysisInner() {
             <div className="grid grid-cols-3 gap-3">
               {[['pre_weight','Weight','kg'],['pre_bp','BP','mmHg'],['pre_pulse','Pulse','bpm'],['pre_temp','Temp','°F'],['pre_bun','BUN','mg/dL'],['pre_creatinine','Creatinine','mg/dL'],['pre_potassium','K+','mEq/L'],['pre_hemoglobin','Hb','g/dL']].map(([key,label,unit]) => (
               <div key={key}><label className="text-[9px] text-gray-500">{label}</label>
-                <div className="relative"><input type={key === 'pre_bp' ? 'text' : 'number'} step="any" className="w-full px-2 py-1.5 border rounded text-xs pr-10" defaultValue={(selected as any)[key] || ''} onBlur={e => { const v = key === 'pre_bp' ? e.target.value : (parseFloat(e.target.value) || null); saveField(key, v); }} placeholder={key === 'pre_bp' ? '120/80' : ''} />
+                <div className="relative"><input type={key === 'pre_bp' ? 'text' : 'number'} step="any" className="w-full px-2 py-1.5 border rounded text-xs pr-10" defaultValue={(selected as Record<string, any>)[key] || ''} onBlur={e => { const v = key === 'pre_bp' ? e.target.value : (parseFloat(e.target.value) || null); saveField(key, v); }} placeholder={key === 'pre_bp' ? '120/80' : ''} />
                   <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] text-gray-400">{unit}</span></div></div>
             ))}
             </div>
@@ -349,14 +349,14 @@ function DialysisInner() {
             <div className="grid grid-cols-3 gap-3">
               {[['target_uf','Target UF','ml'],['blood_flow_rate','BFR','ml/min'],['dialysate_flow_rate','DFR','ml/min'],['duration_minutes','Duration','min']].map(([key,label,unit]) => (
               <div key={key}><label className="text-[9px] text-gray-500">{label}</label>
-                <div className="relative"><input type="number" className="w-full px-2 py-1.5 border rounded text-xs pr-10" defaultValue={(selected as any)[key] || ''} onBlur={e => saveField(key, parseFloat(e.target.value) || null)} />
+                <div className="relative"><input type="number" className="w-full px-2 py-1.5 border rounded text-xs pr-10" defaultValue={(selected as Record<string, any>)[key] || ''} onBlur={e => saveField(key, parseFloat(e.target.value) || null)} />
                   <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] text-gray-400">{unit}</span></div></div>
             ))}
             </div>
             <div className="grid grid-cols-4 gap-2">
               {[['dialysate_sodium','Na+','mEq/L'],['dialysate_potassium','K+','mEq/L'],['dialysate_calcium','Ca++','mEq/L'],['dialysate_bicarb','HCO3-','mEq/L']].map(([key,label,unit]) => (
               <div key={key}><label className="text-[9px] text-gray-500">{label}</label>
-                <input type="number" step="0.1" className="w-full px-2 py-1.5 border rounded text-xs" defaultValue={(selected as any)[key] || ''} onBlur={e => saveField(key, parseFloat(e.target.value) || null)} /></div>
+                <input type="number" step="0.1" className="w-full px-2 py-1.5 border rounded text-xs" defaultValue={(selected as Record<string, any>)[key] || ''} onBlur={e => saveField(key, parseFloat(e.target.value) || null)} /></div>
             ))}
             </div>
           </div>}
@@ -414,7 +414,7 @@ function DialysisInner() {
             <div className="grid grid-cols-3 gap-3">
               {[['post_weight','Weight','kg'],['post_bp','BP','mmHg'],['post_pulse','Pulse','bpm'],['post_temp','Temp','°F'],['post_bun','BUN','mg/dL'],['post_creatinine','Creatinine','mg/dL'],['post_potassium','K+','mEq/L']].map(([key,label,unit]) => (
               <div key={key}><label className="text-[9px] text-gray-500">{label}</label>
-                <div className="relative"><input type={key === 'post_bp' ? 'text' : 'number'} step="any" className="w-full px-2 py-1.5 border rounded text-xs pr-10" defaultValue={(selected as any)[key] || ''} onBlur={e => { const v = key === 'post_bp' ? e.target.value : (parseFloat(e.target.value) || null); saveField(key, v); }} placeholder={key === 'post_bp' ? '120/80' : ''} />
+                <div className="relative"><input type={key === 'post_bp' ? 'text' : 'number'} step="any" className="w-full px-2 py-1.5 border rounded text-xs pr-10" defaultValue={(selected as Record<string, any>)[key] || ''} onBlur={e => { const v = key === 'post_bp' ? e.target.value : (parseFloat(e.target.value) || null); saveField(key, v); }} placeholder={key === 'post_bp' ? '120/80' : ''} />
                   <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] text-gray-400">{unit}</span></div></div>
             ))}
             </div>
