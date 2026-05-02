@@ -135,7 +135,7 @@ export default function HomePage() {
   }
 
   const activeCentre = centres.find((c: any) => c.centre_id === centreId);
-  const centreName = (activeCentre as any)?.centre?.name || 'Health1';
+  const centreName = (activeCentre as Record<string, any>)?.centre?.name || 'Health1';
 
   const filtered = filter === 'all' ? wq.items : wq.items.filter((i: any) => i.type === filter || i.urgency === filter);
   const typeCounts: Record<string, number> = {};

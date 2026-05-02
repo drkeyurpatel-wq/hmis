@@ -216,7 +216,7 @@ export function Sidebar({ mobileOpen, onMobileClose }: { mobileOpen?: boolean; o
               className="w-full flex items-center gap-2 px-2.5 py-2 rounded-lg bg-white/[0.05] hover:bg-white/[0.08] transition-colors text-left cursor-pointer">
               <Building2 size={13} className="text-teal-400 shrink-0" />
               <span className="text-[11px] font-medium text-white/70 truncate flex-1">
-                {(activeCentre as any)?.centre?.name?.replace('Health1 Super Speciality Hospitals — ', '').replace('Health1 ', '') || 'Select centre'}
+                {(activeCentre as Record<string, any>)?.centre?.name?.replace('Health1 Super Speciality Hospitals — ', '').replace('Health1 ', '') || 'Select centre'}
               </span>
               <ChevronDown size={11} className={cn('text-white/30 transition-transform shrink-0', centreOpen && 'rotate-180')} />
             </button>

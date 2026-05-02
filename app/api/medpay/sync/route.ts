@@ -123,7 +123,7 @@ export async function POST(req: NextRequest) {
     if (!bills?.length) return NextResponse.json({ message: 'No unsynced bills', synced: 0 });
 
     // Step 3: Get IPD numbers for admission-linked bills
-    const admIds = [...new Set(bills.map(b => (b as any).admission_id).filter(Boolean))];
+    const admIds = [...new Set(bills.map(b => (b as Record<string, any>).admission_id).filter(Boolean))];
     const admMap: Record<string, string> = {};
     const pkgMap: Record<string, string> = {}; // admission_id → package_name
     if (admIds.length) {
@@ -136,7 +136,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Step 4: Get OT surgery details for items with ot_booking_id
-    const otIds = [...new Set(bills.flatMap(b => ((b as any).items || []).map((i: any) => i.ot_booking_id).filter(Boolean)))];
+    const otIds = [...new Set(bills.flatMap(b => ((b as Record<string, any>).items || []).map((i: any) => i.ot_booking_id).filter(Boolean)))];
     const otMap: Record<string, any> = {};
     if (otIds.length) {
       const { data: ots } = await db.from('hmis_ot_bookings')
@@ -168,9 +168,9 @@ export async function POST(req: NextRequest) {
       // Build MedPay billing_rows
       const rows: any[] = [];
       for (const bill of groupBills) {
-        const pt = (bill as any).patient;
-        const items = (bill as any).items || [];
-        const ipNo = admMap[(bill as any).admission_id] || '';
+        const pt = (bill as Record<string, any>).patient;
+        const items = (bill as Record<string, any>).items || [];
+        const ipNo = admMap[(bill as Record<string, any>).admission_id] || '';
         const sponsor = payorToSponsor(bill.payor_type, bill.insurer_name);
 
         for (const item of items) {

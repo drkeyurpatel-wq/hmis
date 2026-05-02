@@ -292,7 +292,7 @@ function Patient360Inner() {
               {p.recentLabResults.length > 0 ? <div className="space-y-2">{p.recentLabResults.slice(0,6).map((lab: any) => (
                 <div key={lab.id} className="bg-gray-50 rounded-lg p-2">
                   <div className="flex items-center justify-between"><span className="text-xs font-semibold">{lab.test_name}</span><span className="text-[10px] text-gray-400">{ago(lab.ordered_at)}</span></div>
-                  {(lab.results as any)?.slice(0,4).map((r: any, i: number) => (
+                  {(lab.results as unknown[])?.slice(0,4).map((r: any, i: number) => (
                     <div key={i} className={`flex justify-between text-[11px] mt-0.5 ${r.is_critical?'text-red-600 font-bold':r.is_abnormal?'text-orange-600':'text-gray-600'}`}>
                       <span>{r.parameter_name}</span><span>{r.result_value} {r.unit}{r.is_critical?' !':r.is_abnormal?' ↑':''}</span></div>
                   ))}

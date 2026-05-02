@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
       .select('id', { count: 'exact', head: true })
       .eq('bill_id', bill_id);
 
-    if (existing && (existing as any).length > 0) {
+    if (existing && Array.isArray(existing) && existing.length > 0) {
       return NextResponse.json({
         error: 'Bill already has payout items computed. Delete existing items first to recompute.',
       }, { status: 409 });

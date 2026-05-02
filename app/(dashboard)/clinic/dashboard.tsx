@@ -126,7 +126,7 @@ export function ClinicDashboard() {
   const { appointments, loading: apptLoading } = useTodayAppointments(centreId);
 
   const activeCentre = centres.find((c: any) => c.centre_id === centreId);
-  const centreName = (activeCentre as any)?.centre?.name || 'Wellness Clinic';
+  const centreName = (activeCentre as Record<string, any>)?.centre?.name || 'Wellness Clinic';
   const greeting = () => {
     const h = new Date().getHours();
     return h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
@@ -275,10 +275,10 @@ export function ClinicDashboard() {
             <div>
               <p className="text-xs text-gray-500">Revenue Share</p>
               <p className="text-lg font-bold text-gray-900">
-                ₹{fmt(stats.revenueToday * 30 * ((activeCentre as any)?.centre?.franchise_revenue_share_pct || 20) / 100)}
+                ₹{fmt(stats.revenueToday * 30 * ((activeCentre as Record<string, any>)?.centre?.franchise_revenue_share_pct || 20) / 100)}
               </p>
               <p className="text-[10px] text-gray-400">
-                {(activeCentre as any)?.centre?.franchise_revenue_share_pct || 20}% share
+                {(activeCentre as Record<string, any>)?.centre?.franchise_revenue_share_pct || 20}% share
               </p>
             </div>
           </div>

@@ -425,7 +425,7 @@ function DialysisInner() {
             <div><label className="text-[9px] text-gray-500">Notes</label>
               <textarea className="w-full px-2 py-1.5 border rounded text-xs h-16 resize-none" defaultValue={selected.notes} onBlur={e => saveField('notes', e.target.value)} placeholder="Session notes..." /></div>
             {selected.status === 'in_progress' && <button onClick={async () => {
-              const postW = (selected as any).post_weight;
+              const postW = (selected as Record<string, any>)?.post_weight;
               await dial.endSession(selected.id, { post_weight: postW });
               flash('Session completed');
               setSelected(null);

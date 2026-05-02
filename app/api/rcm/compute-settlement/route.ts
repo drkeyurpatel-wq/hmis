@@ -3,6 +3,7 @@
 // Aggregates all payout items into pools, applies MGM/retainer/incentive/TDS
 
 import { NextRequest, NextResponse } from 'next/server';
+import type { SettlementCycle } from '@/lib/rcm/types';
 import { createClient } from '@supabase/supabase-js';
 import { computeSettlement, generateBillBreakdown } from '@/lib/rcm/settlement-engine';
 import {
@@ -71,7 +72,7 @@ export async function POST(request: NextRequest) {
       centre_id,
       contract,
       month,
-      cycle: cycle as any,
+      cycle: cycle as SettlementCycle,
       payout_items: payoutItems,
     });
 
