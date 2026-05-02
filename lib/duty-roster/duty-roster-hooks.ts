@@ -156,7 +156,7 @@ export function useDutyRoster(centreId: string | null) {
       if (r.shift_type === 'off' || r.shift_type === 'leave') return;
       const key = `${r.roster_date}_${r.ward_id}_${r.shift_id || r.shift_type}`;
       if (!dateWardShift[key]) dateWardShift[key] = [];
-      dateWardShift[key].push({ staffType: (r.staff as any)?.staff_type || 'unknown' });
+      dateWardShift[key].push({ staffType: (r.staff as Record<string, any> | undefined)?.staff_type || 'unknown' });
     });
     // Check against requirements
     requirements.forEach(req => {
@@ -166,8 +166,8 @@ export function useDutyRoster(centreId: string | null) {
         const assigned = (dateWardShift[key] || []).filter(s => s.staffType === req.staff_type).length;
         if (assigned < req.min_count) {
           gaps.push({
-            ward: (req.ward as any)?.name || 'Unknown', wardId: req.ward_id,
-            shift: (req.shift as any)?.shift_name || 'Unknown', shiftId: req.shift_id,
+            ward: (req.ward as Record<string, any> | undefined)?.name || 'Unknown', wardId: req.ward_id,
+            shift: (req.shift as Record<string, any> | undefined)?.shift_name || 'Unknown', shiftId: req.shift_id,
             staffType: req.staff_type, required: req.min_count, assigned, date,
           });
         }
@@ -181,7 +181,7 @@ export function useDutyRoster(centreId: string | null) {
     const summary: Record<string, { name: string; shifts: Record<string, number>; totalDays: number; offDays: number; leaveDays: number; overtimeMin: number }> = {};
     roster.forEach(r => {
       if (!summary[r.staff_id]) {
-        summary[r.staff_id] = { name: (r.staff as any)?.full_name || '?', shifts: {}, totalDays: 0, offDays: 0, leaveDays: 0, overtimeMin: 0 };
+        summary[r.staff_id] = { name: (r.staff as Record<string, any> | undefined)?.full_name || '?', shifts: {}, totalDays: 0, offDays: 0, leaveDays: 0, overtimeMin: 0 };
       }
       const s = summary[r.staff_id];
       s.shifts[r.shift_type] = (s.shifts[r.shift_type] || 0) + 1;

@@ -266,12 +266,12 @@ export function useMAR(admissionId: string | null) {
       const { data: marRow } = await sb().from('hmis_mar')
         .select('medication_order:hmis_ipd_medication_orders!inner(drug_name, admission:hmis_admissions!inner(patient_id, centre_id))')
         .eq('id', marId).single();
-      const adm = (marRow?.medication_order as any)?.admission;
+      const adm = (marRow?.medication_order as Record<string, any> | undefined)?.admission;
       if (adm) {
         import('@/lib/bridge/clinical-event-bridge').then(({ onMedicationAdministered }) => {
           onMedicationAdministered({
             centreId: adm.centre_id, patientId: adm.patient_id, admissionId: admissionId!,
-            marId, drugName: (marRow?.medication_order as any)?.drug_name || '', staffId,
+            marId, drugName: (marRow?.medication_order as Record<string, any> | undefined)?.drug_name || '', staffId,
           }).catch((_e: unknown) => { /* lib: non-blocking */ });
         });
       }

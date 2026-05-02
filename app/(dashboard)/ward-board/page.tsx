@@ -53,7 +53,7 @@ function WardBoardInner() {
     }
 
     // Get latest vitals for all admitted patients
-    const patientIds = Object.values(admissionMap).map((a: any) => (a.patient as any)?.id).filter(Boolean);
+    const patientIds = Object.values(admissionMap).map((a: any) => (a.patient as Record<string, any> | undefined)?.id).filter(Boolean);
     let vitalsMap: Record<string, any> = {};
     if (patientIds.length > 0) {
       const { data: vitals } = await sb().from('hmis_vitals')
@@ -75,20 +75,20 @@ function WardBoardInner() {
 
     // Build cards
     const bedCards: BedCard[] = (bedData || []).map((b: any) => {
-      const ward = (b.room as any)?.ward as any;
+      const ward = (b.room as Record<string, any> | undefined)?.ward as Record<string, any> | undefined;
       const adm = b.current_admission_id ? admissionMap[b.current_admission_id] : null;
-      const pt = adm ? (adm.patient as any) : null;
+      const pt = adm ? (adm.patient as Record<string, any> | undefined) : null;
       const v = pt ? vitalsMap[pt.id] : null;
 
       return {
-        bedId: b.id, bedNumber: b.bed_number, roomNumber: (b.room as any)?.room_number || '',
+        bedId: b.id, bedNumber: b.bed_number, roomNumber: (b.room as Record<string, any> | undefined)?.room_number || '',
         wardName: ward?.name || '', wardType: ward?.type || '',
         status: b.status,
         patient: pt ? {
           id: pt.id, name: `${pt.first_name} ${pt.last_name || ''}`, uhid: pt.uhid,
           age: pt.age_years, gender: pt.gender, ipd: adm.ipd_number,
           daysAdmitted: Math.ceil((Date.now() - new Date(adm.admission_date).getTime()) / 86400000),
-          doctor: (adm.doctor as any)?.full_name || '', diagnosis: adm.provisional_diagnosis || '',
+          doctor: (adm.doctor as Record<string, any> | undefined)?.full_name || '', diagnosis: adm.provisional_diagnosis || '',
           payorType: adm.payor_type || 'self',
         } : undefined,
         vitals: v ? {

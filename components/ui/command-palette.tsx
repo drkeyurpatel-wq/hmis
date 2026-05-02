@@ -209,7 +209,7 @@ export function CommandPalette() {
       // Lab results — only show if patient name matches query
       const labItems: CommandItem[] = [];
       for (const lab of labRes.data || []) {
-        const pt = lab.patient as any;
+        const pt = lab.patient as Record<string, any> | undefined;
         const name = `${pt?.first_name || ''} ${pt?.last_name || ''}`.toLowerCase();
         if (name.includes(q) || lab.test_name.toLowerCase().includes(q)) {
           labItems.push({

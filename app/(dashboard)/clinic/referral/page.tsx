@@ -294,9 +294,9 @@ function ReferralInner() {
                   <div key={ref.id} className="px-4 py-3 hover:bg-gray-50 transition-colors">
                     <div className="flex items-center gap-2 mb-1">
                       <span className="text-sm font-medium text-gray-800">
-                        {(ref.patient as any)?.first_name} {(ref.patient as any)?.last_name}
+                        {(ref.patient as Record<string, any> | undefined)?.first_name} {(ref.patient as Record<string, any> | undefined)?.last_name}
                       </span>
-                      <span className="text-xs text-gray-400 font-mono">{(ref.patient as any)?.uhid}</span>
+                      <span className="text-xs text-gray-400 font-mono">{(ref.patient as Record<string, any> | undefined)?.uhid}</span>
                       <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${statusCfg.color}`}>
                         {statusCfg.label}
                       </span>
@@ -312,7 +312,7 @@ function ReferralInner() {
                     <div className="flex items-center gap-3 mt-1 text-[10px] text-gray-400">
                       <span>{ref.referral_number}</span>
                       {ref.department && <span>&middot; {ref.department}</span>}
-                      <span>&middot; {(ref.to_centre as any)?.name || 'Hub Hospital'}</span>
+                      <span>&middot; {(ref.to_centre as Record<string, any> | undefined)?.name || 'Hub Hospital'}</span>
                       <span>&middot; {new Date(ref.created_at).toLocaleDateString('en-IN')}</span>
                     </div>
                   </div>

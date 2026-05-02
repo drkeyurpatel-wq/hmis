@@ -173,7 +173,7 @@ export function useLeakageActions(centreId: string | null) {
         .eq('id', admissionId).single();
 
       if (!adm?.bed) return { success: false, error: 'Bed not found' };
-      const room = (adm.bed as any)?.room;
+      const room = (adm.bed as Record<string, any> | undefined)?.room;
       const rate = room?.daily_rate || 1500;
       const roomType = room?.room_type || 'General';
       const today = new Date().toISOString().split('T')[0];

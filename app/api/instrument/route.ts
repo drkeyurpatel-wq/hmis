@@ -93,8 +93,8 @@ export async function POST(request: NextRequest) {
             .eq('barcode', sampleBarcode).single();
           if (sample) {
             orderId = sample.order_id;
-            testId = (sample.order as any).test_id;
-            patientId = (sample.order as any).patient_id;
+            testId = (sample.order as Record<string, any> | undefined)?.test_id;
+            patientId = (sample.order as Record<string, any> | undefined)?.patient_id;
           }
         }
 

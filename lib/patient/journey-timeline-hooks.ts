@@ -58,7 +58,7 @@ export function usePatientJourney(patientId: string | null) {
         if (v.check_in_time) {
           all.push({ id: `opd-${v.id}`, type: 'opd_visit', timestamp: v.check_in_time,
             title: `OPD Visit — Token #${v.token_number}`,
-            detail: v.chief_complaint || 'Walk-in', staffName: (v.doctor as any)?.full_name });
+            detail: v.chief_complaint || 'Walk-in', staffName: (v.doctor as Record<string, any> | undefined)?.full_name });
         }
       }
 
@@ -71,7 +71,7 @@ export function usePatientJourney(patientId: string | null) {
         all.push({ id: `emr-${e.id}`, type: 'consultation', timestamp: e.encounter_date,
           title: `EMR: ${e.primary_diagnosis_label || 'Encounter'}`,
           detail: `${e.investigation_count || 0} investigations, ${e.prescription_count || 0} prescriptions`,
-          staffName: (e.doctor as any)?.full_name });
+          staffName: (e.doctor as Record<string, any> | undefined)?.full_name });
       }
 
       // 3. Lab Orders + Results
@@ -82,7 +82,7 @@ export function usePatientJourney(patientId: string | null) {
       for (const lab of (labs || []) as any[]) {
         all.push({ id: `lab-ord-${lab.id}`, type: 'lab_ordered', timestamp: lab.created_at,
           title: `Lab ordered: ${lab.test_name}`, detail: `Status: ${lab.status}`,
-          staffName: (lab.doctor as any)?.full_name });
+          staffName: (lab.doctor as Record<string, any> | undefined)?.full_name });
 
         if (lab.status === 'completed') {
           // Check for critical results
@@ -112,7 +112,7 @@ export function usePatientJourney(patientId: string | null) {
       for (const rad of rads || []) {
         all.push({ id: `rad-${rad.id}`, type: 'radiology_ordered', timestamp: rad.created_at,
           title: `Imaging: ${rad.test_name || `${rad.modality} ${rad.body_part}`}`,
-          detail: `Status: ${rad.status}`, staffName: (rad.doctor as any)?.full_name });
+          detail: `Status: ${rad.status}`, staffName: (rad.doctor as Record<string, any> | undefined)?.full_name });
       }
 
       // 5. Admissions (discharge_date is actual_discharge in schema)
@@ -124,7 +124,7 @@ export function usePatientJourney(patientId: string | null) {
         all.push({ id: `adm-${adm.id}`, type: 'admission', timestamp: adm.admission_date,
           title: `Admitted — IPD ${adm.ipd_number}`,
           detail: `${adm.provisional_diagnosis || ''} · ${adm.payor_type || ''}`,
-          staffName: (adm.doctor as any)?.full_name });
+          staffName: (adm.doctor as Record<string, any> | undefined)?.full_name });
         if (adm.actual_discharge) {
           all.push({ id: `disch-${adm.id}`, type: 'discharge', timestamp: adm.actual_discharge,
             title: `Discharged`, detail: `IPD ${adm.ipd_number} · ${adm.status}` });
@@ -139,8 +139,8 @@ export function usePatientJourney(patientId: string | null) {
 
         for (const r of rounds || []) {
           all.push({ id: `round-${r.id}`, type: 'doctor_round', timestamp: r.round_date,
-            title: `${r.round_type || 'Round'} — ${(r.doctor as any)?.full_name || ''}`,
-            detail: r.plan || '', staffName: (r.doctor as any)?.full_name });
+            title: `${r.round_type || 'Round'} — ${(r.doctor as Record<string, any> | undefined)?.full_name || ''}`,
+            detail: r.plan || '', staffName: (r.doctor as Record<string, any> | undefined)?.full_name });
         }
       }
 
@@ -166,7 +166,7 @@ export function usePatientJourney(patientId: string | null) {
             title: isAbnormal ? '! Vitals — Abnormal' : 'Vitals recorded',
             detail: parts.join(' · ') || 'No values',
             severity: isAbnormal ? 'warning' : 'normal',
-            staffName: (v.recorder as any)?.full_name });
+            staffName: (v.recorder as Record<string, any> | undefined)?.full_name });
         }
       }
 
@@ -179,12 +179,12 @@ export function usePatientJourney(patientId: string | null) {
           .order('administered_time', { ascending: true }).limit(50);
 
         for (const m of marRecords || []) {
-          const med = m.medication_order as any;
+          const med = m.medication_order as Record<string, any> | undefined;
           all.push({ id: `mar-${m.id}`, type: 'medication_given',
             timestamp: m.administered_time || m.scheduled_time,
             title: `Med given: ${med?.drug_name || 'Unknown'}`,
             detail: `${med?.dose || ''} ${med?.route || ''} · Dose: ${m.dose_given || med?.dose || '?'}`,
-            staffName: (m.nurse as any)?.full_name });
+            staffName: (m.nurse as Record<string, any> | undefined)?.full_name });
         }
       }
 
@@ -199,7 +199,7 @@ export function usePatientJourney(patientId: string | null) {
           all.push({ id: `note-${n.id}`, type: 'nursing_note', timestamp: n.created_at,
             title: `Nursing note (${n.shift || 'shift'})`,
             detail: (n.note || '').slice(0, 200),
-            staffName: (n.nurse as any)?.full_name });
+            staffName: (n.nurse as Record<string, any> | undefined)?.full_name });
         }
       }
 

@@ -54,9 +54,9 @@ export async function GET(request: NextRequest) {
     for (const adm of admissions) {
       if (done.has(adm.id)) continue;
 
-      const bed = adm.bed as any;
-      const ward = bed?.room?.ward as any;
-      const pt = adm.patient as any;
+      const bed = adm.bed as Record<string, any> | undefined;
+      const ward = bed?.room?.ward as Record<string, any> | undefined;
+      const pt = adm.patient as Record<string, any> | undefined;
       const charges: { description: string; amount: number }[] = [];
 
       const bedCharge = ward?.bed_charge_per_day || 0;
@@ -67,7 +67,7 @@ export async function GET(request: NextRequest) {
 
       // Diet charges — lookup active diet order for this admission
       const { data: diet } = await sb.from('hmis_diet_orders')
-        .select('diet_type').eq('patient_id', pt.id).eq('status', 'active').limit(1).maybeSingle();
+        .select('diet_type').eq('patient_id', pt?.id).eq('status', 'active').limit(1).maybeSingle();
       if (diet) {
         const dietRates: Record<string, number> = { regular: 250, diabetic: 350, renal: 400, soft: 300, liquid: 200, npo: 0 };
         const dietRate = dietRates[diet.diet_type] || 250;
@@ -82,7 +82,7 @@ export async function GET(request: NextRequest) {
       const total = charges.reduce((s: number, c: any) => s + c.amount, 0);
 
       await sb.from('hmis_charge_log').insert(charges.map(c => ({
-        centre_id: centre.id, patient_id: pt.id, admission_id: adm.id,
+        centre_id: centre.id, patient_id: pt?.id, admission_id: adm.id,
         service_name: c.description, description: c.description,
         category: c.description.startsWith('Bed') ? 'room' : c.description.startsWith('ICU') ? 'icu' : c.description.startsWith('Diet') ? 'diet' : 'nursing',
         amount: c.amount, unit_rate: c.amount, quantity: 1,

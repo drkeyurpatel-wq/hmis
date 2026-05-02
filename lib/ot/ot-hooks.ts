@@ -84,7 +84,7 @@ export function useOTSchedule(centreId: string | null) {
         const eStart = eH * 60 + eM;
         const eEnd = eStart + (existing.estimated_duration_min || 60);
         if (startMin < eEnd && endMin > eStart) {
-          return { success: false, error: `Surgeon conflict: already booked for "${existing.procedure_name}" in ${((existing.ot_room as any)?.name || (existing.ot_room as any)?.[0]?.name || "OT")} at ${existing.scheduled_start}` };
+          return { success: false, error: `Surgeon conflict: already booked for "${existing.procedure_name}" in ${((existing.ot_room as Record<string, any> | undefined)?.name || (existing.ot_room as Record<string, any> | undefined)?.[0]?.name || "OT")} at ${existing.scheduled_start}` };
         }
       }
     }
@@ -103,7 +103,7 @@ export function useOTSchedule(centreId: string | null) {
           const eStart = eH * 60 + eM;
           const eEnd = eStart + (existing.estimated_duration_min || 60);
           if (startMin < eEnd && endMin > eStart) {
-            return { success: false, error: `Anaesthetist conflict: already assigned to "${existing.procedure_name}" in ${((existing.ot_room as any)?.name || (existing.ot_room as any)?.[0]?.name || "OT")} at ${existing.scheduled_start}` };
+            return { success: false, error: `Anaesthetist conflict: already assigned to "${existing.procedure_name}" in ${((existing.ot_room as Record<string, any> | undefined)?.name || (existing.ot_room as Record<string, any> | undefined)?.[0]?.name || "OT")} at ${existing.scheduled_start}` };
           }
         }
       }

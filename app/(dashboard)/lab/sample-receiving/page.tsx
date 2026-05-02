@@ -212,10 +212,10 @@ function SampleRow({ sample, onAccept, onReject, processing }: {
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
           <span className="text-sm font-medium text-gray-800">
-            {(sample.patient as any)?.first_name} {(sample.patient as any)?.last_name}
+            {(sample.patient as Record<string, any> | undefined)?.first_name} {(sample.patient as Record<string, any> | undefined)?.last_name}
           </span>
-          <span className="text-xs text-gray-400 font-mono">{(sample.patient as any)?.uhid}</span>
-          <span className="text-[10px] text-gray-400">from {(sample.centre as any)?.name || 'Clinic'}</span>
+          <span className="text-xs text-gray-400 font-mono">{(sample.patient as Record<string, any> | undefined)?.uhid}</span>
+          <span className="text-[10px] text-gray-400">from {(sample.centre as Record<string, any> | undefined)?.name || 'Clinic'}</span>
         </div>
         <div className="text-xs text-gray-500 mt-0.5">
           {sample.sample_type} &middot; {(sample.tests_ordered as any[])?.join(', ')}

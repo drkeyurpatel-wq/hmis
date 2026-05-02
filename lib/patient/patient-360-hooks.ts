@@ -86,8 +86,8 @@ export function usePatient360(patientId: string | null, centreId: string | null)
 
     const isAdmitted = !!adm;
     const admissionId = adm?.id;
-    const bedData = adm?.bed as any;
-    const wardData = bedData?.room?.ward as any;
+    const bedData = adm?.bed as Record<string, any> | undefined;
+    const wardData = bedData?.room?.ward as Record<string, any> | undefined;
     const isICU = wardData?.type === 'icu' || wardData?.type === 'transplant_icu';
     const daysAdmitted = adm ? Math.ceil((now.getTime() - new Date(adm.admission_date).getTime()) / 86400000) : 0;
 

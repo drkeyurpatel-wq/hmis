@@ -40,9 +40,9 @@ export async function runDailyAutoCharges(centreId: string, chargeDate: string, 
   for (const adm of admissions) {
     if (alreadyCharged.has(adm.id)) continue; // Skip already processed
 
-    const pt = adm.patient as any;
-    const bed = adm.bed as any;
-    const ward = bed?.room?.ward as any;
+    const pt = adm.patient as Record<string, any> | undefined;
+    const bed = adm.bed as Record<string, any> | undefined;
+    const ward = bed?.room?.ward as Record<string, any> | undefined;
     const charges: { description: string; amount: number }[] = [];
 
     // Bed charge
@@ -59,7 +59,7 @@ export async function runDailyAutoCharges(centreId: string, chargeDate: string, 
 
     // Diet charge (if active diet order)
     const { data: diet } = await sb().from('hmis_diet_orders')
-      .select('diet_type').eq('patient_id', pt.id).eq('centre_id', centreId).eq('status', 'active').limit(1).maybeSingle();
+      .select('diet_type').eq('patient_id', pt?.id).eq('centre_id', centreId).eq('status', 'active').limit(1).maybeSingle();
     if (diet) {
       const dietRate = diet.diet_type === 'npo' ? 0 : diet.diet_type === 'liquid' ? 150 : diet.diet_type === 'soft' ? 200 : 250;
       if (dietRate > 0) charges.push({ description: `Diet — ${diet.diet_type?.replace(/_/g, ' ')}`, amount: dietRate });
@@ -72,7 +72,7 @@ export async function runDailyAutoCharges(centreId: string, chargeDate: string, 
     try {
       // Post to charge log
       await sb().from('hmis_charge_log').insert(charges.map((c: any) => ({
-        centre_id: centreId, patient_id: pt.id, admission_id: adm.id,
+        centre_id: centreId, patient_id: pt?.id, admission_id: adm.id,
         description: c.description, amount: c.amount, charge_date: chargeDate,
         charge_type: 'auto_daily', created_by: staffId,
       })));
@@ -84,13 +84,13 @@ export async function runDailyAutoCharges(centreId: string, chargeDate: string, 
       });
 
       results.push({
-        admissionId: adm.id, patientName: `${pt.first_name} ${pt.last_name || ''}`,
+        admissionId: adm.id, patientName: `${pt?.first_name} ${pt?.last_name || ''}`,
         ipdNumber: adm.ipd_number, charges, total,
       });
       totalCharged += total;
     } catch (err: any) {
       results.push({
-        admissionId: adm.id, patientName: `${pt.first_name} ${pt.last_name || ''}`,
+        admissionId: adm.id, patientName: `${pt?.first_name} ${pt?.last_name || ''}`,
         ipdNumber: adm.ipd_number, charges, total, error: err.message,
       });
       errors++;

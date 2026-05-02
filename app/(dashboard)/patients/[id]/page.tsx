@@ -135,11 +135,11 @@ function Patient360Inner() {
           <div className={`flex flex-wrap items-center gap-3 sm:gap-6 px-4 py-2 text-xs ${p.isICU ? 'bg-red-50' : 'bg-teal-50'}`}>
             <div className="flex items-center gap-1.5">
               <BedDouble size={13} className={p.isICU ? 'text-red-600' : 'text-teal-600'} />
-              <span className="font-semibold">{(p.bed as any)?.bed_number || '—'}</span>
-              <span className="text-gray-500">{(p.ward as any)?.name || ''}</span>
+              <span className="font-semibold">{(p.bed as Record<string, any> | undefined)?.bed_number || '—'}</span>
+              <span className="text-gray-500">{(p.ward as Record<string, any> | undefined)?.name || ''}</span>
             </div>
             <div className="text-gray-500">IPD: <span className="font-mono font-semibold text-gray-700">{p.admission.ipd_number}</span></div>
-            <div className="text-gray-500">Dr. <span className="font-semibold text-gray-700">{(p.primaryDoctor as any)?.full_name || '—'}</span></div>
+            <div className="text-gray-500">Dr. <span className="font-semibold text-gray-700">{(p.primaryDoctor as Record<string, any> | undefined)?.full_name || '—'}</span></div>
             <div className="text-gray-500">Day <span className="font-bold text-gray-700">{p.daysAdmitted}</span></div>
             <div className="text-gray-500 uppercase font-semibold">{p.billingSummary.payorType}</div>
             {p.isICU && <span className="bg-red-600 text-white text-[10px] px-2 py-0.5 rounded-full font-bold">ICU</span>}
@@ -262,7 +262,7 @@ function Patient360Inner() {
                 <h3 className="text-xs font-semibold text-gray-700 mb-2 flex items-center gap-1"><ClipboardList size={12} /> Pending Orders</h3>
                 <div className="space-y-1">{p.pendingLabOrders.map((o: any) => (
                   <div key={o.id} className="flex items-center justify-between py-1.5 px-2 bg-purple-50 rounded-lg text-xs">
-                    <div className="flex items-center gap-1.5"><FlaskConical size={11} className="text-purple-500" /><span className="font-medium">{o.test_name||(o.test as any)?.test_name}</span></div>
+                    <div className="flex items-center gap-1.5"><FlaskConical size={11} className="text-purple-500" /><span className="font-medium">{o.test_name||(o.test as Record<string, any> | undefined)?.test_name}</span></div>
                     <span className="px-1.5 py-0.5 rounded text-[10px] bg-gray-100 text-gray-500">{o.status?.replace('_',' ')}</span></div>
                 ))}{p.pendingRadOrders.map((o: any) => (
                   <div key={o.id} className="flex items-center justify-between py-1.5 px-2 bg-indigo-50 rounded-lg text-xs">
@@ -276,7 +276,7 @@ function Patient360Inner() {
               <h3 className="text-xs font-semibold text-gray-700 mb-2 flex items-center gap-1"><Stethoscope size={12} /> Notes (24h)</h3>
               {p.recentNotes.length > 0 ? <div className="space-y-2">{p.recentNotes.map((n: any) => (
                 <div key={n.id} className="bg-gray-50 rounded-lg p-2.5">
-                  <div className="flex items-center justify-between mb-1"><span className="text-xs font-semibold text-gray-700">{(n.doctor as any)?.full_name || 'Unknown'}</span><span className="text-[10px] text-gray-400">{ago(n.created_at)}</span></div>
+                  <div className="flex items-center justify-between mb-1"><span className="text-xs font-semibold text-gray-700">{(n.doctor as Record<string, any> | undefined)?.full_name || 'Unknown'}</span><span className="text-[10px] text-gray-400">{ago(n.created_at)}</span></div>
                   {n.chief_complaint && <div className="text-xs text-gray-600 mb-1">CC: {n.chief_complaint}</div>}
                   {n.assessment && <div className="text-xs text-gray-600">{n.assessment.substring(0,200)}</div>}
                   {n.plan && <div className="text-xs text-teal-700 mt-1">Plan: {n.plan.substring(0,150)}</div>}
@@ -305,7 +305,7 @@ function Patient360Inner() {
                 <h3 className="text-xs font-semibold text-gray-700 mb-2 flex items-center gap-1"><ScanLine size={12} /> Radiology</h3>
                 {p.recentRadReports.slice(0,3).map((r: any) => (
                   <div key={r.id} className="bg-gray-50 rounded-lg p-2 mb-1.5">
-                    <div className="text-xs font-semibold">{(r.order as any)?.test_name}</div>
+                    <div className="text-xs font-semibold">{(r.order as Record<string, any> | undefined)?.test_name}</div>
                     {r.impression && <div className="text-[11px] text-gray-600 mt-0.5">{r.impression.substring(0,120)}</div>}
                   </div>
                 ))}

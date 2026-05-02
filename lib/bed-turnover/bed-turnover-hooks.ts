@@ -193,7 +193,7 @@ export function useBedTurnover(centreId: string | null) {
     if (!centreId || !sb()) return;
     // Get bed ward
     const { data: bed } = await sb().from('hmis_beds').select('room:hmis_rooms(ward_id)').eq('id', bedId).single();
-    const wardId = (bed?.room as any)?.ward_id;
+    const wardId = (bed?.room as Record<string, any> | undefined)?.ward_id;
     if (!wardId) return;
 
     // Find first waiting patient for this ward

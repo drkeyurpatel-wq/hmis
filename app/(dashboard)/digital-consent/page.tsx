@@ -169,7 +169,7 @@ function Inner() {
               <tbody>
                 {dc.consents.map(c => (
                   <tr key={c.id} className="border-t hover:bg-gray-50 cursor-pointer" onClick={() => openDetail(c)}>
-                    <td className="p-3 font-medium">{(c.patient as any)?.first_name} {(c.patient as any)?.last_name}<br /><span className="text-xs text-gray-400">{(c.patient as any)?.uhid}</span></td>
+                    <td className="p-3 font-medium">{(c.patient as Record<string, any> | undefined)?.first_name} {(c.patient as Record<string, any> | undefined)?.last_name}<br /><span className="text-xs text-gray-400">{(c.patient as Record<string, any> | undefined)?.uhid}</span></td>
                     <td className="p-3">{c.procedure_name}</td>
                     <td className="p-3 text-center"><span className={`px-2 py-0.5 rounded text-xs font-medium ${TYPE_COLORS[c.consent_type] || 'bg-gray-100'}`}>{c.consent_type}</span></td>
                     <td className="p-3 text-center">{LANGS[c.language] || c.language}</td>
@@ -238,7 +238,7 @@ function Inner() {
             <div className="flex items-start justify-between mb-4">
               <div>
                 <h2 className="text-xl font-bold">{selected.procedure_name}</h2>
-                <p className="text-gray-600">{(selected.patient as any)?.first_name} {(selected.patient as any)?.last_name} ({(selected.patient as any)?.uhid})</p>
+                <p className="text-gray-600">{(selected.patient as Record<string, any> | undefined)?.first_name} {(selected.patient as Record<string, any> | undefined)?.last_name} ({(selected.patient as Record<string, any> | undefined)?.uhid})</p>
                 <p className="text-sm text-gray-400">{selected.consent_type} · {LANGS[selected.language]} · v{selected.template_version}</p>
               </div>
               <div>
@@ -368,7 +368,7 @@ function Inner() {
                       <span className="text-gray-400 whitespace-nowrap">{new Date(a.created_at).toLocaleString()}</span>
                       <span className="font-medium text-gray-700">{a.action}</span>
                       <span>{a.details}</span>
-                      <span className="text-gray-400">{(a.performer as any)?.full_name}</span>
+                      <span className="text-gray-400">{(a.performer as Record<string, any> | undefined)?.full_name}</span>
                     </div>
                   ))}
                 </div>

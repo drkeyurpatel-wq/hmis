@@ -130,12 +130,12 @@ export function useSamples(centreId: string | null) {
       const { data: order } = await sb().from('hmis_lab_orders')
         .select('centre_id, patient_id, admission_id, test:hmis_lab_test_master(test_name), patient:hmis_patients!inner(payor_type)')
         .eq('id', orderId).maybeSingle();
-      if (order && (order.test as any)?.test_name) {
+      if (order && (order.test as Record<string, any> | undefined)?.test_name) {
         await smartPostLabCharge({
           centreId: order.centre_id, patientId: order.patient_id,
           admissionId: order.admission_id || undefined,
-          labOrderId: orderId, testName: (order.test as any).test_name,
-          payorType: (order.patient as any)?.payor_type || 'self', staffId,
+          labOrderId: orderId, testName: (order.test as Record<string, any> | undefined)?.test_name,
+          payorType: (order.patient as Record<string, any> | undefined)?.payor_type || 'self', staffId,
         });
       }
     }

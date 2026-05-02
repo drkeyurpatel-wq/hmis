@@ -148,11 +148,11 @@ function ClinicReferralQueueInner() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-sm font-bold text-gray-800">
-                        {(ref.patient as any)?.first_name} {(ref.patient as any)?.last_name}
+                        {(ref.patient as Record<string, any> | undefined)?.first_name} {(ref.patient as Record<string, any> | undefined)?.last_name}
                       </span>
-                      <span className="text-xs text-gray-400 font-mono">{(ref.patient as any)?.uhid}</span>
-                      {(ref.patient as any)?.gender && (
-                        <span className="text-xs text-gray-400 capitalize">{(ref.patient as any).gender}, {(ref.patient as any).age_years}y</span>
+                      <span className="text-xs text-gray-400 font-mono">{(ref.patient as Record<string, any> | undefined)?.uhid}</span>
+                      {(ref.patient as Record<string, any> | undefined)?.gender && (
+                        <span className="text-xs text-gray-400 capitalize">{(ref.patient as Record<string, any> | undefined)?.gender}, {(ref.patient as Record<string, any> | undefined)?.age_years}y</span>
                       )}
                       <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${statusCfg.color}`}>
                         {statusCfg.label}
@@ -174,10 +174,10 @@ function ClinicReferralQueueInner() {
                     <div className="flex items-center gap-3 mt-2 text-[10px] text-gray-400">
                       <span className="flex items-center gap-1">
                         <Building2 size={10} />
-                        {(ref.from_centre as any)?.name || 'Clinic'}
+                        {(ref.from_centre as Record<string, any> | undefined)?.name || 'Clinic'}
                       </span>
                       {ref.department && <span>&middot; {ref.department}</span>}
-                      <span>&middot; Dr. {(ref.referred_by_staff as any)?.full_name || 'Unknown'}</span>
+                      <span>&middot; Dr. {(ref.referred_by_staff as Record<string, any> | undefined)?.full_name || 'Unknown'}</span>
                       <span>&middot; {new Date(ref.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
                     </div>
 

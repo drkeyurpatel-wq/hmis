@@ -156,12 +156,12 @@ function TeleconsultInner() {
                   </span>
                   <div className="flex-1 min-w-0">
                     <span className="text-sm font-medium text-gray-800">
-                      {(slot.patient as any)?.first_name} {(slot.patient as any)?.last_name}
+                      {(slot.patient as Record<string, any> | undefined)?.first_name} {(slot.patient as Record<string, any> | undefined)?.last_name}
                     </span>
-                    <span className="text-xs text-gray-400 ml-2 font-mono">{(slot.patient as any)?.uhid}</span>
+                    <span className="text-xs text-gray-400 ml-2 font-mono">{(slot.patient as Record<string, any> | undefined)?.uhid}</span>
                     <div className="text-xs text-gray-500 mt-0.5">
-                      with Dr. {(slot.doctor as any)?.full_name}
-                      {(slot.doctor as any)?.specialisation && ` — ${(slot.doctor as any).specialisation}`}
+                      with Dr. {(slot.doctor as Record<string, any> | undefined)?.full_name}
+                      {(slot.doctor as Record<string, any> | undefined)?.specialisation && ` — ${(slot.doctor as Record<string, any> | undefined)?.specialisation}`}
                     </div>
                   </div>
                   <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${

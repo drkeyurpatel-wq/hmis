@@ -297,9 +297,9 @@ function LabCollectionInner() {
                   <TestTube size={16} className="text-blue-500 shrink-0" />
                   <div className="flex-1 min-w-0">
                     <span className="text-sm font-medium text-gray-800">
-                      {(col.patient as any)?.first_name} {(col.patient as any)?.last_name}
+                      {(col.patient as Record<string, any> | undefined)?.first_name} {(col.patient as Record<string, any> | undefined)?.last_name}
                     </span>
-                    <span className="text-xs text-gray-400 ml-2">{(col.patient as any)?.uhid}</span>
+                    <span className="text-xs text-gray-400 ml-2">{(col.patient as Record<string, any> | undefined)?.uhid}</span>
                     <div className="text-xs text-gray-500 mt-0.5">
                       {col.sample_type} &middot; {(col.tests_ordered as any[])?.join(', ')}
                     </div>
@@ -349,9 +349,9 @@ function LabCollectionInner() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-medium text-gray-800">
-                          {(col.patient as any)?.first_name} {(col.patient as any)?.last_name}
+                          {(col.patient as Record<string, any> | undefined)?.first_name} {(col.patient as Record<string, any> | undefined)?.last_name}
                         </span>
-                        <span className="text-xs text-gray-400 font-mono">{(col.patient as any)?.uhid}</span>
+                        <span className="text-xs text-gray-400 font-mono">{(col.patient as Record<string, any> | undefined)?.uhid}</span>
                       </div>
                       <div className="text-xs text-gray-500 mt-0.5">
                         {col.sample_type} &middot; {(col.tests_ordered as any[])?.join(', ')}

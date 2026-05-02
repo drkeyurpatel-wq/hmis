@@ -85,7 +85,7 @@ export function useShiftHandover(centreId: string | null) {
           .eq('centre_id', centreId).eq('status', 'active')
           .in('severity', ['critical', 'emergency']).limit(20);
         for (const a of alerts || []) {
-          const pt = a.patient as any;
+          const pt = a.patient as Record<string, any> | undefined;
           critItems.push({ patientName: `${pt?.first_name || ''} ${pt?.last_name || ''}`.trim(),
             patientId: a.patient_id, detail: `${a.title}: ${a.description || ''}` });
           critCount++;
@@ -103,7 +103,7 @@ export function useShiftHandover(centreId: string | null) {
           .select('parameter_name, result_value, is_critical')
           .eq('lab_order_id', lab.id).eq('is_critical', true).limit(5);
         if (results && results.length > 0) {
-          const pt = lab.patient as any;
+          const pt = lab.patient as Record<string, any> | undefined;
           const params = results.map((r: any) => `${r.parameter_name}: ${r.result_value}`).join(', ');
           critItems.push({ patientName: `${pt?.first_name || ''} ${pt?.last_name || ''}`.trim(),
             patientId: pt?.id, detail: `Critical lab — ${lab.test_name}: ${params}` });
@@ -124,11 +124,11 @@ export function useShiftHandover(centreId: string | null) {
 
       const admItems: HandoverItem[] = [];
       for (const adm of newAdmissions || []) {
-        const pt = adm.patient as any;
-        const dr = adm.doctor as any;
+        const pt = adm.patient as Record<string, any> | undefined;
+        const dr = adm.doctor as Record<string, any> | undefined;
         admItems.push({
           patientName: `${pt?.first_name || ''} ${pt?.last_name || ''}`.trim(),
-          bedLabel: (adm.bed as any)?.bed_number, admissionId: adm.id, patientId: pt?.id,
+          bedLabel: (adm.bed as Record<string, any> | undefined)?.bed_number, admissionId: adm.id, patientId: pt?.id,
           detail: `${pt?.age_years || '?'}/${pt?.gender?.charAt(0) || '?'} · ${adm.provisional_diagnosis || 'Dx pending'} · Dr. ${dr?.full_name || 'TBD'} · ${adm.payor_type || 'Self'}`,
           timestamp: adm.admission_date,
         });
@@ -144,7 +144,7 @@ export function useShiftHandover(centreId: string | null) {
 
       const dischItems: HandoverItem[] = [];
       for (const d of discharges || []) {
-        const pt = d.patient as any;
+        const pt = d.patient as Record<string, any> | undefined;
         dischItems.push({ patientName: `${pt?.first_name || ''} ${pt?.last_name || ''}`.trim(),
           admissionId: d.id, detail: `IPD ${d.ipd_number} · Discharged`, timestamp: d.actual_discharge });
         dischCount++;
@@ -183,7 +183,7 @@ export function useShiftHandover(centreId: string | null) {
         const adm = r.admission as any;
         if (adm?.centre_id !== centreId) continue;
         const pt = adm?.patient;
-        const dr = r.doctor as any;
+        const dr = r.doctor as Record<string, any> | undefined;
         if (!pt || !r.plan) continue;
         roundItems.push({
           patientName: `${pt.first_name} ${pt.last_name}`.trim(), admissionId: adm.id,
@@ -199,7 +199,7 @@ export function useShiftHandover(centreId: string | null) {
         .select('id, ipd_number, patient:hmis_patients!inner(first_name, last_name)')
         .eq('centre_id', centreId).eq('status', 'discharge_initiated').limit(10);
       for (const pd of pendDisch || []) {
-        const pt = pd.patient as any;
+        const pt = pd.patient as Record<string, any> | undefined;
         pendingItems.push({ patientName: `${pt?.first_name || ''} ${pt?.last_name || ''}`.trim(),
           admissionId: pd.id, detail: `Complete discharge — IPD ${pd.ipd_number}` });
         pendingCount++;
@@ -210,7 +210,7 @@ export function useShiftHandover(centreId: string | null) {
         .eq('centre_id', centreId).in('status', ['ordered', 'sample_collected', 'processing'])
         .gte('created_at', new Date(Date.now() - 48 * 3600000).toISOString()).limit(10);
       for (const pl of pendLabs || []) {
-        const pt = pl.patient as any;
+        const pt = pl.patient as Record<string, any> | undefined;
         pendingItems.push({ patientName: `${pt?.first_name || ''} ${pt?.last_name || ''}`.trim(),
           detail: `Pending result: ${pl.test_name}` });
         pendingCount++;

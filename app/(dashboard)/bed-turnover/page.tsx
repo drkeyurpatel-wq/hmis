@@ -63,7 +63,7 @@ function Inner() {
 
   // Initiate form
   const handleInitiate = async (adm: any) => {
-    const room = adm.bed?.room as any;
+    const room = adm.bed?.room as Record<string, any> | undefined;
     const result = await bt.initiateTurnover({
       bed_id: adm.bed_id,
       room_id: adm.bed?.room_id || undefined,
@@ -151,7 +151,7 @@ function Inner() {
               {bt.turnovers.map(t => {
                 const elapsed = bt.getElapsed(t);
                 const liveSLA = bt.getLiveSLA(t);
-                const b = t.bed as any;
+                const b = t.bed as Record<string, any> | undefined;
                 return (
                   <div key={t.id} className={`border rounded-lg p-4 cursor-pointer hover:shadow-md transition-shadow ${SLA_BG[liveSLA]}`} onClick={() => openDetail(t)}>
                     <div className="flex items-center justify-between mb-2">
@@ -190,8 +190,8 @@ function Inner() {
           <div className="bg-white border rounded-lg p-6">
             <div className="flex items-start justify-between mb-4">
               <div>
-                <h2 className="text-xl font-bold">{(selected.bed as any)?.room?.ward?.name} — Bed {(selected.bed as any)?.bed_number}</h2>
-                <p className="text-sm text-gray-500">{(selected.bed as any)?.room?.name} · Discharge: {new Date(selected.discharge_confirmed_at).toLocaleString()}</p>
+                <h2 className="text-xl font-bold">{(selected.bed as Record<string, any> | undefined)?.room?.ward?.name} — Bed {(selected.bed as Record<string, any> | undefined)?.bed_number}</h2>
+                <p className="text-sm text-gray-500">{(selected.bed as Record<string, any> | undefined)?.room?.name} · Discharge: {new Date(selected.discharge_confirmed_at).toLocaleString()}</p>
               </div>
               <div className="text-right">
                 <div className={`text-3xl font-bold ${bt.getElapsed(selected) > 90 ? 'text-red-600' : bt.getElapsed(selected) > 45 ? 'text-amber-600' : 'text-green-600'}`}>
@@ -283,12 +283,12 @@ function Inner() {
           {dischargeBeds.length === 0 ? <p className="text-gray-500 text-sm">No discharged beds awaiting turnover.</p> : (
             <div className="space-y-2">
               {dischargeBeds.map(adm => {
-                const b = adm.bed as any;
+                const b = adm.bed as Record<string, any> | undefined;
                 return (
                   <div key={adm.id} className="flex items-center justify-between p-3 border rounded hover:bg-gray-50">
                     <div>
                       <div className="font-medium">{b?.room?.ward?.name || 'Ward'} — Bed {b?.bed_number || '?'} <span className="text-gray-400 text-sm">({b?.room?.name})</span></div>
-                      <div className="text-sm text-gray-500">{(adm.patient as any)?.first_name} {(adm.patient as any)?.last_name} ({(adm.patient as any)?.uhid}) · IPD: {adm.ipd_number}</div>
+                      <div className="text-sm text-gray-500">{(adm.patient as Record<string, any> | undefined)?.first_name} {(adm.patient as Record<string, any> | undefined)?.last_name} ({(adm.patient as Record<string, any> | undefined)?.uhid}) · IPD: {adm.ipd_number}</div>
                     </div>
                     <button onClick={() => handleInitiate(adm)} className="bg-blue-600 text-white px-3 py-1.5 rounded text-sm">Start Turnover</button>
                   </div>
@@ -338,8 +338,8 @@ function Inner() {
                 <tbody>
                   {bt.waitlist.map(w => (
                     <tr key={w.id} className="border-t">
-                      <td className="p-3">{(w.patient as any)?.first_name} {(w.patient as any)?.last_name} <span className="text-gray-400">({(w.patient as any)?.uhid})</span></td>
-                      <td className="p-3">{(w.ward as any)?.name || '-'}</td>
+                      <td className="p-3">{(w.patient as Record<string, any> | undefined)?.first_name} {(w.patient as Record<string, any> | undefined)?.last_name} <span className="text-gray-400">({(w.patient as Record<string, any> | undefined)?.uhid})</span></td>
+                      <td className="p-3">{(w.ward as Record<string, any> | undefined)?.name || '-'}</td>
                       <td className="p-3 text-center"><span className={`px-2 py-0.5 rounded text-xs font-medium ${w.priority === 'emergency' ? 'bg-red-100 text-red-700' : w.priority === 'urgent' ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'}`}>{w.priority}</span></td>
                       <td className="p-3 text-gray-500">{new Date(w.requested_at).toLocaleString()}</td>
                       <td className="p-3 text-center"><button onClick={() => { bt.cancelWaitlist(w.id); flash('Removed'); bt.load(); }} className="text-xs text-red-600">Remove</button></td>

@@ -31,7 +31,7 @@ export default function DischargeTATTracker({ centreId, dateFrom, dateTo }: Prop
           const admDate = new Date(a.admission_date);
           const dischDate = new Date(a.actual_discharge);
           const totalHours = (dischDate.getTime() - admDate.getTime()) / 3600000;
-          const pt = a.patient as any;
+          const pt = a.patient as Record<string, any> | undefined;
           return {
             id: a.id, ipdNumber: a.ipd_number,
             patientName: `${pt?.first_name || ''} ${pt?.last_name || ''}`,

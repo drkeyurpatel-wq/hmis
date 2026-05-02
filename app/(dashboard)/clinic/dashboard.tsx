@@ -243,10 +243,10 @@ export function ClinicDashboard() {
                 </span>
                 <div className="flex-1 min-w-0">
                   <span className="text-sm font-medium text-gray-800">
-                    {(appt.patient as any)?.first_name} {(appt.patient as any)?.last_name}
+                    {(appt.patient as Record<string, any> | undefined)?.first_name} {(appt.patient as Record<string, any> | undefined)?.last_name}
                   </span>
                   <span className="text-xs text-gray-400 ml-2 font-mono">
-                    {(appt.patient as any)?.uhid}
+                    {(appt.patient as Record<string, any> | undefined)?.uhid}
                   </span>
                 </div>
                 <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${

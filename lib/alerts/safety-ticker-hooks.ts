@@ -55,7 +55,7 @@ export function useSafetyTicker(centreId: string | null, staffType: string | nul
           .eq('lab_order_id', lab.id).eq('is_critical', true).limit(5);
 
         if (results && results.length > 0) {
-          const pt = lab.patient as any;
+          const pt = lab.patient as Record<string, any> | undefined;
           const paramSummary = results.map((r: any) => `${r.parameter_name}: ${r.result_value}`).join(', ');
           allItems.push({
             id: `lab-${lab.id}`, type: 'critical_lab', severity: 'critical',
@@ -78,14 +78,14 @@ export function useSafetyTicker(centreId: string | null, staffType: string | nul
         .limit(30);
 
       for (const mar of overdueMar || []) {
-        const medOrder = mar.medication_order as any;
+        const medOrder = mar.medication_order as Record<string, any> | undefined;
         const adm = medOrder?.admission;
         const pt = adm?.patient;
         if (!pt || adm?.centre_id !== centreId) continue;
         allItems.push({
           id: `med-${mar.id}`, type: 'overdue_med', severity: 'high',
-          patientName: `${pt.first_name} ${pt.last_name}`.trim(),
-          title: `Overdue: ${medOrder.drug_name}`,
+          patientName: `${pt?.first_name} ${pt?.last_name}`.trim(),
+          title: `Overdue: ${medOrder?.drug_name}`,
           detail: `Due at ${new Date(mar.scheduled_time).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}`,
           action: `/ipd/${adm.id}?tab=mar`, timestamp: mar.scheduled_time,
         });
@@ -97,10 +97,10 @@ export function useSafetyTicker(centreId: string | null, staffType: string | nul
         .eq('centre_id', centreId).eq('status', 'discharge_initiated').limit(20);
 
       for (const adm of pendingDisch || []) {
-        const pt = adm.patient as any;
+        const pt = adm.patient as Record<string, any> | undefined;
         allItems.push({
           id: `disch-${adm.id}`, type: 'pending_discharge', severity: 'medium',
-          patientName: `${pt.first_name} ${pt.last_name}`.trim(),
+          patientName: `${pt?.first_name} ${pt?.last_name}`.trim(),
           title: `Pending discharge`, detail: `IPD: ${adm.ipd_number}`,
           action: `/ipd/${adm.id}?tab=discharge`, timestamp: new Date().toISOString(),
         });
@@ -131,7 +131,7 @@ export function useSafetyTicker(centreId: string | null, staffType: string | nul
           .in('severity', ['critical', 'emergency']).limit(10);
 
         for (const a of alerts || []) {
-          const pt = a.patient as any;
+          const pt = a.patient as Record<string, any> | undefined;
           allItems.push({
             id: `alert-${a.id}`, type: 'news2_high',
             severity: a.severity === 'emergency' ? 'critical' : 'high',

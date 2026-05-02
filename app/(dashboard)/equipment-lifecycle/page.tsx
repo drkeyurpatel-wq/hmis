@@ -227,7 +227,7 @@ function Inner() {
                 const slaBreach = m.sla_target_hours && hoursElapsed > m.sla_target_hours;
                 return (
                   <tr key={m.id} className="border-t">
-                    <td className="p-3 font-medium">{(m.equipment as any)?.name || '-'}</td>
+                    <td className="p-3 font-medium">{(m.equipment as Record<string, any> | undefined)?.name || '-'}</td>
                     <td className="p-3 max-w-[200px] truncate">{m.issue_description}</td>
                     <td className="p-3 text-center"><span className={`px-2 py-0.5 rounded text-xs font-medium ${SEV_COLORS[m.severity]}`}>{m.severity}</span></td>
                     <td className="p-3 text-center"><span className={`px-2 py-0.5 rounded text-xs font-medium ${MAINT_STATUS[m.status]}`}>{m.status}</span></td>
@@ -250,7 +250,7 @@ function Inner() {
       {resolving && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={() => setResolving(null)}>
           <div className="bg-white rounded-lg p-6 w-full max-w-md" onClick={e => e.stopPropagation()}>
-            <h3 className="font-semibold mb-3">Resolve: {(resolving.equipment as any)?.name}</h3>
+            <h3 className="font-semibold mb-3">Resolve: {(resolving.equipment as Record<string, any> | undefined)?.name}</h3>
             <textarea className="w-full border rounded px-3 py-2 text-sm mb-2" rows={3} placeholder="Resolution *" value={rf.resolution} onChange={e => setRf(p => ({ ...p, resolution: e.target.value }))} />
             <input type="number" className="w-full border rounded px-3 py-2 text-sm mb-3" placeholder="Repair cost ₹" value={rf.cost} onChange={e => setRf(p => ({ ...p, cost: e.target.value }))} />
             <div className="flex gap-2">
@@ -267,7 +267,7 @@ function Inner() {
           {el.alerts.slaBreach.length > 0 && (
             <div className="bg-red-50 border border-red-200 rounded-lg p-4">
               <h3 className="text-sm font-semibold text-red-700 mb-2">SLA Breaches ({el.alerts.slaBreach.length})</h3>
-              {el.alerts.slaBreach.map(m => <div key={m.id} className="text-sm text-red-600">{(m.equipment as any)?.name} — {m.issue_description?.slice(0, 80)}</div>)}
+              {el.alerts.slaBreach.map(m => <div key={m.id} className="text-sm text-red-600">{(m.equipment as Record<string, any> | undefined)?.name} — {m.issue_description?.slice(0, 80)}</div>)}
             </div>
           )}
           {el.alerts.amcExpiring.length > 0 && (

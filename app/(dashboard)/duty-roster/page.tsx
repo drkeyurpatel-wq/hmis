@@ -92,7 +92,7 @@ function Inner() {
     const ids = [...new Set(roster_filtered().map(r => r.staff_id))];
     return ids.map(id => {
       const entry = roster_filtered().find(r => r.staff_id === id);
-      return { id, name: (entry?.staff as any)?.full_name || '?', type: (entry?.staff as any)?.staff_type || '' };
+      return { id, name: (entry?.staff as Record<string, any> | undefined)?.full_name || '?', type: (entry?.staff as Record<string, any> | undefined)?.staff_type || '' };
     }).sort((a, b) => a.name.localeCompare(b.name));
   }, [dr.roster, wardFilter]);
 
@@ -225,7 +225,7 @@ function Inner() {
               {dr.swaps.map(s => (
                 <div key={s.id} className="flex items-center justify-between p-3 border rounded">
                   <div>
-                    <div className="font-medium">{(s.requester as any)?.full_name} ↔ {(s.target as any)?.full_name}</div>
+                    <div className="font-medium">{(s.requester as Record<string, any> | undefined)?.full_name} ↔ {(s.target as Record<string, any> | undefined)?.full_name}</div>
                     <div className="text-sm text-gray-500">{s.swap_date} · {s.reason || 'No reason'}</div>
                   </div>
                   <div className="flex gap-2">
@@ -298,7 +298,7 @@ function Inner() {
           {dr.requirements.length > 0 && (
             <table className="w-full text-sm"><thead className="bg-gray-50"><tr><th className="text-left p-2">Ward</th><th className="text-left p-2">Shift</th><th className="text-left p-2">Staff Type</th><th className="text-center p-2">Min</th></tr></thead>
               <tbody>{dr.requirements.map(r => (
-                <tr key={r.id} className="border-t"><td className="p-2">{(r.ward as any)?.name}</td><td className="p-2">{(r.shift as any)?.shift_name}</td><td className="p-2">{r.staff_type}</td><td className="p-2 text-center font-semibold">{r.min_count}</td></tr>
+                <tr key={r.id} className="border-t"><td className="p-2">{(r.ward as Record<string, any> | undefined)?.name}</td><td className="p-2">{(r.shift as Record<string, any> | undefined)?.shift_name}</td><td className="p-2">{r.staff_type}</td><td className="p-2 text-center font-semibold">{r.min_count}</td></tr>
               ))}</tbody></table>
           )}
         </div>
