@@ -4,6 +4,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/api/auth-guard';
+import { logger } from '@/lib/logger';
 
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY || '';
 const MODEL = 'claude-sonnet-4-20250514';
@@ -53,7 +54,7 @@ async function callClaude(systemPrompt: string, userMessage: string, maxTokens: 
 
       if (!response.ok) {
         const errBody = await response.text();
-        console.error('[CDSS] Anthropic API error:', response.status, errBody);
+        logger.error('[CDSS] Anthropic API error', { status: response.status, body: errBody });
         return JSON.stringify({ error: `Anthropic API ${response.status}: ${errBody.substring(0, 200)}` });
       }
 
@@ -65,7 +66,7 @@ async function callClaude(systemPrompt: string, userMessage: string, maxTokens: 
         await new Promise(r => setTimeout(r, Math.pow(2, attempt + 1) * 1000));
         continue;
       }
-      console.error('[CDSS] Fetch error:', err);
+      logger.error('[CDSS] Fetch error:', err);
       return JSON.stringify({ error: `Network error: ${err.message}` });
     }
   }

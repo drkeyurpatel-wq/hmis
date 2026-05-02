@@ -14,6 +14,7 @@ import {
   logPayoutAudit,
 } from '@/lib/rcm/db';
 import { requireAuth } from '@/lib/api/auth-guard';
+import { logger } from '@/lib/logger';
 
 export const runtime = 'edge';
 export const dynamic = 'force-dynamic';
@@ -111,7 +112,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (err: any) {
-    console.error('RCM compute-settlement error:', err);
+    logger.error('RCM compute-settlement error:', err);
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }

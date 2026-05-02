@@ -11,6 +11,7 @@ import {
   sendPharmacyReady,
   sendDischargeAlert,
 } from '@/lib/notifications/whatsapp';
+import { logger } from '@/lib/logger';
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
@@ -143,7 +144,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: result.error }, { status: 502 });
     }
   } catch (err: any) {
-    console.error('[notify] Error:', err);
+    logger.error('[notify] Error:', err);
     return NextResponse.json({ error: err.message || 'Internal server error' }, { status: 500 });
   }
 }

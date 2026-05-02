@@ -15,6 +15,7 @@ import {
   insertHoldEntries,
   logPayoutAudit,
 } from '@/lib/rcm/db';
+import { logger } from '@/lib/logger';
 
 export const runtime = 'edge';
 export const dynamic = 'force-dynamic';
@@ -108,7 +109,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (err: any) {
-    console.error('RCM compute-bill error:', err);
+    logger.error('RCM compute-bill error:', err);
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }

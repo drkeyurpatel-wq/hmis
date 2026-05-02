@@ -2,6 +2,7 @@
 // ABDM Integration API — ABHA creation, verification, linking, HIE-CM callbacks
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuthOrApiKey } from '@/lib/api/auth-guard';
+import { logger } from '@/lib/logger';
 
 let _supabase: any = null;
 function getSupabase() {
@@ -187,7 +188,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ error: 'Unknown action' }, { status: 400 });
   } catch (error: any) {
-    console.error('[ABDM API] Error:', error);
+    logger.error('[ABDM API] Error:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

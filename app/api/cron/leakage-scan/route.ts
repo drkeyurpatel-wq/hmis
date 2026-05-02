@@ -2,6 +2,7 @@
 // Daily revenue leakage scan — creates alerts for unbilled items
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { logger } from '@/lib/logger';
 
 export const runtime = 'edge';
 export const dynamic = 'force-dynamic';
@@ -67,7 +68,7 @@ export async function GET(request: Request) {
 
   return NextResponse.json({ success: true, totalLeaks, scannedAt: now.toISOString() });
   } catch (err: unknown) {
-    console.error("[cron] Error:", err);
+    logger.error("[cron] Error", { error: String(err) });
     return NextResponse.json({ error: "Internal error", detail: String(err) }, { status: 500 });
   }
 }

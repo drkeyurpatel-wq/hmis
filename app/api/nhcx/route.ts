@@ -9,6 +9,7 @@ import { requireAuthOrApiKey } from '@/lib/api/auth-guard';
 import { buildCoverageEligibilityRequestBundle, buildClaimBundle, parseClaimResponse, parseCoverageEligibilityResponse } from '@/lib/nhcx/fhir-bundles';
 import { checkCoverageEligibility, submitPreAuth, submitClaim, submitPredetermination, processCallback, mapHMISClaimToNHCX } from '@/lib/nhcx/nhcx-client';
 import type { NHCXConfig } from '@/lib/nhcx/fhir-bundles';
+import { logger } from '@/lib/logger';
 
 const uuidv4 = () => 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => { const r = Math.random() * 16 | 0; return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16); });
 
@@ -59,7 +60,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ error: 'Unknown action' }, { status: 400 });
   } catch (error: any) {
-    console.error('[NHCX API] Error:', error);
+    logger.error('[NHCX API] Error:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

@@ -5,6 +5,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/api/auth-guard';
 import { createClient } from '@supabase/supabase-js';
+import { logger } from '@/lib/logger';
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
@@ -152,7 +153,7 @@ export async function GET(request: NextRequest) {
       timestamp: new Date().toISOString(),
     });
   } catch (err: any) {
-    console.error('[ALERTS] Scan error:', err);
+    logger.error('[ALERTS] Scan error:', err);
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }

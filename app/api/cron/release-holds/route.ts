@@ -4,6 +4,7 @@
 
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { logger } from '@/lib/logger';
 
 export const runtime = 'edge';
 export const dynamic = 'force-dynamic';
@@ -94,7 +95,7 @@ export async function GET(request: Request) {
     });
 
   } catch (err: any) {
-    console.error('RCM release-holds cron error:', err);
+    logger.error('RCM release-holds cron error:', err);
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }

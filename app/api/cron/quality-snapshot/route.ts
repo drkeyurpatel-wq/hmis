@@ -4,6 +4,7 @@
 
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { logger } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -67,7 +68,7 @@ export async function GET(request: Request) {
       results,
     });
   } catch (err: unknown) {
-    console.error('[cron] quality-snapshot error:', err);
+    logger.error('[cron] quality-snapshot error', { error: String(err) });
     return NextResponse.json(
       { error: 'Internal error', detail: String(err) },
       { status: 500 },

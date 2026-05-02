@@ -14,6 +14,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireApiKey } from '@/lib/api/auth-guard';
 import { createClient } from '@supabase/supabase-js';
 import { parseHl7OruMessage, parseJsonReport, verifyWebhookSignature, type StradusReport } from '@/lib/radiology/stradus-client';
+import { logger } from '@/lib/logger';
 
 function getSupabase() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -40,7 +41,7 @@ export async function POST(request: NextRequest) {
     if (webhookSecret && signature) {
       const valid = await verifyWebhookSignature(rawBody, signature, webhookSecret);
       if (!valid) {
-        console.error('[Stradus Webhook] Invalid signature');
+        logger.error('[Stradus Webhook] Invalid signature');
         return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
       }
     }
@@ -88,7 +89,7 @@ export async function POST(request: NextRequest) {
 
     const { data: orders, error: orderErr } = await orderQuery.limit(1);
     if (orderErr) {
-      console.error('[Stradus Webhook] Order lookup error:', orderErr);
+      logger.error('[Stradus Webhook] Order lookup error', { error: String(orderErr) });
       return NextResponse.json({ error: 'Order lookup failed' }, { status: 500 });
     }
 
@@ -124,7 +125,7 @@ export async function POST(request: NextRequest) {
           pacs_study_uid: report.studyInstanceUid || null,
           status: report.reportStatus === 'final' ? 'finalized' : report.reportStatus,
         }).then(({ error }) => {
-          if (error) console.error('[Stradus Webhook] Orphan report insert error:', error);
+          if (error) logger.error('[Stradus Webhook] Orphan report insert error:', { error: String(error) });
         });
 
         return NextResponse.json({
@@ -175,7 +176,7 @@ export async function POST(request: NextRequest) {
       reportData.parent_report_id = existingReports[0].id;
       const { error: insErr } = await sb.from('hmis_radiology_reports').insert(reportData);
       if (insErr) {
-        console.error('[Stradus Webhook] Addendum insert error:', insErr);
+        logger.error('[Stradus Webhook] Addendum insert error', { error: String(insErr) });
         return NextResponse.json({ error: 'Failed to store addendum' }, { status: 500 });
       }
     } else if (existingReports?.[0]) {
@@ -183,7 +184,7 @@ export async function POST(request: NextRequest) {
       const { error: updErr } = await sb.from('hmis_radiology_reports')
         .update(reportData).eq('id', existingReports[0].id);
       if (updErr) {
-        console.error('[Stradus Webhook] Report update error:', updErr);
+        logger.error('[Stradus Webhook] Report update error', { error: String(updErr) });
         return NextResponse.json({ error: 'Failed to update report' }, { status: 500 });
       }
     } else {
@@ -196,7 +197,7 @@ export async function POST(request: NextRequest) {
       }
       const { error: insErr } = await sb.from('hmis_radiology_reports').insert(reportData);
       if (insErr) {
-        console.error('[Stradus Webhook] Report insert error:', insErr);
+        logger.error('[Stradus Webhook] Report insert error', { error: String(insErr) });
         return NextResponse.json({ error: 'Failed to store report: ' + insErr.message }, { status: 500 });
       }
     }
@@ -229,7 +230,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (err: any) {
-    console.error('[Stradus Webhook] Error:', err);
+    logger.error('[Stradus Webhook] Error', { error: String(err) });
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }

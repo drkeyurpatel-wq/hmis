@@ -4,6 +4,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { logger } from '@/lib/logger';
 
 const CRON_SECRET = process.env.CRON_SECRET || '';
 
@@ -104,7 +105,7 @@ export async function GET(request: NextRequest) {
 
   return NextResponse.json({ date: today, centres: results, totalPatients: results.reduce((s, r) => s + r.patients, 0) });
   } catch (err: unknown) {
-    console.error("[cron] Error:", err);
+    logger.error("[cron] Error", { error: String(err) });
     return NextResponse.json({ error: "Internal error", detail: String(err) }, { status: 500 });
   }
 }

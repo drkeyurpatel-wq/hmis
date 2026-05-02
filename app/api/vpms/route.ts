@@ -5,6 +5,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuthOrApiKey } from '@/lib/api/auth-guard';
+import { logger } from '@/lib/logger';
 
 function getVPMSClient() {
   const url = process.env.VPMS_SUPABASE_URL;
@@ -55,7 +56,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({ error: 'Unknown action' }, { status: 400 });
   } catch (err: any) {
-    console.error('[VPMS API]', err);
+    logger.error('[VPMS API]', err);
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }

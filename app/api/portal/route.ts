@@ -4,6 +4,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import crypto from 'crypto';
+import { logger } from '@/lib/logger';
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
@@ -63,7 +64,7 @@ export async function POST(request: NextRequest) {
             const waData = await waRes.json();
             otpDelivered = !!waData.messages?.[0]?.id;
           } catch (err) {
-            console.error('[PORTAL OTP] WhatsApp delivery failed:', err);
+            logger.error('[PORTAL OTP] WhatsApp delivery failed', { error: String(err) });
           }
         } else {
           console.warn('[PORTAL OTP] WhatsApp not configured. OTP stored in DB but not delivered. Phone:', cleanPhone);
@@ -221,7 +222,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Unknown action' }, { status: 400 });
     }
   } catch (error: any) {
-    console.error('[PORTAL]', error);
+    logger.error('[PORTAL]', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

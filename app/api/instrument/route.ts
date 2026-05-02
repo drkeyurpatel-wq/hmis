@@ -5,6 +5,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireApiKey } from '@/lib/api/auth-guard';
 import { createClient } from '@supabase/supabase-js';
+import { logger } from '@/lib/logger';
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
@@ -180,7 +181,7 @@ export async function POST(request: NextRequest) {
     }
 
   } catch (error: any) {
-    console.error('[INSTRUMENT] Error:', error);
+    logger.error('[INSTRUMENT] Error:', error);
     return NextResponse.json({ error: error.message || 'Server error' }, { status: 500 });
   }
 }

@@ -5,6 +5,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { Resend } from 'resend';
+import { logger } from '@/lib/logger';
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
@@ -234,7 +235,7 @@ export async function GET(request: NextRequest) {
       errors: errors.length > 0 ? errors : undefined,
     });
   } catch (err: any) {
-    console.error('[CRON] Daily report error:', err);
+    logger.error('[CRON] Daily report error:', err);
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
