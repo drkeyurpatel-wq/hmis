@@ -186,7 +186,7 @@ export default function IntegrationsConfig({ centreId, flash }: Props) {
                         type={f.secret && !showSecrets[`${p.key}_${f.key}`] ? 'password' : 'text'}
                         value={cfg.config[f.key] || ''}
                         onChange={e => updateField(p.key, f.key, e.target.value)}
-                        placeholder={(f as any).placeholder || ''}
+                        placeholder={(f as Record<string, any>).placeholder || ''}
                         className="w-full px-3 py-2 border rounded-lg text-sm pr-8"
                       />
                       {f.secret && <button onClick={() => setShowSecrets(prev => ({ ...prev, [`${p.key}_${f.key}`]: !prev[`${p.key}_${f.key}`] }))}

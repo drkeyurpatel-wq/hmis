@@ -203,7 +203,7 @@ RULES:
 
   // Regenerate AI summary
   const regenerateSummary = () => {
-    const raw = (ds as any)._rawCourseData;
+    const raw = (ds as Record<string, any>)._rawCourseData;
     if (raw) {
       const pt = admission?.patient;
       summarizeHospitalCourse(raw, ds.admittingDiagnosis, ds.finalDiagnosis, ds.proceduresDone, ds.dischargeMeds, pt);
@@ -216,7 +216,7 @@ RULES:
   // Toggle helpers
   const toggleArr = (arr: string[], item: string) => arr.includes(item) ? arr.filter(x => x !== item) : [...arr, item];
   const updateMed = (idx: number, field: string, val: string) => {
-    const m = [...ds.dischargeMeds]; (m[idx] as any)[field] = val; setDS(prev => ({ ...prev, dischargeMeds: m }));
+    const m = [...ds.dischargeMeds]; (m[idx] as Record<string, any>)[field] = val; setDS(prev => ({ ...prev, dischargeMeds: m }));
   };
   const removeMed = (idx: number) => setDS(prev => ({ ...prev, dischargeMeds: prev.dischargeMeds.filter((_, i) => i !== idx) }));
   const addMed = () => setDS(prev => ({ ...prev, dischargeMeds: [...prev.dischargeMeds, { drug: '', dose: '', route: 'oral', frequency: 'OD', duration: '7 days', instructions: '' }] }));
@@ -434,8 +434,8 @@ RULES:
           <div key={key as string} className="bg-white rounded-xl border p-4">
             <label className="text-xs text-gray-500 font-medium mb-2 block">{title as string}</label>
             <div className="flex flex-wrap gap-1.5">{(options as string[]).map(o => (
-              <button key={o} onClick={() => setDS(p => ({...p, [key as string]: toggleArr((p as any)[key as string], o)}))}
-                className={`px-2.5 py-1 rounded-lg text-[11px] border ${(ds as any)[key as string].includes(o) ? 'bg-green-100 text-green-700 border-green-300' : 'bg-white text-gray-500 border-gray-200'}`}>{o}</button>
+              <button key={o} onClick={() => setDS(p => ({...p, [key as string]: toggleArr((p as Record<string, any>)[key as string], o)}))}
+                className={`px-2.5 py-1 rounded-lg text-[11px] border ${(ds as Record<string, any>)[key as string].includes(o) ? 'bg-green-100 text-green-700 border-green-300' : 'bg-white text-gray-500 border-gray-200'}`}>{o}</button>
             ))}</div>
           </div>
         ))}
@@ -588,7 +588,7 @@ RULES:
             <div className="grid grid-cols-4 gap-2">
               {[['bp','BP (sys/dia)'],['hr','HR'],['temp','Temp °F'],['spo2','SpO2 %']].map(([k,l]) => (
                 <div key={k}><label className="text-[10px] text-gray-500">{l}</label>
-                  <input type="text" value={(clearances.finalVitals as any)[k]} onChange={e => setClearances(c => ({...c, finalVitals: {...c.finalVitals, [k]: e.target.value}}))}
+                  <input type="text" value={(clearances.finalVitals as Record<string, string>)[k]} onChange={e => setClearances(c => ({...c, finalVitals: {...c.finalVitals, [k]: e.target.value}}))}
                     className="w-full px-2 py-1.5 border rounded text-sm" /></div>
               ))}
             </div>

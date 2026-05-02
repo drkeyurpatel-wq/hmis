@@ -20,7 +20,7 @@ export default function InvestigationPanel({ investigations, onChange }: Props) 
 
   const remove = (idx: number) => onChange(investigations.filter((_, i) => i !== idx));
   const update = (idx: number, field: string, value: string) => {
-    const updated = [...investigations]; (updated[idx] as any)[field] = value; onChange(updated);
+    const updated = [...investigations]; (updated[idx] as Record<string, any>)[field] = value; onChange(updated);
   };
 
   const labCount = investigations.filter(i => i.type === 'lab').length;

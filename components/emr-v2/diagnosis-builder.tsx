@@ -22,7 +22,7 @@ export default function DiagnosisBuilder({ diagnoses, onChange }: Props) {
   };
 
   const update = (idx: number, field: string, value: string) => {
-    const updated = [...diagnoses]; (updated[idx] as any)[field] = value; onChange(updated);
+    const updated = [...diagnoses]; (updated[idx] as Record<string, any>)[field] = value; onChange(updated);
   };
 
   const remove = (idx: number) => onChange(diagnoses.filter((_, i) => i !== idx));

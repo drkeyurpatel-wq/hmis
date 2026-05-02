@@ -79,8 +79,8 @@ export default function RadiologyOrderForm({ centreId, staffId, onComplete, onFl
     setError(''); setWarning('');
     const result = await worklist.createOrder(form);
     if (!result.success) { setError(result.error || 'Failed'); return; }
-    if ((result as any)._creatinine_warning) setWarning((result as any)._creatinine_warning);
-    if ((result as any)._pregnancy_warning) setWarning((result as any)._pregnancy_warning);
+    if ((result as Record<string, any>)?._creatinine_warning) setWarning((result as Record<string, any>)?._creatinine_warning);
+    if ((result as Record<string, any>)?._pregnancy_warning) setWarning((result as Record<string, any>)?._pregnancy_warning);
     onFlash('Order created: ' + result.order?.accession_number);
     onComplete(result.order?.accession_number);
   };

@@ -114,7 +114,7 @@ export async function POST(request: NextRequest) {
         console.warn(`[Stradus Webhook] No matching order found for accession=${report.accessionNumber}`);
         // Store as orphan report for manual matching later
         await sb.from('hmis_radiology_reports').insert({
-          radiology_order_id: null as any, // Will need manual linking
+          radiology_order_id: null!, // Will need manual linking
           findings: report.findings,
           impression: report.impression,
           technique: report.technique,

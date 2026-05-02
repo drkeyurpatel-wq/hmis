@@ -35,9 +35,9 @@ export default function BillingConfig({ centreId, flash }: Props) {
       for (const row of data) {
         const val = row.value;
         if (row.key === 'enable_gst' || row.key === 'round_off_bills') {
-          (merged as any)[row.key] = val === true || val === 'true';
+          (merged as Record<string, any>)[row.key] = val === true || val === 'true';
         } else {
-          (merged as any)[row.key] = typeof val === 'string' ? val : JSON.stringify(val);
+          (merged as Record<string, any>)[row.key] = typeof val === 'string' ? val : JSON.stringify(val);
         }
       }
       setSettings(merged);

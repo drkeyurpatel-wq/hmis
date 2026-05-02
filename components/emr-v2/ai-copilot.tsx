@@ -94,11 +94,11 @@ export default function AICopilot({
 
     // Allergy conflicts (allergies.ts cross-reference)
     for (const rx of prescriptions) {
-      const medName = (rx as any).generic || (rx as any).drug;
+      const medName = (rx as Record<string, any>)?.generic || (rx as Record<string, any>)?.drug;
       const conflicts = checkAllergyConflict(patient.allergies, medName);
       for (const c of conflicts) {
         alerts.push({
-          type: 'allergy', drug: (rx as any).drug,
+          type: 'allergy', drug: (rx as Record<string, any>)?.drug,
           severity: c.severity === 'contraindicated' ? 'critical' : 'warning',
           message: c.warning,
         });
@@ -107,15 +107,15 @@ export default function AICopilot({
 
     // Dose validation (engine.ts — 19 common meds)
     for (const rx of prescriptions) {
-      const medName = (rx as any).generic || (rx as any).drug;
-      const doseStr = (rx as any).dose || '';
+      const medName = (rx as Record<string, any>)?.generic || (rx as Record<string, any>)?.drug;
+      const doseStr = (rx as Record<string, any>)?.dose || '';
       const match = doseStr.match(/([\d.]+)\s*(mg|g|mcg)/i);
       if (match) {
         let doseMg = parseFloat(match[1]);
         const unit = match[2].toLowerCase();
         if (unit === 'g') doseMg *= 1000;
         if (unit === 'mcg') doseMg /= 1000;
-        const freq = (rx as any).frequency || '';
+        const freq = (rx as Record<string, any>)?.frequency || '';
         let daily = 1;
         if (freq.startsWith('BD')) daily = 2;
         else if (freq.startsWith('TDS')) daily = 3;
@@ -123,11 +123,11 @@ export default function AICopilot({
         else if (freq.startsWith('Q4H')) daily = 6;
         else if (freq.startsWith('Q6H')) daily = 4;
         else if (freq.startsWith('Q8H')) daily = 3;
-        const route = (rx as any).route || 'Oral';
+        const route = (rx as Record<string, any>)?.route || 'Oral';
         const doseAlerts = validateDose(medName, doseMg, route, daily);
         for (const da of doseAlerts) {
           if (da.severity !== 'info') {
-            alerts.push({ type: 'dose', drug: (rx as any).drug, severity: da.severity, message: da.message });
+            alerts.push({ type: 'dose', drug: (rx as Record<string, any>)?.drug, severity: da.severity, message: da.message });
           }
         }
       }

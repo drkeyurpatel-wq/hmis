@@ -174,7 +174,7 @@ export default function NursingShiftNotes({ admissionId, staffId, patientName, o
             <div className="flex flex-wrap gap-3">
               {[['fall_risk_assessed', 'Fall risk assessed'], ['pressure_area_checked', 'Pressure areas checked'], ['restraints_checked', 'Restraints checked (if applicable)'], ['id_band_verified', 'ID band verified'], ['allergy_band_checked', 'Allergy band checked']].map(([k, l]) => (
                 <label key={k} className="flex items-center gap-1.5 text-xs cursor-pointer">
-                  <input type="checkbox" checked={(form.safety_checks as any)[k]}
+                  <input type="checkbox" checked={(form.safety_checks as Record<string, boolean>)[k]}
                     onChange={e => setForm(f => ({ ...f, safety_checks: { ...f.safety_checks, [k]: e.target.checked } }))} />
                   <span>{l}</span>
                 </label>
